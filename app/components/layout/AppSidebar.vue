@@ -15,19 +15,19 @@ const teams: {
   plan: string
 }[] = [
   {
-    name: 'AI Visual Pro',
+    name: 'OTOBIX ADMIN',
     logo: 'i-lucide-gallery-vertical-end',
-    plan: 'Enterprise',
+    plan: 'Workspace',
   },
   {
-    name: 'Full Stack CRM',
+    name: 'OTOBIX INSPECTION',
     logo: 'i-lucide-audio-waveform',
-    plan: 'Professional',
+    plan: 'Workspace',
   },
   {
-    name: 'Demo Workspace',
+    name: 'OTOBIX DEALERS',
     logo: 'i-lucide-command',
-    plan: 'Free',
+    plan: 'Workspace',
   },
 ]
 

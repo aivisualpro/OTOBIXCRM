@@ -87,7 +87,6 @@
 
   [data-slot="card"] {
     border-radius: var(--radius);
-    padding-block: calc(var(--spacing) * 4);
     gap: calc(var(--spacing) * 2);
   }
 

@@ -10,9 +10,9 @@ export const navMenu: NavMenu[] = [
         link: '/',
       },
       {
-        title: 'Email',
-        icon: 'i-lucide-mail',
-        link: '/email',
+        title: 'Leads',
+        icon: 'i-lucide-magnet',
+        link: '/leads',
       },
       {
         title: 'Tasks',
@@ -46,11 +46,7 @@ export const navMenu: NavMenu[] = [
         icon: 'i-lucide-contact',
         link: '/crm/contacts',
       },
-      {
-        title: 'Leads',
-        icon: 'i-lucide-magnet',
-        link: '/crm/leads',
-      },
+
       {
         title: 'Deals Pipeline',
         icon: 'i-lucide-handshake',

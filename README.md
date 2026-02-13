@@ -38,7 +38,7 @@
 
 ## 📖 About
 
-**Full Stack CRM** is a production-ready CRM (Customer Relationship Management) boilerplate application designed to serve as a robust starting point for building enterprise-grade business applications. It combines the power of **Nuxt 4** with a comprehensive **shadcn-vue** component library, delivering a polished admin dashboard with authentication flows, task management, email client, Kanban board, and 50+ pre-built UI components — all with full dark mode support and customizable theming.
+**Full Stack CRM** is a production-ready CRM (Customer Relationship Management) boilerplate application designed to serve as a robust starting point for building enterprise-grade business applications. It combines the power of **Nuxt 4** with a comprehensive **shadcn-vue** component library, delivering a polished admin dashboard with authentication flows, task management, leads management, Kanban board, and 50+ pre-built UI components — all with full dark mode support and customizable theming.
 
 This boilerplate eliminates weeks of setup time by providing a fully structured, type-safe, and beautifully designed foundation that can be extended for any CRM, ERP, or internal business tool.
 
@@ -121,10 +121,10 @@ This boilerplate eliminates weeks of setup time by providing a fully structured,
 - Animated number counters
 - Recent activity & transaction feeds
 
-### 📧 Email Client
-- Full email inbox interface with account switching
-- Mail list with search and filtering
-- Email detail view with reply support
+### 📋 Leads Management
+- Capture and qualify leads through your sales pipeline
+- Leads list with search and filtering
+- Lead scoring and status management
 
 ### ✅ Task Management
 - Advanced data table with sorting, filtering, and pagination
@@ -213,7 +213,6 @@ CRM-Boilerplate/
 │   │   ├── dashboard/            # Dashboard widgets & charts
 │   │   ├── kanban/               # Kanban board components
 │   │   ├── layout/               # Layout shell (sidebar, header, footer)
-│   │   ├── mail/                 # Email client components
 │   │   ├── settings/             # Settings form components
 │   │   └── tasks/                # Task management components
 │   ├── composables/
@@ -231,7 +230,7 @@ CRM-Boilerplate/
 │   │   └── utils.ts              # Utility functions (cn, etc.)
 │   ├── pages/
 │   │   ├── index.vue             # Dashboard home page
-│   │   ├── email.vue             # Email client page
+│   │   ├── leads.vue             # Leads management page
 │   │   ├── tasks.vue             # Task management page
 │   │   ├── kanban.vue            # Kanban board page
 │   │   ├── (auth)/               # Authentication pages
@@ -341,7 +340,7 @@ The following Nuxt modules are configured out of the box:
 | Route | Page | Layout |
 |---|---|---|
 | `/` | Dashboard | Default |
-| `/email` | Email Client | Default |
+| `/leads` | Leads Management | Default |
 | `/tasks` | Task Management | Default |
 | `/kanban` | Kanban Board | Default |
 | `/settings/profile` | Profile Settings | Default |
@@ -384,7 +383,7 @@ Full **dark mode** and **light mode** support with system preference detection, 
 
 ## 🏷 Tags
 
-`crm` · `boilerplate` · `dashboard` · `admin-panel` · `nuxt4` · `vue3` · `typescript` · `shadcn-vue` · `tailwindcss` · `pinia` · `dark-mode` · `kanban` · `email-client` · `task-management` · `authentication` · `enterprise` · `full-stack` · `responsive` · `accessible` · `open-source`
+`crm` · `boilerplate` · `dashboard` · `admin-panel` · `nuxt4` · `vue3` · `typescript` · `shadcn-vue` · `tailwindcss` · `pinia` · `dark-mode` · `kanban` · `leads-management` · `task-management` · `authentication` · `enterprise` · `full-stack` · `responsive` · `accessible` · `open-source`
 
 ---
 

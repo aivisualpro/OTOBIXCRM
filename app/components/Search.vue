@@ -48,11 +48,11 @@ function handleSelectLink(link: string) {
             <Kbd>H</Kbd>
           </CommandShortcut>
         </CommandItem>
-        <CommandItem value="email" @select="handleSelectLink('/email')">
-          Email
+        <CommandItem value="leads" @select="handleSelectLink('/leads')">
+          Leads
           <CommandShortcut>
             <Kbd>G</Kbd>
-            <Kbd>E</Kbd>
+            <Kbd>L</Kbd>
           </CommandShortcut>
         </CommandItem>
       </CommandGroup>

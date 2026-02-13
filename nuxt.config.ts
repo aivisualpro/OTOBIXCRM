@@ -3,6 +3,12 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineNuxtConfig({
   devtools: { enabled: false },
 
+  runtimeConfig: {
+    public: {
+      apiBaseUrl: process.env.BASE_URL_PRODUCTION || 'https://ob-dealerapp-kong.onrender.com/api/',
+    },
+  },
+
   watch: ['~/app.config.ts'],
 
   css: ['~/assets/css/tailwind.css'],

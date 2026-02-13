@@ -12,6 +12,8 @@ defineProps<{
 const { isMobile, setOpenMobile } = useSidebar()
 
 function handleLogout() {
+  const isLoggedIn = useCookie('isLoggedIn')
+  isLoggedIn.value = null
   navigateTo('/login')
 }
 

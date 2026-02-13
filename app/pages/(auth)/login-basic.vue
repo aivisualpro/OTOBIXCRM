@@ -20,7 +20,7 @@ definePageMeta({
               Welcome back
             </CardTitle>
             <CardDescription>
-              Login with your Apple or Google account
+              Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
           <CardContent>

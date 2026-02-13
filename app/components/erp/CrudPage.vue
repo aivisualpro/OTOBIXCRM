@@ -11,6 +11,8 @@ const props = defineProps<{
   columns: CrudColumn[]
   formFields: CrudFormField[]
   initialData: Record<string, any>[]
+  filterField?: string
+  filterValue?: string
 }>()
 
 const entity = computed(() => props.entityName || 'Record')
@@ -31,14 +33,26 @@ const formData = ref<Record<string, any>>({})
 
 // Computed
 const filteredItems = computed(() => {
-  if (!search.value)
-    return items.value
-  const q = search.value.toLowerCase()
-  return items.value.filter((item: any) =>
-    props.columns.some(col =>
-      String(item[col.key] ?? '').toLowerCase().includes(q),
-    ),
-  )
+  let result = items.value
+
+  if (props.filterField && props.filterValue) {
+    const field = props.filterField
+    const val = props.filterValue.toLowerCase()
+    result = result.filter((item: any) =>
+      String(item[field] ?? '').toLowerCase() === val,
+    )
+  }
+
+  if (search.value) {
+    const q = search.value.toLowerCase()
+    result = result.filter((item: any) =>
+      props.columns.some(col =>
+        String(item[col.key] ?? '').toLowerCase().includes(q),
+      ),
+    )
+  }
+
+  return result
 })
 
 const totalPages = computed(() => Math.ceil(filteredItems.value.length / perPage))
@@ -119,7 +133,7 @@ const badgeClasses: Record<string, string> = {
   'Pending': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Processing': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Low Stock': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  'Under Review': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+
   'In Transit': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Partial': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Draft': 'bg-gray-500/10 text-gray-600 border-gray-500/20',
@@ -174,6 +188,12 @@ const badgeClasses: Record<string, string> = {
   'Running': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
   'Paused': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Scheduled': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  'Re-Scheduled': 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
+  'Under Inspection': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+  'Inspected': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  'Under Review': 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  'Quality Approved': 'bg-teal-500/10 text-teal-600 border-teal-500/20',
+  'Quality Rejected': 'bg-rose-500/10 text-rose-600 border-rose-500/20',
 }
 
 function getBadgeClass(value: string): string {
@@ -209,7 +229,7 @@ function getInitials(name: string): string {
 </script>
 
 <template>
-  <div class="w-full flex flex-col gap-6">
+  <div class="w-full flex flex-col gap-4 p-4 lg:p-6">
     <!-- Toolbar -->
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div class="relative flex-1 max-w-sm">

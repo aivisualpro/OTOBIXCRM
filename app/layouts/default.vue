@@ -2,19 +2,13 @@
 </script>
 
 <template>
-  <SidebarProvider>
+  <SidebarProvider class="!h-screen !max-h-screen !min-h-0 overflow-hidden">
     <LayoutAppSidebar />
-    <SidebarInset>
+    <SidebarInset class="!min-h-0 !max-h-screen overflow-hidden">
       <LayoutHeader />
-      <div class="flex flex-col flex-1">
-        <div class="@container/main p-4 lg:p-6 grow">
-          <slot />
-        </div>
+      <div class="flex-1 min-h-0 overflow-hidden p-4 lg:p-6">
+        <slot />
       </div>
     </SidebarInset>
   </SidebarProvider>
 </template>
-
-<style scoped>
-
-</style>

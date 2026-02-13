@@ -103,13 +103,13 @@ const modules = [
     link: '/reports/sales',
   },
   {
-    title: 'Email',
-    description: 'Built-in email client with multi-account support, threaded conversations, and smart inbox management.',
-    icon: 'i-lucide-mail',
+    title: 'Leads',
+    description: 'Capture, qualify, and nurture leads through your sales pipeline with advanced tracking.',
+    icon: 'i-lucide-magnet',
     color: 'text-indigo-500',
     bgColor: 'bg-indigo-500/10',
-    features: ['Inbox', 'Compose', 'Account Switching', 'Search'],
-    link: '/email',
+    features: ['Lead Capture', 'Scoring', 'Pipelines', 'Analytics'],
+    link: '/leads',
   },
   {
     title: 'Task Management',
@@ -509,7 +509,7 @@ const industries = [
               <Icon name="i-lucide-code-2" class="size-12 text-primary" />
             </div>
             <p class="text-lg font-bold">
-              AI Visual Pro
+              OTOBIX CRM
             </p>
             <p class="text-sm text-muted-foreground">
               Building the future of business software
@@ -522,7 +522,7 @@ const industries = [
     <!-- Footer -->
     <div class="text-center py-4 border-t">
       <p class="text-sm text-muted-foreground">
-        Built with ❤️ by <strong>Adeel Jabbar</strong> · <strong class="text-primary">AI Visual Pro</strong> · MIT License
+        Built with ❤️ by <strong>Adeel Jabbar</strong> · <strong class="text-primary">OTOBIX CRM</strong> © 2026
       </p>
     </div>
   </div>

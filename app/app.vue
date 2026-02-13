@@ -25,27 +25,14 @@ useHead({
   },
 })
 
-const title = 'AI Visual Pro — Enterprise ERP & CRM Platform'
-const description = 'A comprehensive enterprise resource planning and CRM platform by AI Visual Pro. Built with Nuxt 4, Shadcn Vue, and TailwindCSS — featuring 12+ modules, full CRUD, dark mode, and multi-theme support.'
-
-useSeoMeta({
-  title,
-  description,
-  ogTitle: title,
-  ogDescription: description,
-  ogUrl: 'https://dashboard.dianprata.com',
-  ogImage: 'https://nuxt-shadcn-dashboard.vercel.app/social-card.png',
-  twitterTitle: title,
-  twitterDescription: description,
-  twitterImage: 'https://nuxt-shadcn-dashboard.vercel.app/social-card.png',
-  twitterCard: 'summary_large_image',
-})
+const title = 'OTOBIX CRM'
+const description = 'A comprehensive CRM platform by OTOBIX.'
 
 const router = useRouter()
 
 defineShortcuts({
   'G-H': () => router.push('/'),
-  'G-E': () => router.push('/email'),
+  'G-L': () => router.push('/leads'),
 })
 
 const textDirection = useTextDirection({ initialValue: 'ltr' })
@@ -55,7 +42,7 @@ const dir = computed(() => textDirection.value === 'rtl' ? 'rtl' : 'ltr')
 <template>
   <Body class="overscroll-none antialiased bg-background text-foreground">
     <ConfigProvider :dir="dir">
-      <div id="app" vaul-drawer-wrapper class="relative">
+      <div id="app" vaul-drawer-wrapper class="relative h-full overflow-hidden">
         <NuxtLayout>
           <NuxtPage />
         </NuxtLayout>
