@@ -27,8 +27,20 @@ const {
   refreshLeads,
 } = useLeadsApi()
 
-// Fetch all leads once (subsequent calls are no-ops due to cache)
-onMounted(() => fetchAllLeads())
+// Car dropdowns for Make / Model / Variant
+const {
+  makes: carMakes,
+  getModels: getCarModels,
+  getVariants: getCarVariants,
+  fetchCarDropdowns,
+} = useCarDropdowns()
+
+// Fetch all leads + car dropdowns once
+onMounted(() => {
+  fetchAllLeads()
+  fetchCarDropdowns()
+})
+
 
 // ─── UI State ───
 const search = ref('')
@@ -37,6 +49,29 @@ const showDeleteDialog = ref(false)
 const editingItem = ref<any>(null)
 const deletingItem = ref<any>(null)
 const formData = ref<Record<string, any>>({})
+
+// Cascading: computed models/variants based on current form selection
+const availableModels = computed(() => formData.value.make ? getCarModels(formData.value.make) : [])
+const availableVariants = computed(() =>
+  formData.value.make && formData.value.model
+    ? getCarVariants(formData.value.make, formData.value.model)
+    : [],
+)
+
+// When make changes, reset model + variant
+watch(() => formData.value.make, (newMake, oldMake) => {
+  if (oldMake !== undefined && newMake !== oldMake) {
+    formData.value.model = ''
+    formData.value.variant = ''
+  }
+})
+
+// When model changes, reset variant
+watch(() => formData.value.model, (newModel, oldModel) => {
+  if (oldModel !== undefined && newModel !== oldModel) {
+    formData.value.variant = ''
+  }
+})
 
 // ─── Client-side filtering by inspectionStatus + approvalStatus ───
 const filteredItems = computed(() => {
@@ -252,8 +287,16 @@ const pageNumbers = computed(() => {
       </Button>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="!isFetched && !fetchError" class="flex-1 min-h-0 flex items-center justify-center">
+      <div class="flex flex-col items-center gap-3 text-muted-foreground">
+        <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
+        <p class="text-sm">Loading leads...</p>
+      </div>
+    </div>
+
     <!-- Table (scrollable) -->
-    <div v-if="isFetched && !fetchError" class="flex-1 min-h-0 overflow-auto">
+    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto">
       <Table>
         <TableHeader class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
           <TableRow>
@@ -408,7 +451,45 @@ const pageNumbers = computed(() => {
             <div class="space-y-4">
               <div v-for="field in getFieldsForTab(activeTab)" :key="field.key" class="space-y-2">
                 <Label :for="field.key">{{ field.label }}</Label>
-                <Select v-if="field.type === 'select'" v-model="formData[field.key]">
+
+                <!-- Car Make dropdown -->
+                <Select v-if="field.key === 'make'" v-model="formData.make">
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select make" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="m in carMakes" :key="m" :value="m">
+                      {{ m }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <!-- Car Model dropdown (filtered by make) -->
+                <Select v-else-if="field.key === 'model'" v-model="formData.model" :disabled="!formData.make">
+                  <SelectTrigger>
+                    <SelectValue :placeholder="formData.make ? 'Select model' : 'Select make first'" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="m in availableModels" :key="m" :value="m">
+                      {{ m }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <!-- Car Variant dropdown (filtered by make + model) -->
+                <Select v-else-if="field.key === 'variant'" v-model="formData.variant" :disabled="!formData.model">
+                  <SelectTrigger>
+                    <SelectValue :placeholder="formData.model ? 'Select variant' : 'Select model first'" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="v in availableVariants" :key="v" :value="v">
+                      {{ v }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <!-- Regular select fields -->
+                <Select v-else-if="field.type === 'select'" v-model="formData[field.key]">
                   <SelectTrigger>
                     <SelectValue :placeholder="field.placeholder || `Select ${field.label.toLowerCase()}`" />
                   </SelectTrigger>
