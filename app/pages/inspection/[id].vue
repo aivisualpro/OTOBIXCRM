@@ -195,7 +195,7 @@ function sectionImages(keys: string[]) {
 </script>
 
 <template>
-  <div class="h-full flex flex-col overflow-hidden">
+  <div class="h-full flex flex-col overflow-hidden -m-4 lg:-m-6">
     <!-- Loading -->
     <div v-if="isLoading" class="flex-1 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
@@ -335,7 +335,8 @@ function sectionImages(keys: string[]) {
                 Registration Details
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
                 <div v-for="item in [
                   { label: 'Registration Number', value: car.registrationNumber },
@@ -369,7 +370,8 @@ function sectionImages(keys: string[]) {
                 Insurance Details
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
                 <div v-for="item in [
                   { label: 'Insurance Type', value: car.insurance },
@@ -396,7 +398,8 @@ function sectionImages(keys: string[]) {
                 Additional Info
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
                 <div v-for="item in [
                   { label: 'Engine Number', value: car.engineNumber },
@@ -431,7 +434,8 @@ function sectionImages(keys: string[]) {
               </CardTitle>
               <p class="text-xs text-muted-foreground mt-1">Condition of each exterior component as inspected</p>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 <div
                   v-for="part in exteriorParts"
@@ -460,7 +464,8 @@ function sectionImages(keys: string[]) {
                 <Badge variant="secondary" class="ml-auto text-xs">{{ sectionImages(exteriorImageKeys).length }} photos</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 <div
                   v-for="(img, idx) in sectionImages(exteriorImageKeys)"
@@ -469,8 +474,8 @@ function sectionImages(keys: string[]) {
                   @click="openLightbox(sectionImages(exteriorImageKeys).map(i => i.url), idx)"
                 >
                   <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <span class="absolute bottom-1.5 left-1.5 right-1.5 text-[10px] text-white truncate opacity-0 group-hover:opacity-100 transition-opacity">{{ img.label }}</span>
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <Badge variant="secondary" class="absolute bottom-1.5 left-1.5 text-[10px] max-w-[calc(100%-12px)] truncate">{{ img.label }}</Badge>
                 </div>
               </div>
               <p v-if="sectionImages(exteriorImageKeys).length === 0" class="text-center text-muted-foreground text-sm py-8">No exterior photos available</p>
@@ -488,7 +493,8 @@ function sectionImages(keys: string[]) {
                 Engine & Mechanical
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 <div
                   v-for="part in engineParts"
@@ -530,7 +536,8 @@ function sectionImages(keys: string[]) {
                 Test Drive & Performance
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
                 <div v-for="item in [
                   { label: 'Odometer Reading', value: `${(car.odometerReadingInKms || 0).toLocaleString()} km` },
@@ -554,7 +561,8 @@ function sectionImages(keys: string[]) {
                 <Badge variant="secondary" class="ml-auto text-xs">{{ sectionImages(engineImageKeys).length }} photos</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 <div
                   v-for="(img, idx) in sectionImages(engineImageKeys)"
@@ -563,8 +571,8 @@ function sectionImages(keys: string[]) {
                   @click="openLightbox(sectionImages(engineImageKeys).map(i => i.url), idx)"
                 >
                   <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <span class="absolute bottom-1.5 left-1.5 right-1.5 text-[10px] text-white truncate opacity-0 group-hover:opacity-100 transition-opacity">{{ img.label }}</span>
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <Badge variant="secondary" class="absolute bottom-1.5 left-1.5 text-[10px] max-w-[calc(100%-12px)] truncate">{{ img.label }}</Badge>
                 </div>
               </div>
               <p v-if="sectionImages(engineImageKeys).length === 0" class="text-center text-muted-foreground text-sm py-8">No engine photos available</p>
@@ -581,7 +589,8 @@ function sectionImages(keys: string[]) {
                 Interior Features
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
                 <div v-for="item in [
                   { label: 'Music System', value: car.musicSystem },
@@ -614,7 +623,8 @@ function sectionImages(keys: string[]) {
                 Safety — Airbags ({{ car.noOfAirBags || 0 }})
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 <div
                   v-for="item in [
@@ -647,7 +657,8 @@ function sectionImages(keys: string[]) {
                 Power Windows
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <div v-for="item in [
                   { label: 'RHS Front', value: car.powerWindowConditionRhsFront },
@@ -671,7 +682,8 @@ function sectionImages(keys: string[]) {
                 <Badge variant="secondary" class="ml-auto text-xs">{{ sectionImages(interiorImageKeys).length }} photos</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 <div
                   v-for="(img, idx) in sectionImages(interiorImageKeys)"
@@ -680,8 +692,8 @@ function sectionImages(keys: string[]) {
                   @click="openLightbox(sectionImages(interiorImageKeys).map(i => i.url), idx)"
                 >
                   <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <span class="absolute bottom-1.5 left-1.5 right-1.5 text-[10px] text-white truncate opacity-0 group-hover:opacity-100 transition-opacity">{{ img.label }}</span>
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <Badge variant="secondary" class="absolute bottom-1.5 left-1.5 text-[10px] max-w-[calc(100%-12px)] truncate">{{ img.label }}</Badge>
                 </div>
               </div>
               <p v-if="sectionImages(interiorImageKeys).length === 0" class="text-center text-muted-foreground text-sm py-8">No interior photos available</p>
@@ -699,7 +711,8 @@ function sectionImages(keys: string[]) {
                 <Badge variant="secondary" class="ml-auto text-xs">{{ sectionImages(documentImageKeys).length }} documents</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 <div
                   v-for="(img, idx) in sectionImages(documentImageKeys)"
@@ -708,8 +721,8 @@ function sectionImages(keys: string[]) {
                   @click="openLightbox(sectionImages(documentImageKeys).map(i => i.url), idx)"
                 >
                   <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <span class="absolute bottom-1.5 left-1.5 right-1.5 text-[10px] text-white truncate opacity-0 group-hover:opacity-100 transition-opacity">{{ img.label }}</span>
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <Badge variant="secondary" class="absolute bottom-1.5 left-1.5 text-[10px] max-w-[calc(100%-12px)] truncate">{{ img.label }}</Badge>
                 </div>
               </div>
               <p v-if="sectionImages(documentImageKeys).length === 0" class="text-center text-muted-foreground text-sm py-8">No document images available</p>
@@ -724,7 +737,8 @@ function sectionImages(keys: string[]) {
                 Chassis & VIN
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
                 <div class="space-y-1">
                   <p class="text-xs text-muted-foreground">Chassis Details</p>
@@ -756,7 +770,8 @@ function sectionImages(keys: string[]) {
                 Auction Details
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
                 <div v-for="item in [
                   { label: 'Price Discovery', value: car.priceDiscovery ? `₹${car.priceDiscovery.toLocaleString()}` : '—' },
@@ -793,7 +808,8 @@ function sectionImages(keys: string[]) {
                 Approval Info
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
                 <div class="space-y-1">
                   <p class="text-xs text-muted-foreground">Approved By</p>
