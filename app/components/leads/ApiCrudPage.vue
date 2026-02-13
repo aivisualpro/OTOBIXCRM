@@ -10,7 +10,10 @@ const props = defineProps<{
   columns: CrudColumn[]
   formFields: CrudFormField[]
   filters?: Record<string, string>
+  clickable?: boolean
 }>()
+
+const router = useRouter()
 
 const entity = computed(() => props.entityName || 'Lead')
 
@@ -309,7 +312,13 @@ const pageNumbers = computed(() => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="item in paginatedItems" :key="item.id || item._id" class="group">
+          <TableRow
+            v-for="item in paginatedItems"
+            :key="item.id || item._id"
+            class="group"
+            :class="{ 'cursor-pointer hover:bg-muted/50': props.clickable }"
+            @click="props.clickable && item.appointmentId ? router.push(`/inspection/${item.appointmentId}`) : undefined"
+          >
             <TableCell v-for="col in columns" :key="col.key">
               <!-- Avatar -->
               <div v-if="col.type === 'avatar'" class="flex items-center gap-3">

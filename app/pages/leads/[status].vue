@@ -16,6 +16,7 @@ const filter = computed(() => routeFilters[statusKey.value as keyof typeof route
     :columns="leadsColumns"
     :form-fields="leadsFormFields"
     :filters="{ inspectionStatus: filter.inspectionStatus, approvalStatus: filter.approvalStatus }"
+    :clickable="statusKey === 'inspected'"
   />
   <div v-else class="flex items-center justify-center h-64 text-muted-foreground">
     <p>Unknown status: {{ statusKey }}</p>
