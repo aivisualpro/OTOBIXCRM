@@ -30,13 +30,7 @@ const props = defineProps<{
         </div>
       </ClientOnly>
       
-      <!-- Branding Overlays -->
-      <div class="relative z-20 flex items-center text-lg font-medium">
-        <div class="h-8 w-8 flex items-center justify-center rounded-md bg-primary mr-2 shadow-lg">
-          <Icon name="i-lucide-gallery-vertical-end" class="size-5 text-primary-foreground" />
-        </div>
-        <span class="tracking-tight font-bold">OTOBIX</span>
-      </div>
+
 
       <div class="relative z-20 mt-auto">
         <blockquote class="space-y-4 max-w-lg">

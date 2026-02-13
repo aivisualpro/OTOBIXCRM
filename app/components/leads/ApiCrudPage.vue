@@ -89,6 +89,23 @@ function goToPage(page: number) {
 const showingFrom = computed(() => totalFiltered.value === 0 ? 0 : ((currentPage.value - 1) * PER_PAGE) + 1)
 const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFiltered.value))
 
+// ─── Form Tabs ───
+const activeTab = ref('owner')
+
+const formTabs = [
+  { id: 'owner', label: 'Owner Info', icon: 'i-lucide-user', keys: ['ownerName', 'customerContactNumber', 'emailAddress', 'ownershipSerialNumber'] },
+  { id: 'vehicle', label: 'Vehicle', icon: 'i-lucide-car', keys: ['carRegistrationNumber', 'make', 'model', 'variant', 'yearOfRegistration', 'yearOfManufacture', 'odometerReadingInKms'] },
+  { id: 'location', label: 'Location', icon: 'i-lucide-map-pin', keys: ['city', 'zipCode', 'inspectionAddress', 'inspectionDateTime'] },
+  { id: 'status', label: 'Status', icon: 'i-lucide-settings', keys: ['inspectionStatus', 'approvalStatus', 'priority', 'appointmentSource', 'allocatedTo', 'repName', 'repContact', 'bankSource', 'referenceName'] },
+  { id: 'notes', label: 'Notes', icon: 'i-lucide-file-text', keys: ['remarks', 'additionalNotes'] },
+]
+
+function getFieldsForTab(tabId: string) {
+  const tab = formTabs.find(t => t.id === tabId)
+  if (!tab) return []
+  return props.formFields.filter(f => tab.keys.includes(f.key))
+}
+
 // ─── CRUD Handlers ───
 function openCreate() {
   editingItem.value = null
@@ -96,12 +113,14 @@ function openCreate() {
   props.formFields.forEach((f) => {
     formData.value[f.key] = ''
   })
+  activeTab.value = 'owner'
   showDialog.value = true
 }
 
 function openEdit(item: any) {
   editingItem.value = item
   formData.value = { ...item }
+  activeTab.value = 'owner'
   showDialog.value = true
 }
 
@@ -356,49 +375,81 @@ const pageNumbers = computed(() => {
 
     <!-- Create/Edit Dialog -->
     <Dialog v-model:open="showDialog">
-      <DialogContent class="sm:max-w-[520px] max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent class="sm:max-w-[600px] p-0 gap-0">
+        <DialogHeader class="p-6 pb-4">
           <DialogTitle>{{ editingItem ? 'Edit' : 'New' }} {{ entity }}</DialogTitle>
           <DialogDescription class="sr-only">
             {{ editingItem ? 'Edit' : 'Create' }} a {{ entity.toLowerCase() }} record
           </DialogDescription>
         </DialogHeader>
-        <form class="space-y-4" @submit.prevent="handleSave">
-          <div v-for="field in formFields" :key="field.key" class="space-y-2">
-            <Label :for="field.key">{{ field.label }}</Label>
-            <Select v-if="field.type === 'select'" v-model="formData[field.key]">
-              <SelectTrigger>
-                <SelectValue :placeholder="field.placeholder || `Select ${field.label.toLowerCase()}`" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem v-for="opt in field.options" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Textarea
-              v-else-if="field.type === 'textarea'"
-              :id="field.key"
-              v-model="formData[field.key]"
-              :placeholder="field.placeholder"
-              rows="3"
-            />
-            <Input
-              v-else
-              :id="field.key"
-              v-model="formData[field.key]"
-              :type="field.type || 'text'"
-              :placeholder="field.placeholder"
-            />
+
+        <form @submit.prevent="handleSave">
+          <!-- Tab Navigation -->
+          <div class="border-b px-6">
+            <div class="flex gap-1 -mb-px overflow-x-auto no-scrollbar">
+              <button
+                v-for="tab in formTabs"
+                :key="tab.id"
+                type="button"
+                class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
+                :class="activeTab === tab.id
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'"
+                @click="activeTab = tab.id"
+              >
+                <Icon :name="tab.icon" class="size-3.5" />
+                {{ tab.label }}
+              </button>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" type="button" @click="showDialog = false">
-              Cancel
-            </Button>
-            <Button type="submit">
-              {{ editingItem ? 'Update' : 'Create' }}
-            </Button>
-          </DialogFooter>
+
+          <!-- Tab Content -->
+          <div class="p-6 min-h-[320px]">
+            <div class="space-y-4">
+              <div v-for="field in getFieldsForTab(activeTab)" :key="field.key" class="space-y-2">
+                <Label :for="field.key">{{ field.label }}</Label>
+                <Select v-if="field.type === 'select'" v-model="formData[field.key]">
+                  <SelectTrigger>
+                    <SelectValue :placeholder="field.placeholder || `Select ${field.label.toLowerCase()}`" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="opt in field.options" :key="opt.value" :value="opt.value">
+                      {{ opt.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Textarea
+                  v-else-if="field.type === 'textarea'"
+                  :id="field.key"
+                  v-model="formData[field.key]"
+                  :placeholder="field.placeholder"
+                  rows="3"
+                />
+                <Input
+                  v-else
+                  :id="field.key"
+                  v-model="formData[field.key]"
+                  :type="field.type || 'text'"
+                  :placeholder="field.placeholder"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="border-t p-6 pt-4 flex items-center justify-between">
+            <p class="text-xs text-muted-foreground">
+              {{ formTabs.findIndex(t => t.id === activeTab) + 1 }} of {{ formTabs.length }}
+            </p>
+            <div class="flex gap-2">
+              <Button variant="outline" type="button" @click="showDialog = false">
+                Cancel
+              </Button>
+              <Button type="submit">
+                {{ editingItem ? 'Update' : 'Create' }}
+              </Button>
+            </div>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
