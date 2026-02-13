@@ -329,7 +329,7 @@ function sectionImages(keys: string[]) {
         <div v-if="activeTab === 'overview'" class="space-y-6 max-w-6xl">
           <!-- Registration Details -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-file-badge" class="size-4 text-primary" />
                 Registration Details
@@ -364,7 +364,7 @@ function sectionImages(keys: string[]) {
 
           <!-- Insurance -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-shield-check" class="size-4 text-primary" />
                 Insurance Details
@@ -392,7 +392,7 @@ function sectionImages(keys: string[]) {
 
           <!-- Additional Info -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-info" class="size-4 text-primary" />
                 Additional Info
@@ -427,7 +427,7 @@ function sectionImages(keys: string[]) {
         <div v-else-if="activeTab === 'exterior'" class="space-y-6 max-w-6xl">
           <!-- Condition Grid -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-scan-eye" class="size-4 text-primary" />
                 Exterior Condition
@@ -457,7 +457,7 @@ function sectionImages(keys: string[]) {
 
           <!-- Exterior Photos -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-image" class="size-4 text-primary" />
                 Exterior Photos
@@ -487,7 +487,7 @@ function sectionImages(keys: string[]) {
         <div v-else-if="activeTab === 'engine'" class="space-y-6 max-w-6xl">
           <!-- Mechanical Condition -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-cog" class="size-4 text-primary" />
                 Engine & Mechanical
@@ -530,7 +530,7 @@ function sectionImages(keys: string[]) {
 
           <!-- Test Drive -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-gauge" class="size-4 text-primary" />
                 Test Drive & Performance
@@ -554,7 +554,7 @@ function sectionImages(keys: string[]) {
 
           <!-- Engine Photos -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-image" class="size-4 text-primary" />
                 Engine Photos
@@ -583,7 +583,7 @@ function sectionImages(keys: string[]) {
         <!-- ═══════ INTERIOR TAB ═══════ -->
         <div v-else-if="activeTab === 'interior'" class="space-y-6 max-w-6xl">
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-armchair" class="size-4 text-primary" />
                 Interior Features
@@ -617,7 +617,7 @@ function sectionImages(keys: string[]) {
 
           <!-- Airbags -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-shield" class="size-4 text-primary" />
                 Safety — Airbags ({{ car.noOfAirBags || 0 }})
@@ -651,7 +651,7 @@ function sectionImages(keys: string[]) {
 
           <!-- Power Windows -->
           <Card v-if="car.noOfPowerWindows">
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-move-vertical" class="size-4 text-primary" />
                 Power Windows
@@ -675,7 +675,7 @@ function sectionImages(keys: string[]) {
 
           <!-- Interior Photos -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-image" class="size-4 text-primary" />
                 Interior Photos
@@ -704,7 +704,7 @@ function sectionImages(keys: string[]) {
         <!-- ═══════ DOCUMENTS TAB ═══════ -->
         <div v-else-if="activeTab === 'documents'" class="space-y-6 max-w-6xl">
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-file-text" class="size-4 text-primary" />
                 Document Images
@@ -731,7 +731,7 @@ function sectionImages(keys: string[]) {
 
           <!-- Document Text Info -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-scan-text" class="size-4 text-primary" />
                 Chassis & VIN
@@ -764,7 +764,7 @@ function sectionImages(keys: string[]) {
         <!-- ═══════ AUCTION TAB ═══════ -->
         <div v-else-if="activeTab === 'auction'" class="space-y-6 max-w-6xl">
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-gavel" class="size-4 text-primary" />
                 Auction Details
@@ -802,7 +802,7 @@ function sectionImages(keys: string[]) {
 
           <!-- Approval -->
           <Card>
-            <CardHeader class="pb-3">
+            <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-check-circle" class="size-4 text-primary" />
                 Approval Info
