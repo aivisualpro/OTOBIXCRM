@@ -5,7 +5,7 @@ definePageMeta({
 </script>
 
 <template>
-  <LayoutAuth reverse video="/loginVideo.mov">
+  <LayoutAuth reverse video="/loginVideo3.mp4">
     <div class="grid mx-auto max-w-sm gap-6">
       <div class="flex flex-col items-center gap-6 text-center">
         <img src="/mainlogo.png" alt="OTOBIX Logo" class="h-28 w-auto object-contain" />

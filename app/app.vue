@@ -9,13 +9,27 @@ const color = computed(() => colorMode.value === 'dark' ? '#09090b' : '#ffffff')
 const { theme } = useAppSettings()
 
 useHead({
+  titleTemplate: (titleChunk) => {
+    return titleChunk ? `${titleChunk} | OTOBIX CRM` : 'OTOBIX CRM'
+  },
   meta: [
     { charset: 'utf-8' },
-    { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+    { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
     { key: 'theme-color', name: 'theme-color', content: color },
+    { name: 'description', content: 'A comprehensive CRM platform by OTOBIX for car dealership management.' },
+    // PWA meta tags
+    { name: 'mobile-web-app-capable', content: 'yes' },
+    { name: 'apple-mobile-web-app-capable', content: 'yes' },
+    { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
+    { name: 'apple-mobile-web-app-title', content: 'OTOBIX CRM' },
+    { name: 'application-name', content: 'OTOBIX CRM' },
+    { name: 'msapplication-TileColor', content: '#E31E24' },
   ],
   link: [
     { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+    { rel: 'icon', type: 'image/png', sizes: '192x192', href: '/icon-192x192.png' },
+    { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
+    { rel: 'manifest', href: '/manifest.json' },
   ],
   htmlAttrs: {
     lang: 'en',
@@ -46,13 +60,15 @@ const dir = computed(() => textDirection.value === 'rtl' ? 'rtl' : 'ltr')
         <NuxtLayout>
           <NuxtPage />
         </NuxtLayout>
-
-        <AppSettings />
       </div>
 
       <Toaster :theme="colorMode.preference as any || 'system'" />
     </ConfigProvider>
 
-    <Analytics />
+    <!-- PWA Components -->
+    <PwaServiceWorkerRegistration />
+    <PwaInstallPrompt />
+
+    <Analytics :debug="false" />
   </Body>
 </template>

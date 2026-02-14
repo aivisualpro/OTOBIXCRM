@@ -32,17 +32,21 @@ async function onSubmit(event: Event) {
       },
     })
 
-    // Store auth data
-    const isLoggedIn = useCookie('isLoggedIn')
+    // 30-day persistent session
+    const maxAge = 30 * 24 * 60 * 60 // 30 days in seconds
+    const cookieOpts = { maxAge, path: '/', sameSite: 'lax' as const }
+
+    // Store auth data with 30-day expiry
+    const isLoggedIn = useCookie('isLoggedIn', cookieOpts)
     isLoggedIn.value = 'true'
 
     if (response?.token) {
-      const authToken = useCookie('authToken')
+      const authToken = useCookie('authToken', cookieOpts)
       authToken.value = response.token
     }
 
     if (response?.user) {
-      const userData = useCookie('userData')
+      const userData = useCookie('userData', cookieOpts)
       userData.value = JSON.stringify(response.user)
     }
 

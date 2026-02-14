@@ -29,14 +29,18 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
       <SidebarTrigger />
       <Separator orientation="vertical" class="h-4" />
       <div class="flex items-center gap-2.5 min-w-0">
-        <Icon v-if="headerState.icon" :name="headerState.icon" class="size-5 shrink-0 text-primary" />
+        <ClientOnly>
+          <Icon v-if="headerState.icon" :name="headerState.icon" class="size-5 shrink-0 text-primary" />
+        </ClientOnly>
         <div class="min-w-0">
           <h1 class="text-sm font-semibold leading-tight truncate">
             {{ displayTitle }}
           </h1>
-          <p v-if="headerState.description" class="text-xs text-muted-foreground leading-tight truncate hidden md:block">
-            {{ headerState.description }}
-          </p>
+          <ClientOnly>
+            <p v-if="headerState.description" class="text-xs text-muted-foreground leading-tight truncate hidden md:block">
+              {{ headerState.description }}
+            </p>
+          </ClientOnly>
         </div>
       </div>
     </div>

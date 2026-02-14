@@ -13,7 +13,11 @@ const { isMobile, setOpenMobile } = useSidebar()
 
 function handleLogout() {
   const isLoggedIn = useCookie('isLoggedIn')
+  const authToken = useCookie('authToken')
+  const userData = useCookie('userData')
   isLoggedIn.value = null
+  authToken.value = null
+  userData.value = null
   navigateTo('/login')
 }
 

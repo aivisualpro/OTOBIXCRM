@@ -38,7 +38,7 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function getImages(obj: Record<string, any>, key: string): string[] {
+function getImages(obj: Record<string, any> | null, key: string): string[] {
   const val = obj?.[key]
   if (!val) return []
   if (Array.isArray(val)) return val.filter((u: string) => u && typeof u === 'string')
@@ -142,8 +142,20 @@ const exteriorImageKeys = [
 
 const engineImageKeys = [
   'engineBay', 'apronLhsRhs', 'batteryImages', 'additionalImages',
-  'engineSound', 'exhaustSmokeImages',
 ]
+
+const engineVideoKeys = [
+  { key: 'engineSound', label: 'Engine Sound' },
+  { key: 'exhaustSmokeImages', label: 'Exhaust Smoke' },
+]
+
+function getVideos(obj: Record<string, any> | null, key: string): string[] {
+  const val = obj?.[key]
+  if (!val) return []
+  if (Array.isArray(val)) return val.filter((u: string) => u && typeof u === 'string')
+  if (typeof val === 'string' && val.startsWith('http')) return [val]
+  return []
+}
 
 const interiorImageKeys = [
   'meterConsoleWithEngineOn', 'airbags', 'frontSeatsFromDriverSideDoorOpen',
@@ -576,6 +588,39 @@ function sectionImages(keys: string[]) {
                 </div>
               </div>
               <p v-if="sectionImages(engineImageKeys).length === 0" class="text-center text-muted-foreground text-sm py-8">No engine photos available</p>
+            </CardContent>
+          </Card>
+
+          <!-- Engine Videos (Engine Sound & Exhaust Smoke) -->
+          <Card v-if="car && engineVideoKeys.some(v => getVideos(car, v.key).length > 0)">
+            <CardHeader class="pt-5 pb-3">
+              <CardTitle class="text-base flex items-center gap-2">
+                <Icon name="i-lucide-video" class="size-4 text-primary" />
+                Engine Videos
+              </CardTitle>
+            </CardHeader>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <template v-for="vk in engineVideoKeys" :key="vk.key">
+                  <div v-for="(videoUrl, vIdx) in getVideos(car, vk.key)" :key="`${vk.key}-${vIdx}`" class="space-y-2">
+                    <p class="text-sm font-medium flex items-center gap-2">
+                      <Icon name="i-lucide-play-circle" class="size-4 text-primary" />
+                      {{ vk.label }}
+                    </p>
+                    <div class="rounded-lg overflow-hidden border bg-black">
+                      <video
+                        :src="videoUrl"
+                        controls
+                        preload="metadata"
+                        class="w-full max-h-64 object-contain"
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  </div>
+                </template>
+              </div>
             </CardContent>
           </Card>
         </div>

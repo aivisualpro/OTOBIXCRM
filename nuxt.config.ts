@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineNuxtConfig({
   devtools: { enabled: false },
   spaLoadingTemplate: false,
+  devServer: { loadingTemplate: () => '' },
 
   runtimeConfig: {
     public: {

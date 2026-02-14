@@ -15,6 +15,16 @@ export const navMenu: NavMenu[] = [
         link: '/leads',
       },
       {
+        title: 'People',
+        icon: 'i-lucide-users',
+        link: '/people/otobix',
+      },
+      {
+        title: 'Auctions',
+        icon: 'i-lucide-gavel',
+        link: '/auctions/upcoming',
+      },
+      {
         title: 'Tasks',
         icon: 'i-lucide-calendar-check-2',
         link: '/tasks',
@@ -35,33 +45,6 @@ export const navMenu: NavMenu[] = [
         icon: 'i-lucide-gantt-chart',
         link: '/gantt',
         new: true,
-      },
-    ],
-  },
-  {
-    heading: 'CRM',
-    items: [
-      {
-        title: 'Contacts',
-        icon: 'i-lucide-contact',
-        link: '/crm/contacts',
-      },
-
-      {
-        title: 'Deals Pipeline',
-        icon: 'i-lucide-handshake',
-        link: '/crm/deals',
-        new: true,
-      },
-      {
-        title: 'Companies',
-        icon: 'i-lucide-building-2',
-        link: '/crm/companies',
-      },
-      {
-        title: 'Activities',
-        icon: 'i-lucide-activity',
-        link: '/crm/activities',
       },
     ],
   },
