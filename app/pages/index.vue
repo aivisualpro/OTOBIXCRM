@@ -99,10 +99,14 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
 
 <template>
   <div class="w-full flex flex-col gap-4">
-    <div class="flex items-center justify-end gap-2">
-      <BaseDateRangePicker @update:range="onDateRangeUpdate" />
-      <Button>Download</Button>
-    </div>
+    <ClientOnly>
+      <Teleport to="#header-actions">
+        <div class="flex items-center gap-2">
+          <BaseDateRangePicker @update:range="onDateRangeUpdate" />
+          <Button size="sm" class="h-8">Download</Button>
+        </div>
+      </Teleport>
+    </ClientOnly>
 
     <main class="@container/main flex flex-1 flex-col gap-4 md:gap-8">
       <!-- ═══════════════════  KPI CARDS  ═══════════════════ -->

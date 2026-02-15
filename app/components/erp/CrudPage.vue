@@ -13,6 +13,9 @@ const props = defineProps<{
   initialData: Record<string, any>[]
   filterField?: string
   filterValue?: string
+  autoSerialPrefix?: string
+  autoSerialField?: string
+  headerActions?: boolean
 }>()
 
 const entity = computed(() => props.entityName || 'Record')
@@ -24,7 +27,7 @@ setHeader({ title: props.title, description: props.description, icon: props.icon
 // UI State
 const search = ref('')
 const currentPage = ref(1)
-const perPage = 10
+const perPage = 15
 const showDialog = ref(false)
 const showDeleteDialog = ref(false)
 const editingItem = ref<any>(null)
@@ -79,12 +82,33 @@ function openEdit(item: any) {
   showDialog.value = true
 }
 
+function getNextSerialId(): string {
+  if (!props.autoSerialPrefix || !props.autoSerialField) return ''
+  const prefix = props.autoSerialPrefix
+  const field = props.autoSerialField
+  // Find highest existing serial number
+  let maxNum = 0
+  items.value.forEach((item: any) => {
+    const val = item[field] || ''
+    const match = val.match(new RegExp(`^${prefix}-(\\d+)$`))
+    if (match) {
+      const num = parseInt(match[1], 10)
+      if (num > maxNum) maxNum = num
+    }
+  })
+  return `${prefix}-${String(maxNum + 1).padStart(4, '0')}`
+}
+
 function handleSave() {
   if (editingItem.value) {
     update(editingItem.value.id, formData.value)
     toast.success(`${entity.value} updated successfully`)
   }
   else {
+    // Auto-generate serial ID if configured
+    if (props.autoSerialPrefix && props.autoSerialField) {
+      formData.value[props.autoSerialField] = getNextSerialId()
+    }
     create(formData.value)
     toast.success(`${entity.value} created successfully`)
   }
@@ -229,9 +253,9 @@ function getInitials(name: string): string {
 </script>
 
 <template>
-  <div class="w-full flex flex-col gap-4 p-4 lg:p-6">
-    <!-- Toolbar -->
-    <div class="flex flex-wrap items-center justify-between gap-4">
+  <div class="w-full flex flex-col gap-4">
+    <!-- Toolbar: inline (default) -->
+    <div v-if="!headerActions" class="flex flex-wrap items-center justify-between gap-4">
       <div class="relative flex-1 max-w-sm">
         <Icon name="i-lucide-search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
         <Input v-model="search" placeholder="Search records..." class="pl-9" />
@@ -250,6 +274,29 @@ function getInitials(name: string): string {
         </Button>
       </div>
     </div>
+
+    <!-- Toolbar: teleported to header -->
+    <ClientOnly>
+      <Teleport v-if="headerActions" to="#header-actions">
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input v-model="search" placeholder="Search..." class="pl-8 h-8 w-48 text-sm" />
+          </div>
+          <p class="text-xs text-muted-foreground tabular-nums hidden lg:block">
+            {{ filteredItems.length }} record{{ filteredItems.length !== 1 ? 's' : '' }}
+          </p>
+          <Button variant="ghost" size="sm" class="h-8" @click="handleReset">
+            <Icon name="i-lucide-rotate-ccw" class="mr-1 size-3.5" />
+            Reset
+          </Button>
+          <Button size="sm" class="h-8" @click="openCreate">
+            <Icon name="i-lucide-plus" class="mr-1 size-3.5" />
+            Add {{ entity }}
+          </Button>
+        </div>
+      </Teleport>
+    </ClientOnly>
 
     <!-- Table -->
     <Card v-if="isLoaded">

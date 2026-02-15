@@ -2,7 +2,7 @@ import type { NavMenu, NavMenuItems } from '~/types/nav'
 
 export const navMenu: NavMenu[] = [
   {
-    heading: 'General',
+    heading: 'Workspace',
     items: [
       {
         title: 'Dashboard',
@@ -36,9 +36,9 @@ export const navMenu: NavMenu[] = [
         new: true,
       },
       {
-        title: 'Gantt Chart',
+        title: 'Timeline',
         icon: 'i-lucide-gantt-chart',
-        link: '/gantt',
+        link: '/timeline',
         new: true,
       },
     ],

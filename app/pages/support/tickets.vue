@@ -1,7 +1,14 @@
 <script setup lang="ts">
 // Fetch Otobix staff users for the Assignee dropdown
 const { allUsers, fetchAllUsers } = usePeopleApi()
-onMounted(() => fetchAllUsers())
+// Fetch leads to derive ticket seed data
+const { allLeads, fetchAllLeads } = useLeadsApi()
+
+const dataReady = ref(false)
+onMounted(async () => {
+  await Promise.all([fetchAllUsers(), fetchAllLeads()])
+  dataReady.value = true
+})
 
 const otobixStaff = computed(() =>
   allUsers.value
@@ -20,9 +27,8 @@ const columns = [
 ]
 
 const formFields = computed(() => [
-  { key: 'ticketId', label: 'Ticket ID', placeholder: 'TKT-001' },
-  { key: 'subject', label: 'Subject', placeholder: 'Unable to login' },
-  { key: 'createdBy', label: 'Created by', placeholder: 'John Smith' },
+  { key: 'subject', label: 'Subject', placeholder: 'Issue description' },
+  { key: 'createdBy', label: 'Created by', placeholder: 'Owner / Customer name' },
   { key: 'priority', label: 'Priority', type: 'select' as const, options: [
     { label: 'Critical', value: 'Critical' },
     { label: 'High', value: 'High' },
@@ -40,22 +46,87 @@ const formFields = computed(() => [
   { key: 'description', label: 'Description', type: 'textarea' as const, placeholder: 'Ticket details...' },
 ])
 
-const seedData = [
-  { id: 'tk1', ticketId: 'TKT-1247', subject: 'Dashboard not loading after update', createdBy: 'TechVision Inc', priority: 'Critical', status: 'In Progress', assignee: 'Thomas Wright', created: '2026-02-13' },
-  { id: 'tk2', ticketId: 'TKT-1246', subject: 'Unable to export CSV reports', createdBy: 'GlobalSoft', priority: 'High', status: 'Open', assignee: 'Thomas Wright', created: '2026-02-13' },
-  { id: 'tk3', ticketId: 'TKT-1245', subject: 'SSO integration with Azure AD', createdBy: 'Meridian Corp', priority: 'High', status: 'In Progress', assignee: 'Sofia Nguyen', created: '2026-02-12' },
-  { id: 'tk4', ticketId: 'TKT-1244', subject: 'Invoice PDF formatting issue', createdBy: 'BrightPath', priority: 'Medium', status: 'Pending', assignee: 'Thomas Wright', created: '2026-02-12' },
-  { id: 'tk5', ticketId: 'TKT-1243', subject: 'Bulk import failing for >1000 rows', createdBy: 'Apex Group', priority: 'High', status: 'In Progress', assignee: 'David Kim', created: '2026-02-11' },
-  { id: 'tk6', ticketId: 'TKT-1242', subject: 'Two-factor auth not sending codes', createdBy: 'DataFlow AI', priority: 'Critical', status: 'Resolved', assignee: 'Sofia Nguyen', created: '2026-02-11' },
-  { id: 'tk7', ticketId: 'TKT-1241', subject: 'Feature request: Dark mode for reports', createdBy: 'CloudNine Tech', priority: 'Low', status: 'Open', assignee: 'Unassigned', created: '2026-02-10' },
-  { id: 'tk8', ticketId: 'TKT-1240', subject: 'Calendar sync with Google Workspace', createdBy: 'NexGen Solutions', priority: 'Medium', status: 'Resolved', assignee: 'Thomas Wright', created: '2026-02-09' },
-  { id: 'tk9', ticketId: 'TKT-1239', subject: 'API rate limiting too aggressive', createdBy: 'Zenith Systems', priority: 'High', status: 'Pending', assignee: 'Michael Chen', created: '2026-02-08' },
-  { id: 'tk10', ticketId: 'TKT-1238', subject: 'Mobile app crash on Android 14', createdBy: 'Synthetix Labs', priority: 'Critical', status: 'Closed', assignee: 'David Kim', created: '2026-02-07' },
-  { id: 'tk11', ticketId: 'TKT-1237', subject: 'Permission denied on admin module', createdBy: 'BlueOcean AI', priority: 'Medium', status: 'Resolved', assignee: 'Sofia Nguyen', created: '2026-02-06' },
-  { id: 'tk12', ticketId: 'TKT-1236', subject: 'How to set up webhook notifications', createdBy: 'InnovaTech', priority: 'Low', status: 'Closed', assignee: 'Thomas Wright', created: '2026-02-05' },
+// ── Generate ticket subjects from lead data ────────────
+const subjectTemplates = [
+  (l: any) => `Inspection delay for ${l.make} ${l.model} (${l.appointmentId})`,
+  (l: any) => `${l.carRegistrationNumber} — customer not reachable`,
+  (l: any) => `Re-schedule request for ${l.appointmentId}`,
+  (l: any) => `${l.make} ${l.model} — document mismatch`,
+  (l: any) => `Quality review pending — ${l.appointmentId}`,
+  (l: any) => `Odometer discrepancy on ${l.carRegistrationNumber}`,
+  (l: any) => `Customer complaint — ${l.ownerName} (${l.appointmentId})`,
+  (l: any) => `Price negotiation issue for ${l.make} ${l.model} ${l.variant}`,
+  (l: any) => `${l.appointmentId} — inspection report missing`,
+  (l: any) => `Image upload failed for ${l.carRegistrationNumber}`,
+  (l: any) => `${l.ownerName} — callback requested for ${l.appointmentId}`,
+  (l: any) => `Approval escalation — ${l.make} ${l.model}`,
 ]
+
+const priorities = ['Critical', 'High', 'Medium', 'Low']
+const statuses = ['Open', 'In Progress', 'Pending', 'Resolved', 'Closed']
+
+function seededRandom(seed: number) {
+  const x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
+}
+
+// Generate seed data from leads on first load
+const seedData = computed(() => {
+  const leads = allLeads.value
+  if (leads.length === 0) return []
+
+  // Pick up to 15 leads as ticket sources
+  const ticketLeads = leads.slice(0, Math.min(15, leads.length))
+
+  // Get staff names for assignees
+  const staffNames = otobixStaff.value.map((s: any) => s.value)
+  const fallbackStaff = ['Admin', 'Support Team']
+  const assignees = staffNames.length > 0 ? staffNames : fallbackStaff
+
+  return ticketLeads.map((lead: any, idx: number) => {
+    const hash = idx + (lead.appointmentId || '').charCodeAt(0) || idx
+    const templateFn = subjectTemplates[idx % subjectTemplates.length]
+    const subject = templateFn ? templateFn(lead) : `Ticket for ${lead.appointmentId}`
+
+    return {
+      id: `tk${idx + 1}`,
+      ticketId: `TKT-${String(idx + 1).padStart(4, '0')}`,
+      subject,
+      createdBy: lead.ownerName || lead.appointmentId || 'Unknown',
+      priority: priorities[Math.floor(seededRandom(hash) * priorities.length)],
+      status: statuses[Math.floor(seededRandom(hash + 100) * statuses.length)],
+      assignee: assignees[Math.floor(seededRandom(hash + 200) * assignees.length)] || 'Unassigned',
+      created: lead.createdAt
+        ? new Date(lead.createdAt).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0],
+    }
+  })
+})
 </script>
 
 <template>
-  <ErpCrudPage store-key="support-tickets" title="Support Tickets" description="Full-featured helpdesk with ticket lifecycle management and SLA tracking." icon="i-lucide-ticket" entity-name="Ticket" :columns="columns" :form-fields="formFields" :initial-data="seedData" />
+  <ErpCrudPage
+    v-if="dataReady"
+    store-key="support-tickets"
+    title="Support Tickets"
+    description=""
+    icon="i-lucide-ticket"
+    entity-name="Ticket"
+    :columns="columns"
+    :form-fields="formFields"
+    :initial-data="seedData"
+    auto-serial-prefix="TKT"
+    auto-serial-field="ticketId"
+    header-actions
+  />
+  <div v-else class="w-full flex flex-col gap-4 p-4 lg:p-6">
+    <Card class="p-8">
+      <div class="space-y-4">
+        <Skeleton class="h-8 w-full" />
+        <Skeleton class="h-8 w-full" />
+        <Skeleton class="h-8 w-full" />
+        <Skeleton class="h-8 w-3/4" />
+      </div>
+    </Card>
+  </div>
 </template>
