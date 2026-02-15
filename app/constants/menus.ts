@@ -24,11 +24,6 @@ export const navMenu: NavMenu[] = [
         icon: 'i-lucide-gavel',
         link: '/auctions/upcoming',
       },
-      {
-        title: 'Tasks',
-        icon: 'i-lucide-calendar-check-2',
-        link: '/tasks',
-      },
     ],
   },
   {
@@ -49,156 +44,106 @@ export const navMenu: NavMenu[] = [
     ],
   },
   {
-    heading: 'Sales & Commerce',
+    heading: 'Retail',
     items: [
       {
-        title: 'Quotes',
+        title: 'Purchase Requests',
         icon: 'i-lucide-file-text',
-        link: '/sales/quotes',
+        link: '/retail/purchase-requests',
+        disabled: true,
+        comingSoon: true,
       },
       {
-        title: 'Invoices',
+        title: 'Pickup Requests',
         icon: 'i-lucide-receipt',
-        link: '/sales/invoices',
-      },
-      {
-        title: 'Orders',
-        icon: 'i-lucide-shopping-cart',
-        link: '/sales/orders',
-      },
-      {
-        title: 'Products',
-        icon: 'i-lucide-package',
-        link: '/sales/products',
-      },
-      {
-        title: 'Customers',
-        icon: 'i-lucide-users',
-        link: '/sales/customers',
+        link: '/retail/pickup-requests',
+        disabled: true,
+        comingSoon: true,
       },
     ],
   },
   {
-    heading: 'Inventory & Warehouse',
+    heading: 'Accounts',
     items: [
       {
-        title: 'Stock Overview',
-        icon: 'i-lucide-warehouse',
-        link: '/inventory/stock',
-      },
-      {
-        title: 'Transfers',
-        icon: 'i-lucide-arrow-left-right',
-        link: '/inventory/transfers',
-      },
-      {
-        title: 'Purchase Orders',
-        icon: 'i-lucide-clipboard-list',
-        link: '/inventory/purchase-orders',
-      },
-      {
-        title: 'Vendors',
-        icon: 'i-lucide-truck',
-        link: '/inventory/vendors',
-      },
-    ],
-  },
-  {
-    heading: 'HR & Workforce',
-    items: [
-      {
-        title: 'Employees',
-        icon: 'i-lucide-user-round-check',
-        link: '/hr/employees',
-      },
-      {
-        title: 'Attendance',
-        icon: 'i-lucide-clock',
-        link: '/hr/attendance',
-      },
-      {
-        title: 'Payroll',
-        icon: 'i-lucide-banknote',
-        link: '/hr/payroll',
-      },
-      {
-        title: 'Recruitment',
-        icon: 'i-lucide-briefcase',
-        link: '/hr/recruitment',
-      },
-      {
-        title: 'Leave Mgmt',
-        icon: 'i-lucide-calendar-off',
-        link: '/hr/leaves',
-      },
-    ],
-  },
-  {
-    heading: 'Finance & Accounting',
-    items: [
-      {
-        title: 'Accounts',
+        title: 'Customer Payments',
         icon: 'i-lucide-wallet',
-        link: '/finance/accounts',
+        link: '/accounts/customer-payments',
+        disabled: true,
+        comingSoon: true,
       },
       {
-        title: 'Transactions',
+        title: 'Dealer Payments',
         icon: 'i-lucide-arrow-right-left',
-        link: '/finance/transactions',
+        link: '/accounts/dealer-payments',
+        disabled: true,
+        comingSoon: true,
       },
+    ],
+  },
+  {
+    heading: 'Finance',
+    items: [
       {
         title: 'Expenses',
         icon: 'i-lucide-credit-card',
         link: '/finance/expenses',
+        disabled: true,
+        comingSoon: true,
       },
       {
         title: 'Tax Management',
         icon: 'i-lucide-percent',
         link: '/finance/taxes',
+        disabled: true,
+        comingSoon: true,
       },
       {
         title: 'Balance Sheet',
         icon: 'i-lucide-landmark',
         link: '/finance/balance-sheet',
-        new: true,
+        disabled: true,
+        comingSoon: true,
       },
       {
         title: 'Income Statement',
         icon: 'i-lucide-receipt',
         link: '/finance/income-statement',
-        new: true,
+        disabled: true,
+        comingSoon: true,
       },
       {
         title: 'Financial Ratios',
         icon: 'i-lucide-chart-no-axes-combined',
         link: '/finance/ratios',
-        new: true,
-      },
-      {
-        title: 'Business Health',
-        icon: 'i-lucide-heart-pulse',
-        link: '/finance/business-health',
-        new: true,
+        disabled: true,
+        comingSoon: true,
       },
     ],
   },
   {
-    heading: 'Project Management',
+    heading: 'Reports',
     items: [
       {
-        title: 'Projects',
-        icon: 'i-lucide-folder-kanban',
-        link: '/projects/list',
+        title: 'Sales Reports',
+        icon: 'i-lucide-trending-up',
+        link: '/reports/sales',
+        disabled: true,
+        comingSoon: true,
       },
       {
-        title: 'Timesheets',
-        icon: 'i-lucide-timer',
-        link: '/projects/timesheets',
+        title: 'Financial Reports',
+        icon: 'i-lucide-pie-chart',
+        link: '/reports/financial',
+        disabled: true,
+        comingSoon: true,
       },
       {
-        title: 'Milestones',
-        icon: 'i-lucide-flag',
-        link: '/projects/milestones',
+        title: 'Business Health',
+        icon: 'i-lucide-heart-pulse',
+        link: '/reports/business-health',
+        disabled: true,
+        comingSoon: true,
       },
     ],
   },
@@ -210,34 +155,6 @@ export const navMenu: NavMenu[] = [
         icon: 'i-lucide-ticket',
         link: '/support/tickets',
       },
-      {
-        title: 'Knowledge Base',
-        icon: 'i-lucide-book-open',
-        link: '/support/knowledge-base',
-      },
-      {
-        title: 'Live Chat',
-        icon: 'i-lucide-message-circle',
-        link: '/support/chat',
-        new: true,
-      },
-    ],
-  },
-
-  {
-    heading: 'Reports',
-    items: [
-      {
-        title: 'Sales Reports',
-        icon: 'i-lucide-trending-up',
-        link: '/reports/sales',
-      },
-      {
-        title: 'Financial Reports',
-        icon: 'i-lucide-pie-chart',
-        link: '/reports/financial',
-      },
-
     ],
   },
 

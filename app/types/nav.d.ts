@@ -3,6 +3,8 @@ export interface NavLink {
   link: string
   icon?: string
   new?: boolean
+  disabled?: boolean
+  comingSoon?: boolean
 }
 
 export interface NavSectionTitle {

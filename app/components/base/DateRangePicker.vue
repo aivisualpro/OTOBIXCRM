@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { DateRange } from 'reka-ui'
 import type { Ref } from 'vue'
-import { CalendarDate, DateFormatter, getLocalTimeZone } from '@internationalized/date'
-
+import { CalendarDate, DateFormatter, getLocalTimeZone, today } from '@internationalized/date'
 import { Calendar as CalendarIcon } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 
@@ -10,12 +9,38 @@ const df = new DateFormatter('en-US', {
   dateStyle: 'medium',
 })
 
-const calendarDate = new CalendarDate(2026, 0, 20)
+const emit = defineEmits<{
+  'update:range': [{ start: Date, end: Date }]
+}>()
+
+// Default: last 20 days
+const todayDate = today(getLocalTimeZone())
+const defaultStart = todayDate.subtract({ days: 20 })
 
 const value = ref({
-  start: calendarDate,
-  end: calendarDate.add({ days: 20 }),
+  start: defaultStart,
+  end: todayDate,
 }) as Ref<DateRange>
+
+function emitRange() {
+  if (value.value.start && value.value.end) {
+    const start = value.value.start.toDate(getLocalTimeZone())
+    const end = value.value.end.toDate(getLocalTimeZone())
+    // Set end to end of day
+    end.setHours(23, 59, 59, 999)
+    emit('update:range', { start, end })
+  }
+}
+
+// Emit initial range on mount
+onMounted(() => {
+  emitRange()
+})
+
+// Watch for range changes
+watch(value, () => {
+  emitRange()
+}, { deep: true })
 </script>
 
 <template>
