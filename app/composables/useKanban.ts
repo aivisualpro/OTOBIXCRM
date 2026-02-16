@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid'
 
 const isClient = import.meta.client
 
-const STORAGE_KEY = 'kanban.board.v3'
+const STORAGE_KEY = 'kanban.board.v4'
 const TASK_KEY_ID = 'TASK'
 
 function generateTaskId() {
@@ -26,8 +26,8 @@ function generateColumnId(title: string) {
 const defaultBoard: BoardState = {
   columns: [
     {
-      id: 'backlog',
-      title: 'Backlog',
+      id: 'todo',
+      title: 'To Do',
       tasks: [
         {
           id: 'TASK-001',
@@ -36,7 +36,7 @@ const defaultBoard: BoardState = {
           priority: 'low',
           assignee: { id: 'u1', name: 'Sarah Chen', avatar: '/avatars/shadcn.png' },
           dueDate: new Date(Date.now() + 14 * 86400000).toISOString(),
-          status: 'backlog',
+          status: 'todo',
           labels: ['UI/UX', 'Enhancement'],
           subtasks: [
             { id: 'st-001', title: 'Design sun/moon SVG icons', completed: true },
@@ -56,7 +56,7 @@ const defaultBoard: BoardState = {
           priority: 'medium',
           assignee: { id: 'u2', name: 'Adeel Jabbar', avatar: '/avatars/adeel.png' },
           dueDate: new Date(Date.now() + 21 * 86400000).toISOString(),
-          status: 'backlog',
+          status: 'todo',
           labels: ['Feature', 'Reports'],
           subtasks: [
             { id: 'st-004', title: 'Create CSV utility function', completed: false },
@@ -76,7 +76,7 @@ const defaultBoard: BoardState = {
           priority: 'low',
           assignee: { id: 'u3', name: 'Marcus Webb', avatar: '/avatars/avatartion.png' },
           dueDate: new Date(Date.now() + 30 * 86400000).toISOString(),
-          status: 'backlog',
+          status: 'todo',
           labels: ['Research', 'Infrastructure'],
           subtasks: [
             { id: 'st-008', title: 'Benchmark Socket.io latency', completed: true },
@@ -98,7 +98,7 @@ const defaultBoard: BoardState = {
           priority: 'high',
           assignee: { id: 'u1', name: 'Sarah Chen', avatar: '/avatars/shadcn.png' },
           dueDate: new Date(Date.now() + 45 * 86400000).toISOString(),
-          status: 'backlog',
+          status: 'todo',
           labels: ['Architecture', 'Planning'],
           subtasks: [
             { id: 'st-012', title: 'Define tenant isolation strategy', completed: false },
@@ -107,12 +107,6 @@ const defaultBoard: BoardState = {
           comments: [],
           createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
         },
-      ],
-    },
-    {
-      id: 'todo',
-      title: 'To Do',
-      tasks: [
         {
           id: 'TASK-005',
           title: 'Fix pagination on inventory table',

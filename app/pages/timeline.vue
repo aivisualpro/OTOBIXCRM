@@ -296,24 +296,23 @@ function onLeftPanelScroll() {
 
 <template>
   <div class="w-full flex flex-col gap-4">
-    <!-- Toolbar -->
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <div class="relative">
-          <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input v-model="searchQuery" placeholder="Search by ID, make, model..." class="pl-8 w-64" />
+    <ClientOnly>
+      <Teleport to="#header-actions">
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input v-model="searchQuery" placeholder="Search..." class="pl-8 h-8 w-48 text-sm" />
+          </div>
+          <p class="text-xs text-muted-foreground tabular-nums hidden lg:block">
+            {{ ganttRows.length }} leads
+          </p>
+          <Button variant="outline" size="sm" class="h-8" @click="fetchAllLeads(true)">
+            <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" />
+            Refresh
+          </Button>
         </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <p class="text-sm text-muted-foreground tabular-nums">
-          {{ ganttRows.length }} leads
-        </p>
-        <Button variant="outline" size="sm" @click="fetchAllLeads(true)">
-          <Icon name="i-lucide-refresh-cw" class="mr-1 size-4" />
-          Refresh
-        </Button>
-      </div>
-    </div>
+      </Teleport>
+    </ClientOnly>
 
     <!-- Stats Row -->
     <div class="grid grid-cols-2 gap-3 md:grid-cols-5">

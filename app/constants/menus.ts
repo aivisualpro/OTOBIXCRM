@@ -24,22 +24,25 @@ export const navMenu: NavMenu[] = [
         icon: 'i-lucide-gavel',
         link: '/auctions/upcoming',
       },
+      {
+        title: 'Notifications',
+        icon: 'i-lucide-bell',
+        link: '/notifications',
+      },
     ],
   },
   {
     heading: 'Apps',
     items: [
       {
-        title: 'Kanban Board',
-        icon: 'i-lucide-kanban',
-        link: '/kanban',
-        new: true,
+        title: 'Tasks',
+        icon: 'i-lucide-check-square',
+        link: '/tasks',
       },
       {
         title: 'Timeline',
         icon: 'i-lucide-gantt-chart',
         link: '/timeline',
-        new: true,
       },
     ],
   },

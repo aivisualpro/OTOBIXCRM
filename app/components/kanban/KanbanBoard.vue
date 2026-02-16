@@ -12,7 +12,34 @@ import Draggable from 'vuedraggable'
 import { useKanban } from '~/composables/useKanban'
 import CardFooter from '../ui/card/CardFooter.vue'
 
-const { board, addTask, updateTask, removeTask, setColumns, removeColumn, updateColumn, addSubtask, toggleSubtask, removeSubtask, addComment, removeComment } = useKanban()
+const { board, addTask, updateTask, removeTask, setColumns, addSubtask, toggleSubtask, removeSubtask, addComment, removeComment } = useKanban()
+
+// ── Pagination: show 20 tasks per column, load more on scroll ──
+const PAGE_SIZE = 20
+const visibleCount = ref<Record<string, number>>({})
+
+function getVisibleCount(colId: string): number {
+  return visibleCount.value[colId] || PAGE_SIZE
+}
+
+function visibleTasks(col: Column): Task[] {
+  return col.tasks.slice(0, getVisibleCount(col.id))
+}
+
+function hasMore(col: Column): boolean {
+  return col.tasks.length > getVisibleCount(col.id)
+}
+
+function loadMore(colId: string) {
+  visibleCount.value[colId] = (visibleCount.value[colId] || PAGE_SIZE) + PAGE_SIZE
+}
+
+function onColumnScroll(event: Event, colId: string) {
+  const el = event.target as HTMLElement
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
+    loadMore(colId)
+  }
+}
 
 const newSubtaskTitle = ref('')
 const newCommentText = ref('')
@@ -115,24 +142,10 @@ function showEditTask(colId: string, taskId: string) {
 }
 
 function onColumnDrop(evt: any) {
-  // Full columns re-ordered
   setColumns(evt.to.__draggable_component__.modelValue)
 }
 
-function renameColumn(id: string) {
-  const titleRef = document.getElementById(`col-title-${id}`) as HTMLElement
-  if (titleRef)
-    setTimeout(() => titleRef.focus(), 500)
-}
-
-function onUpdateColumn(evt: any, id: string) {
-  if (!evt.target.textContent?.trim())
-    return
-  updateColumn(id, evt.target.textContent?.trim())
-}
-
 function onTaskDrop() {
-  // ensure state is persisted after any move (within or across columns)
   nextTick(() => setColumns([...board.value.columns]))
 }
 
@@ -180,11 +193,11 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
 </script>
 
 <template>
-  <div class="flex gap-4 overflow-x-auto overflow-y-hidden pb-4">
+  <div class="flex gap-4 overflow-x-auto overflow-y-hidden pb-4 h-full">
     <!-- Columns Draggable wrapper -->
     <Draggable
       v-model="board.columns"
-      class="flex gap-4 min-w-max"
+      class="flex gap-4 w-full h-full"
       item-key="id"
       :animation="180"
       handle=".col-handle"
@@ -192,15 +205,11 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
       @end="onColumnDrop"
     >
       <template #item="{ element: col }: { element: Column }">
-        <Card class="w-[272px] shrink-0 py-2 gap-4 self-start">
-          <CardHeader class="flex flex-row items-center justify-between gap-2 px-2">
+        <Card class="flex-1 min-w-[240px] shrink-0 py-2 gap-0 flex flex-col self-stretch">
+          <CardHeader class="flex flex-row items-center justify-between gap-2 px-2 shrink-0">
             <CardTitle class="font-semibold text-base flex items-center gap-2">
               <Icon name="lucide:grip-vertical" class="col-handle cursor-grab opacity-60" />
-              <span
-                :id="`col-title-${col.id}`"
-                contenteditable="true" class="hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 px-1 rounded"
-                @blur="onUpdateColumn($event, col.id)" @keydown.enter.prevent
-              >{{ col.title }}</span>
+              <span class="px-1">{{ col.title }}</span>
               <Badge variant="secondary" class="h-5 min-w-5 px-1 font-mono tabular-nums">
                 {{ col.tasks.length }}
               </Badge>
@@ -209,27 +218,9 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
               <Button size="icon-sm" variant="ghost" class="size-7 text-muted-foreground" @click="openNewTask(col.id)">
                 <Icon name="lucide:plus" />
               </Button>
-              <DropdownMenu modal>
-                <DropdownMenuTrigger as-child>
-                  <Button size="icon-sm" variant="ghost" class="size-7 text-muted-foreground">
-                    <Icon name="lucide:ellipsis-vertical" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent class="w-20" align="start">
-                  <DropdownMenuItem @click="renameColumn(col.id)">
-                    <Icon name="lucide:edit-2" class="size-4" />
-                    Rename
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" class="text-destructive" @click="removeColumn(col.id)">
-                    <Icon name="lucide:trash-2" class="size-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </CardAction>
           </CardHeader>
-          <CardContent class="px-2 overflow-y-auto overflow-x-hidden flex-1">
+          <CardContent class="px-2 overflow-y-auto overflow-x-hidden flex-1 min-h-0" @scroll="onColumnScroll($event, col.id)">
             <!-- Tasks within the column -->
             <Draggable
               v-model="col.tasks"
@@ -241,7 +232,7 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
               @end="onTaskDrop"
             >
               <template #item="{ element: t }: { element: Task }">
-                <div class="rounded-xl border bg-card px-3 py-2 shadow-sm hover:bg-accent/50 cursor-pointer">
+                <div v-if="visibleTasks(col).includes(t)" class="rounded-xl border bg-card px-3 py-2 shadow-sm hover:bg-accent/50 cursor-pointer">
                   <div class="flex items-start justify-between gap-2">
                     <div class="text-sm text-muted-foreground">
                       {{ t.id }}
@@ -404,7 +395,13 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
               </template>
             </Draggable>
           </CardContent>
-          <CardFooter class="px-2 mt-auto">
+          <div v-if="hasMore(col)" class="shrink-0 px-2 py-2 border-t">
+            <Button size="sm" variant="ghost" class="w-full text-muted-foreground text-xs gap-1.5" @click="loadMore(col.id)">
+              <Icon name="lucide:chevrons-down" class="size-3.5" />
+              Load {{ Math.min(PAGE_SIZE, col.tasks.length - getVisibleCount(col.id)) }} more
+            </Button>
+          </div>
+          <CardFooter class="px-2 mt-auto shrink-0">
             <Button size="sm" variant="ghost" class="text-muted-foreground" @click="openNewTask(col.id)">
               <Icon name="lucide:plus" />
               Add Task

@@ -16,30 +16,34 @@ const teams: {
 }[] = [
   {
     name: 'OTOBIX ADMIN',
-    logo: 'i-lucide-gallery-vertical-end',
+    logo: 'i-lucide-shield-check',
     plan: 'Workspace',
   },
   {
     name: 'OTOBIX INSPECTION',
-    logo: 'i-lucide-audio-waveform',
+    logo: 'i-lucide-scan-search',
     plan: 'Workspace',
   },
   {
     name: 'OTOBIX DEALERS',
-    logo: 'i-lucide-command',
+    logo: 'i-lucide-handshake',
     plan: 'Workspace',
   },
 ]
 
-const user: {
-  name: string
-  email: string
-  avatar: string
-} = {
-  name: 'Adeel Jabbar',
-  email: 'adeel@aivisualpro.com',
-  avatar: '/avatars/adeel.png',
-}
+const userCookie = useCookie('userData')
+const user = computed(() => {
+  try {
+    const parsed = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
+    return {
+      name: parsed?.userName || parsed?.name || 'User',
+      role: parsed?.role || 'Member',
+      avatar: parsed?.avatar || parsed?.profileImage || '',
+    }
+  } catch {
+    return { name: 'User', role: 'Member', avatar: '' }
+  }
+})
 
 const { sidebar } = useAppSettings()
 </script>
