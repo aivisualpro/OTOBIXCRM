@@ -6,19 +6,19 @@ export interface DashboardDateRange {
 }
 
 export interface DashboardKpi {
-  auctionsClosed: number          // Sum of soldAt for sold auctions in the period
-  auctionsClosedCount: number     // Number of sold auctions in the period
-  auctionsClosedPrev: number      // Sum of soldAt for previous period
+  auctionsClosed: number // Sum of soldAt for sold auctions in the period
+  auctionsClosedCount: number // Number of sold auctions in the period
+  auctionsClosedPrev: number // Sum of soldAt for previous period
   auctionsClosedCountPrev: number // Number of sold auctions in previous period
 
-  newCustomers: number            // New customers joined in the period
-  newCustomersPrev: number        // New customers joined in previous period
+  newCustomers: number // New customers joined in the period
+  newCustomersPrev: number // New customers joined in previous period
 
-  activeAccounts: number          // Total approved dealers + customers (all time)
-  activeAccountsDealers: number   // Approved dealers count
+  activeAccounts: number // Total approved dealers + customers (all time)
+  activeAccountsDealers: number // Approved dealers count
   activeAccountsCustomers: number // Approved customers count
 
-  growthRate: number              // % change: (current - prev) / prev * 100
+  growthRate: number // % change: (current - prev) / prev * 100
   growthRateDirection: 'up' | 'down' | 'flat'
 }
 
@@ -26,9 +26,11 @@ export interface DashboardKpi {
  * Determines if a date string falls within [start, end] range
  */
 function isDateInRange(dateStr: string | null | undefined, start: Date, end: Date): boolean {
-  if (!dateStr) return false
+  if (!dateStr)
+    return false
   const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return false
+  if (Number.isNaN(d.getTime()))
+    return false
   return d >= start && d <= end
 }
 
@@ -46,8 +48,10 @@ function getPreviousPeriod(start: Date, end: Date): { prevStart: Date, prevEnd: 
  * Compute percentage change from prev to current
  */
 function percentChange(current: number, prev: number): number {
-  if (prev === 0 && current === 0) return 0
-  if (prev === 0) return 100 // from 0 → any = 100% growth
+  if (prev === 0 && current === 0)
+    return 0
+  if (prev === 0)
+    return 100 // from 0 → any = 100% growth
   return ((current - prev) / prev) * 100
 }
 
@@ -119,8 +123,8 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
     const activeAccounts = approvedDealers.value.length + approvedCustomers.value.length
 
     const growthRate = percentChange(auctionsClosed, auctionsClosedPrev)
-    const growthRateDirection: 'up' | 'down' | 'flat' =
-      growthRate > 0 ? 'up' : growthRate < 0 ? 'down' : 'flat'
+    const growthRateDirection: 'up' | 'down' | 'flat'
+      = growthRate > 0 ? 'up' : growthRate < 0 ? 'down' : 'flat'
 
     return {
       auctionsClosed,
@@ -152,6 +156,7 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
 
     // Create empty days for the full range
     const current = new Date(start)
+    // eslint-disable-next-line no-unmodified-loop-condition -- `current` is mutated via setDate()
     while (current <= end) {
       const key = current.toISOString().slice(0, 10)
       dayMap.set(key, { date: key, amount: 0, count: 0 })
@@ -160,7 +165,8 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
 
     // Fill in sold auction values
     soldCarsInPeriod.value.forEach((car) => {
-      if (!car.auctionEndTime) return
+      if (!car.auctionEndTime)
+        return
       const key = new Date(car.auctionEndTime).toISOString().slice(0, 10)
       const entry = dayMap.get(key)
       if (entry) {
@@ -178,6 +184,7 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
     const dayMap = new Map<string, { date: string, count: number }>()
 
     const current = new Date(start)
+    // eslint-disable-next-line no-unmodified-loop-condition -- `current` is mutated via setDate()
     while (current <= end) {
       const key = current.toISOString().slice(0, 10)
       dayMap.set(key, { date: key, count: 0 })
@@ -185,7 +192,8 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
     }
 
     customersInPeriod.value.forEach((u) => {
-      if (!u.createdAt) return
+      if (!u.createdAt)
+        return
       const key = new Date(u.createdAt).toISOString().slice(0, 10)
       const entry = dayMap.get(key)
       if (entry) {

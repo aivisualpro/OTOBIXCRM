@@ -19,7 +19,8 @@ function isNavNavItem(item: any): item is { id: string, title: string, icon: str
 
 const currentActiveId = computed(() => {
   const path = route.path
-  if (path === '/leads' || path === '/leads/') return 'leads'
+  if (path === '/leads' || path === '/leads/')
+    return 'leads'
   return path.split('/').pop() || 'leads'
 })
 </script>

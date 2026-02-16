@@ -7,11 +7,11 @@ const props = defineProps<{
 
 /** Merge auction + customer daily data into a single dataset for the chart */
 const chartData = computed(() => {
-  const dateMap = new Map<string, { date: string, 'Auctions Closed': number, 'New Customers': number }>()
+  const dateMap = new Map<string, { 'date': string, 'Auctions Closed': number, 'New Customers': number }>()
 
   // Seed from auction data
   props.auctionData.forEach((d) => {
-    dateMap.set(d.date, { date: d.date, 'Auctions Closed': d.amount, 'New Customers': 0 })
+    dateMap.set(d.date, { 'date': d.date, 'Auctions Closed': d.amount, 'New Customers': 0 })
   })
 
   // Merge customer data
@@ -21,7 +21,7 @@ const chartData = computed(() => {
       existing['New Customers'] = d.count
     }
     else {
-      dateMap.set(d.date, { date: d.date, 'Auctions Closed': 0, 'New Customers': d.count })
+      dateMap.set(d.date, { 'date': d.date, 'Auctions Closed': 0, 'New Customers': d.count })
     }
   })
 
@@ -29,7 +29,8 @@ const chartData = computed(() => {
 })
 
 const filteredData = computed(() => {
-  if (!chartData.value.length) return chartData.value
+  if (!chartData.value.length)
+    return chartData.value
 
   const data = chartData.value
   const totalDays = data.length

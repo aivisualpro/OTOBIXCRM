@@ -40,7 +40,8 @@ const user = computed(() => {
       role: parsed?.role || 'Member',
       avatar: parsed?.avatar || parsed?.profileImage || '',
     }
-  } catch {
+  }
+  catch {
     return { name: 'User', role: 'Member', avatar: '' }
   }
 })

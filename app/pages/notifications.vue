@@ -119,7 +119,8 @@ const notifications = ref<Notification[]>([
 ])
 
 const filteredNotifications = computed(() => {
-  if (activeTab.value === 'all') return notifications.value
+  if (activeTab.value === 'all')
+    return notifications.value
   const typeMap: Record<string, string> = {
     inspections: 'inspection',
     auctions: 'auction',
@@ -143,7 +144,8 @@ function markAllRead() {
 
 function markRead(id: string) {
   const notif = notifications.value.find(n => n.id === id)
-  if (notif) notif.read = true
+  if (notif)
+    notif.read = true
 }
 
 function dismiss(id: string) {
@@ -191,7 +193,9 @@ function priorityDot(priority?: string) {
             {{ unreadCount }} new
           </Badge>
         </h1>
-        <p class="text-sm text-muted-foreground">Stay updated on inspections, auctions, and system activity.</p>
+        <p class="text-sm text-muted-foreground">
+          Stay updated on inspections, auctions, and system activity.
+        </p>
       </div>
       <div class="flex items-center gap-2">
         <Button
@@ -354,9 +358,11 @@ function priorityDot(priority?: string) {
         <div class="size-20 rounded-2xl bg-muted/50 flex items-center justify-center mb-6">
           <Icon name="i-lucide-bell-off" class="size-8 text-muted-foreground/50" />
         </div>
-        <h3 class="text-lg font-semibold mb-1">All caught up!</h3>
+        <h3 class="text-lg font-semibold mb-1">
+          All caught up!
+        </h3>
         <p class="text-sm text-muted-foreground max-w-sm">
-          No {{ activeTab === 'all' ? '' : activeTab + ' ' }}notifications right now. We'll let you know when something needs your attention.
+          No {{ activeTab === 'all' ? '' : `${activeTab} ` }}notifications right now. We'll let you know when something needs your attention.
         </p>
       </div>
     </div>

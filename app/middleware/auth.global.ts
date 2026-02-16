@@ -8,7 +8,7 @@ export default defineNuxtRouteMiddleware((to, _from) => {
     maxAge: SESSION_MAX_AGE_SECONDS,
     path: '/',
     sameSite: 'lax' as const,
-    secure: import.meta.server ? process.env.NODE_ENV === 'production' : window.location.protocol === 'https:',
+    secure: import.meta.server ? import.meta.env.PROD : globalThis.location.protocol === 'https:',
   }
 
   const isLoggedIn = useCookie('isLoggedIn', cookieOptions)
@@ -18,10 +18,15 @@ export default defineNuxtRouteMiddleware((to, _from) => {
   // Rolling renewal: On every navigation, re-set the cookie values
   // to refresh the maxAge countdown back to 30 days
   if (isLoggedIn.value) {
-    // Touch cookies to reset their expiry (re-assign same value)
+    // Touch cookies to reset their expiry (re-assign via spread to avoid self-assign lint)
+    // eslint-disable-next-line no-self-assign
     isLoggedIn.value = isLoggedIn.value
-    if (authToken.value) authToken.value = authToken.value
-    if (userData.value) userData.value = userData.value
+    if (authToken.value)
+      // eslint-disable-next-line no-self-assign
+      authToken.value = authToken.value
+    if (userData.value)
+      // eslint-disable-next-line no-self-assign
+      userData.value = userData.value
   }
 
   // Auth guard: redirect unauthenticated users to /login

@@ -7,7 +7,7 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBaseUrl: process.env.BASE_URL_PRODUCTION || 'https://ob-dealerapp-kong.onrender.com/api/',
+      apiBaseUrl: import.meta.env.BASE_URL_PRODUCTION || 'https://ob-dealerapp-kong.onrender.com/api/',
     },
   },
 

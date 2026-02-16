@@ -44,7 +44,6 @@ onMounted(() => {
   fetchCarDropdowns()
 })
 
-
 // ─── UI State ───
 const search = ref('')
 const showDialog = ref(false)
@@ -119,7 +118,8 @@ const paginatedItems = computed(() => {
 })
 
 function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value) return
+  if (page < 1 || page > totalPages.value)
+    return
   currentPage.value = page
 }
 
@@ -140,7 +140,8 @@ const formTabs = [
 
 function getFieldsForTab(tabId: string) {
   const tab = formTabs.find(t => t.id === tabId)
-  if (!tab) return []
+  if (!tab)
+    return []
   return props.formFields.filter(f => tab.keys.includes(f.key))
 }
 
@@ -216,12 +217,14 @@ function getBadgeClass(value: string): string {
 }
 
 function formatCurrency(value: any): string {
-  if (value === null || value === undefined) return '—'
+  if (value === null || value === undefined)
+    return '—'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(value))
 }
 
 function formatDate(value: string): string {
-  if (!value) return '—'
+  if (!value)
+    return '—'
   try {
     return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
@@ -229,12 +232,14 @@ function formatDate(value: string): string {
 }
 
 function formatNumber(value: any): string {
-  if (value === null || value === undefined) return '—'
+  if (value === null || value === undefined)
+    return '—'
   return new Intl.NumberFormat('en-US').format(Number(value))
 }
 
 function getInitials(name: string): string {
-  if (!name) return '??'
+  if (!name)
+    return '??'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
@@ -246,11 +251,13 @@ const pageNumbers = computed(() => {
     return Array.from({ length: total }, (_, i) => i + 1)
   }
   const pages: (number | string)[] = [1]
-  if (current > 3) pages.push('...')
+  if (current > 3)
+    pages.push('...')
   for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
     pages.push(i)
   }
-  if (current < total - 2) pages.push('...')
+  if (current < total - 2)
+    pages.push('...')
   pages.push(total)
   return pages
 })
@@ -277,13 +284,16 @@ const pageNumbers = computed(() => {
   </Teleport>
 
   <div class="w-full flex flex-col h-full overflow-hidden">
-
     <!-- Error Banner -->
     <div v-if="fetchError" class="shrink-0 m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
       <Icon name="i-lucide-alert-circle" class="size-5 text-destructive shrink-0" />
       <div class="flex-1">
-        <p class="text-sm font-medium text-destructive">Failed to load leads</p>
-        <p class="text-xs text-muted-foreground mt-0.5">{{ fetchError }}</p>
+        <p class="text-sm font-medium text-destructive">
+          Failed to load leads
+        </p>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          {{ fetchError }}
+        </p>
       </div>
       <Button variant="outline" size="sm" @click="handleRefresh">
         Retry
@@ -294,7 +304,9 @@ const pageNumbers = computed(() => {
     <div v-if="!isFetched && !fetchError" class="flex-1 min-h-0 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
         <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-        <p class="text-sm">Loading leads...</p>
+        <p class="text-sm">
+          Loading leads...
+        </p>
       </div>
     </div>
 

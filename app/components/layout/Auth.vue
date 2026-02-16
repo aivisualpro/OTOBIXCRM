@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+const _props = defineProps<{
   reverse?: boolean
   video?: string
 }>()
@@ -29,8 +29,6 @@ const props = defineProps<{
           <div class="absolute inset-0 bg-black/10" />
         </div>
       </ClientOnly>
-      
-
 
       <div class="relative z-20 mt-auto">
         <blockquote class="space-y-4 max-w-lg">

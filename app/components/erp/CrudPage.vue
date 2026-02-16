@@ -83,7 +83,8 @@ function openEdit(item: any) {
 }
 
 function getNextSerialId(): string {
-  if (!props.autoSerialPrefix || !props.autoSerialField) return ''
+  if (!props.autoSerialPrefix || !props.autoSerialField)
+    return ''
   const prefix = props.autoSerialPrefix
   const field = props.autoSerialField
   // Find highest existing serial number
@@ -92,8 +93,9 @@ function getNextSerialId(): string {
     const val = item[field] || ''
     const match = val.match(new RegExp(`^${prefix}-(\\d+)$`))
     if (match) {
-      const num = parseInt(match[1], 10)
-      if (num > maxNum) maxNum = num
+      const num = Number.parseInt(match[1], 10)
+      if (num > maxNum)
+        maxNum = num
     }
   })
   return `${prefix}-${String(maxNum + 1).padStart(4, '0')}`

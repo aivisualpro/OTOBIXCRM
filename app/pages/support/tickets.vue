@@ -73,7 +73,8 @@ function seededRandom(seed: number) {
 // Generate seed data from leads on first load
 const seedData = computed(() => {
   const leads = allLeads.value
-  if (leads.length === 0) return []
+  if (leads.length === 0)
+    return []
 
   // Pick up to 15 leads as ticket sources
   const ticketLeads = leads.slice(0, Math.min(15, leads.length))

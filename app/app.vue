@@ -39,8 +39,8 @@ useHead({
   },
 })
 
-const title = 'OTOBIX CRM'
-const description = 'A comprehensive CRM platform by OTOBIX.'
+const _title = 'OTOBIX CRM'
+const _description = 'A comprehensive CRM platform by OTOBIX.'
 
 const router = useRouter()
 

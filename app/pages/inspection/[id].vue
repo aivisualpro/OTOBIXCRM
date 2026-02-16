@@ -22,61 +22,91 @@ const tabs = [
 ]
 
 // ─── Helpers ───
-function conditionColor(val: string) {
-  if (!val) return 'bg-muted text-muted-foreground'
+function _conditionColor(val: string) {
+  if (!val)
+    return 'bg-muted text-muted-foreground'
   const v = val.toLowerCase()
-  if (v === 'okay' || v === 'working' || v === 'effective' || v === 'no mismatch' || v === 'no blow by') return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-  if (v.includes('scratched') && !v.includes('dented') && !v.includes('damaged')) return 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20'
-  if (v.includes('repainted') || v.includes('repaired') || v.includes('changed')) return 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20'
-  if (v.includes('damaged') || v.includes('broken') || v.includes('rusted') || v.includes('weak')) return 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20'
-  if (v.includes('not applicable')) return 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'
+  if (v === 'okay' || v === 'working' || v === 'effective' || v === 'no mismatch' || v === 'no blow by')
+    return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+  if (v.includes('scratched') && !v.includes('dented') && !v.includes('damaged'))
+    return 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20'
+  if (v.includes('repainted') || v.includes('repaired') || v.includes('changed'))
+    return 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20'
+  if (v.includes('damaged') || v.includes('broken') || v.includes('rusted') || v.includes('weak'))
+    return 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20'
+  if (v.includes('not applicable'))
+    return 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'
   return 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20'
 }
 
 function conditionIcon(val: string): string {
   const v = val.toLowerCase().trim()
-  if (v === 'okay' || v === 'working' || v === 'effective') return 'i-lucide-check-circle'
-  if (v === 'repainted') return 'i-lucide-paintbrush'
-  if (v === 'repaired') return 'i-lucide-wrench'
-  if (v === 'scratched') return 'i-lucide-slash'
-  if (v === 'dented') return 'i-lucide-circle-dot'
-  if (v === 'damaged') return 'i-lucide-alert-triangle'
-  if (v === 'rusted') return 'i-lucide-flame'
-  if (v === 'broken') return 'i-lucide-x-circle'
-  if (v === 'changed') return 'i-lucide-refresh-cw'
-  if (v === 'not working') return 'i-lucide-x-octagon'
-  if (v.includes('tyre life')) return 'i-lucide-disc'
-  if (v === 'faded') return 'i-lucide-sun'
-  if (v === 'not applicable') return 'i-lucide-minus-circle'
+  if (v === 'okay' || v === 'working' || v === 'effective')
+    return 'i-lucide-check-circle'
+  if (v === 'repainted')
+    return 'i-lucide-paintbrush'
+  if (v === 'repaired')
+    return 'i-lucide-wrench'
+  if (v === 'scratched')
+    return 'i-lucide-slash'
+  if (v === 'dented')
+    return 'i-lucide-circle-dot'
+  if (v === 'damaged')
+    return 'i-lucide-alert-triangle'
+  if (v === 'rusted')
+    return 'i-lucide-flame'
+  if (v === 'broken')
+    return 'i-lucide-x-circle'
+  if (v === 'changed')
+    return 'i-lucide-refresh-cw'
+  if (v === 'not working')
+    return 'i-lucide-x-octagon'
+  if (v.includes('tyre life'))
+    return 'i-lucide-disc'
+  if (v === 'faded')
+    return 'i-lucide-sun'
+  if (v === 'not applicable')
+    return 'i-lucide-minus-circle'
   return 'i-lucide-info'
 }
 
 function conditionTextColor(val: string): string {
   const v = val.toLowerCase().trim()
-  if (v === 'okay' || v === 'working' || v === 'effective') return 'text-emerald-500'
-  if (v === 'repainted' || v === 'repaired' || v === 'changed') return 'text-orange-500'
-  if (v === 'scratched' || v === 'faded') return 'text-amber-500'
-  if (v === 'dented' || v === 'damaged' || v === 'broken' || v === 'rusted' || v === 'not working') return 'text-red-500'
-  if (v.includes('tyre life')) return 'text-blue-500'
-  if (v === 'not applicable') return 'text-zinc-400'
+  if (v === 'okay' || v === 'working' || v === 'effective')
+    return 'text-emerald-500'
+  if (v === 'repainted' || v === 'repaired' || v === 'changed')
+    return 'text-orange-500'
+  if (v === 'scratched' || v === 'faded')
+    return 'text-amber-500'
+  if (v === 'dented' || v === 'damaged' || v === 'broken' || v === 'rusted' || v === 'not working')
+    return 'text-red-500'
+  if (v.includes('tyre life'))
+    return 'text-blue-500'
+  if (v === 'not applicable')
+    return 'text-zinc-400'
   return 'text-blue-500'
 }
 
 function splitConditions(val: string): string[] {
-  if (!val || val === '—') return ['—']
+  if (!val || val === '—')
+    return ['—']
   return val.split(',').map(s => s.trim()).filter(Boolean)
 }
 
 function formatDate(d: string) {
-  if (!d) return '—'
+  if (!d)
+    return '—'
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 function getImages(obj: Record<string, any> | null, key: string): string[] {
   const val = obj?.[key]
-  if (!val) return []
-  if (Array.isArray(val)) return val.filter((u: string) => u && typeof u === 'string')
-  if (typeof val === 'string' && val.startsWith('http')) return [val]
+  if (!val)
+    return []
+  if (Array.isArray(val))
+    return val.filter((u: string) => u && typeof u === 'string')
+  if (typeof val === 'string' && val.startsWith('http'))
+    return [val]
   return []
 }
 
@@ -189,21 +219,47 @@ const engineParts = [
   { key: 'suspension', label: 'Suspension' },
 ]
 
-const exteriorImageKeys = [
-  'frontMain', 'bonnetImages', 'frontWindshieldImages', 'roofImages',
-  'frontBumperImages', 'lhsHeadlampImages', 'lhsFoglampImages',
-  'rhsHeadlampImages', 'rhsFoglampImages', 'lhsFront45Degree',
-  'lhsFenderImages', 'lhsFrontAlloyImages', 'lhsFrontTyreImages',
-  'lhsRunningBorderImages', 'lhsOrvmImages', 'lhsFrontDoorImages',
-  'lhsRearDoorImages', 'lhsRearTyreImages', 'lhsQuarterPanelImages',
-  'rearMain', 'rearBumperImages', 'lhsTailLampImages', 'rhsTailLampImages',
-  'spareTyreImages', 'bootFloorImages', 'rhsRear45Degree',
-  'rhsQuarterPanelImages', 'rhsRearDoorImages', 'rhsFrontDoorImages',
-  'rhsRunningBorderImages', 'rhsFrontTyreImages', 'rhsOrvmImages', 'rhsFenderImages',
+const _exteriorImageKeys = [
+  'frontMain',
+  'bonnetImages',
+  'frontWindshieldImages',
+  'roofImages',
+  'frontBumperImages',
+  'lhsHeadlampImages',
+  'lhsFoglampImages',
+  'rhsHeadlampImages',
+  'rhsFoglampImages',
+  'lhsFront45Degree',
+  'lhsFenderImages',
+  'lhsFrontAlloyImages',
+  'lhsFrontTyreImages',
+  'lhsRunningBorderImages',
+  'lhsOrvmImages',
+  'lhsFrontDoorImages',
+  'lhsRearDoorImages',
+  'lhsRearTyreImages',
+  'lhsQuarterPanelImages',
+  'rearMain',
+  'rearBumperImages',
+  'lhsTailLampImages',
+  'rhsTailLampImages',
+  'spareTyreImages',
+  'bootFloorImages',
+  'rhsRear45Degree',
+  'rhsQuarterPanelImages',
+  'rhsRearDoorImages',
+  'rhsFrontDoorImages',
+  'rhsRunningBorderImages',
+  'rhsFrontTyreImages',
+  'rhsOrvmImages',
+  'rhsFenderImages',
 ]
 
 const engineImageKeys = [
-  'engineBay', 'apronLhsRhs', 'batteryImages', 'additionalImages',
+  'engineBay',
+  'apronLhsRhs',
+  'batteryImages',
+  'additionalImages',
 ]
 
 const engineVideoKeys = [
@@ -213,22 +269,37 @@ const engineVideoKeys = [
 
 function getVideos(obj: Record<string, any> | null, key: string): string[] {
   const val = obj?.[key]
-  if (!val) return []
-  if (Array.isArray(val)) return val.filter((u: string) => u && typeof u === 'string')
-  if (typeof val === 'string' && val.startsWith('http')) return [val]
+  if (!val)
+    return []
+  if (Array.isArray(val))
+    return val.filter((u: string) => u && typeof u === 'string')
+  if (typeof val === 'string' && val.startsWith('http'))
+    return [val]
   return []
 }
 
 const interiorImageKeys = [
-  'meterConsoleWithEngineOn', 'airbags', 'frontSeatsFromDriverSideDoorOpen',
-  'rearSeatsFromRightSideDoorOpen', 'dashboardFromRearSeat', 'sunroofImages',
-  'additionalImages2', 'acImages',
+  'meterConsoleWithEngineOn',
+  'airbags',
+  'frontSeatsFromDriverSideDoorOpen',
+  'rearSeatsFromRightSideDoorOpen',
+  'dashboardFromRearSeat',
+  'sunroofImages',
+  'additionalImages2',
+  'acImages',
 ]
 
 const documentImageKeys = [
-  'rcTaxToken', 'insuranceCopy', 'bothKeys', 'form26GdCopyIfRcIsLost',
-  'chassisEmbossmentImages', 'vinPlateImages', 'pucImages',
-  'rtoNocImages', 'rtoForm28Images', 'roadTaxImages',
+  'rcTaxToken',
+  'insuranceCopy',
+  'bothKeys',
+  'form26GdCopyIfRcIsLost',
+  'chassisEmbossmentImages',
+  'vinPlateImages',
+  'pucImages',
+  'rtoNocImages',
+  'rtoForm28Images',
+  'roadTaxImages',
 ]
 
 // Lightbox / Gallery
@@ -276,10 +347,14 @@ function scrollThumbIntoView() {
 
 // Keyboard navigation
 function onLightboxKeydown(e: KeyboardEvent) {
-  if (!showLightbox.value) return
-  if (e.key === 'ArrowLeft') prevImage()
-  else if (e.key === 'ArrowRight') nextImage()
-  else if (e.key === 'Escape') closeLightbox()
+  if (!showLightbox.value)
+    return
+  if (e.key === 'ArrowLeft')
+    prevImage()
+  else if (e.key === 'ArrowRight')
+    nextImage()
+  else if (e.key === 'Escape')
+    closeLightbox()
 }
 
 onMounted(() => window.addEventListener('keydown', onLightboxKeydown))
@@ -287,7 +362,8 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown))
 
 // Collect all images for a section
 function sectionImages(keys: string[]) {
-  if (!car.value) return []
+  if (!car.value)
+    return []
   const imgs: { url: string, label: string }[] = []
   for (const key of keys) {
     const urls = getImages(car.value, key)
@@ -305,7 +381,9 @@ function sectionImages(keys: string[]) {
     <div v-if="isLoading" class="flex-1 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
         <Icon name="i-lucide-loader-2" class="size-10 animate-spin" />
-        <p class="text-sm">Loading inspection details...</p>
+        <p class="text-sm">
+          Loading inspection details...
+        </p>
       </div>
     </div>
 
@@ -315,8 +393,12 @@ function sectionImages(keys: string[]) {
         <div class="size-16 rounded-full bg-destructive/10 flex items-center justify-center">
           <Icon name="i-lucide-alert-triangle" class="size-8 text-destructive" />
         </div>
-        <h2 class="text-lg font-semibold">Failed to Load Details</h2>
-        <p class="text-sm text-muted-foreground">{{ error }}</p>
+        <h2 class="text-lg font-semibold">
+          Failed to Load Details
+        </h2>
+        <p class="text-sm text-muted-foreground">
+          {{ error }}
+        </p>
         <div class="flex gap-2">
           <Button variant="outline" @click="router.back()">
             <Icon name="i-lucide-arrow-left" class="mr-1 size-4" /> Go Back
@@ -334,13 +416,13 @@ function sectionImages(keys: string[]) {
       <div class="shrink-0 border-b bg-gradient-to-r from-primary/5 via-background to-primary/5">
         <div class="p-6 flex flex-col lg:flex-row gap-6">
           <!-- Main Image -->
-          <div class="shrink-0 w-full lg:w-80 h-48 rounded-xl overflow-hidden bg-muted relative group cursor-pointer" @click="getImages(car, 'frontMain').length && openLightboxUrls(getImages(car, 'frontMain'), 0, car.make + ' ' + car.model)">
+          <div class="shrink-0 w-full lg:w-80 h-48 rounded-xl overflow-hidden bg-muted relative group cursor-pointer" @click="getImages(car, 'frontMain').length && openLightboxUrls(getImages(car, 'frontMain'), 0, `${car.make} ${car.model}`)">
             <img
               v-if="getImages(car, 'frontMain').length"
               :src="getImages(car, 'frontMain')[0]"
               :alt="`${car.make} ${car.model}`"
               class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
+            >
             <div v-else class="w-full h-full flex items-center justify-center">
               <Icon name="i-lucide-car" class="size-16 text-muted-foreground/30" />
             </div>
@@ -365,7 +447,9 @@ function sectionImages(keys: string[]) {
                     {{ car.make }} {{ car.model }}
                   </h1>
                 </div>
-                <p class="text-muted-foreground text-sm ml-8">{{ car.variant }} · {{ car.fuelType }} · {{ car.cubicCapacity }}cc</p>
+                <p class="text-muted-foreground text-sm ml-8">
+                  {{ car.variant }} · {{ car.fuelType }} · {{ car.cubicCapacity }}cc
+                </p>
               </div>
               <div class="flex gap-2 shrink-0">
                 <Badge :class="car.approvalStatus === 'APPROVED' ? 'bg-emerald-500/15 text-emerald-600 border-emerald-500/20' : 'bg-amber-500/15 text-amber-600 border-amber-500/20'" variant="outline">
@@ -380,28 +464,52 @@ function sectionImages(keys: string[]) {
             <!-- Key Stats Grid -->
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 ml-8">
               <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Registration</p>
-                <p class="text-sm font-semibold">{{ car.registrationNumber }}</p>
+                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Registration
+                </p>
+                <p class="text-sm font-semibold">
+                  {{ car.registrationNumber }}
+                </p>
               </div>
               <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Odometer</p>
-                <p class="text-sm font-semibold">{{ (car.odometerReadingInKms || 0).toLocaleString() }} km</p>
+                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Odometer
+                </p>
+                <p class="text-sm font-semibold">
+                  {{ (car.odometerReadingInKms || 0).toLocaleString() }} km
+                </p>
               </div>
               <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Owner</p>
-                <p class="text-sm font-semibold">{{ car.ownerSerialNumber || '—' }}{{ car.ownerSerialNumber === 1 ? 'st' : car.ownerSerialNumber === 2 ? 'nd' : car.ownerSerialNumber === 3 ? 'rd' : 'th' }}</p>
+                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Owner
+                </p>
+                <p class="text-sm font-semibold">
+                  {{ car.ownerSerialNumber || '—' }}{{ car.ownerSerialNumber === 1 ? 'st' : car.ownerSerialNumber === 2 ? 'nd' : car.ownerSerialNumber === 3 ? 'rd' : 'th' }}
+                </p>
               </div>
               <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">MFG Year</p>
-                <p class="text-sm font-semibold">{{ car.yearMonthOfManufacture ? new Date(car.yearMonthOfManufacture).getFullYear() : '—' }}</p>
+                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  MFG Year
+                </p>
+                <p class="text-sm font-semibold">
+                  {{ car.yearMonthOfManufacture ? new Date(car.yearMonthOfManufacture).getFullYear() : '—' }}
+                </p>
               </div>
               <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">City</p>
-                <p class="text-sm font-semibold">{{ car.city || '—' }}</p>
+                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  City
+                </p>
+                <p class="text-sm font-semibold">
+                  {{ car.city || '—' }}
+                </p>
               </div>
               <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Price Discovery</p>
-                <p class="text-sm font-semibold text-primary">₹{{ (car.priceDiscovery || 0).toLocaleString() }}</p>
+                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Price Discovery
+                </p>
+                <p class="text-sm font-semibold text-primary">
+                  ₹{{ (car.priceDiscovery || 0).toLocaleString() }}
+                </p>
               </div>
             </div>
           </div>
@@ -429,7 +537,6 @@ function sectionImages(keys: string[]) {
 
       <!-- Tab Content (scrollable) -->
       <div class="flex-1 min-h-0 overflow-auto p-6">
-
         <!-- ═══════ OVERVIEW TAB ═══════ -->
         <div v-if="activeTab === 'overview'" class="space-y-6">
           <!-- Registration Details -->
@@ -443,25 +550,31 @@ function sectionImages(keys: string[]) {
             <Separator />
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                <div v-for="item in [
-                  { label: 'Registration Number', value: car.registrationNumber },
-                  { label: 'Registration Date', value: formatDate(car.registrationDate) },
-                  { label: 'Registration Type', value: car.registrationType },
-                  { label: 'Registration State', value: car.registrationState },
-                  { label: 'Registered RTO', value: car.registeredRto },
-                  { label: 'Registered Owner', value: car.registeredOwner },
-                  { label: 'RC Book', value: car.rcBookAvailability },
-                  { label: 'RC Condition', value: car.rcCondition },
-                  { label: 'RC Status', value: car.rcStatus },
-                  { label: 'Fitness Till', value: formatDate(car.fitnessTill) },
-                  { label: 'To Be Scrapped', value: car.toBeScrapped },
-                  { label: 'Seating Capacity', value: car.seatingCapacity },
-                  { label: 'Number of Cylinders', value: car.numberOfCylinders },
-                  { label: 'Emission Norms', value: car.norms },
-                  { label: 'Color', value: car.color },
-                ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">{{ item.label }}</p>
-                  <p class="text-sm font-medium text-right">{{ item.value || '—' }}</p>
+                <div
+                  v-for="item in [
+                    { label: 'Registration Number', value: car.registrationNumber },
+                    { label: 'Registration Date', value: formatDate(car.registrationDate) },
+                    { label: 'Registration Type', value: car.registrationType },
+                    { label: 'Registration State', value: car.registrationState },
+                    { label: 'Registered RTO', value: car.registeredRto },
+                    { label: 'Registered Owner', value: car.registeredOwner },
+                    { label: 'RC Book', value: car.rcBookAvailability },
+                    { label: 'RC Condition', value: car.rcCondition },
+                    { label: 'RC Status', value: car.rcStatus },
+                    { label: 'Fitness Till', value: formatDate(car.fitnessTill) },
+                    { label: 'To Be Scrapped', value: car.toBeScrapped },
+                    { label: 'Seating Capacity', value: car.seatingCapacity },
+                    { label: 'Number of Cylinders', value: car.numberOfCylinders },
+                    { label: 'Emission Norms', value: car.norms },
+                    { label: 'Color', value: car.color },
+                  ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
+                >
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    {{ item.label }}
+                  </p>
+                  <p class="text-sm font-medium text-right">
+                    {{ item.value || '—' }}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -478,18 +591,24 @@ function sectionImages(keys: string[]) {
             <Separator />
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                <div v-for="item in [
-                  { label: 'Insurance Type', value: car.insurance },
-                  { label: 'Policy Number', value: car.insurancePolicyNumber },
-                  { label: 'Validity', value: formatDate(car.insuranceValidity) },
-                  { label: 'No Claim Bonus', value: car.noClaimBonus },
-                  { label: 'Mismatch', value: car.mismatchInInsurance },
-                  { label: 'Insurer', value: car.insurer },
-                  { label: 'Hypothecated To', value: car.hypothecatedTo },
-                  { label: 'Hypothecation Details', value: car.hypothecationDetails },
-                ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">{{ item.label }}</p>
-                  <p class="text-sm font-medium text-right">{{ item.value || '—' }}</p>
+                <div
+                  v-for="item in [
+                    { label: 'Insurance Type', value: car.insurance },
+                    { label: 'Policy Number', value: car.insurancePolicyNumber },
+                    { label: 'Validity', value: formatDate(car.insuranceValidity) },
+                    { label: 'No Claim Bonus', value: car.noClaimBonus },
+                    { label: 'Mismatch', value: car.mismatchInInsurance },
+                    { label: 'Insurer', value: car.insurer },
+                    { label: 'Hypothecated To', value: car.hypothecatedTo },
+                    { label: 'Hypothecation Details', value: car.hypothecationDetails },
+                  ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
+                >
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    {{ item.label }}
+                  </p>
+                  <p class="text-sm font-medium text-right">
+                    {{ item.value || '—' }}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -506,22 +625,28 @@ function sectionImages(keys: string[]) {
             <Separator />
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                <div v-for="item in [
-                  { label: 'Engine Number', value: car.engineNumber },
-                  { label: 'Chassis Number', value: car.chassisNumber },
-                  { label: 'Fuel Type', value: car.fuelType },
-                  { label: 'Cubic Capacity', value: car.cubicCapacity ? `${car.cubicCapacity}cc` : '—' },
-                  { label: 'Road Tax Validity', value: car.roadTaxValidity },
-                  { label: 'Tax Valid Till', value: formatDate(car.taxValidTill) },
-                  { label: 'Duplicate Key', value: car.duplicateKey },
-                  { label: 'RTO NOC', value: car.rtoNoc },
-                  { label: 'Party Peshi', value: car.partyPeshi },
-                  { label: 'Mismatch in RC', value: car.mismatchInRc },
-                  { label: 'Contact Number', value: car.contactNumber },
-                  { label: 'Email', value: car.emailAddress },
-                ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">{{ item.label }}</p>
-                  <p class="text-sm font-medium text-right">{{ item.value || '—' }}</p>
+                <div
+                  v-for="item in [
+                    { label: 'Engine Number', value: car.engineNumber },
+                    { label: 'Chassis Number', value: car.chassisNumber },
+                    { label: 'Fuel Type', value: car.fuelType },
+                    { label: 'Cubic Capacity', value: car.cubicCapacity ? `${car.cubicCapacity}cc` : '—' },
+                    { label: 'Road Tax Validity', value: car.roadTaxValidity },
+                    { label: 'Tax Valid Till', value: formatDate(car.taxValidTill) },
+                    { label: 'Duplicate Key', value: car.duplicateKey },
+                    { label: 'RTO NOC', value: car.rtoNoc },
+                    { label: 'Party Peshi', value: car.partyPeshi },
+                    { label: 'Mismatch in RC', value: car.mismatchInRc },
+                    { label: 'Contact Number', value: car.contactNumber },
+                    { label: 'Email', value: car.emailAddress },
+                  ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
+                >
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    {{ item.label }}
+                  </p>
+                  <p class="text-sm font-medium text-right">
+                    {{ item.value || '—' }}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -537,7 +662,9 @@ function sectionImages(keys: string[]) {
                 <Icon name="i-lucide-scan-eye" class="size-4 text-primary" />
                 Exterior Condition
               </CardTitle>
-              <p class="text-xs text-muted-foreground mt-1">Condition of each exterior component as inspected</p>
+              <p class="text-xs text-muted-foreground mt-1">
+                Condition of each exterior component as inspected
+              </p>
             </CardHeader>
             <Separator />
             <CardContent class="pt-4 pb-5">
@@ -545,7 +672,9 @@ function sectionImages(keys: string[]) {
                 <!-- Section heading -->
                 <div class="flex items-center gap-2 mb-3">
                   <Icon :name="section.icon" class="size-4 text-primary" />
-                  <h3 class="text-sm font-semibold">{{ section.title }}</h3>
+                  <h3 class="text-sm font-semibold">
+                    {{ section.title }}
+                  </h3>
                   <Separator class="flex-1" />
                 </div>
                 <!-- Parts grid -->
@@ -591,16 +720,22 @@ function sectionImages(keys: string[]) {
                       class="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border hover:border-primary/50 transition-colors"
                       @click="openLightbox(sectionImages(section.imageKeys), idx)"
                     >
-                      <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+                      <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
                       <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <Badge variant="secondary" class="absolute bottom-1 left-1 text-[9px] max-w-[calc(100%-8px)] truncate">{{ img.label }}</Badge>
+                      <Badge variant="secondary" class="absolute bottom-1 left-1 text-[9px] max-w-[calc(100%-8px)] truncate">
+                        {{ img.label }}
+                      </Badge>
                     </div>
                   </div>
                 </div>
               </div>
               <div v-if="car.comments" class="mt-4 rounded-lg bg-muted/50 p-4">
-                <p class="text-xs font-medium text-muted-foreground mb-1">Inspector Comments</p>
-                <p class="text-sm">{{ car.comments }}</p>
+                <p class="text-xs font-medium text-muted-foreground mb-1">
+                  Inspector Comments
+                </p>
+                <p class="text-sm">
+                  {{ car.comments }}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -656,8 +791,12 @@ function sectionImages(keys: string[]) {
               <div v-if="sectionImages(engineImageKeys).length" class="mt-4">
                 <div class="flex items-center gap-2 mb-3">
                   <Icon name="i-lucide-image" class="size-4 text-primary" />
-                  <h3 class="text-sm font-semibold">Engine Photos</h3>
-                  <Badge variant="secondary" class="text-xs">{{ sectionImages(engineImageKeys).length }}</Badge>
+                  <h3 class="text-sm font-semibold">
+                    Engine Photos
+                  </h3>
+                  <Badge variant="secondary" class="text-xs">
+                    {{ sectionImages(engineImageKeys).length }}
+                  </Badge>
                   <Separator class="flex-1" />
                 </div>
                 <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
@@ -667,9 +806,11 @@ function sectionImages(keys: string[]) {
                     class="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border hover:border-primary/50 transition-colors"
                     @click="openLightbox(sectionImages(engineImageKeys), idx)"
                   >
-                    <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+                    <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <Badge variant="secondary" class="absolute bottom-1 left-1 text-[9px] max-w-[calc(100%-8px)] truncate">{{ img.label }}</Badge>
+                    <Badge variant="secondary" class="absolute bottom-1 left-1 text-[9px] max-w-[calc(100%-8px)] truncate">
+                      {{ img.label }}
+                    </Badge>
                   </div>
                 </div>
               </div>
@@ -687,14 +828,20 @@ function sectionImages(keys: string[]) {
             <Separator />
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-0">
-                <div v-for="item in [
-                  { label: 'Odometer Reading', value: `${(car.odometerReadingInKms || 0).toLocaleString()} km` },
-                  { label: 'Fuel Level', value: car.fuelLevel },
-                  { label: 'ABS', value: car.abs },
-                  { label: 'Electricals', value: car.electricals },
-                ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">{{ item.label }}</p>
-                  <p class="text-sm font-medium text-right">{{ item.value || '—' }}</p>
+                <div
+                  v-for="item in [
+                    { label: 'Odometer Reading', value: `${(car.odometerReadingInKms || 0).toLocaleString()} km` },
+                    { label: 'Fuel Level', value: car.fuelLevel },
+                    { label: 'ABS', value: car.abs },
+                    { label: 'Electricals', value: car.electricals },
+                  ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
+                >
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    {{ item.label }}
+                  </p>
+                  <p class="text-sm font-medium text-right">
+                    {{ item.value || '—' }}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -745,24 +892,30 @@ function sectionImages(keys: string[]) {
             <Separator />
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                <div v-for="item in [
-                  { label: 'Music System', value: car.musicSystem },
-                  { label: 'Stereo', value: car.stereo },
-                  { label: 'Inbuilt Speaker', value: car.inbuiltSpeaker },
-                  { label: 'External Speaker', value: car.externalSpeaker },
-                  { label: 'Steering Audio Control', value: car.steeringMountedAudioControl },
-                  { label: 'Power Windows', value: car.noOfPowerWindows },
-                  { label: 'Rear Wiper/Washer', value: car.rearWiperWasher },
-                  { label: 'Rear Defogger', value: car.rearDefogger },
-                  { label: 'Reverse Camera', value: car.reverseCamera },
-                  { label: 'Sunroof', value: car.sunroof },
-                  { label: 'Leather Seats', value: car.leatherSeats },
-                  { label: 'Fabric Seats', value: car.fabricSeats },
-                  { label: 'AC (Manual)', value: car.airConditioningManual },
-                  { label: 'AC (Climate)', value: car.airConditioningClimateControl },
-                ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">{{ item.label }}</p>
-                  <p class="text-sm font-medium text-right">{{ item.value || '—' }}</p>
+                <div
+                  v-for="item in [
+                    { label: 'Music System', value: car.musicSystem },
+                    { label: 'Stereo', value: car.stereo },
+                    { label: 'Inbuilt Speaker', value: car.inbuiltSpeaker },
+                    { label: 'External Speaker', value: car.externalSpeaker },
+                    { label: 'Steering Audio Control', value: car.steeringMountedAudioControl },
+                    { label: 'Power Windows', value: car.noOfPowerWindows },
+                    { label: 'Rear Wiper/Washer', value: car.rearWiperWasher },
+                    { label: 'Rear Defogger', value: car.rearDefogger },
+                    { label: 'Reverse Camera', value: car.reverseCamera },
+                    { label: 'Sunroof', value: car.sunroof },
+                    { label: 'Leather Seats', value: car.leatherSeats },
+                    { label: 'Fabric Seats', value: car.fabricSeats },
+                    { label: 'AC (Manual)', value: car.airConditioningManual },
+                    { label: 'AC (Climate)', value: car.airConditioningClimateControl },
+                  ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
+                >
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    {{ item.label }}
+                  </p>
+                  <p class="text-sm font-medium text-right">
+                    {{ item.value || '—' }}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -826,12 +979,14 @@ function sectionImages(keys: string[]) {
             <Separator />
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div v-for="item in [
-                  { label: 'RHS Front', value: car.powerWindowConditionRhsFront },
-                  { label: 'LHS Front', value: car.powerWindowConditionLhsFront },
-                  { label: 'RHS Rear', value: car.powerWindowConditionRhsRear },
-                  { label: 'LHS Rear', value: car.powerWindowConditionLhsRear },
-                ]" :key="item.label" class="rounded-lg border overflow-hidden">
+                <div
+                  v-for="item in [
+                    { label: 'RHS Front', value: car.powerWindowConditionRhsFront },
+                    { label: 'LHS Front', value: car.powerWindowConditionLhsFront },
+                    { label: 'RHS Rear', value: car.powerWindowConditionRhsRear },
+                    { label: 'LHS Rear', value: car.powerWindowConditionLhsRear },
+                  ]" :key="item.label" class="rounded-lg border overflow-hidden"
+                >
                   <div class="px-3 py-2 bg-muted/40 border-b">
                     <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ item.label }}</span>
                   </div>
@@ -860,7 +1015,9 @@ function sectionImages(keys: string[]) {
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-image" class="size-4 text-primary" />
                 Interior Photos
-                <Badge variant="secondary" class="ml-auto text-xs">{{ sectionImages(interiorImageKeys).length }} photos</Badge>
+                <Badge variant="secondary" class="ml-auto text-xs">
+                  {{ sectionImages(interiorImageKeys).length }} photos
+                </Badge>
               </CardTitle>
             </CardHeader>
             <Separator />
@@ -872,12 +1029,16 @@ function sectionImages(keys: string[]) {
                   class="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border hover:border-primary/50 transition-colors"
                   @click="openLightbox(sectionImages(interiorImageKeys), idx)"
                 >
-                  <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+                  <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
                   <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <Badge variant="secondary" class="absolute bottom-1 left-1 text-[9px] max-w-[calc(100%-8px)] truncate">{{ img.label }}</Badge>
+                  <Badge variant="secondary" class="absolute bottom-1 left-1 text-[9px] max-w-[calc(100%-8px)] truncate">
+                    {{ img.label }}
+                  </Badge>
                 </div>
               </div>
-              <p v-if="sectionImages(interiorImageKeys).length === 0" class="text-center text-muted-foreground text-sm py-8">No interior photos available</p>
+              <p v-if="sectionImages(interiorImageKeys).length === 0" class="text-center text-muted-foreground text-sm py-8">
+                No interior photos available
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -889,7 +1050,9 @@ function sectionImages(keys: string[]) {
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-file-text" class="size-4 text-primary" />
                 Document Images
-                <Badge variant="secondary" class="ml-auto text-xs">{{ sectionImages(documentImageKeys).length }} documents</Badge>
+                <Badge variant="secondary" class="ml-auto text-xs">
+                  {{ sectionImages(documentImageKeys).length }} documents
+                </Badge>
               </CardTitle>
             </CardHeader>
             <Separator />
@@ -901,12 +1064,16 @@ function sectionImages(keys: string[]) {
                   class="group relative aspect-[4/3] rounded-lg overflow-hidden bg-muted cursor-pointer border hover:border-primary/50 transition-colors"
                   @click="openLightbox(sectionImages(documentImageKeys), idx)"
                 >
-                  <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+                  <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
                   <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <Badge variant="secondary" class="absolute bottom-1.5 left-1.5 text-[10px] max-w-[calc(100%-12px)] truncate">{{ img.label }}</Badge>
+                  <Badge variant="secondary" class="absolute bottom-1.5 left-1.5 text-[10px] max-w-[calc(100%-12px)] truncate">
+                    {{ img.label }}
+                  </Badge>
                 </div>
               </div>
-              <p v-if="sectionImages(documentImageKeys).length === 0" class="text-center text-muted-foreground text-sm py-8">No document images available</p>
+              <p v-if="sectionImages(documentImageKeys).length === 0" class="text-center text-muted-foreground text-sm py-8">
+                No document images available
+              </p>
             </CardContent>
           </Card>
 
@@ -922,20 +1089,36 @@ function sectionImages(keys: string[]) {
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-0">
                 <div class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">Chassis Details</p>
-                  <p class="text-sm font-medium font-mono text-right">{{ car.chassisDetails || car.chassisNumber || '—' }}</p>
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    Chassis Details
+                  </p>
+                  <p class="text-sm font-medium font-mono text-right">
+                    {{ car.chassisDetails || car.chassisNumber || '—' }}
+                  </p>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">VIN Plate Details</p>
-                  <p class="text-sm font-medium font-mono text-right">{{ car.vinPlateDetails || '—' }}</p>
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    VIN Plate Details
+                  </p>
+                  <p class="text-sm font-medium font-mono text-right">
+                    {{ car.vinPlateDetails || '—' }}
+                  </p>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">PUC Number</p>
-                  <p class="text-sm font-medium text-right">{{ car.pucNumber || '—' }}</p>
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    PUC Number
+                  </p>
+                  <p class="text-sm font-medium text-right">
+                    {{ car.pucNumber || '—' }}
+                  </p>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">PUC Validity</p>
-                  <p class="text-sm font-medium text-right">{{ formatDate(car.pucValidity) }}</p>
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    PUC Validity
+                  </p>
+                  <p class="text-sm font-medium text-right">
+                    {{ formatDate(car.pucValidity) }}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -954,28 +1137,34 @@ function sectionImages(keys: string[]) {
             <Separator />
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                <div v-for="item in [
-                  { label: 'Price Discovery', value: car.priceDiscovery ? `₹${car.priceDiscovery.toLocaleString()}` : '—' },
-                  { label: 'Price Discovery By', value: car.priceDiscoveryBy },
-                  { label: 'Customer Expected Price', value: car.customerExpectedPrice ? `₹${car.customerExpectedPrice.toLocaleString()}` : '—' },
-                  { label: 'Auction Status', value: car.auctionStatus },
-                  { label: 'Auction Start', value: formatDate(car.auctionStartTime) },
-                  { label: 'Auction End', value: formatDate(car.auctionEndTime) },
-                  { label: 'Auction Duration', value: car.auctionDuration ? `${car.auctionDuration} hours` : '—' },
-                  { label: 'Highest Bid', value: car.highestBid ? `₹${car.highestBid.toLocaleString()}` : '—' },
-                  { label: 'Highest Bidder', value: car.highestBidder },
-                  { label: 'One Click Price', value: car.oneClickPrice ? `₹${car.oneClickPrice.toLocaleString()}` : '—' },
-                  { label: 'Otobuy Offer', value: car.otobuyOffer ? `₹${car.otobuyOffer.toLocaleString()}` : '—' },
-                  { label: 'Sold At', value: car.soldAt ? `₹${car.soldAt.toLocaleString()}` : '—' },
-                  { label: 'Sold To', value: car.soldTo },
-                  { label: 'Fixed Margin', value: car.fixedMargin ? `${car.fixedMargin}%` : '—' },
-                  { label: 'Variable Margin', value: car.variableMargin ? `${car.variableMargin}%` : '—' },
-                  { label: 'Budget Car', value: car.budgetCar },
-                  { label: 'KM Range Level', value: car.kmRangeLevel },
-                  { label: 'Retail Associate', value: car.retailAssociate },
-                ]" :key="item.label" class="space-y-1">
-                  <p class="text-xs text-muted-foreground">{{ item.label }}</p>
-                  <p class="text-sm font-medium">{{ item.value || '—' }}</p>
+                <div
+                  v-for="item in [
+                    { label: 'Price Discovery', value: car.priceDiscovery ? `₹${car.priceDiscovery.toLocaleString()}` : '—' },
+                    { label: 'Price Discovery By', value: car.priceDiscoveryBy },
+                    { label: 'Customer Expected Price', value: car.customerExpectedPrice ? `₹${car.customerExpectedPrice.toLocaleString()}` : '—' },
+                    { label: 'Auction Status', value: car.auctionStatus },
+                    { label: 'Auction Start', value: formatDate(car.auctionStartTime) },
+                    { label: 'Auction End', value: formatDate(car.auctionEndTime) },
+                    { label: 'Auction Duration', value: car.auctionDuration ? `${car.auctionDuration} hours` : '—' },
+                    { label: 'Highest Bid', value: car.highestBid ? `₹${car.highestBid.toLocaleString()}` : '—' },
+                    { label: 'Highest Bidder', value: car.highestBidder },
+                    { label: 'One Click Price', value: car.oneClickPrice ? `₹${car.oneClickPrice.toLocaleString()}` : '—' },
+                    { label: 'Otobuy Offer', value: car.otobuyOffer ? `₹${car.otobuyOffer.toLocaleString()}` : '—' },
+                    { label: 'Sold At', value: car.soldAt ? `₹${car.soldAt.toLocaleString()}` : '—' },
+                    { label: 'Sold To', value: car.soldTo },
+                    { label: 'Fixed Margin', value: car.fixedMargin ? `${car.fixedMargin}%` : '—' },
+                    { label: 'Variable Margin', value: car.variableMargin ? `${car.variableMargin}%` : '—' },
+                    { label: 'Budget Car', value: car.budgetCar },
+                    { label: 'KM Range Level', value: car.kmRangeLevel },
+                    { label: 'Retail Associate', value: car.retailAssociate },
+                  ]" :key="item.label" class="space-y-1"
+                >
+                  <p class="text-xs text-muted-foreground">
+                    {{ item.label }}
+                  </p>
+                  <p class="text-sm font-medium">
+                    {{ item.value || '—' }}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -993,30 +1182,52 @@ function sectionImages(keys: string[]) {
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-0">
                 <div class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">Approved By</p>
-                  <p class="text-sm font-medium text-right">{{ car.approvedBy || '—' }}</p>
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    Approved By
+                  </p>
+                  <p class="text-sm font-medium text-right">
+                    {{ car.approvedBy || '—' }}
+                  </p>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">Approval Date</p>
-                  <p class="text-sm font-medium text-right">{{ formatDate(car.approvalDate) }}</p>
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    Approval Date
+                  </p>
+                  <p class="text-sm font-medium text-right">
+                    {{ formatDate(car.approvalDate) }}
+                  </p>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">Approval Status</p>
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    Approval Status
+                  </p>
                   <Badge variant="outline" :class="car.approvalStatus === 'APPROVED' ? 'bg-emerald-500/15 text-emerald-600 border-emerald-500/20' : 'bg-amber-500/15 text-amber-600 border-amber-500/20'">
                     {{ car.approvalStatus || '—' }}
                   </Badge>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">New Arrival Message</p>
-                  <p class="text-sm font-medium text-right">{{ formatDate(car.newArrivalMessage) }}</p>
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    New Arrival Message
+                  </p>
+                  <p class="text-sm font-medium text-right">
+                    {{ formatDate(car.newArrivalMessage) }}
+                  </p>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">Sent to Auction APK</p>
-                  <p class="text-sm font-medium text-right">{{ formatDate(car.sendToAuctionApk) }}</p>
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    Sent to Auction APK
+                  </p>
+                  <p class="text-sm font-medium text-right">
+                    {{ formatDate(car.sendToAuctionApk) }}
+                  </p>
                 </div>
                 <div class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">Lat/Long</p>
-                  <p class="text-sm font-medium font-mono text-right">{{ car.latlong || '—' }}</p>
+                  <p class="text-xs text-muted-foreground whitespace-nowrap">
+                    Lat/Long
+                  </p>
+                  <p class="text-sm font-medium font-mono text-right">
+                    {{ car.latlong || '—' }}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -1061,7 +1272,7 @@ function sectionImages(keys: string[]) {
               :src="lightboxImages[lightboxIndex]?.url"
               :alt="lightboxImages[lightboxIndex]?.label"
               class="max-w-full max-h-full object-contain rounded-lg select-none animate-in fade-in duration-200"
-            />
+            >
 
             <!-- Next -->
             <button
@@ -1084,7 +1295,7 @@ function sectionImages(keys: string[]) {
                 :class="ti === lightboxIndex ? 'border-primary ring-2 ring-primary/30 scale-105' : 'border-white/10 hover:border-white/30 opacity-60 hover:opacity-100'"
                 @click="goToImage(ti)"
               >
-                <img :src="thumb.url" :alt="thumb.label" class="w-full h-full object-cover" loading="lazy" />
+                <img :src="thumb.url" :alt="thumb.label" class="w-full h-full object-cover" loading="lazy">
               </button>
             </div>
           </div>

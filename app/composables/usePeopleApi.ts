@@ -39,8 +39,10 @@ export function usePeopleApi() {
 
   /** Fetch all users from the API (runs only once, cached globally) */
   async function fetchAllUsers(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null

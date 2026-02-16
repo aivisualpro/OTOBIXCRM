@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import type { DateRange } from 'reka-ui'
 import type { Ref } from 'vue'
-import { CalendarDate, DateFormatter, getLocalTimeZone, today } from '@internationalized/date'
+import { DateFormatter, getLocalTimeZone, today } from '@internationalized/date'
 import { Calendar as CalendarIcon } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
-
-const df = new DateFormatter('en-US', {
-  dateStyle: 'medium',
-})
 
 const emit = defineEmits<{
   'update:range': [{ start: Date, end: Date }]
 }>()
+
+const df = new DateFormatter('en-US', {
+  dateStyle: 'medium',
+})
 
 // Default: last 20 days
 const todayDate = today(getLocalTimeZone())

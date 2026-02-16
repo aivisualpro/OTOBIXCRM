@@ -27,12 +27,12 @@ const approvalPipeline = [
 
 // Map for quick lookup
 const statusColorMap: Record<string, string> = {}
-statusPipeline.forEach(s => { statusColorMap[s.key] = s.color })
-approvalPipeline.forEach(s => { statusColorMap[s.key] = s.color })
+statusPipeline.forEach((s) => { statusColorMap[s.key] = s.color })
+approvalPipeline.forEach((s) => { statusColorMap[s.key] = s.color })
 
 // ── State ──────────────────────────────────────────────
 const searchQuery = ref('')
-const filterStatus = ref('all')
+const _filterStatus = ref('all')
 const selectedLead = ref<TelecallingLead | null>(null)
 const showDetail = ref(false)
 
@@ -54,11 +54,13 @@ interface GanttRow {
 
 // Timeline boundaries
 const timelineStart = computed(() => {
-  if (allLeads.value.length === 0) return new Date()
+  if (allLeads.value.length === 0)
+    return new Date()
   const dates = allLeads.value
     .map(l => new Date(l.createdAt))
-    .filter(d => !isNaN(d.getTime()))
-  if (dates.length === 0) return new Date()
+    .filter(d => !Number.isNaN(d.getTime()))
+  if (dates.length === 0)
+    return new Date()
   const earliest = new Date(Math.min(...dates.map(d => d.getTime())))
   // Shift to start of that day
   earliest.setHours(0, 0, 0, 0)
@@ -86,13 +88,16 @@ const ganttRows = computed<GanttRow[]>(() => {
   return allLeads.value
     .filter((lead) => {
       // Only show inspected + approved leads
-      if (lead.inspectionStatus !== 'Inspected') return false
-      if (lead.approvalStatus !== 'Quality Approved') return false
+      if (lead.inspectionStatus !== 'Inspected')
+        return false
+      if (lead.approvalStatus !== 'Quality Approved')
+        return false
       // Search filter
       if (searchQuery.value) {
         const q = searchQuery.value.toLowerCase()
         const searchable = `${lead.appointmentId} ${lead.make} ${lead.model} ${lead.variant} ${lead.ownerName}`.toLowerCase()
-        if (!searchable.includes(q)) return false
+        if (!searchable.includes(q))
+          return false
       }
       return true
     })
@@ -115,7 +120,8 @@ const ganttRows = computed<GanttRow[]>(() => {
 function buildBarsForLead(lead: TelecallingLead): GanttBar[] {
   const bars: GanttBar[] = []
   const createdAt = new Date(lead.createdAt)
-  if (isNaN(createdAt.getTime())) return bars
+  if (Number.isNaN(createdAt.getTime()))
+    return bars
 
   const currentInspection = lead.inspectionStatus || 'Pending'
   const currentApproval = lead.approvalStatus || 'Pending'
@@ -135,7 +141,8 @@ function buildBarsForLead(lead: TelecallingLead): GanttBar[] {
 
   for (let i = 0; i <= resolvedInspIdx; i++) {
     const status = statusPipeline[i]
-    if (!status) continue
+    if (!status)
+      continue
     const isLast = i === resolvedInspIdx
     const barStart = startDayOffset + (i * daysPerStep)
     const barDuration = isLast
@@ -158,11 +165,13 @@ function buildBarsForLead(lead: TelecallingLead): GanttBar[] {
       const lastBar = bars[bars.length - 1]
       const approvalStart = lastBar ? lastBar.startDay + lastBar.durationDays : startDayOffset + totalLeadDays
       // Mark the last inspection bar as no longer current
-      if (lastBar) lastBar.isCurrent = false
+      if (lastBar)
+        lastBar.isCurrent = false
 
       for (let i = 1; i <= approvalIdx; i++) {
         const step = approvalPipeline[i]
-        if (!step) continue
+        if (!step)
+          continue
         bars.push({
           label: step.label,
           color: step.color,
@@ -179,7 +188,7 @@ function buildBarsForLead(lead: TelecallingLead): GanttBar[] {
 
 // ── Month headers ──────────────────────────────────────
 const monthHeaders = computed(() => {
-  const headers: { label: string; left: number; width: number }[] = []
+  const headers: { label: string, left: number, width: number }[] = []
   const start = new Date(timelineStart.value)
   const current = new Date(start.getFullYear(), start.getMonth(), 1)
 
@@ -202,7 +211,7 @@ const monthHeaders = computed(() => {
 
 // Weekly markers
 const weekMarkers = computed(() => {
-  const markers: { label: string; left: number; width: number }[] = []
+  const markers: { label: string, left: number, width: number }[] = []
   const start = new Date(timelineStart.value)
   const current = new Date(start)
   // Align to Monday
@@ -250,7 +259,8 @@ function openLeadDetail(lead: TelecallingLead) {
 }
 
 function formatDate(dateStr: string) {
-  if (!dateStr) return '—'
+  if (!dateStr)
+    return '—'
   try {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
@@ -264,7 +274,8 @@ const leftPanelRef = ref<HTMLElement | null>(null)
 let isSyncing = false
 
 function onBodyScroll() {
-  if (isSyncing) return
+  if (isSyncing)
+    return
   isSyncing = true
   if (headerTimelineRef.value && bodyTimelineRef.value) {
     headerTimelineRef.value.scrollLeft = bodyTimelineRef.value.scrollLeft
@@ -273,7 +284,8 @@ function onBodyScroll() {
 }
 
 function onHeaderScroll() {
-  if (isSyncing) return
+  if (isSyncing)
+    return
   isSyncing = true
   if (bodyTimelineRef.value && headerTimelineRef.value) {
     bodyTimelineRef.value.scrollLeft = headerTimelineRef.value.scrollLeft
@@ -322,8 +334,12 @@ function onLeftPanelScroll() {
             <Icon name="i-lucide-list-checks" class="size-4 text-primary" />
           </div>
           <div>
-            <p class="text-2xl font-bold tabular-nums">{{ stats.total }}</p>
-            <p class="text-xs text-muted-foreground">Total Leads</p>
+            <p class="text-2xl font-bold tabular-nums">
+              {{ stats.total }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              Total Leads
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -333,8 +349,12 @@ function onLeftPanelScroll() {
             <Icon name="i-lucide-clock" class="size-4 text-slate-500" />
           </div>
           <div>
-            <p class="text-2xl font-bold tabular-nums text-slate-600 dark:text-slate-400">{{ stats.pending }}</p>
-            <p class="text-xs text-muted-foreground">Pending</p>
+            <p class="text-2xl font-bold tabular-nums text-slate-600 dark:text-slate-400">
+              {{ stats.pending }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              Pending
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -344,8 +364,12 @@ function onLeftPanelScroll() {
             <Icon name="i-lucide-calendar-check" class="size-4 text-blue-500" />
           </div>
           <div>
-            <p class="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">{{ stats.scheduled }}</p>
-            <p class="text-xs text-muted-foreground">Scheduled</p>
+            <p class="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">
+              {{ stats.scheduled }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              Scheduled
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -355,8 +379,12 @@ function onLeftPanelScroll() {
             <Icon name="i-lucide-check-circle-2" class="size-4 text-emerald-500" />
           </div>
           <div>
-            <p class="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{{ stats.inspected }}</p>
-            <p class="text-xs text-muted-foreground">Inspected</p>
+            <p class="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+              {{ stats.inspected }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              Inspected
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -366,8 +394,12 @@ function onLeftPanelScroll() {
             <Icon name="i-lucide-x-circle" class="size-4 text-red-500" />
           </div>
           <div>
-            <p class="text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">{{ stats.cancelled }}</p>
-            <p class="text-xs text-muted-foreground">Cancelled</p>
+            <p class="text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">
+              {{ stats.cancelled }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              Cancelled
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -465,7 +497,9 @@ function onLeftPanelScroll() {
           <!-- Empty state -->
           <div v-if="ganttRows.length === 0" class="p-8 text-center">
             <Icon name="i-lucide-inbox" class="size-8 text-muted-foreground mx-auto mb-2" />
-            <p class="text-sm text-muted-foreground">No leads found</p>
+            <p class="text-sm text-muted-foreground">
+              No leads found
+            </p>
           </div>
         </div>
 
@@ -583,43 +617,79 @@ function onLeftPanelScroll() {
           <!-- Info grid -->
           <div class="grid grid-cols-2 gap-3">
             <div class="space-y-1">
-              <p class="text-xs text-muted-foreground">Owner</p>
-              <p class="text-sm font-medium">{{ selectedLead.ownerName || '—' }}</p>
+              <p class="text-xs text-muted-foreground">
+                Owner
+              </p>
+              <p class="text-sm font-medium">
+                {{ selectedLead.ownerName || '—' }}
+              </p>
             </div>
             <div class="space-y-1">
-              <p class="text-xs text-muted-foreground">Contact</p>
-              <p class="text-sm font-medium">{{ selectedLead.customerContactNumber || '—' }}</p>
+              <p class="text-xs text-muted-foreground">
+                Contact
+              </p>
+              <p class="text-sm font-medium">
+                {{ selectedLead.customerContactNumber || '—' }}
+              </p>
             </div>
             <div class="space-y-1">
-              <p class="text-xs text-muted-foreground">Registration</p>
-              <p class="text-sm font-medium font-mono">{{ selectedLead.carRegistrationNumber || '—' }}</p>
+              <p class="text-xs text-muted-foreground">
+                Registration
+              </p>
+              <p class="text-sm font-medium font-mono">
+                {{ selectedLead.carRegistrationNumber || '—' }}
+              </p>
             </div>
             <div class="space-y-1">
-              <p class="text-xs text-muted-foreground">City</p>
-              <p class="text-sm font-medium">{{ selectedLead.city || '—' }}</p>
+              <p class="text-xs text-muted-foreground">
+                City
+              </p>
+              <p class="text-sm font-medium">
+                {{ selectedLead.city || '—' }}
+              </p>
             </div>
             <div class="space-y-1">
-              <p class="text-xs text-muted-foreground">Created</p>
-              <p class="text-sm font-medium">{{ formatDate(selectedLead.createdAt) }}</p>
+              <p class="text-xs text-muted-foreground">
+                Created
+              </p>
+              <p class="text-sm font-medium">
+                {{ formatDate(selectedLead.createdAt) }}
+              </p>
             </div>
             <div class="space-y-1">
-              <p class="text-xs text-muted-foreground">Inspection Date</p>
-              <p class="text-sm font-medium">{{ formatDate(selectedLead.inspectionDateTime) }}</p>
+              <p class="text-xs text-muted-foreground">
+                Inspection Date
+              </p>
+              <p class="text-sm font-medium">
+                {{ formatDate(selectedLead.inspectionDateTime) }}
+              </p>
             </div>
             <div class="space-y-1">
-              <p class="text-xs text-muted-foreground">Allocated To</p>
-              <p class="text-sm font-medium">{{ selectedLead.allocatedTo || '—' }}</p>
+              <p class="text-xs text-muted-foreground">
+                Allocated To
+              </p>
+              <p class="text-sm font-medium">
+                {{ selectedLead.allocatedTo || '—' }}
+              </p>
             </div>
             <div class="space-y-1">
-              <p class="text-xs text-muted-foreground">Added By</p>
-              <p class="text-sm font-medium">{{ selectedLead.addedBy || '—' }}</p>
+              <p class="text-xs text-muted-foreground">
+                Added By
+              </p>
+              <p class="text-sm font-medium">
+                {{ selectedLead.addedBy || '—' }}
+              </p>
             </div>
           </div>
 
           <!-- Remarks -->
           <div v-if="selectedLead.remarks" class="space-y-1">
-            <p class="text-xs text-muted-foreground">Remarks</p>
-            <p class="text-sm">{{ selectedLead.remarks }}</p>
+            <p class="text-xs text-muted-foreground">
+              Remarks
+            </p>
+            <p class="text-sm">
+              {{ selectedLead.remarks }}
+            </p>
           </div>
         </div>
 

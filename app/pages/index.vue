@@ -37,24 +37,31 @@ watch(isDesktop, () => {
 }, { immediate: true })
 
 // ─── Format helpers ───
-function formatCurrency(val: number): string {
+function _formatCurrency(val: number): string {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val)
 }
 
 function formatCompact(val: number): string {
-  if (val >= 10000000) return `₹${(val / 10000000).toFixed(1)}Cr`
-  if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`
-  if (val >= 1000) return `₹${(val / 1000).toFixed(1)}K`
+  if (val >= 10000000)
+    return `₹${(val / 10000000).toFixed(1)}Cr`
+  if (val >= 100000)
+    return `₹${(val / 100000).toFixed(1)}L`
+  if (val >= 1000)
+    return `₹${(val / 1000).toFixed(1)}K`
   return `₹${val}`
 }
 
 // ─── Contextual footer messages ───
 const auctionsFooterMsg = computed(() => {
   const c = auctionsClosedChange.value
-  if (c > 10) return 'Strong auction performance'
-  if (c > 0) return 'Auctions trending upward'
-  if (c === 0) return 'Steady auction volume'
-  if (c > -10) return 'Slight auction dip'
+  if (c > 10)
+    return 'Strong auction performance'
+  if (c > 0)
+    return 'Auctions trending upward'
+  if (c === 0)
+    return 'Steady auction volume'
+  if (c > -10)
+    return 'Slight auction dip'
   return 'Auctions need attention'
 })
 
@@ -64,9 +71,12 @@ const auctionsFooterSub = computed(() =>
 
 const customersFooterMsg = computed(() => {
   const c = newCustomersChange.value
-  if (c > 10) return 'Customer growth accelerating'
-  if (c > 0) return 'Steady customer acquisition'
-  if (c === 0) return 'Customer acquisition stable'
+  if (c > 10)
+    return 'Customer growth accelerating'
+  if (c > 0)
+    return 'Steady customer acquisition'
+  if (c === 0)
+    return 'Customer acquisition stable'
   return 'Acquisition needs attention'
 })
 
@@ -81,11 +91,16 @@ const activeFooterMsg = computed(() => {
 
 const growthFooterMsg = computed(() => {
   const g = kpi.value.growthRate
-  if (g > 20) return 'Exceptional growth trajectory'
-  if (g > 10) return 'Strong growth momentum'
-  if (g > 0) return 'Positive growth trend'
-  if (g === 0) return 'Flat period-over-period'
-  if (g > -10) return 'Minor decline detected'
+  if (g > 20)
+    return 'Exceptional growth trajectory'
+  if (g > 10)
+    return 'Strong growth momentum'
+  if (g > 0)
+    return 'Positive growth trend'
+  if (g === 0)
+    return 'Flat period-over-period'
+  if (g > -10)
+    return 'Minor decline detected'
   return 'Significant decline – review needed'
 })
 
@@ -103,7 +118,9 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
       <Teleport to="#header-actions">
         <div class="flex items-center gap-2">
           <BaseDateRangePicker @update:range="onDateRangeUpdate" />
-          <Button size="sm" class="h-8">Download</Button>
+          <Button size="sm" class="h-8">
+            Download
+          </Button>
         </div>
       </Teleport>
     </ClientOnly>
@@ -134,7 +151,7 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
             </CardTitle>
             <CardAction>
               <Badge
-                :variant="'outline'"
+                variant="outline"
                 :class="[
                   auctionsClosedChange >= 0
                     ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
@@ -181,7 +198,7 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
             </CardTitle>
             <CardAction>
               <Badge
-                :variant="'outline'"
+                variant="outline"
                 :class="[
                   newCustomersChange >= 0
                     ? 'border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400'
@@ -289,7 +306,7 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
             </CardTitle>
             <CardAction>
               <Badge
-                :variant="'outline'"
+                variant="outline"
                 :class="[
                   kpi.growthRateDirection === 'up'
                     ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400'
