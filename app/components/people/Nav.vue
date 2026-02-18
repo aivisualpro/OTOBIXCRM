@@ -5,6 +5,8 @@ const navItems = [
   { id: 'otobix', title: 'Otobix', icon: 'i-lucide-shield-check', color: 'text-blue-500', link: '/people/otobix' },
   { id: 'dealers', title: 'Dealers', icon: 'i-lucide-store', color: 'text-amber-500', link: '/people/dealers' },
   { id: 'customers', title: 'Customers', icon: 'i-lucide-user-round', color: 'text-emerald-500', link: '/people/customers' },
+  { id: 'kams', title: 'KAMs', icon: 'i-lucide-briefcase', color: 'text-orange-500', link: '/people/kams' },
+  { id: 'others', title: 'Others', icon: 'i-lucide-users-round', color: 'text-violet-500', link: '/people/others' },
 ]
 
 const currentActiveId = computed(() => {

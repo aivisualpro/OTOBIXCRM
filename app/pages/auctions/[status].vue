@@ -14,6 +14,7 @@ const filter = computed(() => auctionRouteFilters[statusKey.value])
     :icon="filter.icon"
     :columns="auctionColumns"
     :filter-fn="filter.filterFn"
+    :status-key="statusKey"
   />
   <div v-else class="flex items-center justify-center h-64 text-muted-foreground">
     <p>Unknown status: {{ statusKey }}</p>

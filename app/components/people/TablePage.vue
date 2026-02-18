@@ -10,7 +10,10 @@ const props = defineProps<{
   columns: CrudColumn[]
   filterFn: (user: any) => boolean
   showStatusCounts?: boolean
+  categoryKey?: string
 }>()
+
+const isOtobix = computed(() => props.categoryKey === 'otobix')
 
 const _entity = computed(() => props.entityName || 'Person')
 
@@ -25,6 +28,7 @@ const {
   fetchError,
   fetchAllUsers,
   refreshUsers,
+  createUser,
 } = usePeopleApi()
 
 // Fetch users once
@@ -137,6 +141,70 @@ const pageNumbers = computed(() => {
   pages.push(total)
   return pages
 })
+
+// ─── Add User Dialog ───
+const showAddDialog = ref(false)
+const isSubmitting = ref(false)
+
+const defaultForm = () => ({
+  userName: '',
+  email: '',
+  password: '',
+  phoneNumber: '',
+  userRole: 'Staff',
+  location: '',
+  approvalStatus: 'Approved',
+  assignedKam: '',
+  addressList: [''],
+  isStaff: true,
+})
+
+const form = ref(defaultForm())
+
+function addAddress() {
+  form.value.addressList.push('')
+}
+
+function removeAddress(index: number) {
+  form.value.addressList.splice(index, 1)
+}
+
+function resetForm() {
+  form.value = defaultForm()
+}
+
+async function handleCreateUser() {
+  // Validate all required fields
+  const f = form.value
+  const filledAddresses = f.addressList.filter(a => a.trim())
+  if (!f.userName.trim() || !f.email.trim() || !f.password.trim() || !f.phoneNumber.trim() || !f.userRole || !f.location || filledAddresses.length === 0) {
+    toast.error('Please fill all required fields (Name, Email, Password, Phone, Role, Location, Address)')
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    // Filter out empty address strings
+    const payload = {
+      ...form.value,
+      addressList: form.value.addressList.filter(a => a.trim()),
+    }
+    await createUser(payload)
+    toast.success(`User "${form.value.userName}" created successfully`)
+    showAddDialog.value = false
+    resetForm()
+  }
+  catch (err: any) {
+    toast.error(err?.data?.message || err?.message || 'Failed to create user')
+  }
+  finally {
+    isSubmitting.value = false
+  }
+}
+
+const roleOptions = ['Admin', 'Staff', 'KAM', 'Inspector', 'Operations']
+const statusOptions = ['Approved', 'Pending', 'Rejected']
+const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR', 'KOLKATA', 'KRISHNANAGAR', 'CUTTACK', 'ASANSOL', 'RANCHI']
 </script>
 
 <template>
@@ -168,6 +236,10 @@ const pageNumbers = computed(() => {
       <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="handleRefresh">
         <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading }" />
         Refresh
+      </Button>
+      <Button v-if="isOtobix" size="sm" class="h-8" @click="showAddDialog = true">
+        <Icon name="i-lucide-plus" class="mr-1 size-3.5" />
+        Add User
       </Button>
     </Teleport>
   </ClientOnly>
@@ -283,4 +355,124 @@ const pageNumbers = computed(() => {
       </div>
     </div>
   </div>
+
+  <!-- Add User Dialog -->
+  <Sheet v-model:open="showAddDialog">
+    <SheetContent class="sm:max-w-lg overflow-y-auto p-6">
+      <SheetHeader>
+        <SheetTitle>Add New User</SheetTitle>
+        <SheetDescription>Create a new Otobix staff user account.</SheetDescription>
+      </SheetHeader>
+
+      <div class="mt-6 space-y-4">
+        <!-- Name -->
+        <div class="space-y-1.5">
+          <Label for="add-user-name">Full Name <span class="text-destructive">*</span></Label>
+          <Input id="add-user-name" v-model="form.userName" placeholder="John Doe" />
+        </div>
+
+        <!-- Email -->
+        <div class="space-y-1.5">
+          <Label for="add-user-email">Email <span class="text-destructive">*</span></Label>
+          <Input id="add-user-email" v-model="form.email" type="email" placeholder="john@otobix.com" />
+        </div>
+
+        <!-- Password -->
+        <div class="space-y-1.5">
+          <Label for="add-user-password">Password <span class="text-destructive">*</span></Label>
+          <Input id="add-user-password" v-model="form.password" type="password" placeholder="Minimum 6 characters" />
+        </div>
+
+        <!-- Phone -->
+        <div class="space-y-1.5">
+          <Label for="add-user-phone">Phone Number <span class="text-destructive">*</span></Label>
+          <Input id="add-user-phone" v-model="form.phoneNumber" placeholder="+91 9876543210" />
+        </div>
+
+        <!-- Role + Status row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-1.5">
+            <Label for="add-user-role">Role <span class="text-destructive">*</span></Label>
+            <Select v-model="form.userRole">
+              <SelectTrigger id="add-user-role">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="r in roleOptions" :key="r" :value="r">{{ r }}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="space-y-1.5">
+            <Label for="add-user-status">Approval Status</Label>
+            <Select v-model="form.approvalStatus">
+              <SelectTrigger id="add-user-status">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="s in statusOptions" :key="s" :value="s">{{ s }}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="space-y-1.5">
+          <Label for="add-user-location">Location <span class="text-destructive">*</span></Label>
+          <Select v-model="form.location">
+            <SelectTrigger id="add-user-location">
+              <SelectValue placeholder="Select location" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="loc in locationOptions" :key="loc" :value="loc">{{ loc }}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <!-- Assigned KAM -->
+        <div class="space-y-1.5">
+          <Label for="add-user-kam">Assigned KAM</Label>
+          <Input id="add-user-kam" v-model="form.assignedKam" placeholder="KAM name or ID" />
+        </div>
+
+        <!-- Addresses -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <Label>Addresses <span class="text-destructive">*</span></Label>
+            <Button variant="ghost" size="sm" class="h-7 text-xs" @click="addAddress">
+              <Icon name="i-lucide-plus" class="mr-1 size-3" />
+              Add
+            </Button>
+          </div>
+          <div v-for="(_, idx) in form.addressList" :key="idx" class="flex items-center gap-2">
+            <Input v-model="form.addressList[idx]" :placeholder="`Address ${idx + 1}`" class="flex-1" />
+            <Button v-if="form.addressList.length > 1" variant="ghost" size="icon" class="size-8 shrink-0 text-muted-foreground hover:text-destructive" @click="removeAddress(idx)">
+              <Icon name="i-lucide-x" class="size-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        <!-- Is Staff toggle (auto-on & locked for Otobix) -->
+        <div class="flex items-center justify-between rounded-lg border p-3" :class="{ 'opacity-60': isOtobix }">
+          <div>
+            <Label for="add-user-staff">Staff Member</Label>
+            <p class="text-xs text-muted-foreground">
+              {{ isOtobix ? 'Always enabled for Otobix staff' : 'Mark this user as Otobix staff' }}
+            </p>
+          </div>
+          <Switch id="add-user-staff" :checked="form.isStaff" :disabled="isOtobix" @update:checked="form.isStaff = $event" />
+        </div>
+      </div>
+
+      <SheetFooter class="mt-6 pt-4 border-t">
+        <Button variant="outline" @click="showAddDialog = false">
+          Cancel
+        </Button>
+        <Button :disabled="isSubmitting" @click="handleCreateUser">
+          <Icon v-if="isSubmitting" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
+          <Icon v-else name="i-lucide-user-plus" class="mr-1.5 size-3.5" />
+          Create User
+        </Button>
+      </SheetFooter>
+    </SheetContent>
+  </Sheet>
 </template>

@@ -85,6 +85,34 @@ export function usePeopleApi() {
     await fetchAllUsers(true)
   }
 
+  /** Create a new user via admin endpoint */
+  async function createUser(payload: {
+    userRole: string
+    phoneNumber: string
+    location: string
+    userName: string
+    email: string
+    password: string
+    addressList: string[]
+    approvalStatus: string
+    assignedKam: string
+    isStaff: boolean
+  }) {
+    const response = await $fetch<any>(
+      `${config.public.apiBaseUrl}admin/create-user-through-admin`,
+      {
+        method: 'POST',
+        headers: {
+          ...(authToken.value ? { Authorization: `Bearer ${authToken.value}` } : {}),
+        },
+        body: payload,
+      },
+    )
+    // Refresh list after creation
+    await refreshUsers()
+    return response
+  }
+
   return {
     allUsers: _allUsers,
     isLoading: _isFetching,
@@ -92,5 +120,6 @@ export function usePeopleApi() {
     fetchError: _fetchError,
     fetchAllUsers,
     refreshUsers,
+    createUser,
   }
 }

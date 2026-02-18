@@ -24,7 +24,7 @@ export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
   otobix: {
     label: 'Otobix',
     filterFn: (user: any) => user.isStaff === true,
-    showStatusCounts: false,
+    showStatusCounts: true,
   },
   dealers: {
     label: 'Dealers',
@@ -34,6 +34,11 @@ export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
   customers: {
     label: 'Customers',
     filterFn: (user: any) => user.userRole === 'Customer',
+    showStatusCounts: true,
+  },
+  others: {
+    label: 'Others',
+    filterFn: (user: any) => user.isStaff !== true && user.userRole !== 'Dealer' && user.userRole !== 'Customer',
     showStatusCounts: true,
   },
 }
