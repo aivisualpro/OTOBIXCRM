@@ -15,10 +15,10 @@ export const peopleColumns: CrudColumn[] = [
 
 export const otobixColumns: CrudColumn[] = [
   { key: 'userName', label: 'Name', type: 'avatar' },
-  { key: 'email', label: 'Email' },
-  { key: 'phoneNumber', label: 'Phone' },
-  { key: 'location', label: 'Location' },
   { key: 'userRole', label: 'Role', type: 'badge' },
+  { key: 'phoneNumber', label: 'Phone' },
+  { key: 'approvalStatus', label: 'Status', type: 'badge' },
+  { key: 'location', label: 'City' },
 ]
 
 // Each sub-route defines how to filter the global users list
