@@ -19,7 +19,7 @@
       </ResizablePanel>
       <ResizableHandle with-handle />
       <ResizablePanel :default-size="80">
-        <div class="h-full overflow-hidden">
+        <div class="h-full overflow-y-auto">
           <slot />
         </div>
       </ResizablePanel>
