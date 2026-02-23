@@ -14,7 +14,7 @@ const activeColumns = computed(() => categoryKey.value === 'otobix' ? otobixColu
   <PeopleTablePage
     v-else-if="filter"
     :title="filter.label"
-    :description="`Viewing ${filter.label} users`"
+    description=""
     icon="i-lucide-users"
     entity-name="Person"
     :columns="activeColumns"

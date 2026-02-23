@@ -43,12 +43,14 @@ export function usePeopleApi() {
 
   /**
    * Fetches ALL users from user/all-users-list.
-   * Each tab (otobix / dealers / customers / others) filters this list client-side.
+   * Each tab (otobix / dealers / customers / kams) filters this list client-side.
    * Cached globally — runs only once unless force=true.
    */
   async function fetchAllUsers(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null

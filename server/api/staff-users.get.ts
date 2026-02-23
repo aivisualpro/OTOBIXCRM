@@ -14,9 +14,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: 'MONGODB_URI not configured' })
   }
 
-  // Pick the DB name based on the environment flag from runtimeConfig
-  // Maps from: PRODUCTION_MONGODB_DB_NAME / DEVELOPMENT_MONGODB_DB_NAME
-  const isProd = (config.public as any).apiBaseUrl?.includes('ob-dealerapp-kong')
+  // Pick DB name: use productionMongodbDbName when the production URL is set,
+  // otherwise fall back to developmentMongodbDbName
+  const prodUrl = (config.public.apiBaseUrlProduction as string) || ''
+  const isProd = prodUrl.length > 0 && !prodUrl.includes('development')
   const dbName = isProd
     ? ((config.productionMongodbDbName as string) || 'otobix_auction_app')
     : ((config.developmentMongodbDbName as string) || 'otobix_auction_app_development')

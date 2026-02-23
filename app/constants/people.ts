@@ -4,7 +4,6 @@ export const peopleColumns: CrudColumn[] = [
   { key: 'userName', label: 'Name', type: 'avatar' },
   { key: 'email', label: 'Email' },
   { key: 'phoneNumber', label: 'Phone' },
-  { key: 'userRole', label: 'Role', type: 'badge' },
   { key: 'dealershipName', label: 'Dealership' },
   { key: 'location', label: 'Location' },
   { key: 'entityType', label: 'Entity Type' },
@@ -45,11 +44,6 @@ export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
   customers: {
     label: 'Customers',
     filterFn: (user: any) => user.userRole === 'Customer',
-    showStatusCounts: true,
-  },
-  others: {
-    label: 'Others',
-    filterFn: (user: any) => !STAFF_ROLES.includes(user.userRole) && user.userRole !== 'Dealer' && user.userRole !== 'Customer',
     showStatusCounts: true,
   },
 }
