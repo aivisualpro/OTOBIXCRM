@@ -15,7 +15,6 @@ const currentActiveId = computed(() => {
   // /people/otobix/abc123 -> ['people', 'otobix', 'abc123']
   return segments[1] || 'otobix'
 })
-
 </script>
 
 <template>

@@ -22,14 +22,17 @@ export function useKamsApi() {
 
   function headers(): Record<string, string> {
     const h: Record<string, string> = {}
-    if (authToken.value) h.Authorization = `Bearer ${authToken.value}`
+    if (authToken.value)
+      h.Authorization = `Bearer ${authToken.value}`
     return h
   }
 
   /** Fetch all KAMs */
   async function fetchKams(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     _isFetching.value = true
     _fetchError.value = null

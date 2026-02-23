@@ -178,18 +178,20 @@ function openProfile(user: any) {
 const showAddDialog = ref(false)
 const isSubmitting = ref(false)
 
-const defaultForm = () => ({
-  userName: '',
-  email: '',
-  password: '',
-  phoneNumber: '',
-  userRole: 'Staff',
-  location: [] as string[],
-  approvalStatus: 'Approved',
-  assignedKam: '',
-  addressList: [''],
-  isStaff: true,
-})
+function defaultForm() {
+  return {
+    userName: '',
+    email: '',
+    password: '',
+    phoneNumber: '',
+    userRole: 'Staff',
+    location: [] as string[],
+    approvalStatus: 'Approved',
+    assignedKam: '',
+    addressList: [''],
+    isStaff: true,
+  }
+}
 
 const form = ref(defaultForm())
 
@@ -234,7 +236,7 @@ async function handleCreateUser() {
   }
 }
 
-const roleOptions = ['Admin', 'Staff', 'KAM', 'Inspector', 'Operations']
+const roleOptions = ['Inspection Engineer', 'Retailer', 'Sales Manager', 'Telecaller', 'QC']
 const statusOptions = ['Approved', 'Pending', 'Rejected']
 const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR', 'KOLKATA', 'KRISHNANAGAR', 'CUTTACK', 'ASANSOL', 'RANCHI']
 
@@ -242,7 +244,8 @@ const locationPopoverOpen = ref(false)
 
 function toggleLocation(loc: string) {
   const idx = form.value.location.indexOf(loc)
-  if (idx >= 0) form.value.location.splice(idx, 1)
+  if (idx >= 0)
+    form.value.location.splice(idx, 1)
   else form.value.location.push(loc)
 }
 
@@ -255,7 +258,8 @@ const allLocationsSelected = computed(() => form.value.location.length === locat
 function toggleSelectAllLocations() {
   if (allLocationsSelected.value) {
     form.value.location = []
-  } else {
+  }
+  else {
     form.value.location = [...locationOptions]
   }
 }
@@ -453,7 +457,9 @@ function toggleSelectAllLocations() {
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="r in roleOptions" :key="r" :value="r">{{ r }}</SelectItem>
+                <SelectItem v-for="r in roleOptions" :key="r" :value="r">
+                  {{ r }}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -464,7 +470,9 @@ function toggleSelectAllLocations() {
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="s in statusOptions" :key="s" :value="s">{{ s }}</SelectItem>
+                <SelectItem v-for="s in statusOptions" :key="s" :value="s">
+                  {{ s }}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -561,6 +569,4 @@ function toggleSelectAllLocations() {
       </SheetFooter>
     </SheetContent>
   </Sheet>
-
-
 </template>

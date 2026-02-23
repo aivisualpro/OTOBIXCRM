@@ -9,7 +9,7 @@ const password = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-const { currentEnv, apiBaseUrl, envLabel, envColor, setEnvironment, ENV_LABELS } = useApiEnvironment()
+const { currentEnv, apiBaseUrl, envLabel, setEnvironment } = useApiEnvironment()
 
 async function onSubmit(event: Event) {
   event.preventDefault()

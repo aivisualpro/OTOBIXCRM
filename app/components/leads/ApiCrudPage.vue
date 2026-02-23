@@ -2,9 +2,6 @@
 import type { CrudColumn, CrudFormField } from '~/composables/useCrud'
 import { toast } from 'vue-sonner'
 
-const inspectionStatuses = ['Pending', 'Scheduled', 'Re-Scheduled', 'Under Inspection', 'Inspected', 'Cancelled']
-const approvalStatuses = ['Pending', 'Under Review', 'Quality Approved', 'Quality Rejected']
-
 const props = defineProps<{
   title: string
   description: string
@@ -15,6 +12,8 @@ const props = defineProps<{
   filters?: Record<string, string>
   clickable?: boolean
 }>()
+const inspectionStatuses = ['Pending', 'Scheduled', 'Re-Scheduled', 'Under Inspection', 'Inspected', 'Cancelled']
+const approvalStatuses = ['Pending', 'Under Review', 'Quality Approved', 'Quality Rejected']
 
 const router = useRouter()
 
@@ -77,7 +76,8 @@ async function updateLeadStatus(lead: any, field: string, newStatus: string) {
 }
 
 async function confirmAssignInspector() {
-  if (!assigningLead.value) return
+  if (!assigningLead.value)
+    return
   const lead = assigningLead.value
   await doStatusUpdate(lead, {
     inspectionStatus: lead._pendingStatus || 'Scheduled',
@@ -92,7 +92,8 @@ async function doStatusUpdate(lead: any, updates: Record<string, string>) {
   isUpdatingStatus.value = true
   try {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (authToken.value) headers.Authorization = `Bearer ${authToken.value}`
+    if (authToken.value)
+      headers.Authorization = `Bearer ${authToken.value}`
 
     // Get logged-in user info for changedBy
     const userCookie = useCookie('userData')
@@ -434,14 +435,16 @@ const pageNumbers = computed(() => {
                 <DropdownMenuTrigger as-child>
                   <Badge
                     variant="outline"
-                    :class="[getBadgeClass(item[col.key]), 'cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all']"
+                    class="cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all" :class="[getBadgeClass(item[col.key])]"
                   >
                     {{ item[col.key] || '—' }}
                     <Icon name="i-lucide-chevron-down" class="size-3 ml-1 opacity-50" />
                   </Badge>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" class="min-w-[160px]">
-                  <DropdownMenuLabel class="text-xs">{{ col.label }}</DropdownMenuLabel>
+                  <DropdownMenuLabel class="text-xs">
+                    {{ col.label }}
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     v-for="status in (col.key === 'inspectionStatus' ? inspectionStatuses : approvalStatuses)"
@@ -704,8 +707,12 @@ const pageNumbers = computed(() => {
         <div class="space-y-4 py-4">
           <!-- Lead Info -->
           <div v-if="assigningLead" class="rounded-lg border bg-muted/30 p-3 space-y-1">
-            <p class="text-sm font-medium">{{ assigningLead.ownerName || 'Unknown' }}</p>
-            <p class="text-xs text-muted-foreground">{{ assigningLead.make }} {{ assigningLead.model }} — {{ assigningLead.carRegistrationNumber }}</p>
+            <p class="text-sm font-medium">
+              {{ assigningLead.ownerName || 'Unknown' }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              {{ assigningLead.make }} {{ assigningLead.model }} — {{ assigningLead.carRegistrationNumber }}
+            </p>
           </div>
 
           <!-- Inspector Select -->
@@ -719,7 +726,9 @@ const pageNumbers = computed(() => {
                 <SelectItem v-for="insp in inspectors" :key="insp._id || insp.id" :value="insp.userName">
                   <div class="flex items-center gap-2">
                     <Avatar class="size-5">
-                      <AvatarFallback class="text-[9px]">{{ insp.userName?.slice(0,2)?.toUpperCase() }}</AvatarFallback>
+                      <AvatarFallback class="text-[9px]">
+                        {{ insp.userName?.slice(0, 2)?.toUpperCase() }}
+                      </AvatarFallback>
                     </Avatar>
                     {{ insp.userName }}
                   </div>
@@ -733,7 +742,9 @@ const pageNumbers = computed(() => {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" @click="showAssignDialog = false">Cancel</Button>
+          <Button variant="outline" @click="showAssignDialog = false">
+            Cancel
+          </Button>
           <Button :disabled="!selectedInspector || isUpdatingStatus" @click="confirmAssignInspector">
             <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
             <Icon v-else name="i-lucide-check" class="mr-1.5 size-3.5" />

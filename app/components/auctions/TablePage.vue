@@ -45,25 +45,33 @@ const now = ref(Date.now())
 let timerInterval: ReturnType<typeof setInterval> | null = null
 
 function formatCountdown(targetDate: string, expiredLabel = 'Starting soon'): string {
-  if (!targetDate) return '—'
+  if (!targetDate)
+    return '—'
   const target = new Date(targetDate).getTime()
   const diff = target - now.value
-  if (diff <= 0) return expiredLabel
+  if (diff <= 0)
+    return expiredLabel
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
   const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
   const secs = Math.floor((diff % (1000 * 60)) / 1000)
-  if (days > 0) return `${days}d ${hours}h ${mins}m`
-  if (hours > 0) return `${hours}h ${mins}m ${secs}s`
+  if (days > 0)
+    return `${days}d ${hours}h ${mins}m`
+  if (hours > 0)
+    return `${hours}h ${mins}m ${secs}s`
   return `${mins}m ${secs}s`
 }
 
 function getCountdownClass(upcomingUntil: string): string {
-  if (!upcomingUntil) return 'bg-gray-500/10 text-gray-500 border-gray-500/20'
+  if (!upcomingUntil)
+    return 'bg-gray-500/10 text-gray-500 border-gray-500/20'
   const diff = new Date(upcomingUntil).getTime() - now.value
-  if (diff <= 0) return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-  if (diff < 1000 * 60 * 60) return 'bg-red-500/10 text-red-600 border-red-500/20'         // < 1 hour
-  if (diff < 1000 * 60 * 60 * 24) return 'bg-amber-500/10 text-amber-600 border-amber-500/20' // < 24 hours
+  if (diff <= 0)
+    return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+  if (diff < 1000 * 60 * 60)
+    return 'bg-red-500/10 text-red-600 border-red-500/20' // < 1 hour
+  if (diff < 1000 * 60 * 60 * 24)
+    return 'bg-amber-500/10 text-amber-600 border-amber-500/20' // < 24 hours
   return 'bg-blue-500/10 text-blue-600 border-blue-500/20'
 }
 
@@ -281,9 +289,15 @@ const pageNumbers = computed(() => {
             <TableHead>Fuel</TableHead>
             <TableHead>Odometer</TableHead>
             <TableHead>Highest Bid</TableHead>
-            <TableHead v-if="isUpcoming">Starts In</TableHead>
-            <TableHead v-else-if="isLive">Ends In</TableHead>
-            <TableHead v-else>Status</TableHead>
+            <TableHead v-if="isUpcoming">
+              Starts In
+            </TableHead>
+            <TableHead v-else-if="isLive">
+              Ends In
+            </TableHead>
+            <TableHead v-else>
+              Status
+            </TableHead>
             <TableHead>Auction End</TableHead>
           </TableRow>
         </TableHeader>

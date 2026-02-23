@@ -14,12 +14,14 @@ const isOpen = computed({
 })
 
 function getInitials(name: string): string {
-  if (!name) return '??'
+  if (!name)
+    return '??'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
 function formatDate(value: string): string {
-  if (!value) return '—'
+  if (!value)
+    return '—'
   try {
     return new Date(value).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -31,7 +33,8 @@ function formatDate(value: string): string {
 }
 
 function formatDateTime(value: string): string {
-  if (!value) return '—'
+  if (!value)
+    return '—'
   try {
     return new Date(value).toLocaleString('en-US', {
       year: 'numeric',
@@ -57,32 +60,36 @@ const statusBadge: Record<string, string> = {
 }
 
 const roleBadge: Record<string, string> = {
-  Admin: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  Staff: 'bg-teal-500/10 text-teal-600 border-teal-500/20',
+  'Admin': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  'Staff': 'bg-teal-500/10 text-teal-600 border-teal-500/20',
   'Super Admin': 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
-  KAM: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
-  Inspector: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
-  Operations: 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20',
-  Dealer: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  Customer: 'bg-violet-500/10 text-violet-600 border-violet-500/20',
+  'KAM': 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  'Inspector': 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+  'Operations': 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20',
+  'Dealer': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+  'Customer': 'bg-violet-500/10 text-violet-600 border-violet-500/20',
 }
 
 const locations = computed(() => {
   const loc = props.user?.location
-  if (!loc) return []
-  if (Array.isArray(loc)) return loc
+  if (!loc)
+    return []
+  if (Array.isArray(loc))
+    return loc
   return [loc]
 })
 
 const addresses = computed(() => {
   const addr = props.user?.addressList
-  if (!addr || (Array.isArray(addr) && addr.length === 0)) return []
+  if (!addr || (Array.isArray(addr) && addr.length === 0))
+    return []
   return Array.isArray(addr) ? addr.filter((a: string) => a?.trim()) : [addr]
 })
 
 // Info cards data
 const infoCards = computed(() => {
-  if (!props.user) return []
+  if (!props.user)
+    return []
   return [
     {
       icon: 'i-lucide-mail',

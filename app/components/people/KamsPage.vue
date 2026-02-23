@@ -55,7 +55,8 @@ const paginatedItems = computed(() => {
 })
 
 function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value) return
+  if (page < 1 || page > totalPages.value)
+    return
   currentPage.value = page
 }
 
@@ -65,11 +66,14 @@ const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFil
 const pageNumbers = computed(() => {
   const total = totalPages.value
   const current = currentPage.value
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  if (total <= 7)
+    return Array.from({ length: total }, (_, i) => i + 1)
   const pages: (number | string)[] = [1]
-  if (current > 3) pages.push('...')
+  if (current > 3)
+    pages.push('...')
   for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i)
-  if (current < total - 2) pages.push('...')
+  if (current < total - 2)
+    pages.push('...')
   pages.push(total)
   return pages
 })
@@ -84,13 +88,15 @@ const showFormDialog = ref(false)
 const isEditing = ref(false)
 const isSubmitting = ref(false)
 
-const defaultForm = () => ({
-  id: '',
-  name: '',
-  email: '',
-  phoneNumber: '',
-  region: '',
-})
+function defaultForm() {
+  return {
+    id: '',
+    name: '',
+    email: '',
+    phoneNumber: '',
+    region: '',
+  }
+}
 
 const form = ref(defaultForm())
 
@@ -149,7 +155,8 @@ function confirmDelete(kam: any) {
 }
 
 async function handleDelete() {
-  if (!deletingKam.value) return
+  if (!deletingKam.value)
+    return
   isDeleting.value = true
   try {
     await deleteKam(deletingKam.value._id || deletingKam.value.id)

@@ -54,4 +54,3 @@ export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
     showStatusCounts: true,
   },
 }
-

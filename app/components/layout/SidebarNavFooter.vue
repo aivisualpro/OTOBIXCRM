@@ -18,7 +18,8 @@ function handleLogout() {
   isLoggedIn.value = null
   authToken.value = null
   userData.value = null
-  if (isMobile.value) setOpenMobile(false)
+  if (isMobile.value)
+    setOpenMobile(false)
   // Hard redirect to clear all cached state
   window.location.href = '/login'
 }

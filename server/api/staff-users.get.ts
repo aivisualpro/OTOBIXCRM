@@ -8,11 +8,7 @@ export default defineEventHandler(async (event) => {
       const config = useRuntimeConfig(event)
 
       // Nuxt auto-maps NUXT_MONGODB_URI → config.mongodbUri
-      // Also try direct process.env as fallback
-      const uri = (config.mongodbUri as string)
-        || process.env.NUXT_MONGODB_URI
-        || process.env.MONGODB_URI
-        || ''
+      const uri = (config.mongodbUri as string) || ''
 
       if (!uri) {
         console.error('[API:staff-users] Available config keys:', Object.keys(config))
@@ -21,7 +17,7 @@ export default defineEventHandler(async (event) => {
 
       _client = new MongoClient(uri)
       await _client.connect()
-      console.log('[API:staff-users] Connected to MongoDB successfully')
+      console.warn('[API:staff-users] Connected to MongoDB successfully')
     }
 
     const db = _client.db('otobix_auction_app')
@@ -35,7 +31,7 @@ export default defineEventHandler(async (event) => {
       })
       .toArray()
 
-    console.log(`[API:staff-users] Found ${staffUsers.length} staff users`)
+    console.warn(`[API:staff-users] Found ${staffUsers.length} staff users`)
     return { users: staffUsers }
   }
   catch (err: any) {

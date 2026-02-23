@@ -7,15 +7,13 @@ export default defineNuxtConfig({
   devServer: { loadingTemplate: () => '' },
 
   runtimeConfig: {
-    mongodbUri: process.env.NUXT_MONGODB_URI || '',
+    mongodbUri: '',
     public: {
       apiBaseUrl: 'https://ob-dealerapp-kong.onrender.com/api/',
       apiBaseUrlProduction: 'https://ob-dealerapp-kong.onrender.com/api/',
       apiBaseUrlDevelopment: 'https://otobix-app-backend-development.onrender.com/api/',
     },
   },
-
-
 
   watch: ['~/app.config.ts'],
 

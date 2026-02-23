@@ -100,7 +100,7 @@ export function usePeopleApi() {
         ? response
         : response?.users || response?.data || []
 
-      console.log(`[People:Staff] Loaded ${usersArray.length} staff users from MongoDB`)
+      console.warn(`[People:Staff] Loaded ${usersArray.length} staff users from MongoDB`)
 
       _staffUsers.value = usersArray.map((item: any) => ({
         ...item,
@@ -118,7 +118,6 @@ export function usePeopleApi() {
       _isStaffFetching.value = false
     }
   }
-
 
   /** Force re-fetch all users */
   async function refreshUsers() {
@@ -146,7 +145,7 @@ export function usePeopleApi() {
       ...payload,
       location: Array.isArray(payload.location) ? payload.location.join(', ') : payload.location,
     }
-    console.log('[People] Creating user:', JSON.stringify(body))
+    console.warn('[People] Creating user:', JSON.stringify(body))
     const response = await $fetch<any>(
       `${apiBaseUrl.value}admin/create-user-through-admin`,
       {
@@ -162,8 +161,8 @@ export function usePeopleApi() {
   /** Update user profile via PUT user/update-user-through-admin/?userId=<id> */
   async function updateUser(userId: string, payload: Partial<PeopleUser>) {
     const url = `${apiBaseUrl.value}user/update-user-through-admin`
-    console.log('[People:Update] PUT →', url, '?userId=', userId)
-    console.log('[People:Update] Body:', JSON.stringify(payload).slice(0, 500))
+    console.warn('[People:Update] PUT →', url, '?userId=', userId)
+    console.warn('[People:Update] Body:', JSON.stringify(payload).slice(0, 500))
 
     const response = await $fetch<any>(url, {
       method: 'PUT',
@@ -172,13 +171,12 @@ export function usePeopleApi() {
       body: payload,
     })
 
-    console.log('[People:Update] Response:', JSON.stringify(response).slice(0, 300))
+    console.warn('[People:Update] Response:', JSON.stringify(response).slice(0, 300))
 
     // Refresh caches
     await Promise.all([refreshUsers(), refreshStaffUsers()])
     return response
   }
-
 
   /** Delete user via external API */
   async function deleteUser(userId: string) {
@@ -194,8 +192,6 @@ export function usePeopleApi() {
     await Promise.all([refreshUsers(), refreshStaffUsers()])
     return response
   }
-
-
 
   /** Find a user by ID from cached lists */
   function getUserById(id: string): PeopleUser | undefined {
@@ -223,5 +219,3 @@ export function usePeopleApi() {
     getUserById,
   }
 }
-
-
