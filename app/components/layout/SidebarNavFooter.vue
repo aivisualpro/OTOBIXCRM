@@ -18,7 +18,9 @@ function handleLogout() {
   isLoggedIn.value = null
   authToken.value = null
   userData.value = null
-  navigateTo('/login')
+  if (isMobile.value) setOpenMobile(false)
+  // Hard redirect to clear all cached state
+  window.location.href = '/login'
 }
 
 const showModalTheme = ref(false)
@@ -47,9 +49,10 @@ const showModalTheme = ref(false)
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          class="min-w-56 w-[--radix-dropdown-menu-trigger-width] rounded-lg"
-          :side="isMobile ? 'bottom' : 'right'"
-          align="end"
+          class="min-w-56 w-[--radix-dropdown-menu-trigger-width] rounded-lg z-[100]"
+          :side="isMobile ? 'bottom' : 'top'"
+          align="start"
+          :side-offset="8"
         >
           <DropdownMenuLabel class="p-0 font-normal">
             <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">

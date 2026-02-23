@@ -23,24 +23,43 @@ setHeader({ title: props.title, description: props.description, icon: props.icon
 // ─── Global cached data ───
 const {
   allUsers,
-  isLoading,
-  isFetched,
-  fetchError,
+  isLoading: isAllLoading,
+  isFetched: isAllFetched,
+  fetchError: allFetchError,
   fetchAllUsers,
   refreshUsers,
+  // Staff-specific
+  staffUsers,
+  isStaffLoading,
+  isStaffFetched,
+  staffFetchError,
+  fetchStaffUsers,
+  refreshStaffUsers,
   createUser,
 } = usePeopleApi()
 
-// Fetch users once
+// Fetch the right data source on mount
 onMounted(() => {
+  if (isOtobix.value) {
+    fetchStaffUsers()
+  }
   fetchAllUsers()
 })
+
+// ─── Bridge: use staff data for Otobix, general data for others ───
+const isLoading = computed(() => isOtobix.value ? isStaffLoading.value : isAllLoading.value)
+const isFetched = computed(() => isOtobix.value ? isStaffFetched.value : isAllFetched.value)
+const fetchError = computed(() => isOtobix.value ? staffFetchError.value : allFetchError.value)
 
 // ─── UI State ───
 const search = ref('')
 
 // ─── Base filtered list (before search) for status counts ───
-const baseFilteredItems = computed(() => allUsers.value.filter(props.filterFn))
+// For otobix: use staffUsers directly (already filtered server-side)
+// For others: use allUsers with the client-side filter
+const baseFilteredItems = computed(() =>
+  isOtobix.value ? staffUsers.value : allUsers.value.filter(props.filterFn),
+)
 
 // ─── Approval status counts ───
 const approvedCount = computed(() => baseFilteredItems.value.filter(u => u.approvalStatus === 'Approved').length)
@@ -119,7 +138,12 @@ function getInitials(name: string): string {
 }
 
 async function handleRefresh() {
-  await refreshUsers()
+  if (isOtobix.value) {
+    await Promise.all([refreshUsers(), refreshStaffUsers()])
+  }
+  else {
+    await refreshUsers()
+  }
   toast.success('Data refreshed from server')
 }
 
@@ -142,6 +166,14 @@ const pageNumbers = computed(() => {
   return pages
 })
 
+// ─── Navigate to profile ───
+const router = useRouter()
+
+function openProfile(user: any) {
+  const userId = user._id || user.id
+  router.push(`/people/${props.categoryKey}/${userId}`)
+}
+
 // ─── Add User Dialog ───
 const showAddDialog = ref(false)
 const isSubmitting = ref(false)
@@ -152,7 +184,7 @@ const defaultForm = () => ({
   password: '',
   phoneNumber: '',
   userRole: 'Staff',
-  location: '',
+  location: [] as string[],
   approvalStatus: 'Approved',
   assignedKam: '',
   addressList: [''],
@@ -177,7 +209,7 @@ async function handleCreateUser() {
   // Validate all required fields
   const f = form.value
   const filledAddresses = f.addressList.filter(a => a.trim())
-  if (!f.userName.trim() || !f.email.trim() || !f.password.trim() || !f.phoneNumber.trim() || !f.userRole || !f.location || filledAddresses.length === 0) {
+  if (!f.userName.trim() || !f.email.trim() || !f.password.trim() || !f.phoneNumber.trim() || !f.userRole || f.location.length === 0 || filledAddresses.length === 0) {
     toast.error('Please fill all required fields (Name, Email, Password, Phone, Role, Location, Address)')
     return
   }
@@ -205,6 +237,28 @@ async function handleCreateUser() {
 const roleOptions = ['Admin', 'Staff', 'KAM', 'Inspector', 'Operations']
 const statusOptions = ['Approved', 'Pending', 'Rejected']
 const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR', 'KOLKATA', 'KRISHNANAGAR', 'CUTTACK', 'ASANSOL', 'RANCHI']
+
+const locationPopoverOpen = ref(false)
+
+function toggleLocation(loc: string) {
+  const idx = form.value.location.indexOf(loc)
+  if (idx >= 0) form.value.location.splice(idx, 1)
+  else form.value.location.push(loc)
+}
+
+function removeLocation(loc: string) {
+  form.value.location = form.value.location.filter(l => l !== loc)
+}
+
+const allLocationsSelected = computed(() => form.value.location.length === locationOptions.length)
+
+function toggleSelectAllLocations() {
+  if (allLocationsSelected.value) {
+    form.value.location = []
+  } else {
+    form.value.location = [...locationOptions]
+  }
+}
 </script>
 
 <template>
@@ -285,7 +339,8 @@ const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR',
           <TableRow
             v-for="item in paginatedItems"
             :key="item.id || item._id"
-            class="group"
+            class="group cursor-pointer hover:bg-muted/40 transition-colors"
+            @click="openProfile(item)"
           >
             <TableCell v-for="col in columns" :key="col.key">
               <!-- Avatar -->
@@ -415,17 +470,48 @@ const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR',
           </div>
         </div>
 
-        <!-- Location -->
+        <!-- Location (multi-select) -->
         <div class="space-y-1.5">
-          <Label for="add-user-location">Location <span class="text-destructive">*</span></Label>
-          <Select v-model="form.location">
-            <SelectTrigger id="add-user-location">
-              <SelectValue placeholder="Select location" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="loc in locationOptions" :key="loc" :value="loc">{{ loc }}</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label>Location <span class="text-destructive">*</span></Label>
+          <Popover v-model:open="locationPopoverOpen">
+            <PopoverTrigger as-child>
+              <Button variant="outline" role="combobox" class="w-full justify-between h-auto min-h-9 font-normal">
+                <span v-if="form.location.length === 0" class="text-muted-foreground">Select locations...</span>
+                <div v-else class="flex flex-wrap gap-1">
+                  <Badge v-for="loc in form.location" :key="loc" variant="secondary" class="text-xs gap-1">
+                    {{ loc }}
+                    <Icon name="i-lucide-x" class="size-3 cursor-pointer hover:text-destructive" @click.stop="removeLocation(loc)" />
+                  </Badge>
+                </div>
+                <Icon name="i-lucide-chevrons-up-down" class="ml-2 size-3.5 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-[--reka-popover-trigger-width] p-0" align="start">
+              <div class="max-h-56 overflow-y-auto p-1">
+                <!-- Select All -->
+                <button
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-medium hover:bg-accent cursor-pointer border-b mb-1 pb-1.5"
+                  @click="toggleSelectAllLocations()"
+                >
+                  <Checkbox :checked="allLocationsSelected" class="pointer-events-none" />
+                  Select All
+                  <span class="ml-auto text-xs text-muted-foreground">{{ form.location.length }}/{{ locationOptions.length }}</span>
+                </button>
+                <!-- Individual locations -->
+                <button
+                  v-for="loc in locationOptions"
+                  :key="loc"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer transition-colors"
+                  :class="form.location.includes(loc) ? 'bg-primary/5 text-primary hover:bg-primary/10' : 'hover:bg-accent'"
+                  @click="toggleLocation(loc)"
+                >
+                  <Checkbox :checked="form.location.includes(loc)" class="pointer-events-none" />
+                  {{ loc }}
+                  <Icon v-if="form.location.includes(loc)" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <!-- Assigned KAM -->
@@ -475,4 +561,6 @@ const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR',
       </SheetFooter>
     </SheetContent>
   </Sheet>
+
+
 </template>

@@ -2,6 +2,9 @@
 import type { CrudColumn, CrudFormField } from '~/composables/useCrud'
 import { toast } from 'vue-sonner'
 
+const inspectionStatuses = ['Pending', 'Scheduled', 'Re-Scheduled', 'Under Inspection', 'Inspected', 'Cancelled']
+const approvalStatuses = ['Pending', 'Under Review', 'Quality Approved', 'Quality Rejected']
+
 const props = defineProps<{
   title: string
   description: string
@@ -43,6 +46,90 @@ onMounted(() => {
   fetchAllLeads()
   fetchCarDropdowns()
 })
+
+// ─── Status Change + Inspector Assignment ───
+const { apiBaseUrl } = useApiEnvironment()
+const authToken = useCookie('authToken')
+const { allUsers, fetchAllUsers } = usePeopleApi()
+
+// Inspector users (userRole === 'Inspector')
+const inspectors = computed(() =>
+  allUsers.value.filter((u: any) => u.userRole === 'Inspector'),
+)
+
+onMounted(() => fetchAllUsers())
+
+const showAssignDialog = ref(false)
+const assigningLead = ref<any>(null)
+const selectedInspector = ref('')
+const isUpdatingStatus = ref(false)
+
+async function updateLeadStatus(lead: any, field: string, newStatus: string) {
+  // If changing inspection status to 'Scheduled', show inspector assignment dialog
+  if (field === 'inspectionStatus' && newStatus === 'Scheduled') {
+    assigningLead.value = { ...lead, _pendingStatus: newStatus }
+    selectedInspector.value = lead.allocatedTo || ''
+    showAssignDialog.value = true
+    return
+  }
+
+  await doStatusUpdate(lead, { [field]: newStatus })
+}
+
+async function confirmAssignInspector() {
+  if (!assigningLead.value) return
+  const lead = assigningLead.value
+  await doStatusUpdate(lead, {
+    inspectionStatus: lead._pendingStatus || 'Scheduled',
+    allocatedTo: selectedInspector.value,
+  })
+  showAssignDialog.value = false
+  assigningLead.value = null
+  selectedInspector.value = ''
+}
+
+async function doStatusUpdate(lead: any, updates: Record<string, string>) {
+  isUpdatingStatus.value = true
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (authToken.value) headers.Authorization = `Bearer ${authToken.value}`
+
+    // Get logged-in user info for changedBy
+    const userCookie = useCookie('userData')
+    const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
+
+    await $fetch<any>(
+      `${apiBaseUrl.value}inspection/telecallings/update`,
+      {
+        method: 'PUT',
+        headers,
+        body: {
+          telecallingId: lead._id || lead.id,
+          appointmentId: lead.appointmentId,
+          changedBy: currentUser?.userName || 'Admin',
+          source: 'CRM',
+          ...updates,
+        },
+      },
+    )
+
+    // Update local cache
+    const leadId = lead._id || lead.id
+    const idx = allLeads.value.findIndex((l: any) => (l._id || l.id) === leadId)
+    if (idx !== -1) {
+      Object.assign(allLeads.value[idx] as object, updates)
+    }
+
+    toast.success(`Status updated to ${Object.values(updates).join(', ')}`)
+  }
+  catch (err: any) {
+    console.error('Status update failed:', err)
+    toast.error(err?.data?.message || err?.message || 'Failed to update status')
+  }
+  finally {
+    isUpdatingStatus.value = false
+  }
+}
 
 // ─── UI State ───
 const search = ref('')
@@ -342,7 +429,34 @@ const pageNumbers = computed(() => {
                 </Avatar>
                 <span class="font-medium">{{ item[col.key] || '—' }}</span>
               </div>
-              <!-- Badge -->
+              <!-- Clickable Badge (Status columns) -->
+              <DropdownMenu v-else-if="col.type === 'badge' && (col.key === 'inspectionStatus' || col.key === 'approvalStatus')">
+                <DropdownMenuTrigger as-child>
+                  <Badge
+                    variant="outline"
+                    :class="[getBadgeClass(item[col.key]), 'cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all']"
+                  >
+                    {{ item[col.key] || '—' }}
+                    <Icon name="i-lucide-chevron-down" class="size-3 ml-1 opacity-50" />
+                  </Badge>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" class="min-w-[160px]">
+                  <DropdownMenuLabel class="text-xs">{{ col.label }}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    v-for="status in (col.key === 'inspectionStatus' ? inspectionStatuses : approvalStatuses)"
+                    :key="status"
+                    :class="{ 'bg-accent': item[col.key] === status }"
+                    @click.stop="updateLeadStatus(item, col.key, status)"
+                  >
+                    <Badge variant="outline" :class="getBadgeClass(status)" class="text-[10px] h-5">
+                      {{ status }}
+                    </Badge>
+                    <Icon v-if="item[col.key] === status" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <!-- Other Badge columns -->
               <Badge v-else-if="col.type === 'badge'" variant="outline" :class="getBadgeClass(item[col.key])">
                 {{ item[col.key] || '—' }}
               </Badge>
@@ -573,5 +687,60 @@ const pageNumbers = computed(() => {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    <!-- Assign Inspector Dialog -->
+    <Dialog v-model:open="showAssignDialog">
+      <DialogContent class="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon name="i-lucide-user-check" class="size-5 text-blue-500" />
+            Assign Inspector
+          </DialogTitle>
+          <DialogDescription>
+            Select an inspector to assign for this scheduled inspection.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <!-- Lead Info -->
+          <div v-if="assigningLead" class="rounded-lg border bg-muted/30 p-3 space-y-1">
+            <p class="text-sm font-medium">{{ assigningLead.ownerName || 'Unknown' }}</p>
+            <p class="text-xs text-muted-foreground">{{ assigningLead.make }} {{ assigningLead.model }} — {{ assigningLead.carRegistrationNumber }}</p>
+          </div>
+
+          <!-- Inspector Select -->
+          <div class="space-y-2">
+            <Label for="inspector-select">Inspector</Label>
+            <Select v-model="selectedInspector">
+              <SelectTrigger id="inspector-select">
+                <SelectValue placeholder="Select an inspector" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="insp in inspectors" :key="insp._id || insp.id" :value="insp.userName">
+                  <div class="flex items-center gap-2">
+                    <Avatar class="size-5">
+                      <AvatarFallback class="text-[9px]">{{ insp.userName?.slice(0,2)?.toUpperCase() }}</AvatarFallback>
+                    </Avatar>
+                    {{ insp.userName }}
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p v-if="inspectors.length === 0" class="text-xs text-muted-foreground">
+              No inspectors found. Add users with role "Inspector" first.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="showAssignDialog = false">Cancel</Button>
+          <Button :disabled="!selectedInspector || isUpdatingStatus" @click="confirmAssignInspector">
+            <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
+            <Icon v-else name="i-lucide-check" class="mr-1.5 size-3.5" />
+            Assign & Schedule
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

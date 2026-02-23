@@ -56,7 +56,7 @@ const _isFetching = ref(false)
 const _fetchError = ref<string | null>(null)
 
 export function useLeadsApi() {
-  const config = useRuntimeConfig()
+  const { apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 
   /** Fetch all leads from the API (runs only once, cached globally) */
@@ -72,15 +72,16 @@ export function useLeadsApi() {
     _fetchError.value = null
 
     try {
-      // Fetch with a large limit to get all records in one shot
+      // Fetch first page with a reasonable limit for fast initial load
       const response = await $fetch<ApiResponse>(
-        `${config.public.apiBaseUrl}admin/telecallings/get-list`,
+        `${apiBaseUrl.value}admin/telecallings/get-list`,
         {
           method: 'GET',
-          params: { page: 1, limit: 10000 },
+          params: { page: 1, limit: 500 },
           headers: {
             ...(authToken.value ? { Authorization: `Bearer ${authToken.value}` } : {}),
           },
+          signal: AbortSignal.timeout(60_000), // 60s timeout for cold-start APIs
         },
       )
 
@@ -95,6 +96,33 @@ export function useLeadsApi() {
       }))
 
       _isFetched.value = true
+
+      // If there are more pages, fetch them in the background
+      const totalCount = (response as any)?.totalCount || (response as any)?.total || 0
+      if (totalCount > 500) {
+        const totalPages = Math.ceil(totalCount / 500)
+        for (let page = 2; page <= totalPages; page++) {
+          try {
+            const nextPage = await $fetch<ApiResponse>(
+              `${apiBaseUrl.value}admin/telecallings/get-list`,
+              {
+                method: 'GET',
+                params: { page, limit: 500 },
+                headers: {
+                  ...(authToken.value ? { Authorization: `Bearer ${authToken.value}` } : {}),
+                },
+              },
+            )
+            const nextData = (nextPage as any)?.data || nextPage
+            const nextArray = Array.isArray(nextData) ? nextData : nextData?.data || []
+            _allLeads.value = [
+              ..._allLeads.value,
+              ...nextArray.map((item: any) => ({ ...item, id: item._id || item.id })),
+            ]
+          }
+          catch { break }
+        }
+      }
     }
     catch (err: any) {
       console.error('Failed to fetch leads:', err)

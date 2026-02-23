@@ -9,7 +9,7 @@ const password = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-const config = useRuntimeConfig()
+const { currentEnv, apiBaseUrl, envLabel, envColor, setEnvironment, ENV_LABELS } = useApiEnvironment()
 
 async function onSubmit(event: Event) {
   event.preventDefault()
@@ -23,7 +23,7 @@ async function onSubmit(event: Event) {
   isLoading.value = true
 
   try {
-    const response = await $fetch<any>(`${config.public.apiBaseUrl}user/login`, {
+    const response = await $fetch<any>(`${apiBaseUrl.value}user/login`, {
       method: 'POST',
       body: {
         userName: username.value,
@@ -66,6 +66,40 @@ async function onSubmit(event: Event) {
 
 <template>
   <form class="grid gap-6" @submit="onSubmit">
+    <!-- Environment Selector -->
+    <div class="rounded-xl border bg-card/50 p-3">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Environment</span>
+        <Badge variant="outline" class="text-[10px] h-5" :class="currentEnv === 'production' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border-amber-500/20'">
+          {{ envLabel }}
+        </Badge>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          class="flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all"
+          :class="currentEnv === 'production'
+            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 ring-1 ring-emerald-500/20'
+            : 'border-border hover:bg-accent text-muted-foreground'"
+          @click="setEnvironment('production')"
+        >
+          <span class="size-2 rounded-full" :class="currentEnv === 'production' ? 'bg-emerald-500' : 'bg-muted-foreground/30'" />
+          Production
+        </button>
+        <button
+          type="button"
+          class="flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all"
+          :class="currentEnv === 'development'
+            ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/20'
+            : 'border-border hover:bg-accent text-muted-foreground'"
+          @click="setEnvironment('development')"
+        >
+          <span class="size-2 rounded-full" :class="currentEnv === 'development' ? 'bg-amber-500' : 'bg-muted-foreground/30'" />
+          Development
+        </button>
+      </div>
+    </div>
+
     <div class="grid gap-2">
       <Label for="username">
         Username

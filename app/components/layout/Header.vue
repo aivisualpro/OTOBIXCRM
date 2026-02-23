@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const { headerState, clearHeader } = usePageHeader()
+const { envLabel, currentEnv } = useApiEnvironment()
 
 // Clear header state on route change so pages without setHeader() don't show stale info
 watch(() => route.fullPath, () => {
@@ -45,6 +46,19 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
       </div>
     </div>
     <div class="ml-auto flex items-center gap-2">
+      <!-- Environment Badge -->
+      <ClientOnly>
+        <Badge
+          variant="outline"
+          class="text-[10px] h-5 hidden sm:inline-flex"
+          :class="currentEnv === 'production'
+            ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+            : 'bg-amber-500/10 text-amber-600 border-amber-500/20'"
+        >
+          <span class="size-1.5 rounded-full mr-1" :class="currentEnv === 'production' ? 'bg-emerald-500' : 'bg-amber-500'" />
+          {{ envLabel }}
+        </Badge>
+      </ClientOnly>
       <div id="header-actions" class="contents" />
       <slot />
     </div>

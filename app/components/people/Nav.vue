@@ -10,9 +10,12 @@ const navItems = [
 ]
 
 const currentActiveId = computed(() => {
-  const path = route.path
-  return path.split('/').pop() || 'otobix'
+  const segments = route.path.split('/').filter(Boolean)
+  // /people/otobix -> ['people', 'otobix']
+  // /people/otobix/abc123 -> ['people', 'otobix', 'abc123']
+  return segments[1] || 'otobix'
 })
+
 </script>
 
 <template>

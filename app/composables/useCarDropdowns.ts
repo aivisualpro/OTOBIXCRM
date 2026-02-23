@@ -23,7 +23,7 @@ const _carDropdownsFetched = ref(false)
 const _carDropdownsFetching = ref(false)
 
 export function useCarDropdowns() {
-  const config = useRuntimeConfig()
+  const { apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 
   async function fetchCarDropdowns(force = false) {
@@ -36,7 +36,7 @@ export function useCarDropdowns() {
 
     try {
       const response = await $fetch<CarDropdownResponse>(
-        `${config.public.apiBaseUrl}admin/customers/car-dropdowns/get-list`,
+        `${apiBaseUrl.value}admin/customers/car-dropdowns/get-list`,
         {
           method: 'GET',
           params: { page: 1, limit: 10000, search: '' },

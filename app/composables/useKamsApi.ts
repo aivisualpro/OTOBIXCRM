@@ -17,7 +17,7 @@ const _isFetching = ref(false)
 const _fetchError = ref<string | null>(null)
 
 export function useKamsApi() {
-  const config = useRuntimeConfig()
+  const { apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 
   function headers(): Record<string, string> {
@@ -36,7 +36,7 @@ export function useKamsApi() {
 
     try {
       const response = await $fetch<any>(
-        `${config.public.apiBaseUrl}admin/kams/get-list`,
+        `${apiBaseUrl.value}admin/kams/get-list`,
         { method: 'GET', headers: headers() },
       )
 
@@ -68,7 +68,7 @@ export function useKamsApi() {
   /** Create KAM */
   async function createKam(payload: { name: string, email: string, phoneNumber: string, region: string }) {
     const response = await $fetch<any>(
-      `${config.public.apiBaseUrl}admin/kams/create`,
+      `${apiBaseUrl.value}admin/kams/create`,
       { method: 'POST', headers: headers(), body: payload },
     )
     await refreshKams()
@@ -78,7 +78,7 @@ export function useKamsApi() {
   /** Update KAM */
   async function updateKam(payload: { id: string, name: string, email: string, phoneNumber: string, region: string }) {
     const response = await $fetch<any>(
-      `${config.public.apiBaseUrl}admin/kams/update`,
+      `${apiBaseUrl.value}admin/kams/update`,
       { method: 'PUT', headers: headers(), body: payload },
     )
     await refreshKams()
@@ -88,7 +88,7 @@ export function useKamsApi() {
   /** Delete KAM */
   async function deleteKam(id: string) {
     const response = await $fetch<any>(
-      `${config.public.apiBaseUrl}admin/kams/delete`,
+      `${apiBaseUrl.value}admin/kams/delete`,
       { method: 'POST', headers: headers(), body: { id } },
     )
     await refreshKams()
@@ -98,7 +98,7 @@ export function useKamsApi() {
   /** Assign KAM to Dealer */
   async function assignKamToDealer(kamId: string, dealerId: string) {
     const response = await $fetch<any>(
-      `${config.public.apiBaseUrl}admin/kams/assign-to-dealer`,
+      `${apiBaseUrl.value}admin/kams/assign-to-dealer`,
       { method: 'POST', headers: headers(), body: { kamId, dealerId } },
     )
     return response

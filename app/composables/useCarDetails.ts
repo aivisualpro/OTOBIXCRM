@@ -6,7 +6,7 @@ interface CarDetailsResponse {
 }
 
 export function useCarDetails() {
-  const config = useRuntimeConfig()
+  const { apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 
   const carDetails = ref<Record<string, any> | null>(null)
@@ -19,7 +19,7 @@ export function useCarDetails() {
 
     try {
       const response = await $fetch<CarDetailsResponse>(
-        `${config.public.apiBaseUrl}car/details/carId`,
+        `${apiBaseUrl.value}car/details/carId`,
         {
           method: 'GET',
           params: { appointmentId: carId },

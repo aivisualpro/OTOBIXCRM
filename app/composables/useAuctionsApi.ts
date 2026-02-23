@@ -44,7 +44,7 @@ const _isFetching = ref(false)
 const _fetchError = ref<string | null>(null)
 
 export function useAuctionsApi() {
-  const config = useRuntimeConfig()
+  const { apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 
   /** Fetch all cars from the API (runs only once, cached globally) */
@@ -59,7 +59,7 @@ export function useAuctionsApi() {
 
     try {
       const response = await $fetch<any>(
-        `${config.public.apiBaseUrl}car/cars-list`,
+        `${apiBaseUrl.value}car/cars-list`,
         {
           method: 'GET',
           headers: {

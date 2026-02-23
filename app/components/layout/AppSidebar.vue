@@ -37,8 +37,8 @@ const user = computed(() => {
     const parsed = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
     return {
       name: parsed?.userName || parsed?.name || 'User',
-      role: parsed?.role || 'Member',
-      avatar: parsed?.avatar || parsed?.profileImage || '',
+      role: parsed?.userType || parsed?.userRole || parsed?.role || 'Member',
+      avatar: parsed?.avatar || parsed?.profileImage || parsed?.image || '',
     }
   }
   catch {

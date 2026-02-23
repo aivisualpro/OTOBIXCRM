@@ -13,6 +13,14 @@ export const peopleColumns: CrudColumn[] = [
   { key: 'createdAt', label: 'Joined', type: 'date' },
 ]
 
+export const otobixColumns: CrudColumn[] = [
+  { key: 'userName', label: 'Name', type: 'avatar' },
+  { key: 'email', label: 'Email' },
+  { key: 'phoneNumber', label: 'Phone' },
+  { key: 'location', label: 'Location' },
+  { key: 'userRole', label: 'Role', type: 'badge' },
+]
+
 // Each sub-route defines how to filter the global users list
 export interface PeopleRouteFilter {
   label: string
@@ -20,10 +28,14 @@ export interface PeopleRouteFilter {
   showStatusCounts: boolean
 }
 
+/** Known Otobix staff roles — same as create-user form */
+const STAFF_ROLES = ['Admin', 'Staff', 'KAM', 'Inspector', 'Operations', 'Super Admin']
+
 export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
   otobix: {
     label: 'Otobix',
-    filterFn: (user: any) => user.isStaff === true,
+    // Otobix tab uses dedicated staff fetch (see usePeopleApi) — this filter is a fallback
+    filterFn: (user: any) => user.isStaff === true || STAFF_ROLES.includes(user.userRole),
     showStatusCounts: true,
   },
   dealers: {
@@ -38,7 +50,8 @@ export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
   },
   others: {
     label: 'Others',
-    filterFn: (user: any) => user.isStaff !== true && user.userRole !== 'Dealer' && user.userRole !== 'Customer',
+    filterFn: (user: any) => !STAFF_ROLES.includes(user.userRole) && user.userRole !== 'Dealer' && user.userRole !== 'Customer',
     showStatusCounts: true,
   },
 }
+
