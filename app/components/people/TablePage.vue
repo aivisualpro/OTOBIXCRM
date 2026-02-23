@@ -20,46 +20,24 @@ const _entity = computed(() => props.entityName || 'Person')
 const { setHeader } = usePageHeader()
 setHeader({ title: props.title, description: props.description, icon: props.icon })
 
-// ─── Global cached data ───
+// ─── Single cached data source for all tabs ───
 const {
   allUsers,
-  isLoading: isAllLoading,
-  isFetched: isAllFetched,
-  fetchError: allFetchError,
+  isLoading,
+  isFetched,
+  fetchError,
   fetchAllUsers,
   refreshUsers,
-  // Staff-specific
-  staffUsers,
-  isStaffLoading,
-  isStaffFetched,
-  staffFetchError,
-  fetchStaffUsers,
-  refreshStaffUsers,
   createUser,
 } = usePeopleApi()
 
-// Fetch the right data source on mount
-onMounted(() => {
-  if (isOtobix.value) {
-    fetchStaffUsers()
-  }
-  fetchAllUsers()
-})
-
-// ─── Bridge: use staff data for Otobix, general data for others ───
-const isLoading = computed(() => isOtobix.value ? isStaffLoading.value : isAllLoading.value)
-const isFetched = computed(() => isOtobix.value ? isStaffFetched.value : isAllFetched.value)
-const fetchError = computed(() => isOtobix.value ? staffFetchError.value : allFetchError.value)
+onMounted(() => { fetchAllUsers() })
 
 // ─── UI State ───
 const search = ref('')
 
-// ─── Base filtered list (before search) for status counts ───
-// For otobix: use staffUsers directly (already filtered server-side)
-// For others: use allUsers with the client-side filter
-const baseFilteredItems = computed(() =>
-  isOtobix.value ? staffUsers.value : allUsers.value.filter(props.filterFn),
-)
+// All tabs filter from allUsers using their filterFn
+const baseFilteredItems = computed(() => allUsers.value.filter(props.filterFn))
 
 // ─── Approval status counts ───
 const approvedCount = computed(() => baseFilteredItems.value.filter(u => u.approvalStatus === 'Approved').length)
@@ -138,12 +116,7 @@ function getInitials(name: string): string {
 }
 
 async function handleRefresh() {
-  if (isOtobix.value) {
-    await Promise.all([refreshUsers(), refreshStaffUsers()])
-  }
-  else {
-    await refreshUsers()
-  }
+  await refreshUsers()
   toast.success('Data refreshed from server')
 }
 

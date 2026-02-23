@@ -9,10 +9,7 @@ const userId = computed(() => route.params.id as string)
 const { setHeader } = usePageHeader()
 
 const {
-  allUsers: _allUsers,
-  staffUsers: _staffUsers,
   fetchAllUsers,
-  fetchStaffUsers,
   updateUser,
   deleteUser,
   getUserById,
@@ -20,7 +17,7 @@ const {
 
 // Ensure data is loaded
 onMounted(async () => {
-  await Promise.all([fetchAllUsers(), fetchStaffUsers()])
+  await fetchAllUsers()
 })
 
 // Find the user from cache

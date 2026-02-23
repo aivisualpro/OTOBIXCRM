@@ -28,13 +28,12 @@ export interface PeopleRouteFilter {
   showStatusCounts: boolean
 }
 
-/** Known Otobix staff roles — same as create-user form */
-const STAFF_ROLES = ['Admin', 'Staff', 'KAM', 'Inspector', 'Operations', 'Super Admin']
+/** Known Otobix staff roles */
+const STAFF_ROLES = ['Inspection Engineer', 'Retailer', 'Sales Manager', 'Telecaller', 'QC']
 
 export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
   otobix: {
     label: 'Otobix',
-    // Otobix tab uses dedicated staff fetch (see usePeopleApi) — this filter is a fallback
     filterFn: (user: any) => user.isStaff === true || STAFF_ROLES.includes(user.userRole),
     showStatusCounts: true,
   },
