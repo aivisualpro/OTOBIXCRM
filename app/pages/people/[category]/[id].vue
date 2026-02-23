@@ -24,12 +24,18 @@ onMounted(async () => {
 // Find the user from cache
 const user = computed(() => getUserById(userId.value))
 
-// Set page header
-watch(user, (u) => {
-  if (u) {
-    setHeader({ title: u.userName || 'User Profile', description: u.email || '', icon: 'i-lucide-user' })
-  }
-}, { immediate: true })
+// Map category → human-readable detail title & icon
+const CATEGORY_META: Record<string, { title: string, icon: string }> = {
+  otobix: { title: 'User Details', icon: 'i-lucide-shield-check' },
+  dealers: { title: 'Dealer Details', icon: 'i-lucide-store' },
+  customers: { title: 'Customer Details', icon: 'i-lucide-user-round' },
+  kams: { title: 'KAM Details', icon: 'i-lucide-briefcase' },
+}
+
+// Set header immediately from category — no waiting for user data
+const meta = computed(() => CATEGORY_META[categoryKey.value] || { title: 'Profile', icon: 'i-lucide-user' })
+setHeader({ title: meta.value.title, description: '', icon: meta.value.icon })
+watch(categoryKey, () => setHeader({ title: meta.value.title, description: '', icon: meta.value.icon }))
 
 // ─── Edit Mode ───
 const isEditing = ref(false)

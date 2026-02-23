@@ -3,10 +3,7 @@ import type { PeopleUser } from '~/composables/usePeopleApi'
 
 const props = defineProps<{ user: PeopleUser }>()
 
-const { setHeader } = usePageHeader()
 const router = useRouter()
-
-setHeader({ title: props.user.dealershipName || props.user.userName || 'Dealer', description: '', icon: 'i-lucide-store' })
 
 // ─── KAM lookup ───
 const { allKams, fetchKams } = useKamsApi()

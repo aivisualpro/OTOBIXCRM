@@ -13,7 +13,9 @@ const fallbackTitle = computed(() => {
     return 'Dashboard'
   const segments = route.fullPath.split('/').filter(s => s !== '')
   const last = segments[segments.length - 1] || ''
-  return last
+  // Skip raw IDs (MongoDB ObjectId pattern ~24 hex chars)
+  const cleaned = /^[a-f0-9]{24}$/i.test(last) ? (segments[segments.length - 2] || last) : last
+  return cleaned
     .replace(/-/g, ' ')
     .split(' ')
     .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
@@ -24,20 +26,25 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
 </script>
 
 <template>
-  <header class="sticky top-0 md:peer-data-[variant=inset]:top-2 z-10 h-(--header-height) flex items-center gap-4 border-b bg-background px-4 md:px-6 md:rounded-tl-xl md:rounded-tr-xl">
-    <div class="flex items-center gap-4 min-w-0">
+  <header class="sticky top-0 md:peer-data-[variant=inset]:top-2 z-10 h-(--header-height) flex items-center gap-4 border-b bg-background/95 backdrop-blur-md px-4 md:px-6 md:rounded-tl-xl md:rounded-tr-xl">
+    <div class="flex items-center gap-3 min-w-0">
       <SidebarTrigger />
-      <Separator orientation="vertical" class="h-4" />
+      <Separator orientation="vertical" class="h-4 opacity-40" />
       <div class="flex items-center gap-2.5 min-w-0">
         <ClientOnly>
-          <Icon v-if="headerState.icon" :name="headerState.icon" class="size-5 shrink-0 text-primary" />
+          <div
+            v-if="headerState.icon"
+            class="size-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"
+          >
+            <Icon :name="headerState.icon" class="size-4 text-primary" />
+          </div>
         </ClientOnly>
         <div class="min-w-0">
-          <h1 class="text-sm font-semibold leading-tight truncate">
+          <h1 class="text-[13px] font-semibold leading-tight tracking-tight truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
             {{ displayTitle }}
           </h1>
           <ClientOnly>
-            <p v-if="headerState.description" class="text-xs text-muted-foreground leading-tight truncate hidden md:block">
+            <p v-if="headerState.description" class="text-[11px] text-muted-foreground leading-tight truncate hidden md:block mt-px">
               {{ headerState.description }}
             </p>
           </ClientOnly>
