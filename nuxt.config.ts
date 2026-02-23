@@ -8,10 +8,13 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     mongodbUri: '',
+    productionMongodbDbName: 'otobix_auction_app',
+    developmentMongodbDbName: 'otobix_auction_app_development',
     public: {
       apiBaseUrl: 'https://ob-dealerapp-kong.onrender.com/api/',
       apiBaseUrlProduction: 'https://ob-dealerapp-kong.onrender.com/api/',
       apiBaseUrlDevelopment: 'https://otobix-app-backend-development.onrender.com/api/',
+      apiBaseUrlStaging: 'https://ob-dealerapp-kong.onrender.com/api/',
     },
   },
 
