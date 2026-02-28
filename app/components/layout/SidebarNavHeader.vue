@@ -44,21 +44,21 @@ const { isMobile } = useSidebar()
           </DropdownMenuLabel>
           <DropdownMenuItem
             v-for="(ws, index) in workspaces"
-            :key="ws.id"
+            :key="ws.workspaceId"
             class="gap-2 p-2"
-            :class="{ 'bg-accent': activeWorkspace.id === ws.id }"
-            @click="emit('workspace-change', ws.id)"
+            :class="{ 'bg-accent': activeWorkspace.workspaceId === ws.workspaceId }"
+            @click="emit('workspace-change', ws.workspaceId)"
           >
             <div class="size-6 flex items-center justify-center border rounded-sm">
               <Icon :name="ws.icon" class="size-4 shrink-0" />
             </div>
             {{ ws.name }}
-            <Icon v-if="activeWorkspace.id === ws.id" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
+            <Icon v-if="activeWorkspace.workspaceId === ws.workspaceId" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
             <DropdownMenuShortcut v-else>⌘{{ index + 1 }}</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem as-child class="gap-2 p-2">
-            <NuxtLink to="/settings">
+            <NuxtLink to="/settings/workspaces">
               <Icon name="i-lucide-settings" class="size-4" />
               Manage Workspaces
             </NuxtLink>

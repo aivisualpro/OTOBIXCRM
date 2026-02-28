@@ -10,113 +10,63 @@ const tabs = [
   { id: 'system', label: 'System', icon: 'i-lucide-settings' },
 ]
 
-interface Notification {
-  id: string
-  type: 'inspection' | 'auction' | 'system' | 'user'
-  title: string
-  message: string
-  time: string
-  read: boolean
-  avatar?: string
-  initials?: string
-  icon?: string
-  action?: { label: string, to?: string }
-  priority?: 'low' | 'medium' | 'high'
+interface NotificationData {
+  carId?: string
+  carName?: string
+  highestBid?: number
+  winnerId?: string
 }
 
-const notifications = ref<Notification[]>([
-  {
-    id: '1',
-    type: 'inspection',
-    title: 'Inspection Completed',
-    message: '2024 Toyota Camry (MH-12-AB-1234) inspection has been completed by Inspector Ravi. Ready for review.',
-    time: '2 min ago',
-    read: false,
-    initials: 'RK',
-    icon: 'i-lucide-check-circle',
-    action: { label: 'Review', to: '/inspection/1' },
-    priority: 'high',
-  },
-  {
-    id: '2',
-    type: 'auction',
-    title: 'New Bid Received',
-    message: 'Honda City (GJ-01-CD-5678) received a new highest bid of ₹4,85,000 from AutoMax Dealers.',
-    time: '15 min ago',
-    read: false,
-    initials: 'AM',
-    icon: 'i-lucide-trending-up',
-    action: { label: 'View Auction' },
-    priority: 'high',
-  },
-  {
-    id: '3',
-    type: 'inspection',
-    title: 'Inspection Assigned',
-    message: 'New inspection for 2023 Hyundai Creta (DL-03-EF-9012) has been assigned to you.',
-    time: '1 hour ago',
-    read: false,
-    initials: 'OT',
-    icon: 'i-lucide-clipboard-list',
-    action: { label: 'Start Inspection' },
-    priority: 'medium',
-  },
-  {
-    id: '4',
-    type: 'auction',
-    title: 'Auction Ending Soon',
-    message: 'Maruti Suzuki Swift (KA-05-GH-3456) auction ends in 30 minutes. Current bid: ₹3,20,000.',
-    time: '2 hours ago',
-    read: true,
-    initials: 'AT',
-    icon: 'i-lucide-clock',
-    priority: 'medium',
-  },
-  {
-    id: '5',
-    type: 'system',
-    title: 'Weekly Report Generated',
-    message: 'Your weekly inspection summary report for Feb 9 – Feb 15 is ready to download.',
-    time: '5 hours ago',
-    read: true,
-    icon: 'i-lucide-file-bar-chart',
-    action: { label: 'Download' },
-    priority: 'low',
-  },
-  {
-    id: '6',
-    type: 'system',
-    title: 'System Maintenance',
-    message: 'Scheduled downtime on Feb 17, 2:00 AM – 4:00 AM IST for server upgrades. Plan accordingly.',
-    time: '1 day ago',
-    read: true,
-    icon: 'i-lucide-wrench',
-    priority: 'low',
-  },
-  {
-    id: '7',
-    type: 'inspection',
-    title: 'Inspection Rejected',
-    message: '2022 Kia Seltos (TN-10-IJ-7890) inspection was rejected by QA. Please re-inspect exterior panels.',
-    time: '1 day ago',
-    read: true,
-    initials: 'QA',
-    icon: 'i-lucide-x-circle',
-    action: { label: 'View Details' },
-    priority: 'high',
-  },
-  {
-    id: '8',
-    type: 'auction',
-    title: 'Auction Won',
-    message: 'Congratulations! Tata Nexon (MH-04-KL-2345) was sold to PrimeCars for ₹6,10,000.',
-    time: '2 days ago',
-    read: true,
-    initials: 'PC',
-    icon: 'i-lucide-party-popper',
-    priority: 'low',
-  },
-])
+interface UserNotification {
+  _id: string
+  userId?: string
+  type: string
+  title: string
+  body: string
+  data?: NotificationData
+  isRead: boolean
+  createdAt: string
+  isGlobal?: boolean
+}
+
+// Reactive state
+const notifications = ref<UserNotification[]>([])
+const loading = ref(false)
+const unreadCounts = ref({ all: 0, inspections: 0, auctions: 0, system: 0 })
+
+// Fetch notifications from API
+async function fetchNotifications() {
+  loading.value = true
+  try {
+    const typeMap: Record<string, string> = {
+      inspections: 'inspection',
+      auctions: 'auction',
+      system: 'system',
+    }
+    const params: Record<string, string> = {}
+    if (activeTab.value !== 'all') {
+      params.type = typeMap[activeTab.value] || activeTab.value
+    }
+
+    const { data } = await useFetch('/api/notifications', { params })
+    if (data.value) {
+      notifications.value = (data.value as any).notifications || []
+      unreadCounts.value = (data.value as any).unreadCounts || { all: 0, inspections: 0, auctions: 0, system: 0 }
+    }
+  }
+  catch (err) {
+    console.error('Failed to fetch notifications:', err)
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+// Watch tab changes and refetch
+watch(activeTab, () => fetchNotifications())
+
+// Initial fetch
+onMounted(() => fetchNotifications())
 
 const filteredNotifications = computed(() => {
   if (activeTab.value === 'all')
@@ -129,27 +79,71 @@ const filteredNotifications = computed(() => {
   return notifications.value.filter(n => n.type === typeMap[activeTab.value])
 })
 
-const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
+const unreadCount = computed(() => unreadCounts.value.all)
 
-const tabCounts = computed(() => ({
-  all: notifications.value.filter(n => !n.read).length,
-  inspections: notifications.value.filter(n => !n.read && n.type === 'inspection').length,
-  auctions: notifications.value.filter(n => !n.read && n.type === 'auction').length,
-  system: notifications.value.filter(n => !n.read && n.type === 'system').length,
-}))
+const tabCounts = computed(() => unreadCounts.value)
 
-function markAllRead() {
-  notifications.value.forEach(n => n.read = true)
+// Mark all notifications as read
+async function markAllRead() {
+  try {
+    await $fetch('/api/notifications', {
+      method: 'PUT',
+      body: { markAllRead: true },
+    })
+    // Optimistic update
+    notifications.value.forEach(n => n.isRead = true)
+    unreadCounts.value = { all: 0, inspections: 0, auctions: 0, system: 0 }
+  }
+  catch (err) {
+    console.error('Failed to mark all read:', err)
+  }
 }
 
-function markRead(id: string) {
-  const notif = notifications.value.find(n => n.id === id)
-  if (notif)
-    notif.read = true
+// Mark a single notification as read
+async function markRead(id: string) {
+  try {
+    await $fetch('/api/notifications', {
+      method: 'PUT',
+      body: { _id: id },
+    })
+    // Optimistic update
+    const notif = notifications.value.find(n => n._id === id)
+    if (notif && !notif.isRead) {
+      notif.isRead = true
+      unreadCounts.value.all = Math.max(0, unreadCounts.value.all - 1)
+      // Decrement the type-specific count
+      const typeKey = notif.type === 'inspection' ? 'inspections' : notif.type === 'auction' ? 'auctions' : 'system'
+      if (typeKey in unreadCounts.value) {
+        (unreadCounts.value as any)[typeKey] = Math.max(0, (unreadCounts.value as any)[typeKey] - 1)
+      }
+    }
+  }
+  catch (err) {
+    console.error('Failed to mark read:', err)
+  }
 }
 
-function dismiss(id: string) {
-  notifications.value = notifications.value.filter(n => n.id !== id)
+// Dismiss (delete) a notification
+async function dismiss(id: string) {
+  try {
+    await $fetch('/api/notifications', {
+      method: 'DELETE',
+      body: { _id: id },
+    })
+    // Optimistic update
+    const notif = notifications.value.find(n => n._id === id)
+    if (notif && !notif.isRead) {
+      unreadCounts.value.all = Math.max(0, unreadCounts.value.all - 1)
+      const typeKey = notif.type === 'inspection' ? 'inspections' : notif.type === 'auction' ? 'auctions' : 'system'
+      if (typeKey in unreadCounts.value) {
+        (unreadCounts.value as any)[typeKey] = Math.max(0, (unreadCounts.value as any)[typeKey] - 1)
+      }
+    }
+    notifications.value = notifications.value.filter(n => n._id !== id)
+  }
+  catch (err) {
+    console.error('Failed to dismiss notification:', err)
+  }
 }
 
 function typeColor(type: string) {
@@ -157,6 +151,7 @@ function typeColor(type: string) {
     case 'inspection': return 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20'
     case 'auction': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20'
     case 'system': return 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/20'
+    case 'user': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
     default: return 'bg-muted text-muted-foreground'
   }
 }
@@ -166,16 +161,36 @@ function typeIconBg(type: string) {
     case 'inspection': return 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
     case 'auction': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
     case 'system': return 'bg-violet-500/15 text-violet-600 dark:text-violet-400'
+    case 'user': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
     default: return 'bg-muted text-muted-foreground'
   }
 }
 
-function priorityDot(priority?: string) {
-  switch (priority) {
-    case 'high': return 'bg-red-500'
-    case 'medium': return 'bg-amber-500'
-    default: return 'bg-emerald-500'
+function typeIcon(type: string) {
+  switch (type) {
+    case 'inspection': return 'i-lucide-scan-search'
+    case 'auction': return 'i-lucide-gavel'
+    case 'system': return 'i-lucide-settings'
+    case 'user': return 'i-lucide-user'
+    default: return 'i-lucide-bell'
   }
+}
+
+function timeAgo(dateStr: string) {
+  if (!dateStr) return ''
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diffMs = now.getTime() - date.getTime()
+  const diffSec = Math.floor(diffMs / 1000)
+  const diffMin = Math.floor(diffSec / 60)
+  const diffHour = Math.floor(diffMin / 60)
+  const diffDay = Math.floor(diffHour / 24)
+
+  if (diffSec < 60) return 'just now'
+  if (diffMin < 60) return `${diffMin} min ago`
+  if (diffHour < 24) return `${diffHour}h ago`
+  if (diffDay < 7) return `${diffDay}d ago`
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 }
 </script>
 
@@ -199,6 +214,15 @@ function priorityDot(priority?: string) {
       </div>
       <div class="flex items-center gap-2">
         <Button
+          variant="outline"
+          size="sm"
+          class="gap-2"
+          @click="fetchNotifications"
+        >
+          <Icon name="i-lucide-refresh-cw" class="size-4" :class="loading ? 'animate-spin' : ''" />
+          Refresh
+        </Button>
+        <Button
           v-if="unreadCount"
           variant="outline"
           size="sm"
@@ -208,21 +232,6 @@ function priorityDot(priority?: string) {
           <Icon name="i-lucide-check-check" class="size-4" />
           Mark all read
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger as-child>
-            <Button variant="outline" size="sm" class="gap-2">
-              <Icon name="i-lucide-sliders-horizontal" class="size-4" />
-              Filter
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Show</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>All notifications</DropdownMenuItem>
-            <DropdownMenuItem>Unread only</DropdownMenuItem>
-            <DropdownMenuItem>High priority</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </div>
 
@@ -250,37 +259,42 @@ function priorityDot(priority?: string) {
       </button>
     </div>
 
+    <!-- Loading state -->
+    <div v-if="loading && notifications.length === 0" class="space-y-3">
+      <div v-for="i in 5" :key="i" class="rounded-xl border p-4 animate-pulse">
+        <div class="flex items-start gap-4">
+          <div class="size-10 rounded-full bg-muted" />
+          <div class="flex-1 space-y-2">
+            <div class="h-4 bg-muted rounded w-1/3" />
+            <div class="h-3 bg-muted rounded w-2/3" />
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Notifications list -->
-    <div class="space-y-3">
+    <div v-else class="space-y-3">
       <TransitionGroup name="list" tag="div" class="space-y-3">
         <div
           v-for="notif in filteredNotifications"
-          :key="notif.id"
+          :key="notif._id"
           class="group relative rounded-xl border transition-all duration-300 hover:shadow-md"
-          :class="notif.read ? 'bg-card' : 'bg-primary/[0.02] border-primary/20'"
+          :class="notif.isRead ? 'bg-card' : 'bg-primary/[0.02] border-primary/20'"
         >
           <!-- Unread indicator bar -->
           <div
-            v-if="!notif.read"
+            v-if="!notif.isRead"
             class="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-primary"
           />
 
-          <div class="flex items-start gap-4 p-4" :class="!notif.read ? 'pl-5' : ''">
-            <!-- Icon / Avatar -->
+          <div class="flex items-start gap-4 p-4" :class="!notif.isRead ? 'pl-5' : ''">
+            <!-- Icon -->
             <div class="shrink-0 mt-0.5">
               <div
-                v-if="notif.initials"
-                class="size-10 rounded-full flex items-center justify-center text-xs font-bold"
-                :class="typeIconBg(notif.type)"
-              >
-                {{ notif.initials }}
-              </div>
-              <div
-                v-else
                 class="size-10 rounded-full flex items-center justify-center"
                 :class="typeIconBg(notif.type)"
               >
-                <Icon :name="notif.icon || 'i-lucide-bell'" class="size-5" />
+                <Icon :name="typeIcon(notif.type)" class="size-5" />
               </div>
             </div>
 
@@ -288,14 +302,14 @@ function priorityDot(priority?: string) {
             <div class="flex-1 min-w-0 space-y-1.5">
               <div class="flex items-start justify-between gap-3">
                 <div class="flex items-center gap-2 min-w-0">
-                  <!-- Priority dot -->
+                  <!-- Unread dot -->
                   <span
-                    class="shrink-0 size-2 rounded-full"
-                    :class="priorityDot(notif.priority)"
+                    v-if="!notif.isRead"
+                    class="shrink-0 size-2 rounded-full bg-primary"
                   />
                   <h3
                     class="text-sm truncate"
-                    :class="notif.read ? 'font-medium' : 'font-semibold'"
+                    :class="notif.isRead ? 'font-medium' : 'font-semibold'"
                   >
                     {{ notif.title }}
                   </h3>
@@ -306,31 +320,44 @@ function priorityDot(priority?: string) {
                   >
                     {{ notif.type }}
                   </Badge>
+                  <Badge
+                    v-if="notif.isGlobal"
+                    variant="outline"
+                    class="shrink-0 text-[10px] bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20"
+                  >
+                    Global
+                  </Badge>
                 </div>
-                <span class="shrink-0 text-xs text-muted-foreground whitespace-nowrap">{{ notif.time }}</span>
+                <span class="shrink-0 text-xs text-muted-foreground whitespace-nowrap">{{ timeAgo(notif.createdAt) }}</span>
               </div>
 
               <p class="text-sm text-muted-foreground leading-relaxed">
-                {{ notif.message }}
+                {{ notif.body }}
               </p>
+
+              <!-- Data details (car info, bid info) -->
+              <div
+                v-if="notif.data && (notif.data.carName || notif.data.highestBid)"
+                class="flex flex-wrap items-center gap-2 pt-0.5"
+              >
+                <Badge v-if="notif.data.carName" variant="secondary" class="text-[11px] gap-1">
+                  <Icon name="i-lucide-car" class="size-3" />
+                  {{ notif.data.carName }}
+                </Badge>
+                <Badge v-if="notif.data.highestBid" variant="secondary" class="text-[11px] gap-1">
+                  <Icon name="i-lucide-indian-rupee" class="size-3" />
+                  {{ Number(notif.data.highestBid).toLocaleString('en-IN') }}
+                </Badge>
+              </div>
 
               <!-- Actions row -->
               <div class="flex items-center gap-2 pt-1">
                 <Button
-                  v-if="notif.action"
-                  variant="outline"
-                  size="sm"
-                  class="h-7 text-xs gap-1.5"
-                >
-                  <Icon name="i-lucide-external-link" class="size-3" />
-                  {{ notif.action.label }}
-                </Button>
-                <Button
-                  v-if="!notif.read"
+                  v-if="!notif.isRead"
                   variant="ghost"
                   size="sm"
                   class="h-7 text-xs gap-1.5 text-muted-foreground"
-                  @click.stop="markRead(notif.id)"
+                  @click.stop="markRead(notif._id)"
                 >
                   <Icon name="i-lucide-check" class="size-3" />
                   Mark read
@@ -339,7 +366,7 @@ function priorityDot(priority?: string) {
                   variant="ghost"
                   size="sm"
                   class="h-7 text-xs gap-1.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-auto"
-                  @click.stop="dismiss(notif.id)"
+                  @click.stop="dismiss(notif._id)"
                 >
                   <Icon name="i-lucide-x" class="size-3" />
                   Dismiss
@@ -352,7 +379,7 @@ function priorityDot(priority?: string) {
 
       <!-- Empty state -->
       <div
-        v-if="filteredNotifications.length === 0"
+        v-if="!loading && filteredNotifications.length === 0"
         class="flex flex-col items-center justify-center py-20 text-center"
       >
         <div class="size-20 rounded-2xl bg-muted/50 flex items-center justify-center mb-6">
