@@ -2,22 +2,38 @@ import type { CrudColumn } from '~/composables/useCrud'
 
 export const peopleColumns: CrudColumn[] = [
   { key: 'userName', label: 'Name', type: 'avatar' },
+  { key: 'userRole', label: 'Role', type: 'badge' },
   { key: 'email', label: 'Email' },
   { key: 'phoneNumber', label: 'Phone' },
-  { key: 'dealershipName', label: 'Dealership' },
   { key: 'location', label: 'Location' },
-  { key: 'entityType', label: 'Entity Type' },
-  { key: 'primaryContactPerson', label: 'Primary Contact' },
+  { key: 'secondaryContactPerson', label: 'Secondary Contact' },
+  { key: 'secondaryContactNumber', label: 'Secondary Phone' },
+  { key: 'addressList', label: 'Addresses', type: 'tags' },
   { key: 'approvalStatus', label: 'Status', type: 'badge' },
-  { key: 'createdAt', label: 'Joined', type: 'date' },
+  { key: 'rejectionComment', label: 'Rejection Comment' },
+  { key: 'wishlist', label: 'Wishlist', type: 'tags' },
+  { key: 'createdAt', label: 'Created', type: 'date' },
+  { key: 'updatedAt', label: 'Updated', type: 'date' },
+  { key: 'assignedKam', label: 'Assigned KAM' },
+  { key: 'isStaff', label: 'Staff', type: 'badge' },
 ]
 
 export const otobixColumns: CrudColumn[] = [
   { key: 'userName', label: 'Name', type: 'avatar' },
   { key: 'userRole', label: 'Role', type: 'badge' },
+  { key: 'email', label: 'Email' },
   { key: 'phoneNumber', label: 'Phone' },
+  { key: 'location', label: 'Location' },
+  { key: 'secondaryContactPerson', label: 'Secondary Contact' },
+  { key: 'secondaryContactNumber', label: 'Secondary Phone' },
+  { key: 'addressList', label: 'Addresses', type: 'tags' },
   { key: 'approvalStatus', label: 'Status', type: 'badge' },
-  { key: 'location', label: 'City' },
+  { key: 'rejectionComment', label: 'Rejection Comment' },
+  { key: 'wishlist', label: 'Wishlist', type: 'tags' },
+  { key: 'createdAt', label: 'Created', type: 'date' },
+  { key: 'updatedAt', label: 'Updated', type: 'date' },
+  { key: 'assignedKam', label: 'Assigned KAM' },
+  { key: 'isStaff', label: 'Staff', type: 'badge' },
 ]
 
 // Each sub-route defines how to filter the global users list

@@ -3,9 +3,7 @@
 </script>
 
 <template>
-  <SettingsLayout>
-    <SettingsProfileForm />
-  </SettingsLayout>
+  <SettingsProfileForm />
 </template>
 
 <style scoped>

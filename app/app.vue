@@ -9,6 +9,14 @@ const color = computed(() => colorMode.value === 'dark' ? '#09090b' : '#ffffff')
 const { theme } = useAppSettings()
 const { currentEnv } = useApiEnvironment()
 
+// ─── Smart Prefetch Engine ───
+// Eagerly load leads + people + car data in background after app boot
+const { bootPrefetch } = usePrefetch()
+onMounted(() => {
+  // Kick off data prefetch silently — zero loading screens when user navigates
+  bootPrefetch()
+})
+
 useHead({
   titleTemplate: (titleChunk) => {
     return titleChunk ? `${titleChunk} | OTOBIX CRM` : 'OTOBIX CRM'
@@ -58,13 +66,12 @@ const dir = computed(() => textDirection.value === 'rtl' ? 'rtl' : 'ltr')
   <Body class="overscroll-none antialiased bg-background text-foreground">
     <ConfigProvider :dir="dir">
       <div id="app" vaul-drawer-wrapper class="relative h-full overflow-hidden">
-        <!-- Environment dot: green=production, amber=development, violet=staging -->
+        <!-- Environment dot: green=production, amber=development -->
         <span
           class="env-dot"
           :class="{
             'bg-emerald-500 shadow-[0_0_6px_2px_rgba(16,185,129,0.6)]': currentEnv === 'production',
             'bg-amber-400 shadow-[0_0_6px_2px_rgba(251,191,36,0.6)]': currentEnv === 'development',
-            'bg-violet-500 shadow-[0_0_6px_2px_rgba(139,92,246,0.6)]': currentEnv === 'staging',
           }"
         />
         <NuxtLayout>

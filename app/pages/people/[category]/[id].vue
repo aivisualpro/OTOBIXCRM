@@ -43,6 +43,36 @@ const isSaving = ref(false)
 
 const roleOptions = ['Inspection Engineer', 'Retailer', 'Sales Manager', 'Telecaller', 'QC']
 const statusOptions = ['Approved', 'Pending', 'Rejected']
+const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR', 'KOLKATA', 'KRISHNANAGAR', 'CUTTACK', 'ASANSOL', 'RANCHI']
+
+const editLocationPopoverOpen = ref(false)
+
+function parseLocations(loc: any): string[] {
+  if (!loc) return []
+  if (Array.isArray(loc)) return loc.filter(Boolean)
+  return String(loc).split(',').map((l: string) => l.trim()).filter(Boolean)
+}
+
+function toggleEditLocation(loc: string) {
+  const arr = editForm.value.location as string[]
+  const idx = arr.indexOf(loc)
+  if (idx >= 0) arr.splice(idx, 1)
+  else arr.push(loc)
+}
+
+function removeEditLocation(loc: string) {
+  editForm.value.location = (editForm.value.location as string[]).filter((l: string) => l !== loc)
+}
+
+const allEditLocationsSelected = computed(() => (editForm.value.location as string[])?.length === locationOptions.length)
+
+function toggleSelectAllEditLocations() {
+  if (allEditLocationsSelected.value) {
+    editForm.value.location = []
+  } else {
+    editForm.value.location = [...locationOptions]
+  }
+}
 
 const editForm = ref<Record<string, any>>({})
 
@@ -54,7 +84,7 @@ function startEdit() {
     email: user.value.email || '',
     phoneNumber: user.value.phoneNumber || '',
     userRole: user.value.userRole || '',
-    location: user.value.location || '',
+    location: parseLocations(user.value.location),
     dealershipName: user.value.dealershipName || '',
     entityType: user.value.entityType || '',
     primaryContactPerson: user.value.primaryContactPerson || '',
@@ -485,8 +515,44 @@ const addresses = computed(() => {
                   </Select>
                 </div>
                 <div class="space-y-1.5">
-                  <Label for="edit-location">Location</Label>
-                  <Input id="edit-location" v-model="editForm.location" placeholder="KOLKATA, SILIGURI" />
+                  <Label>Location</Label>
+                  <Popover v-model:open="editLocationPopoverOpen">
+                    <PopoverTrigger as-child>
+                      <Button variant="outline" role="combobox" class="w-full justify-between h-auto min-h-9 font-normal">
+                        <span v-if="(editForm.location as string[]).length === 0" class="text-muted-foreground">Select locations...</span>
+                        <div v-else class="flex flex-wrap gap-1">
+                          <Badge v-for="loc in (editForm.location as string[])" :key="loc" variant="secondary" class="text-xs gap-1">
+                            {{ loc }}
+                            <Icon name="i-lucide-x" class="size-3 cursor-pointer hover:text-destructive" @click.stop="removeEditLocation(loc)" />
+                          </Badge>
+                        </div>
+                        <Icon name="i-lucide-chevrons-up-down" class="ml-2 size-3.5 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-[--reka-popover-trigger-width] p-0" align="start">
+                      <div class="max-h-56 overflow-y-auto p-1">
+                        <button
+                          class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-medium hover:bg-accent cursor-pointer border-b mb-1 pb-1.5"
+                          @click="toggleSelectAllEditLocations()"
+                        >
+                          <Checkbox :checked="allEditLocationsSelected" class="pointer-events-none" />
+                          Select All
+                          <span class="ml-auto text-xs text-muted-foreground">{{ (editForm.location as string[]).length }}/{{ locationOptions.length }}</span>
+                        </button>
+                        <button
+                          v-for="loc in locationOptions"
+                          :key="loc"
+                          class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer transition-colors"
+                          :class="(editForm.location as string[]).includes(loc) ? 'bg-primary/5 text-primary hover:bg-primary/10' : 'hover:bg-accent'"
+                          @click="toggleEditLocation(loc)"
+                        >
+                          <Checkbox :checked="(editForm.location as string[]).includes(loc)" class="pointer-events-none" />
+                          {{ loc }}
+                          <Icon v-if="(editForm.location as string[]).includes(loc)" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 

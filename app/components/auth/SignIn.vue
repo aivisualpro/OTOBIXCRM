@@ -51,6 +51,11 @@ async function onSubmit(event: Event) {
     }
 
     toast.success('Login successful! Redirecting...')
+
+    // Start prefetching data immediately — it'll load during the redirect
+    const { bootPrefetch } = usePrefetch()
+    bootPrefetch()
+
     navigateTo('/')
   }
   catch (err: any) {
@@ -75,15 +80,12 @@ async function onSubmit(event: Event) {
           class="text-[10px] h-5"
           :class="currentEnv === 'production'
             ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-            : currentEnv === 'staging'
-              ? 'bg-violet-500/10 text-violet-600 border-violet-500/20'
-              : 'bg-amber-500/10 text-amber-600 border-amber-500/20'"
+            : 'bg-amber-500/10 text-amber-600 border-amber-500/20'"
         >
           {{ envLabel }}
         </Badge>
       </div>
-      <!-- Top row: Production + Development -->
-      <div class="grid grid-cols-2 gap-2 mb-2">
+      <div class="grid grid-cols-2 gap-2">
         <button
           type="button"
           class="flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all"
@@ -107,19 +109,7 @@ async function onSubmit(event: Event) {
           Development
         </button>
       </div>
-      <!-- Bottom row: Kong / Staging (full width) -->
-      <button
-        type="button"
-        class="w-full flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all"
-        :class="currentEnv === 'staging'
-          ? 'border-violet-500/30 bg-violet-500/10 text-violet-600 ring-1 ring-violet-500/20'
-          : 'border-border hover:bg-accent text-muted-foreground'"
-        @click="setEnvironment('staging')"
-      >
-        <span class="size-2 rounded-full" :class="currentEnv === 'staging' ? 'bg-violet-500' : 'bg-muted-foreground/30'" />
-        Kong / Staging
-        <span class="ml-auto text-[10px] font-mono opacity-50 truncate">ob-dealerapp-kong</span>
-      </button>
+
     </div>
 
     <div class="grid gap-2">

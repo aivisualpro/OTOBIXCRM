@@ -3,9 +3,7 @@
 </script>
 
 <template>
-  <SettingsLayout>
-    <SettingsAppearanceForm />
-  </SettingsLayout>
+  <SettingsAppearanceForm />
 </template>
 
 <style scoped>

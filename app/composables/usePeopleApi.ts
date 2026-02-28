@@ -110,11 +110,20 @@ export function usePeopleApi() {
     return response
   }
 
-  /** Update user profile */
+  /** Update user profile — direct MongoDB update via local server route */
   async function updateUser(userId: string, payload: Partial<PeopleUser>) {
+    // Normalise location: the API stores it as a comma-separated string
+    const body: Record<string, any> = {
+      ...payload,
+      userId,
+      location: Array.isArray(payload.location)
+        ? payload.location.join(', ')
+        : payload.location,
+    }
+
     const response = await $fetch<any>(
-      `${apiBaseUrl.value}user/update-user-through-admin`,
-      { method: 'PUT', headers: _headers(), params: { userId }, body: payload },
+      '/api/users/update',
+      { method: 'PUT', body },
     )
     await refreshUsers()
     return response

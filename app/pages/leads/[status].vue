@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { leadsColumns, leadsFormFields, routeFilters } from '~/constants/leads'
+import { leadsColumns, leadsFormFields, routeColumnsMap, routeFilters } from '~/constants/leads'
 
 const route = useRoute()
 const statusKey = computed(() => route.params.status as string)
 const filter = computed(() => routeFilters[statusKey.value as keyof typeof routeFilters])
+const activeColumns = computed(() => routeColumnsMap[statusKey.value] || leadsColumns)
 </script>
 
 <template>
@@ -13,7 +14,7 @@ const filter = computed(() => routeFilters[statusKey.value as keyof typeof route
     :description="`Viewing leads: Inspection ${filter.inspectionStatus}, Approval ${filter.approvalStatus}`"
     icon="i-lucide-magnet"
     entity-name="Lead"
-    :columns="leadsColumns"
+    :columns="activeColumns"
     :form-fields="leadsFormFields"
     :filters="{ inspectionStatus: filter.inspectionStatus, approvalStatus: filter.approvalStatus }"
     :clickable="statusKey === 'inspected'"

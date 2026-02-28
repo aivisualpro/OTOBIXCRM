@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { NavGroup, NavLink, NavSectionTitle } from '~/types/nav'
-import { navMenu, navMenuBottom } from '~/constants/menus'
 
 function resolveNavItemComponent(item: NavLink | NavGroup | NavSectionTitle): any {
   if ('children' in item)
@@ -9,27 +8,7 @@ function resolveNavItemComponent(item: NavLink | NavGroup | NavSectionTitle): an
   return resolveComponent('LayoutSidebarNavLink')
 }
 
-const teams: {
-  name: string
-  logo: string
-  plan: string
-}[] = [
-  {
-    name: 'OTOBIX ADMIN',
-    logo: 'i-lucide-shield-check',
-    plan: 'Workspace',
-  },
-  {
-    name: 'OTOBIX INSPECTION',
-    logo: 'i-lucide-scan-search',
-    plan: 'Workspace',
-  },
-  {
-    name: 'OTOBIX DEALERS',
-    logo: 'i-lucide-handshake',
-    plan: 'Workspace',
-  },
-]
+const { activeWorkspace, activeMenuGroups, workspaces, setActiveWorkspace } = useWorkspace()
 
 const userCookie = useCookie('userData')
 const user = computed(() => {
@@ -47,23 +26,41 @@ const user = computed(() => {
 })
 
 const { sidebar } = useAppSettings()
+
+// Settings link (always shown after workspace menus)
+const settingsLink = {
+  title: 'Settings',
+  icon: 'i-lucide-settings',
+  link: '/settings',
+}
 </script>
 
 <template>
   <Sidebar :collapsible="sidebar?.collapsible" :side="sidebar?.side" :variant="sidebar?.variant">
     <SidebarHeader>
-      <LayoutSidebarNavHeader :teams="teams" />
+      <LayoutSidebarNavHeader
+        :workspaces="workspaces"
+        :active-workspace="activeWorkspace"
+        @workspace-change="setActiveWorkspace($event)"
+      />
     </SidebarHeader>
     <SidebarContent>
-      <SidebarGroup v-for="(nav, indexGroup) in navMenu" :key="indexGroup">
-        <SidebarGroupLabel v-if="nav.heading">
+      <!-- Dynamic workspace menus -->
+      <SidebarGroup v-for="(nav, indexGroup) in activeMenuGroups" :key="nav.heading + indexGroup">
+        <SidebarGroupLabel>
           {{ nav.heading }}
         </SidebarGroupLabel>
         <component :is="resolveNavItemComponent(item)" v-for="(item, index) in nav.items" :key="index" :item="item" />
       </SidebarGroup>
-      <SidebarGroup class="mt-auto">
-        <component :is="resolveNavItemComponent(item)" v-for="(item, index) in navMenuBottom" :key="index" :item="item" size="sm" />
+
+      <!-- Settings (always visible) -->
+      <SidebarGroup>
+        <SidebarGroupLabel>System</SidebarGroupLabel>
+        <LayoutSidebarNavLink :item="settingsLink" />
       </SidebarGroup>
+
+      <!-- Bottom spacer -->
+      <SidebarGroup class="mt-auto" />
     </SidebarContent>
     <SidebarFooter>
       <LayoutSidebarNavFooter :user="user" />

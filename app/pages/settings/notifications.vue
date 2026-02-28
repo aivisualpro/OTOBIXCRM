@@ -3,9 +3,7 @@
 </script>
 
 <template>
-  <SettingsLayout>
-    <SettingsNotificationsForm />
-  </SettingsLayout>
+  <SettingsNotificationsForm />
 </template>
 
 <style scoped>

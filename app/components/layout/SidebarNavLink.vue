@@ -11,6 +11,24 @@ withDefaults(defineProps<{
 })
 
 const { setOpenMobile } = useSidebar()
+
+// ─── Hover-intent Prefetch ───
+const { prefetchForRoute } = usePrefetch()
+let hoverTimer: ReturnType<typeof setTimeout> | null = null
+
+function onLinkHover(link: string) {
+  // Debounce: only trigger if user hovers for 100ms (not just passing over)
+  hoverTimer = setTimeout(() => {
+    prefetchForRoute(link)
+  }, 100)
+}
+
+function onLinkLeave() {
+  if (hoverTimer) {
+    clearTimeout(hoverTimer)
+    hoverTimer = null
+  }
+}
 </script>
 
 <template>
@@ -25,8 +43,14 @@ const { setOpenMobile } = useSidebar()
             Coming Soon
           </span>
         </span>
-        <!-- Normal link -->
-        <NuxtLink v-else :to="item.link" @click="setOpenMobile(false)">
+        <!-- Normal link with hover-intent prefetch -->
+        <NuxtLink
+          v-else
+          :to="item.link"
+          @click="setOpenMobile(false)"
+          @mouseenter="onLinkHover(item.link)"
+          @mouseleave="onLinkLeave"
+        >
           <Icon :name="item.icon || ''" />
           <span>{{ item.title }}</span>
           <span v-if="item.new" class="rounded-md bg-[#adfa1d] px-1.5 py-0.5 text-xs text-black leading-none no-underline group-hover:no-underline">

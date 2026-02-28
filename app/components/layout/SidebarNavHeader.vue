@@ -1,17 +1,17 @@
 <script setup lang="ts">
+import type { Workspace } from '~/composables/useWorkspace'
 import { useSidebar } from '~/components/ui/sidebar'
 
-const props = defineProps<{
-  teams: {
-    name: string
-    logo: string
-    plan: string
-  }[]
+defineProps<{
+  workspaces: Workspace[]
+  activeWorkspace: Workspace
+}>()
+
+const emit = defineEmits<{
+  'workspace-change': [id: string]
 }>()
 
 const { isMobile } = useSidebar()
-
-const activeTeam = ref(props.teams[0])
 </script>
 
 <template>
@@ -24,13 +24,12 @@ const activeTeam = ref(props.teams[0])
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             <div class="aspect-square size-8 flex items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <Icon :name="activeTeam!.logo" class="size-4" />
+              <Icon :name="activeWorkspace.icon" class="size-4" />
             </div>
             <div class="grid flex-1 text-left text-sm leading-tight">
               <span class="truncate font-semibold">
-                {{ activeTeam!.name }}
+                {{ activeWorkspace.name }}
               </span>
-              <span class="truncate text-xs">{{ activeTeam!.plan }}</span>
             </div>
             <Icon name="i-lucide-chevrons-up-down" class="ml-auto" />
           </SidebarMenuButton>
@@ -44,16 +43,25 @@ const activeTeam = ref(props.teams[0])
             Workspaces
           </DropdownMenuLabel>
           <DropdownMenuItem
-            v-for="(team, index) in teams"
-            :key="team.name"
+            v-for="(ws, index) in workspaces"
+            :key="ws.id"
             class="gap-2 p-2"
-            @click="activeTeam = team"
+            :class="{ 'bg-accent': activeWorkspace.id === ws.id }"
+            @click="emit('workspace-change', ws.id)"
           >
             <div class="size-6 flex items-center justify-center border rounded-sm">
-              <Icon :name="team.logo" class="size-4 shrink-0" />
+              <Icon :name="ws.icon" class="size-4 shrink-0" />
             </div>
-            {{ team.name }}
-            <DropdownMenuShortcut>⌘{{ index + 1 }}</DropdownMenuShortcut>
+            {{ ws.name }}
+            <Icon v-if="activeWorkspace.id === ws.id" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
+            <DropdownMenuShortcut v-else>⌘{{ index + 1 }}</DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem as-child class="gap-2 p-2">
+            <NuxtLink to="/settings">
+              <Icon name="i-lucide-settings" class="size-4" />
+              Manage Workspaces
+            </NuxtLink>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

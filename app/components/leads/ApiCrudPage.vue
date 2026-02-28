@@ -40,20 +40,36 @@ const {
   fetchCarDropdowns,
 } = useCarDropdowns()
 
-// Fetch all leads + car dropdowns once
+// Ensure data is loaded (usually already prefetched by boot)
 onMounted(() => {
-  fetchAllLeads()
+  fetchAllLeads()   // no-op if already prefetched
   fetchCarDropdowns()
 })
+
+// ─── Instant Reveal Animation ───
+const isRevealed = ref(false)
+const isMounted = ref(true)
+onBeforeUnmount(() => { isMounted.value = false })
+
+watch(isFetched, (fetched) => {
+  if (fetched && isMounted.value) {
+    // Micro-delay for the browser to paint the DOM, then trigger CSS transition
+    nextTick(() => {
+      if (isMounted.value) {
+        isRevealed.value = true
+      }
+    })
+  }
+}, { immediate: true })
 
 // ─── Status Change + Inspector Assignment ───
 const { apiBaseUrl } = useApiEnvironment()
 const authToken = useCookie('authToken')
 const { allUsers, fetchAllUsers } = usePeopleApi()
 
-// Inspector users (userRole === 'Inspector')
+// Inspector users from people/otobix with role "Inspection Engineer"
 const inspectors = computed(() =>
-  allUsers.value.filter((u: any) => u.userRole === 'Inspector'),
+  allUsers.value.filter((u: any) => (u.isStaff === true || u.userRole === 'Inspection Engineer') && u.userRole === 'Inspection Engineer'),
 )
 
 onMounted(() => fetchAllUsers())
@@ -79,9 +95,15 @@ async function confirmAssignInspector() {
   if (!assigningLead.value)
     return
   const lead = assigningLead.value
+
+  // Look up the inspector's phone number from the users list
+  const inspectorUser = allUsers.value.find((u: any) => u.userName === selectedInspector.value)
+  const inspectorPhone = inspectorUser?.phoneNumber || ''
+
   await doStatusUpdate(lead, {
     inspectionStatus: lead._pendingStatus || 'Scheduled',
     allocatedTo: selectedInspector.value,
+    inspectionEngineerNumber: inspectorPhone,
   })
   showAssignDialog.value = false
   assigningLead.value = null
@@ -168,11 +190,12 @@ const filteredItems = computed(() => {
   let result = allLeads.value as Record<string, any>[]
 
   // Apply route-specific filters (e.g. inspectionStatus=Pending, approvalStatus=Pending)
+  // '*' = match any value (wildcard)
   if (props.filters) {
     const filters = props.filters
     result = result.filter(item =>
       Object.entries(filters).every(([field, val]) =>
-        String(item[field] ?? '').toLowerCase() === val.toLowerCase(),
+        val === '*' || String(item[field] ?? '').toLowerCase() === val.toLowerCase(),
       ),
     )
   }
@@ -190,30 +213,49 @@ const filteredItems = computed(() => {
   return result
 })
 
-// ─── Client-side pagination (30 per page) ───
-const PER_PAGE = 30
-const currentPage = ref(1)
+// ─── Client-side infinite scroll (load more on scroll) ───
+const BATCH_SIZE = 30
+const visibleCount = ref(BATCH_SIZE)
 
-// Reset page when search or filters change
-watch(search, () => { currentPage.value = 1 })
+// Reset visible count when search or filters change
+watch(search, () => { visibleCount.value = BATCH_SIZE })
 
 const totalFiltered = computed(() => filteredItems.value.length)
-const totalPages = computed(() => Math.max(1, Math.ceil(totalFiltered.value / PER_PAGE)))
+const hasMore = computed(() => visibleCount.value < totalFiltered.value)
 
-const paginatedItems = computed(() => {
-  const start = (currentPage.value - 1) * PER_PAGE
-  return filteredItems.value.slice(start, start + PER_PAGE)
+const visibleItems = computed(() => {
+  return filteredItems.value.slice(0, visibleCount.value)
 })
 
-function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value)
-    return
-  currentPage.value = page
+function loadMore() {
+  if (hasMore.value) {
+    visibleCount.value = Math.min(visibleCount.value + BATCH_SIZE, totalFiltered.value)
+  }
 }
 
-// ─── Pagination display helpers ───
-const showingFrom = computed(() => totalFiltered.value === 0 ? 0 : ((currentPage.value - 1) * PER_PAGE) + 1)
-const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFiltered.value))
+// IntersectionObserver for the scroll sentinel
+const scrollSentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
+onMounted(() => {
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting) {
+        loadMore()
+      }
+    },
+    { rootMargin: '200px' },
+  )
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+})
+
+watch(scrollSentinel, (el) => {
+  observer?.disconnect()
+  if (el) observer?.observe(el)
+})
 
 // ─── Form Tabs ───
 const activeTab = ref('owner')
@@ -251,14 +293,56 @@ function openEdit(item: any) {
   showDialog.value = true
 }
 
-function handleSave() {
-  if (editingItem.value) {
-    toast.info(`Update for ${entity.value} will be sent to API (coming soon)`)
+const isSaving = ref(false)
+
+async function handleSave() {
+  isSaving.value = true
+  try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (authToken.value)
+      headers.Authorization = `Bearer ${authToken.value}`
+
+    const userCookie = useCookie('userData')
+    const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
+
+    if (editingItem.value) {
+      // Update existing lead
+      await $fetch<any>(
+        `${apiBaseUrl.value}inspection/telecallings/update`,
+        {
+          method: 'PUT',
+          headers,
+          body: {
+            telecallingId: editingItem.value._id || editingItem.value.id,
+            appointmentId: editingItem.value.appointmentId,
+            changedBy: currentUser?.userName || 'Admin',
+            source: 'CRM',
+            ...formData.value,
+          },
+        },
+      )
+
+      // Update local cache
+      const leadId = editingItem.value._id || editingItem.value.id
+      const idx = allLeads.value.findIndex((l: any) => (l._id || l.id) === leadId)
+      if (idx !== -1) {
+        Object.assign(allLeads.value[idx] as object, formData.value)
+      }
+
+      toast.success(`${entity.value} updated successfully`)
+    }
+    else {
+      toast.info(`Create ${entity.value} will be sent to API (coming soon)`)
+    }
+    showDialog.value = false
   }
-  else {
-    toast.info(`Create ${entity.value} will be sent to API (coming soon)`)
+  catch (err: any) {
+    console.error('Save failed:', err)
+    toast.error(err?.data?.message || err?.message || 'Failed to save')
   }
-  showDialog.value = false
+  finally {
+    isSaving.value = false
+  }
 }
 
 function confirmDelete(item: any) {
@@ -331,24 +415,7 @@ function getInitials(name: string): string {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
-// ─── Pagination page numbers with ellipsis ───
-const pageNumbers = computed(() => {
-  const total = totalPages.value
-  const current = currentPage.value
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
-  const pages: (number | string)[] = [1]
-  if (current > 3)
-    pages.push('...')
-  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-    pages.push(i)
-  }
-  if (current < total - 2)
-    pages.push('...')
-  pages.push(total)
-  return pages
-})
+
 </script>
 
 <template>
@@ -388,18 +455,19 @@ const pageNumbers = computed(() => {
       </Button>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="!isFetched && !fetchError" class="flex-1 min-h-0 flex items-center justify-center">
-      <div class="flex flex-col items-center gap-3 text-muted-foreground">
-        <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-        <p class="text-sm">
-          Loading leads...
-        </p>
+    <!-- Ultra-minimal loading shimmer (only visible if data wasn't prefetched) -->
+    <div v-else-if="!isFetched" class="flex-1 min-h-0 overflow-hidden">
+      <div class="leads-shimmer">
+        <div v-for="i in 12" :key="i" class="leads-shimmer-row" :style="{ animationDelay: `${i * 40}ms` }" />
       </div>
     </div>
 
-    <!-- Table (scrollable) -->
-    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto">
+    <!-- Table (scrollable) — instant reveal with smooth animation -->
+    <div
+      v-else
+      class="flex-1 min-h-0 overflow-auto leads-table-reveal"
+      :class="{ 'is-revealed': isRevealed }"
+    >
       <Table>
         <TableHeader class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
           <TableRow>
@@ -413,7 +481,7 @@ const pageNumbers = computed(() => {
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="item in paginatedItems"
+            v-for="item in visibleItems"
             :key="item.id || item._id"
             class="group"
             :class="{ 'cursor-pointer hover:bg-muted/50': props.clickable }"
@@ -423,7 +491,7 @@ const pageNumbers = computed(() => {
               <!-- Avatar -->
               <div v-if="col.type === 'avatar'" class="flex items-center gap-3">
                 <Avatar class="size-8 border">
-                  <AvatarImage :src="item.avatar" :alt="item[col.key]" />
+                  <AvatarImage v-if="item.avatar" :src="item.avatar" :alt="item[col.key]" />
                   <AvatarFallback class="text-xs">
                     {{ getInitials(item[col.key]) }}
                   </AvatarFallback>
@@ -435,7 +503,8 @@ const pageNumbers = computed(() => {
                 <DropdownMenuTrigger as-child>
                   <Badge
                     variant="outline"
-                    class="cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all" :class="[getBadgeClass(item[col.key])]"
+                    class="cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all"
+                    :class="[getBadgeClass(item[col.key]), col.key === 'inspectionStatus' ? 'uppercase' : '']"
                   >
                     {{ item[col.key] || '—' }}
                     <Icon name="i-lucide-chevron-down" class="size-3 ml-1 opacity-50" />
@@ -452,7 +521,7 @@ const pageNumbers = computed(() => {
                     :class="{ 'bg-accent': item[col.key] === status }"
                     @click.stop="updateLeadStatus(item, col.key, status)"
                   >
-                    <Badge variant="outline" :class="getBadgeClass(status)" class="text-[10px] h-5">
+                    <Badge variant="outline" :class="[getBadgeClass(status), col.key === 'inspectionStatus' ? 'uppercase' : '']" class="text-[10px] h-5">
                       {{ status }}
                     </Badge>
                     <Icon v-if="item[col.key] === status" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
@@ -500,7 +569,7 @@ const pageNumbers = computed(() => {
               </div>
             </TableCell>
           </TableRow>
-          <TableRow v-if="paginatedItems.length === 0 && !isLoading">
+          <TableRow v-if="visibleItems.length === 0 && !isLoading">
             <TableCell :colspan="columns.length + 1" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-inbox" class="size-8" />
@@ -514,44 +583,21 @@ const pageNumbers = computed(() => {
           </TableRow>
         </TableBody>
       </Table>
-    </div>
 
-    <!-- Loading Skeleton -->
-    <div v-else-if="isLoading" class="flex-1 p-8">
-      <div class="space-y-4">
-        <Skeleton class="h-8 w-full" />
-        <Skeleton class="h-8 w-full" />
-        <Skeleton class="h-8 w-full" />
-        <Skeleton class="h-8 w-full" />
-        <Skeleton class="h-8 w-3/4" />
+      <!-- Scroll Sentinel for infinite loading -->
+      <div v-if="hasMore" ref="scrollSentinel" class="flex items-center justify-center py-6">
+        <div class="flex items-center gap-2 text-sm text-muted-foreground">
+          <Icon name="i-lucide-loader-2" class="size-4 animate-spin" />
+          Loading more...
+        </div>
       </div>
     </div>
 
-    <!-- Pagination Bar (pinned to bottom) -->
-    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex flex-wrap items-center justify-between gap-2">
+    <!-- Footer info bar -->
+    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex items-center justify-between">
       <p class="text-xs text-muted-foreground tabular-nums">
-        Showing {{ showingFrom }} to {{ showingTo }} out of {{ totalFiltered }} records
+        Showing {{ visibleItems.length }} of {{ totalFiltered }} records
       </p>
-      <div v-if="totalPages > 1" class="flex items-center gap-1">
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
-          <Icon name="i-lucide-chevron-left" class="size-3.5" />
-        </Button>
-        <template v-for="pg in pageNumbers" :key="pg">
-          <Button
-            v-if="pg !== '...'"
-            :variant="pg === currentPage ? 'default' : 'outline'"
-            size="icon"
-            class="size-7 text-xs"
-            @click="goToPage(pg as number)"
-          >
-            {{ pg }}
-          </Button>
-          <span v-else class="px-1 text-xs text-muted-foreground">…</span>
-        </template>
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
-          <Icon name="i-lucide-chevron-right" class="size-3.5" />
-        </Button>
-      </div>
     </div>
 
     <!-- Create/Edit Dialog -->
@@ -661,10 +707,11 @@ const pageNumbers = computed(() => {
               {{ formTabs.findIndex(t => t.id === activeTab) + 1 }} of {{ formTabs.length }}
             </p>
             <div class="flex gap-2">
-              <Button variant="outline" type="button" @click="showDialog = false">
+              <Button variant="outline" type="button" :disabled="isSaving" @click="showDialog = false">
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" :disabled="isSaving">
+                <Icon v-if="isSaving" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
                 {{ editingItem ? 'Update' : 'Create' }}
               </Button>
             </div>
@@ -736,7 +783,7 @@ const pageNumbers = computed(() => {
               </SelectContent>
             </Select>
             <p v-if="inspectors.length === 0" class="text-xs text-muted-foreground">
-              No inspectors found. Add users with role "Inspector" first.
+              No inspectors found. Add users with role "Inspection Engineer" first.
             </p>
           </div>
         </div>
@@ -755,3 +802,58 @@ const pageNumbers = computed(() => {
     </Dialog>
   </div>
 </template>
+
+<style scoped>
+/* ─── Instant Reveal Animation ─── */
+.leads-table-reveal {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.leads-table-reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Ultra-fast Shimmer (fallback for cold starts) ─── */
+.leads-shimmer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  height: 100%;
+}
+
+.leads-shimmer-row {
+  height: 40px;
+  border-radius: 0;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted) / 0.3) 0%,
+    hsl(var(--muted) / 0.6) 40%,
+    hsl(var(--muted) / 0.3) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer-sweep 0.8s ease-in-out infinite;
+  opacity: 0;
+  animation: shimmer-sweep 0.8s ease-in-out infinite, shimmer-appear 0.2s ease forwards;
+}
+
+@keyframes shimmer-sweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes shimmer-appear {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 0.6;
+    transform: translateX(0);
+  }
+}
+</style>

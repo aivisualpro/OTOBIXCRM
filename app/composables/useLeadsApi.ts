@@ -54,13 +54,18 @@ const _allLeads = ref<TelecallingLead[]>([])
 const _isFetched = ref(false)
 const _isFetching = ref(false)
 const _fetchError = ref<string | null>(null)
+const _fetchedForEnv = ref<string>('') // track which environment was used
 
 export function useLeadsApi() {
-  const { apiBaseUrl } = useApiEnvironment()
+  const { apiBaseUrl, currentEnv } = useApiEnvironment()
   const authToken = useCookie('authToken')
 
   /** Fetch all leads from the API (runs only once, cached globally) */
   async function fetchAllLeads(force = false) {
+    // If environment changed since last fetch, force re-fetch
+    if (_fetchedForEnv.value && _fetchedForEnv.value !== currentEnv.value) {
+      force = true
+    }
     // Skip if already fetched & not forced
     if (_isFetched.value && !force)
       return
@@ -96,6 +101,7 @@ export function useLeadsApi() {
       }))
 
       _isFetched.value = true
+      _fetchedForEnv.value = currentEnv.value
 
       // If there are more pages, fetch them in the background
       const totalCount = (response as any)?.totalCount || (response as any)?.total || 0

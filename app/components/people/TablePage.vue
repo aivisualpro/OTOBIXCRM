@@ -61,28 +61,48 @@ const filteredItems = computed(() => {
   return result
 })
 
-// ─── Client-side pagination (30 per page) ───
-const PER_PAGE = 30
-const currentPage = ref(1)
+// ─── Client-side infinite scroll (load more on scroll) ───
+const BATCH_SIZE = 30
+const visibleCount = ref(BATCH_SIZE)
 
-watch(search, () => { currentPage.value = 1 })
+watch(search, () => { visibleCount.value = BATCH_SIZE })
 
 const totalFiltered = computed(() => filteredItems.value.length)
-const totalPages = computed(() => Math.max(1, Math.ceil(totalFiltered.value / PER_PAGE)))
+const hasMore = computed(() => visibleCount.value < totalFiltered.value)
 
-const paginatedItems = computed(() => {
-  const start = (currentPage.value - 1) * PER_PAGE
-  return filteredItems.value.slice(start, start + PER_PAGE)
+const visibleItems = computed(() => {
+  return filteredItems.value.slice(0, visibleCount.value)
 })
 
-function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value)
-    return
-  currentPage.value = page
+function loadMore() {
+  if (hasMore.value) {
+    visibleCount.value = Math.min(visibleCount.value + BATCH_SIZE, totalFiltered.value)
+  }
 }
 
-const showingFrom = computed(() => totalFiltered.value === 0 ? 0 : ((currentPage.value - 1) * PER_PAGE) + 1)
-const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFiltered.value))
+// IntersectionObserver for the scroll sentinel
+const scrollSentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
+onMounted(() => {
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting) {
+        loadMore()
+      }
+    },
+    { rootMargin: '200px' },
+  )
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+})
+
+watch(scrollSentinel, (el) => {
+  observer?.disconnect()
+  if (el) observer?.observe(el)
+})
 
 // ─── Formatters ───
 const badgeClasses: Record<string, string> = {
@@ -94,10 +114,31 @@ const badgeClasses: Record<string, string> = {
   'Admin': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
   'Super Admin': 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
   'Staff': 'bg-teal-500/10 text-teal-600 border-teal-500/20',
+  'Inspection Engineer': 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+  'Retailer': 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20',
+  'Sales Manager': 'bg-sky-500/10 text-sky-600 border-sky-500/20',
+  'Telecaller': 'bg-pink-500/10 text-pink-600 border-pink-500/20',
+  'QC': 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  'Yes': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  'No': 'bg-gray-500/10 text-gray-500 border-gray-500/20',
 }
 
-function getBadgeClass(value: string): string {
-  return badgeClasses[value] || 'bg-gray-500/10 text-gray-600 border-gray-500/20'
+function getBadgeClass(value: any): string {
+  const str = formatBadgeValue(value)
+  return badgeClasses[str] || 'bg-gray-500/10 text-gray-600 border-gray-500/20'
+}
+
+function formatBadgeValue(value: any): string {
+  if (value === true) return 'Yes'
+  if (value === false) return 'No'
+  if (value === null || value === undefined || value === '') return '—'
+  return String(value)
+}
+
+function toTagsArray(value: any): string[] {
+  if (!value) return []
+  if (Array.isArray(value)) return value.filter(Boolean).map(String)
+  return [String(value)]
 }
 
 function formatDate(value: string): string {
@@ -120,24 +161,7 @@ async function handleRefresh() {
   toast.success('Data refreshed from server')
 }
 
-// ─── Pagination page numbers with ellipsis ───
-const pageNumbers = computed(() => {
-  const total = totalPages.value
-  const current = currentPage.value
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
-  const pages: (number | string)[] = [1]
-  if (current > 3)
-    pages.push('...')
-  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-    pages.push(i)
-  }
-  if (current < total - 2)
-    pages.push('...')
-  pages.push(total)
-  return pages
-})
+
 
 // ─── Navigate to profile ───
 const router = useRouter()
@@ -314,7 +338,7 @@ function toggleSelectAllLocations() {
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="item in paginatedItems"
+            v-for="item in visibleItems"
             :key="item.id || item._id"
             class="group cursor-pointer hover:bg-muted/40 transition-colors"
             @click="openProfile(item)"
@@ -332,7 +356,7 @@ function toggleSelectAllLocations() {
               </div>
               <!-- Badge -->
               <Badge v-else-if="col.type === 'badge'" variant="outline" :class="getBadgeClass(item[col.key])">
-                {{ item[col.key] || '—' }}
+                {{ formatBadgeValue(item[col.key]) }}
               </Badge>
               <!-- Date -->
               <span v-else-if="col.type === 'date'" class="text-muted-foreground text-sm">
@@ -340,15 +364,18 @@ function toggleSelectAllLocations() {
               </span>
               <!-- Tags -->
               <div v-else-if="col.type === 'tags'" class="flex flex-wrap gap-1">
-                <Badge v-for="tag in (item[col.key] || [])" :key="tag" variant="secondary" class="text-xs font-normal">
-                  {{ tag }}
-                </Badge>
+                <template v-if="toTagsArray(item[col.key]).length > 0">
+                  <Badge v-for="tag in toTagsArray(item[col.key])" :key="tag" variant="secondary" class="text-xs font-normal">
+                    {{ tag }}
+                  </Badge>
+                </template>
+                <span v-else class="text-sm text-muted-foreground">—</span>
               </div>
               <!-- Default text -->
               <span v-else class="text-sm">{{ item[col.key] ?? '—' }}</span>
             </TableCell>
           </TableRow>
-          <TableRow v-if="paginatedItems.length === 0 && !isLoading">
+          <TableRow v-if="visibleItems.length === 0 && !isLoading">
             <TableCell :colspan="columns.length" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-inbox" class="size-8" />
@@ -358,33 +385,21 @@ function toggleSelectAllLocations() {
           </TableRow>
         </TableBody>
       </Table>
+
+      <!-- Scroll Sentinel for infinite loading -->
+      <div v-if="hasMore" ref="scrollSentinel" class="flex items-center justify-center py-6">
+        <div class="flex items-center gap-2 text-sm text-muted-foreground">
+          <Icon name="i-lucide-loader-2" class="size-4 animate-spin" />
+          Loading more...
+        </div>
+      </div>
     </div>
 
-    <!-- Pagination Bar (pinned to bottom) -->
-    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex flex-wrap items-center justify-between gap-2">
+    <!-- Footer info bar -->
+    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex items-center justify-between">
       <p class="text-xs text-muted-foreground tabular-nums">
-        Showing {{ showingFrom }} to {{ showingTo }} out of {{ totalFiltered }} records
+        Showing {{ visibleItems.length }} of {{ totalFiltered }} records
       </p>
-      <div v-if="totalPages > 1" class="flex items-center gap-1">
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
-          <Icon name="i-lucide-chevron-left" class="size-3.5" />
-        </Button>
-        <template v-for="pg in pageNumbers" :key="pg">
-          <Button
-            v-if="pg !== '...'"
-            :variant="pg === currentPage ? 'default' : 'outline'"
-            size="icon"
-            class="size-7 text-xs"
-            @click="goToPage(pg as number)"
-          >
-            {{ pg }}
-          </Button>
-          <span v-else class="px-1 text-xs text-muted-foreground">…</span>
-        </template>
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
-          <Icon name="i-lucide-chevron-right" class="size-3.5" />
-        </Button>
-      </div>
     </div>
   </div>
 

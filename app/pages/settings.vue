@@ -1,13 +1,11 @@
 <script setup lang="ts">
-
+definePageMeta({
+  title: 'Settings',
+})
 </script>
 
 <template>
   <SettingsLayout>
-    <SettingsAccountForm />
+    <NuxtPage />
   </SettingsLayout>
 </template>
-
-<style scoped>
-
-</style>
