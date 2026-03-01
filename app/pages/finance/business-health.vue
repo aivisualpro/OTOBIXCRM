@@ -154,7 +154,7 @@ const priorityColors: Record<string, string> = {
 }
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Business Health', icon: 'i-lucide-heart-pulse', description: 'Comprehensive health assessment with actionable insights' })
+setHeader({ title: 'Business Health', icon: 'i-lucide-heart-pulse', description: 'Vitals · risk score · actionable insights' })
 </script>
 
 <template>

@@ -5,7 +5,7 @@ definePageMeta({ layout: 'default' })
 useHead({ title: 'Dropdowns — OTOBIX' })
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Dropdowns', icon: 'i-lucide-list', description: 'Manage dropdown collections' })
+setHeader({ title: 'Dropdowns', icon: 'i-lucide-chevrons-up-down', description: 'Define · organize · reuse dynamic options' })
 
 // ─── State ───
 interface DropdownValue {

@@ -109,7 +109,7 @@ const growthFooterSub = computed(() =>
 )
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 'Overview of key metrics and performance' })
+setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 'Live overview · metrics · performance' })
 </script>
 
 <template>

@@ -3,7 +3,7 @@ definePageMeta({ title: 'Settings', layout: 'default' })
 useHead({ title: 'Settings — OTOBIX' })
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Settings', icon: 'i-lucide-settings', description: 'App configuration and preferences' })
+setHeader({ title: 'Settings' })
 
 const route = useRoute()
 const router = useRouter()

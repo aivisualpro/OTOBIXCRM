@@ -101,7 +101,7 @@ const marginTrend = [
 ]
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Income Statement', icon: 'i-lucide-receipt', description: 'Consolidated statement of profit & loss' })
+setHeader({ title: 'Income Statement', icon: 'i-lucide-receipt', description: 'Revenue · expenses · net profit breakdown' })
 </script>
 
 <template>

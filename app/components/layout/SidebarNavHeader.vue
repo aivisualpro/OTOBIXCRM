@@ -23,10 +23,7 @@ const { isMobile } = useSidebar()
             size="lg"
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
-            <div class="aspect-square size-8 flex items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <Icon :name="activeWorkspace.icon" class="size-4" />
-            </div>
-            <div class="grid flex-1 text-left text-sm leading-tight">
+            <div class="grid flex-1 text-left text-sm leading-tight ml-2">
               <span class="truncate font-semibold">
                 {{ activeWorkspace.name }}
               </span>
@@ -49,9 +46,6 @@ const { isMobile } = useSidebar()
             :class="{ 'bg-accent': activeWorkspace.workspaceId === ws.workspaceId }"
             @click="emit('workspace-change', ws.workspaceId)"
           >
-            <div class="size-6 flex items-center justify-center border rounded-sm">
-              <Icon :name="ws.icon" class="size-4 shrink-0" />
-            </div>
             {{ ws.name }}
             <Icon v-if="activeWorkspace.workspaceId === ws.workspaceId" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
             <DropdownMenuShortcut v-else>⌘{{ index + 1 }}</DropdownMenuShortcut>

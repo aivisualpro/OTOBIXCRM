@@ -132,7 +132,7 @@ const trendData = [
 ]
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Financial Ratios', icon: 'i-lucide-chart-no-axes-combined', description: 'Key performance indicators with industry benchmarks' })
+setHeader({ title: 'Financial Ratios', icon: 'i-lucide-chart-no-axes-combined', description: 'KPIs · benchmarks · efficiency metrics' })
 </script>
 
 <template>

@@ -3,7 +3,7 @@ import NumberFlow from '@number-flow/vue'
 import { TrendingDown, TrendingUp } from 'lucide-vue-next'
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Financial Reports', description: 'Complete financial analytics and performance insights', icon: 'i-lucide-pie-chart' })
+setHeader({ title: 'Financial Reports', icon: 'i-lucide-pie-chart', description: 'P&L · cash flow · balance insights' })
 
 const activeTab = ref('pnl')
 

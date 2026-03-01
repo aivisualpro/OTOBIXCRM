@@ -5,7 +5,7 @@ definePageMeta({ layout: 'default' })
 useHead({ title: 'Banners — OTOBIX' })
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Banners', icon: 'i-lucide-image', description: 'Manage app banners and promotions' })
+setHeader({ title: 'Banners', icon: 'i-lucide-image-play', description: 'Campaigns · promotions · announcements' })
 
 const {
   allBanners,

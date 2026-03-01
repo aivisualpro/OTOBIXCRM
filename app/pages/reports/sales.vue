@@ -3,7 +3,7 @@ import NumberFlow from '@number-flow/vue'
 import { TrendingUp } from 'lucide-vue-next'
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Sales Reports', description: 'Comprehensive sales analytics and performance insights', icon: 'i-lucide-trending-up' })
+setHeader({ title: 'Sales Reports', icon: 'i-lucide-trending-up', description: 'Revenue trends · pipeline · team performance' })
 
 const activeTab = ref('overview')
 

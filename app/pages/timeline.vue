@@ -2,7 +2,7 @@
 import type { TelecallingLead } from '~/composables/useLeadsApi'
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Timeline', icon: 'i-lucide-gantt-chart', description: 'Approved leads lifecycle — track each appointment through status changes' })
+setHeader({ title: 'Timeline', icon: 'i-lucide-activity', description: 'Lead lifecycle · status history · appointment flow' })
 
 // ── Fetch leads data ───────────────────────────────────
 const { allLeads, isLoading, fetchAllLeads } = useLeadsApi()

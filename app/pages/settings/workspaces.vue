@@ -142,12 +142,14 @@ const allSelected = computed(() => enabledMenuItems.value === totalMenuItems.val
 function localToggle(menuId: string) {
   const ws = editingWorkspace.value
   if (!ws) return
-  const idx = ws.menuIds.indexOf(menuId)
+  const current = [...ws.menuIds]
+  const idx = current.indexOf(menuId)
   if (idx >= 0) {
-    ws.menuIds.splice(idx, 1)
+    current.splice(idx, 1)
   } else {
-    ws.menuIds.push(menuId)
+    current.push(menuId)
   }
+  ws.menuIds = current // Replace reference for reactivity
   isDirty.value = true
 }
 
@@ -161,7 +163,7 @@ function selectAll() {
 function deselectAll() {
   const ws = editingWorkspace.value
   if (!ws) return
-  ws.menuIds = []
+  ws.menuIds = [] // Reference change
   isDirty.value = true
 }
 
@@ -174,11 +176,12 @@ function isGroupAllSelected(items: typeof allMenuItems): boolean {
 function toggleGroupAll(items: typeof allMenuItems) {
   const ws = editingWorkspace.value
   if (!ws) return
+  const currentIds = items.map(i => i.id)
   if (isGroupAllSelected(items)) {
-    ws.menuIds = ws.menuIds.filter(id => !items.map(i => i.id).includes(id))
+    ws.menuIds = ws.menuIds.filter(id => !currentIds.includes(id))
   } else {
-    const toAdd = items.map(i => i.id).filter(id => !ws.menuIds.includes(id))
-    ws.menuIds.push(...toAdd)
+    const toAdd = currentIds.filter(id => !ws.menuIds.includes(id))
+    ws.menuIds = [...ws.menuIds, ...toAdd] // Reference change
   }
   isDirty.value = true
 }
@@ -238,16 +241,6 @@ async function saveMenuConfig() {
         />
 
         <div class="flex items-center gap-3">
-          <div
-            class="size-11 flex items-center justify-center rounded-xl transition-all duration-200"
-            :style="{
-              backgroundColor: editingWorkspaceId === ws.workspaceId ? (ws.color || '#6366f1') : undefined,
-              color: editingWorkspaceId === ws.workspaceId ? '#fff' : undefined,
-            }"
-            :class="editingWorkspaceId !== ws.workspaceId ? 'bg-muted text-muted-foreground' : ''"
-          >
-            <Icon :name="ws.icon" class="size-5" />
-          </div>
           <div class="flex-1 min-w-0">
             <p class="font-semibold text-sm truncate">
               {{ ws.name }}
@@ -349,39 +342,39 @@ async function saveMenuConfig() {
             </button>
           </div>
           <div class="space-y-1.5">
-            <label
+            <div
               v-for="item in items"
               :key="item.id"
-              class="flex items-center gap-3 rounded-lg p-2.5 cursor-pointer transition-all hover:bg-muted/50"
-              :class="{
-                'opacity-60': item.comingSoon,
-                'bg-primary/5': editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon,
-              }"
+              class="group flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer"
+              :class="[
+                item.comingSoon ? 'opacity-50 cursor-not-allowed bg-muted/20' : 'hover:bg-accent/50',
+                editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon 
+                  ? 'border-primary/30 bg-primary/5 ring-1 ring-primary/10' 
+                  : 'bg-background/80'
+              ]"
+              @click="!item.comingSoon && localToggle(item.id)"
             >
-              <div
-                class="size-8 flex items-center justify-center rounded-lg border transition-all duration-200"
-                :class="editingWorkspace!.menuIds.includes(item.id) ? 'bg-primary/10 border-primary/30 text-primary scale-105' : 'bg-muted/50 text-muted-foreground'"
-              >
-                <Icon :name="item.icon" class="size-4" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5">
-                  <p class="text-sm font-medium">
-                    {{ item.title }}
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <p class="text-sm font-semibold leading-none">
+                      {{ item.title }}
+                    </p>
+                    <span v-if="item.comingSoon" class="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-bold text-amber-600 uppercase tracking-tighter">
+                      Soon
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-muted-foreground/70 truncate mt-1">
+                    {{ item.link }}
                   </p>
-                  <span v-if="item.comingSoon" class="rounded-md bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 dark:text-amber-400 leading-none whitespace-nowrap">
-                    Soon
-                  </span>
                 </div>
-                <p class="text-[11px] text-muted-foreground truncate">
-                  {{ item.link }}
-                </p>
               </div>
               <Switch
                 :checked="editingWorkspace!.menuIds.includes(item.id)"
-                @update:checked="localToggle(item.id)"
+                :disabled="item.comingSoon"
+                class="scale-90"
               />
-            </label>
+            </div>
           </div>
         </div>
       </div>

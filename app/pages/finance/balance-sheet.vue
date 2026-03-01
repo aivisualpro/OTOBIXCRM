@@ -97,7 +97,7 @@ const trendData = [
 ]
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Balance Sheet', icon: 'i-lucide-landmark', description: 'Consolidated statement of financial position' })
+setHeader({ title: 'Balance Sheet', icon: 'i-lucide-landmark', description: 'Assets · liabilities · equity position' })
 </script>
 
 <template>
