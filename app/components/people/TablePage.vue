@@ -101,7 +101,8 @@ onBeforeUnmount(() => {
 
 watch(scrollSentinel, (el) => {
   observer?.disconnect()
-  if (el) observer?.observe(el)
+  if (el)
+    observer?.observe(el)
 })
 
 // ─── Formatters ───
@@ -129,15 +130,20 @@ function getBadgeClass(value: any): string {
 }
 
 function formatBadgeValue(value: any): string {
-  if (value === true) return 'Yes'
-  if (value === false) return 'No'
-  if (value === null || value === undefined || value === '') return '—'
+  if (value === true)
+    return 'Yes'
+  if (value === false)
+    return 'No'
+  if (value === null || value === undefined || value === '')
+    return '—'
   return String(value)
 }
 
 function toTagsArray(value: any): string[] {
-  if (!value) return []
-  if (Array.isArray(value)) return value.filter(Boolean).map(String)
+  if (!value)
+    return []
+  if (Array.isArray(value))
+    return value.filter(Boolean).map(String)
   return [String(value)]
 }
 
@@ -160,8 +166,6 @@ async function handleRefresh() {
   await refreshUsers()
   toast.success('Data refreshed from server')
 }
-
-
 
 // ─── Navigate to profile ───
 const router = useRouter()

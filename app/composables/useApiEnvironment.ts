@@ -46,4 +46,3 @@ export function useApiEnvironment() {
     ENV_COLORS,
   }
 }
-

@@ -59,7 +59,7 @@ interface FlatRange {
   data: VariableRange
 }
 
-const allRanges = computed<FlatRange[]>(() => {
+const _allRanges = computed<FlatRange[]>(() => {
   const result: FlatRange[] = []
   margins.value.forEach((m) => {
     ;(m.variableRanges || []).forEach((r: any, idx: number) => {
@@ -87,8 +87,10 @@ function getTheme(idx: number) {
 
 // ─── Format cell value ───
 function formatValue(val: any): string {
-  if (val === null || val === undefined) return '—'
-  if (typeof val === 'number') return val.toLocaleString()
+  if (val === null || val === undefined)
+    return '—'
+  if (typeof val === 'number')
+    return val.toLocaleString()
   return String(val)
 }
 
@@ -99,7 +101,8 @@ function formatLabel(key: string): string {
 
 // ─── Get display keys from a range object ───
 function getRangeKeys(data: any): string[] {
-  if (typeof data !== 'object' || data === null) return []
+  if (typeof data !== 'object' || data === null)
+    return []
   return Object.keys(data).filter(k => k !== '_id' && k !== '$oid')
 }
 
@@ -206,107 +209,118 @@ async function handleDelete() {
 </script>
 
 <template>
-  <ClientOnly>
-    <Teleport to="#header-actions">
-      <Button size="sm" class="h-8" @click="openCreate">
-        <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
-        Add Margin
-      </Button>
-    </Teleport>
-  </ClientOnly>
+  <div>
+    <ClientOnly>
+      <Teleport to="#header-actions">
+        <Button size="sm" class="h-8" @click="openCreate">
+          <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
+          Add Margin
+        </Button>
+      </Teleport>
+    </ClientOnly>
 
-  <div class="p-4 lg:p-6">
-
-    <!-- Loading State -->
-    <div v-if="isLoading && !isFetched" class="flex flex-col items-center justify-center py-20 gap-4">
-      <div class="size-12 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-      <p class="text-sm text-muted-foreground animate-pulse">Loading car margins…</p>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="fetchError" class="flex flex-col items-center justify-center py-20 gap-4">
-      <div class="size-14 rounded-full bg-destructive/10 flex items-center justify-center">
-        <Icon name="i-lucide-alert-circle" class="size-7 text-destructive" />
+    <div class="p-4 lg:p-6">
+      <!-- Loading State -->
+      <div v-if="isLoading && !isFetched" class="flex flex-col items-center justify-center py-20 gap-4">
+        <div class="size-12 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+        <p class="text-sm text-muted-foreground animate-pulse">
+          Loading car margins…
+        </p>
       </div>
-      <p class="text-sm text-destructive font-medium">{{ fetchError }}</p>
-      <Button variant="outline" size="sm" @click="fetchMargins">Retry</Button>
-    </div>
 
-    <!-- Empty State -->
-    <div v-else-if="isFetched && margins.length === 0" class="flex flex-col items-center justify-center py-20 gap-4">
-      <div class="size-16 rounded-2xl bg-muted/50 flex items-center justify-center">
-        <Icon name="i-lucide-percent" class="size-8 text-muted-foreground/50" />
-      </div>
-      <div class="text-center">
-        <p class="text-base font-semibold">No car margins yet</p>
-        <p class="text-sm text-muted-foreground mt-1">Create your first pricing tier to get started.</p>
-      </div>
-      <Button size="sm" @click="openCreate">
-        <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
-        Add Margin
-      </Button>
-    </div>
-
-    <!-- Margin Records -->
-    <div v-else class="space-y-8">
-      <div v-for="record in margins" :key="record._id" class="space-y-3">
-        <!-- Record header -->
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-bold text-foreground">Fixed Margin: {{ record.fixedMargin }}%</span>
-            <Badge variant="secondary" class="text-[10px] h-5 tabular-nums">
-              {{ record.variableRanges?.length || 0 }} ranges
-            </Badge>
-          </div>
-          <div class="flex items-center gap-1">
-            <Button variant="ghost" size="icon" class="size-7" title="Edit" @click="openEdit(record)">
-              <Icon name="i-lucide-pencil" class="size-3.5" />
-            </Button>
-            <Button variant="ghost" size="icon" class="size-7 text-destructive" title="Delete" @click="confirmDelete(record._id)">
-              <Icon name="i-lucide-trash-2" class="size-3.5" />
-            </Button>
-          </div>
+      <!-- Error State -->
+      <div v-else-if="fetchError" class="flex flex-col items-center justify-center py-20 gap-4">
+        <div class="size-14 rounded-full bg-destructive/10 flex items-center justify-center">
+          <Icon name="i-lucide-alert-circle" class="size-7 text-destructive" />
         </div>
+        <p class="text-sm text-destructive font-medium">
+          {{ fetchError }}
+        </p>
+        <Button variant="outline" size="sm" @click="fetchMargins">
+          Retry
+        </Button>
+      </div>
 
-        <!-- Range cards grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <div
-            v-for="(range, idx) in (record.variableRanges || [])"
-            :key="idx"
-            class="range-card group relative rounded-2xl border-2 p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 bg-gradient-to-br overflow-hidden"
-            :class="[getTheme(idx).bg, getTheme(idx).border]"
-            :style="{ animationDelay: `${idx * 60}ms` }"
-          >
-            <!-- Left accent bar -->
-            <div
-              class="absolute left-0 top-3 bottom-3 w-1 rounded-r-full"
-              :class="getTheme(idx).accent"
-            />
+      <!-- Empty State -->
+      <div v-else-if="isFetched && margins.length === 0" class="flex flex-col items-center justify-center py-20 gap-4">
+        <div class="size-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+          <Icon name="i-lucide-percent" class="size-8 text-muted-foreground/50" />
+        </div>
+        <div class="text-center">
+          <p class="text-base font-semibold">
+            No car margins yet
+          </p>
+          <p class="text-sm text-muted-foreground mt-1">
+            Create your first pricing tier to get started.
+          </p>
+        </div>
+        <Button size="sm" @click="openCreate">
+          <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
+          Add Margin
+        </Button>
+      </div>
 
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-3 pl-2">
-              <h3 class="text-sm font-bold text-foreground/80">
-                Range {{ idx + 1 }}
-              </h3>
-              <div
-                class="px-2.5 py-1 rounded-full text-xs font-bold tabular-nums"
-                :class="getTheme(idx).badge"
-              >
-                {{ (range as any).margin ?? (range as any).percentage ?? (range as any).variableMargin ?? '' }}%
-              </div>
+      <!-- Margin Records -->
+      <div v-else class="space-y-8">
+        <div v-for="record in margins" :key="record._id" class="space-y-3">
+          <!-- Record header -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-foreground">Fixed Margin: {{ record.fixedMargin }}%</span>
+              <Badge variant="secondary" class="text-[10px] h-5 tabular-nums">
+                {{ record.variableRanges?.length || 0 }} ranges
+              </Badge>
             </div>
+            <div class="flex items-center gap-1">
+              <Button variant="ghost" size="icon" class="size-7" title="Edit" @click="openEdit(record)">
+                <Icon name="i-lucide-pencil" class="size-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" class="size-7 text-destructive" title="Delete" @click="confirmDelete(record._id)">
+                <Icon name="i-lucide-trash-2" class="size-3.5" />
+              </Button>
+            </div>
+          </div>
 
-            <!-- Fields -->
-            <div class="space-y-2 pl-2">
-              <div v-for="key in getRangeKeys(range)" :key="key" class="space-y-0.5">
-                <p class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">
-                  {{ formatLabel(key) }}
-                </p>
+          <!-- Range cards grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div
+              v-for="(range, idx) in (record.variableRanges || [])"
+              :key="idx"
+              class="range-card group relative rounded-2xl border-2 p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 bg-gradient-to-br overflow-hidden"
+              :class="[getTheme(idx).bg, getTheme(idx).border]"
+              :style="{ animationDelay: `${idx * 60}ms` }"
+            >
+              <!-- Left accent bar -->
+              <div
+                class="absolute left-0 top-3 bottom-3 w-1 rounded-r-full"
+                :class="getTheme(idx).accent"
+              />
+
+              <!-- Header -->
+              <div class="flex items-center justify-between mb-3 pl-2">
+                <h3 class="text-sm font-bold text-foreground/80">
+                  Range {{ idx + 1 }}
+                </h3>
                 <div
-                  class="rounded-lg border px-3 py-1.5 text-sm font-semibold text-foreground/80 shadow-sm"
-                  :class="getTheme(idx).pill"
+                  class="px-2.5 py-1 rounded-full text-xs font-bold tabular-nums"
+                  :class="getTheme(idx).badge"
                 >
-                  {{ formatValue((range as any)[key]) }}
+                  {{ (range as any).margin ?? (range as any).percentage ?? (range as any).variableMargin ?? '' }}%
+                </div>
+              </div>
+
+              <!-- Fields -->
+              <div class="space-y-2 pl-2">
+                <div v-for="key in getRangeKeys(range)" :key="key" class="space-y-0.5">
+                  <p class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">
+                    {{ formatLabel(key) }}
+                  </p>
+                  <div
+                    class="rounded-lg border px-3 py-1.5 text-sm font-semibold text-foreground/80 shadow-sm"
+                    :class="getTheme(idx).pill"
+                  >
+                    {{ formatValue((range as any)[key]) }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -314,127 +328,131 @@ async function handleDelete() {
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Create / Edit Dialog -->
-  <Dialog v-model:open="showDialog">
-    <DialogContent class="sm:max-w-xl max-h-[85vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle class="flex items-center gap-2">
-          <Icon :name="isEditing ? 'i-lucide-pencil' : 'i-lucide-plus-circle'" class="size-5 text-primary" />
-          {{ isEditing ? 'Edit Car Margin' : 'Create Car Margin' }}
-        </DialogTitle>
-        <DialogDescription>
-          {{ isEditing ? 'Update the fixed margin and variable ranges.' : 'Set a fixed margin percentage and define variable price ranges.' }}
-        </DialogDescription>
-      </DialogHeader>
+    <!-- Create / Edit Dialog -->
+    <Dialog v-model:open="showDialog">
+      <DialogContent class="sm:max-w-xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon :name="isEditing ? 'i-lucide-pencil' : 'i-lucide-plus-circle'" class="size-5 text-primary" />
+            {{ isEditing ? 'Edit Car Margin' : 'Create Car Margin' }}
+          </DialogTitle>
+          <DialogDescription>
+            {{ isEditing ? 'Update the fixed margin and variable ranges.' : 'Set a fixed margin percentage and define variable price ranges.' }}
+          </DialogDescription>
+        </DialogHeader>
 
-      <div class="space-y-5 py-2">
-        <!-- Fixed Margin -->
-        <div class="space-y-1.5">
-          <label class="text-sm font-semibold">Fixed Margin (%)</label>
-          <input
-            v-model.number="form.fixedMargin"
-            type="number"
-            step="0.1"
-            min="0"
-            placeholder="e.g. 2"
-            class="w-full h-9 px-3 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
-          />
-        </div>
-
-        <!-- Variable Ranges -->
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <label class="text-sm font-semibold">Variable Ranges</label>
-            <Button variant="outline" size="sm" class="h-7 text-xs" @click="addRange">
-              <Icon name="i-lucide-plus" class="mr-1 size-3" />
-              Add Range
-            </Button>
+        <div class="space-y-5 py-2">
+          <!-- Fixed Margin -->
+          <div class="space-y-1.5">
+            <label class="text-sm font-semibold">Fixed Margin (%)</label>
+            <input
+              v-model.number="form.fixedMargin"
+              type="number"
+              step="0.1"
+              min="0"
+              placeholder="e.g. 2"
+              class="w-full h-9 px-3 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+            >
           </div>
 
-          <div
-            v-for="(range, idx) in form.variableRanges"
-            :key="idx"
-            class="relative rounded-xl border p-3 space-y-2 bg-muted/10"
-          >
+          <!-- Variable Ranges -->
+          <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-muted-foreground">Range {{ idx + 1 }}</span>
-              <Button
-                v-if="form.variableRanges.length > 1"
-                variant="ghost"
-                size="icon"
-                class="size-6 text-destructive"
-                @click="removeRange(idx)"
-              >
-                <Icon name="i-lucide-x" class="size-3.5" />
+              <label class="text-sm font-semibold">Variable Ranges</label>
+              <Button variant="outline" size="sm" class="h-7 text-xs" @click="addRange">
+                <Icon name="i-lucide-plus" class="mr-1 size-3" />
+                Add Range
               </Button>
             </div>
-            <div class="grid grid-cols-3 gap-2">
-              <div class="space-y-1">
-                <label class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">Min</label>
-                <input
-                  v-model="range.min"
-                  type="number"
-                  placeholder="0"
-                  class="w-full h-8 px-2.5 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/30"
-                />
+
+            <div
+              v-for="(range, idx) in form.variableRanges"
+              :key="idx"
+              class="relative rounded-xl border p-3 space-y-2 bg-muted/10"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-muted-foreground">Range {{ idx + 1 }}</span>
+                <Button
+                  v-if="form.variableRanges.length > 1"
+                  variant="ghost"
+                  size="icon"
+                  class="size-6 text-destructive"
+                  @click="removeRange(idx)"
+                >
+                  <Icon name="i-lucide-x" class="size-3.5" />
+                </Button>
               </div>
-              <div class="space-y-1">
-                <label class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">Max</label>
-                <input
-                  v-model="range.max"
-                  type="number"
-                  placeholder="100"
-                  class="w-full h-8 px-2.5 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/30"
-                />
-              </div>
-              <div class="space-y-1">
-                <label class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">Margin %</label>
-                <input
-                  v-model="range.margin"
-                  type="number"
-                  step="0.1"
-                  placeholder="10"
-                  class="w-full h-8 px-2.5 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/30"
-                />
+              <div class="grid grid-cols-3 gap-2">
+                <div class="space-y-1">
+                  <label class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">Min</label>
+                  <input
+                    v-model="range.min"
+                    type="number"
+                    placeholder="0"
+                    class="w-full h-8 px-2.5 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">Max</label>
+                  <input
+                    v-model="range.max"
+                    type="number"
+                    placeholder="100"
+                    class="w-full h-8 px-2.5 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                </div>
+                <div class="space-y-1">
+                  <label class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">Margin %</label>
+                  <input
+                    v-model="range.margin"
+                    type="number"
+                    step="0.1"
+                    placeholder="10"
+                    class="w-full h-8 px-2.5 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <DialogFooter>
-        <Button variant="outline" @click="showDialog = false">Cancel</Button>
-        <Button :disabled="isSubmitting" @click="handleSubmit">
-          <Icon v-if="isSubmitting" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
-          {{ isEditing ? 'Update' : 'Create' }}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+        <DialogFooter>
+          <Button variant="outline" @click="showDialog = false">
+            Cancel
+          </Button>
+          <Button :disabled="isSubmitting" @click="handleSubmit">
+            <Icon v-if="isSubmitting" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
+            {{ isEditing ? 'Update' : 'Create' }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
-  <!-- Delete Confirmation -->
-  <Dialog v-model:open="showDeleteDialog">
-    <DialogContent class="sm:max-w-md">
-      <DialogHeader>
-        <DialogTitle class="flex items-center gap-2 text-destructive">
-          <Icon name="i-lucide-alert-triangle" class="size-5" />
-          Delete Car Margin
-        </DialogTitle>
-        <DialogDescription>
-          Are you sure you want to delete this margin record and all its variable ranges? This action cannot be undone.
-        </DialogDescription>
-      </DialogHeader>
-      <DialogFooter>
-        <Button variant="outline" @click="showDeleteDialog = false">Cancel</Button>
-        <Button variant="destructive" @click="handleDelete">
-          <Icon name="i-lucide-trash-2" class="mr-1.5 size-3.5" />
-          Delete
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+    <!-- Delete Confirmation -->
+    <Dialog v-model:open="showDeleteDialog">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2 text-destructive">
+            <Icon name="i-lucide-alert-triangle" class="size-5" />
+            Delete Car Margin
+          </DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this margin record and all its variable ranges? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showDeleteDialog = false">
+            Cancel
+          </Button>
+          <Button variant="destructive" @click="handleDelete">
+            <Icon name="i-lucide-trash-2" class="mr-1.5 size-3.5" />
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </div>
 </template>
 
 <style scoped>

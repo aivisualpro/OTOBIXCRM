@@ -42,7 +42,7 @@ const {
 
 // Ensure data is loaded (usually already prefetched by boot)
 onMounted(() => {
-  fetchAllLeads()   // no-op if already prefetched
+  fetchAllLeads() // no-op if already prefetched
   fetchCarDropdowns()
 })
 
@@ -254,7 +254,8 @@ onBeforeUnmount(() => {
 
 watch(scrollSentinel, (el) => {
   observer?.disconnect()
-  if (el) observer?.observe(el)
+  if (el)
+    observer?.observe(el)
 })
 
 // ─── Form Tabs ───
@@ -414,8 +415,6 @@ function getInitials(name: string): string {
     return '??'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
-
-
 </script>
 
 <template>

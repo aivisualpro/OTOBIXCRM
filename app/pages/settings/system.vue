@@ -9,7 +9,9 @@
         <div class="size-16 rounded-2xl bg-primary/10 flex items-center justify-center">
           <Icon name="i-lucide-monitor-cog" class="size-8 text-primary" />
         </div>
-        <h3 class="text-lg font-semibold">System Settings</h3>
+        <h3 class="text-lg font-semibold">
+          System Settings
+        </h3>
         <p class="text-sm text-muted-foreground max-w-sm">
           System-level configurations will appear here.
         </p>

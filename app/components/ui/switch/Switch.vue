@@ -17,13 +17,14 @@ const emits = defineEmits<{
 }>()
 
 function toggle(event: MouseEvent) {
-  if (props.disabled) return
+  if (props.disabled)
+    return
   event.stopPropagation()
   event.preventDefault()
-  
+
   const current = props.modelValue ?? props.checked ?? false
   const next = !current
-  
+
   emits('update:modelValue', next)
   emits('update:checked', next)
 }
@@ -41,10 +42,10 @@ function toggle(event: MouseEvent) {
       'shadow-sm transition-all duration-200 outline-none',
       'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1',
       'disabled:cursor-not-allowed disabled:opacity-50',
-      (modelValue ?? checked) 
-        ? 'bg-primary' 
+      (modelValue ?? checked)
+        ? 'bg-primary'
         : 'bg-muted-foreground/30 dark:bg-input/80',
-      props.class
+      props.class,
     )"
     @click="toggle"
   >
@@ -52,7 +53,7 @@ function toggle(event: MouseEvent) {
       :class="cn(
         'pointer-events-none block size-4 rounded-full bg-white shadow-md ring-0',
         'transition-transform duration-200 ease-in-out',
-        (modelValue ?? checked) ? 'translate-x-4' : 'translate-x-0'
+        (modelValue ?? checked) ? 'translate-x-4' : 'translate-x-0',
       )"
     />
   </button>

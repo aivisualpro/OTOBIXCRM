@@ -20,14 +20,16 @@ const activeTab = ref('workspaces')
 onMounted(() => {
   const sub = route.path.replace('/settings/', '').replace('/settings', '')
   const found = tabs.find(t => t.id === sub)
-  if (found) activeTab.value = found.id
+  if (found)
+    activeTab.value = found.id
 })
 
 // Also watch for route changes (e.g. back/forward)
 watch(() => route.path, (path) => {
   const sub = path.replace('/settings/', '').replace('/settings', '')
   const found = tabs.find(t => t.id === sub)
-  if (found) activeTab.value = found.id
+  if (found)
+    activeTab.value = found.id
 })
 
 function switchTab(id: string) {

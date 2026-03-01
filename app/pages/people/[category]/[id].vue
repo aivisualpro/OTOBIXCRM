@@ -48,15 +48,20 @@ const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR',
 const editLocationPopoverOpen = ref(false)
 
 function parseLocations(loc: any): string[] {
-  if (!loc) return []
-  if (Array.isArray(loc)) return loc.filter(Boolean)
+  if (!loc)
+    return []
+  if (Array.isArray(loc))
+    return loc.filter(Boolean)
   return String(loc).split(',').map((l: string) => l.trim()).filter(Boolean)
 }
+
+const editForm = ref<Record<string, any>>({})
 
 function toggleEditLocation(loc: string) {
   const arr = editForm.value.location as string[]
   const idx = arr.indexOf(loc)
-  if (idx >= 0) arr.splice(idx, 1)
+  if (idx >= 0)
+    arr.splice(idx, 1)
   else arr.push(loc)
 }
 
@@ -69,12 +74,11 @@ const allEditLocationsSelected = computed(() => (editForm.value.location as stri
 function toggleSelectAllEditLocations() {
   if (allEditLocationsSelected.value) {
     editForm.value.location = []
-  } else {
+  }
+  else {
     editForm.value.location = [...locationOptions]
   }
 }
-
-const editForm = ref<Record<string, any>>({})
 
 function startEdit() {
   if (!user.value)

@@ -177,7 +177,8 @@ function typeIcon(type: string) {
 }
 
 function timeAgo(dateStr: string) {
-  if (!dateStr) return ''
+  if (!dateStr)
+    return ''
   const now = new Date()
   const date = new Date(dateStr)
   const diffMs = now.getTime() - date.getTime()
@@ -186,10 +187,14 @@ function timeAgo(dateStr: string) {
   const diffHour = Math.floor(diffMin / 60)
   const diffDay = Math.floor(diffHour / 24)
 
-  if (diffSec < 60) return 'just now'
-  if (diffMin < 60) return `${diffMin} min ago`
-  if (diffHour < 24) return `${diffHour}h ago`
-  if (diffDay < 7) return `${diffDay}d ago`
+  if (diffSec < 60)
+    return 'just now'
+  if (diffMin < 60)
+    return `${diffMin} min ago`
+  if (diffHour < 24)
+    return `${diffHour}h ago`
+  if (diffDay < 7)
+    return `${diffDay}d ago`
   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 }
 </script>

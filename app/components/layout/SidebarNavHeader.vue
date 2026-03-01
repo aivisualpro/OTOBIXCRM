@@ -8,7 +8,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'workspace-change': [id: string]
+  workspaceChange: [id: string]
 }>()
 
 const { isMobile } = useSidebar()
@@ -44,11 +44,13 @@ const { isMobile } = useSidebar()
             :key="ws.workspaceId"
             class="gap-2 p-2"
             :class="{ 'bg-accent': activeWorkspace.workspaceId === ws.workspaceId }"
-            @click="emit('workspace-change', ws.workspaceId)"
+            @click="emit('workspaceChange', ws.workspaceId)"
           >
             {{ ws.name }}
             <Icon v-if="activeWorkspace.workspaceId === ws.workspaceId" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
-            <DropdownMenuShortcut v-else>⌘{{ index + 1 }}</DropdownMenuShortcut>
+            <DropdownMenuShortcut v-else>
+              ⌘{{ index + 1 }}
+            </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem as-child class="gap-2 p-2">

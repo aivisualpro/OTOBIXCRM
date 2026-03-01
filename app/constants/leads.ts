@@ -50,7 +50,10 @@ export const leadsFormFields = [
   { key: 'odometerReadingInKms', label: 'Odometer (KM)', type: 'number' as const, placeholder: '15000' },
   { key: 'ownershipSerialNumber', label: 'Ownership Number', type: 'number' as const, placeholder: '1' },
   {
-    key: 'city', label: 'City', type: 'select' as const, options: [
+    key: 'city',
+    label: 'City',
+    type: 'select' as const,
+    options: [
       { label: 'Kolkata', value: 'KOLKATA' },
       { label: 'Mumbai', value: 'Mumbai' },
       { label: 'Delhi', value: 'Delhi' },
@@ -71,35 +74,44 @@ export const leadsFormFields = [
       { label: 'Nagpur', value: 'Nagpur' },
       { label: 'Surat', value: 'Surat' },
       { label: 'Visakhapatnam', value: 'Visakhapatnam' },
-    ]
+    ],
   },
   { key: 'zipCode', label: 'ZIP Code', placeholder: '400001' },
   { key: 'inspectionAddress', label: 'Inspection Address', type: 'textarea' as const, placeholder: 'Full address for inspection' },
   { key: 'inspectionDateTime', label: 'Inspection Date & Time', type: 'date' as const },
   {
-    key: 'inspectionStatus', label: 'Inspection Status', type: 'select' as const, options: [
+    key: 'inspectionStatus',
+    label: 'Inspection Status',
+    type: 'select' as const,
+    options: [
       { label: 'Pending', value: 'Pending' },
       { label: 'Scheduled', value: 'Scheduled' },
       { label: 'Re-Scheduled', value: 'Re-Scheduled' },
       { label: 'Under Inspection', value: 'Under Inspection' },
       { label: 'Inspected', value: 'Inspected' },
       { label: 'Cancelled', value: 'Cancelled' },
-    ]
+    ],
   },
   {
-    key: 'approvalStatus', label: 'Approval Status', type: 'select' as const, options: [
+    key: 'approvalStatus',
+    label: 'Approval Status',
+    type: 'select' as const,
+    options: [
       { label: 'Pending', value: 'Pending' },
       { label: 'Under Review', value: 'Under Review' },
       { label: 'Quality Approved', value: 'Quality Approved' },
       { label: 'Quality Rejected', value: 'Quality Rejected' },
-    ]
+    ],
   },
   {
-    key: 'priority', label: 'Priority', type: 'select' as const, options: [
+    key: 'priority',
+    label: 'Priority',
+    type: 'select' as const,
+    options: [
       { label: 'High', value: 'High' },
       { label: 'Medium', value: 'Medium' },
       { label: 'Low', value: 'Low' },
-    ]
+    ],
   },
   { key: 'appointmentSource', label: 'Source', placeholder: 'e.g. Website, Referral' },
   { key: 'allocatedTo', label: 'Allocated To', placeholder: 'Team member name' },

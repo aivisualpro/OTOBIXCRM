@@ -41,7 +41,7 @@ const settingsLink = {
       <LayoutSidebarNavHeader
         :workspaces="workspaces"
         :active-workspace="activeWorkspace"
-        @workspace-change="setActiveWorkspace($event)"
+        @workspace-change="setActiveWorkspace($event as string)"
       />
     </SidebarHeader>
     <SidebarContent>

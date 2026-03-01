@@ -109,7 +109,6 @@ async function onSubmit(event: Event) {
           Development
         </button>
       </div>
-
     </div>
 
     <div class="grid gap-2">
