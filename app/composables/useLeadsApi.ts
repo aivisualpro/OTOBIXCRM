@@ -3,7 +3,6 @@ export interface TelecallingLead {
   _id: string
   id: string
   appointmentId: string
-  carRegistrationNumber: string
   yearOfRegistration: string
   ownerName: string
   ownershipSerialNumber: number
@@ -40,123 +39,183 @@ export interface TelecallingLead {
   updatedAt: string
 }
 
-interface ApiResponse {
+interface LocalApiResponse {
   data: TelecallingLead[]
-  total?: number
-  totalCount?: number
-  totalPages?: number
-  page?: number
-  limit?: number
+  totalCount: number
+  totalPages: number
+  page: number
+  limit: number
 }
 
-// ─── Global cache: fetch once, reuse across all route views ───
-const _allLeads = ref<TelecallingLead[]>([])
-const _isFetched = ref(false)
-const _isFetching = ref(false)
+interface CountsResponse {
+  totalCount: number
+  counts: Record<string, number>
+}
+
+// ─── Shared state (persists across route navigations) ───
+const PAGE_SIZE = 100
+
+const _leads = ref<TelecallingLead[]>([])
+const _currentPage = ref(0) // Pages loaded so far
+const _totalCount = ref(0) // Total matching records on server
+const _isLoading = ref(false) // Initial load in progress
+const _isLoadingMore = ref(false) // "Load more" in progress
 const _fetchError = ref<string | null>(null)
-const _fetchedForEnv = ref<string>('') // track which environment was used
+const _isInitialized = ref(false)
+const _fetchedForEnv = ref<string>('')
+const _serverSearch = ref('') // Current server-side search term
+
+// Status group counts (whole database)
+const _counts = ref<Record<string, number>>({})
+const _countsTotal = ref(0)
 
 export function useLeadsApi() {
-  const { apiBaseUrl, currentEnv } = useApiEnvironment()
-  const authToken = useCookie('authToken')
+  const { currentEnv } = useApiEnvironment()
 
-  /** Fetch all leads from the API (runs only once, cached globally) */
-  async function fetchAllLeads(force = false) {
-    // If environment changed since last fetch, force re-fetch
+  // ─── Normalize raw items ───
+  function normalize(items: any[]): TelecallingLead[] {
+    return items.map(item => ({
+      ...item,
+      id: item._id || item.id,
+    }))
+  }
+
+  // ─── Fetch counts (lightweight, runs independently) ───
+  async function fetchCounts() {
+    try {
+      const res = await $fetch<CountsResponse>('/api/leads/counts')
+      _counts.value = res.counts || {}
+      _countsTotal.value = res.totalCount || 0
+    }
+    catch (err: any) {
+      console.error('Failed to fetch lead counts:', err)
+    }
+  }
+
+  // ─── Initial load: first 100 leads ───
+  async function fetchLeads(force = false) {
+    // If env changed, force reload
     if (_fetchedForEnv.value && _fetchedForEnv.value !== currentEnv.value) {
       force = true
     }
-    // Skip if already fetched & not forced
-    if (_isFetched.value && !force)
-      return
-    // Skip if another call is already in-flight
-    if (_isFetching.value && !force)
-      return
+    if (_isInitialized.value && !force) return
+    if (_isLoading.value && !force) return
 
-    _isFetching.value = true
+    _isLoading.value = true
     _fetchError.value = null
 
     try {
-      // Fetch first page with a reasonable limit for fast initial load
-      const response = await $fetch<ApiResponse>(
-        `${apiBaseUrl.value}admin/telecallings/get-list`,
-        {
-          method: 'GET',
-          params: { page: 1, limit: 500 },
-          headers: {
-            ...(authToken.value ? { Authorization: `Bearer ${authToken.value}` } : {}),
-          },
-          signal: AbortSignal.timeout(60_000), // 60s timeout for cold-start APIs
-        },
-      )
+      const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
+      if (_serverSearch.value) params.search = _serverSearch.value
 
-      // Extract the leads array from whatever shape the API returns
-      const responseData = (response as any)?.data || response
-      const leadsArray = Array.isArray(responseData) ? responseData : responseData?.data || []
+      const response = await $fetch<LocalApiResponse>('/api/leads', { params })
 
-      // Normalize: map _id → id, sort newest first
-      _allLeads.value = leadsArray
-        .map((item: any) => ({
-          ...item,
-          id: item._id || item.id,
-        }))
-        .sort((a: any, b: any) => {
-          const dateA = new Date(a.createdAt || a.timeStamp || 0).getTime()
-          const dateB = new Date(b.createdAt || b.timeStamp || 0).getTime()
-          return dateB - dateA
-        })
-
-      _isFetched.value = true
+      _leads.value = normalize(response.data || [])
+      _totalCount.value = response.totalCount
+      _currentPage.value = 1
+      _isInitialized.value = true
       _fetchedForEnv.value = currentEnv.value
 
-      // If there are more pages, fetch them in the background
-      const totalCount = (response as any)?.totalCount || (response as any)?.total || 0
-      if (totalCount > 500) {
-        const totalPages = Math.ceil(totalCount / 500)
-        for (let page = 2; page <= totalPages; page++) {
-          try {
-            const nextPage = await $fetch<ApiResponse>(
-              `${apiBaseUrl.value}admin/telecallings/get-list`,
-              {
-                method: 'GET',
-                params: { page, limit: 500 },
-                headers: {
-                  ...(authToken.value ? { Authorization: `Bearer ${authToken.value}` } : {}),
-                },
-              },
-            )
-            const nextData = (nextPage as any)?.data || nextPage
-            const nextArray = Array.isArray(nextData) ? nextData : nextData?.data || []
-            _allLeads.value = [
-              ..._allLeads.value,
-              ...nextArray.map((item: any) => ({ ...item, id: item._id || item.id })),
-            ]
-          }
-          catch { break }
-        }
-      }
+      // Fetch counts in background (non-blocking)
+      fetchCounts()
     }
     catch (err: any) {
       console.error('Failed to fetch leads:', err)
       _fetchError.value = err?.data?.message || err?.message || 'Failed to fetch leads'
-      _allLeads.value = []
+      _leads.value = []
     }
     finally {
-      _isFetching.value = false
+      _isLoading.value = false
     }
   }
 
-  /** Force re-fetch (e.g. after create/edit/delete or manual refresh) */
-  async function refreshLeads() {
-    await fetchAllLeads(true)
+  // ─── Load more (next page) ───
+  async function loadMore() {
+    if (_isLoadingMore.value) return
+    if (_leads.value.length >= _totalCount.value) return
+
+    _isLoadingMore.value = true
+    try {
+      const nextPage = _currentPage.value + 1
+      const params: Record<string, any> = { page: nextPage, limit: PAGE_SIZE }
+      if (_serverSearch.value) params.search = _serverSearch.value
+
+      const response = await $fetch<LocalApiResponse>('/api/leads', { params })
+      const newItems = normalize(response.data || [])
+
+      _leads.value = [..._leads.value, ...newItems]
+      _currentPage.value = nextPage
+      _totalCount.value = response.totalCount // Keep in sync
+    }
+    catch (err: any) {
+      console.error('Failed to load more leads:', err)
+    }
+    finally {
+      _isLoadingMore.value = false
+    }
   }
 
+  // ─── Server-side search ───
+  let _searchDebounce: ReturnType<typeof setTimeout> | null = null
+
+  function searchLeads(query: string) {
+    if (_searchDebounce) clearTimeout(_searchDebounce)
+    _serverSearch.value = query.trim()
+
+    // Debounce 300ms before hitting server
+    _searchDebounce = setTimeout(async () => {
+      _isLoading.value = true
+      _fetchError.value = null
+      try {
+        const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
+        if (_serverSearch.value) params.search = _serverSearch.value
+
+        const response = await $fetch<LocalApiResponse>('/api/leads', { params })
+        _leads.value = normalize(response.data || [])
+        _totalCount.value = response.totalCount
+        _currentPage.value = 1
+      }
+      catch (err: any) {
+        console.error('Search failed:', err)
+        _fetchError.value = err?.data?.message || err?.message || 'Search failed'
+      }
+      finally {
+        _isLoading.value = false
+      }
+    }, 300)
+  }
+
+  // ─── Force refresh ───
+  async function refreshLeads() {
+    _serverSearch.value = ''
+    _isInitialized.value = false
+    await fetchLeads(true)
+  }
+
+  // ─── Computed ───
+  const hasMore = computed(() => _leads.value.length < _totalCount.value)
+
   return {
-    allLeads: _allLeads,
-    isLoading: _isFetching,
-    isFetched: _isFetched,
+    // Data
+    allLeads: _leads,
+    totalCount: _totalCount,
+    hasMore,
+
+    // Status counts (whole DB)
+    statusCounts: _counts,
+    countsTotal: _countsTotal,
+    fetchCounts,
+
+    // Loading states
+    isLoading: _isLoading,
+    isLoadingMore: _isLoadingMore,
+    isFetched: _isInitialized,
     fetchError: _fetchError,
-    fetchAllLeads,
+
+    // Actions
+    fetchLeads,
+    loadMore,
+    searchLeads,
     refreshLeads,
   }
 }

@@ -2,11 +2,11 @@
 // Fetch Otobix staff users for the Assignee dropdown
 const { allUsers, fetchAllUsers } = usePeopleApi()
 // Fetch leads to derive ticket seed data
-const { allLeads, fetchAllLeads } = useLeadsApi()
+const { allLeads, fetchLeads } = useLeadsApi()
 
 const dataReady = ref(false)
 onMounted(async () => {
-  await Promise.all([fetchAllUsers(), fetchAllLeads()])
+  await Promise.all([fetchAllUsers(), fetchLeads()])
   dataReady.value = true
 })
 

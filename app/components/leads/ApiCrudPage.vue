@@ -22,14 +22,20 @@ const entity = computed(() => props.entityName || 'Lead')
 const { setHeader } = usePageHeader()
 setHeader({ title: props.title, description: props.description, icon: props.icon })
 
-// ─── Global cached data ───
+// ─── Incremental data loading ───
 const {
   allLeads,
+  totalCount,
+  hasMore: serverHasMore,
   isLoading,
+  isLoadingMore,
   isFetched,
   fetchError,
-  fetchAllLeads,
+  fetchLeads,
+  loadMore: loadMoreFromServer,
+  searchLeads,
   refreshLeads,
+  fetchCounts,
 } = useLeadsApi()
 
 // Car dropdowns for Make / Model / Variant
@@ -47,8 +53,7 @@ const cityOptions = ref<{ label: string, value: string }[]>([])
 
 // Ensure data is loaded (usually already prefetched by boot)
 onMounted(async () => {
-  fetchAllLeads() // no-op if already prefetched
-  // For initial makes, we'll fetch a larger set once (e.g. 500 across common brands)
+  fetchLeads() // no-op if already loaded
   fetchCarDropdowns({ limit: 500 })
   await fetchDbDropdowns()
   cityOptions.value = getDbOptions('Inspection City')
@@ -61,7 +66,6 @@ onBeforeUnmount(() => { isMounted.value = false })
 
 watch(isFetched, (fetched) => {
   if (fetched && isMounted.value) {
-    // Micro-delay for the browser to paint the DOM, then trigger CSS transition
     nextTick(() => {
       if (isMounted.value) {
         isRevealed.value = true
@@ -75,7 +79,6 @@ const { apiBaseUrl } = useApiEnvironment()
 const authToken = useCookie('authToken')
 const { allUsers, fetchAllUsers } = usePeopleApi()
 
-// Inspector users from people/otobix with role "Inspection Engineer"
 const inspectors = computed(() =>
   allUsers.value.filter((u: any) => (u.isStaff === true || u.userRole === 'Inspection Engineer') && u.userRole === 'Inspection Engineer'),
 )
@@ -88,23 +91,18 @@ const selectedInspector = ref('')
 const isUpdatingStatus = ref(false)
 
 async function updateLeadStatus(lead: any, field: string, newStatus: string) {
-  // If changing inspection status to 'Scheduled', show inspector assignment dialog
   if (field === 'inspectionStatus' && newStatus === 'Scheduled') {
     assigningLead.value = { ...lead, _pendingStatus: newStatus }
     selectedInspector.value = lead.allocatedTo || ''
     showAssignDialog.value = true
     return
   }
-
   await doStatusUpdate(lead, { [field]: newStatus })
 }
 
 async function confirmAssignInspector() {
-  if (!assigningLead.value)
-    return
+  if (!assigningLead.value) return
   const lead = assigningLead.value
-
-  // Look up the inspector's phone number from the users list
   const inspectorUser = allUsers.value.find((u: any) => u.userName === selectedInspector.value)
   const inspectorPhone = inspectorUser?.phoneNumber || ''
 
@@ -121,36 +119,26 @@ async function confirmAssignInspector() {
 async function doStatusUpdate(lead: any, updates: Record<string, string>) {
   isUpdatingStatus.value = true
   try {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (authToken.value)
-      headers.Authorization = `Bearer ${authToken.value}`
-
-    // Get logged-in user info for changedBy
     const userCookie = useCookie('userData')
     const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
 
-    await $fetch<any>(
-      `${apiBaseUrl.value}inspection/telecallings/update`,
-      {
-        method: 'PUT',
-        headers,
-        body: {
-          telecallingId: lead._id || lead.id,
-          appointmentId: lead.appointmentId,
-          changedBy: currentUser?.userName || 'Admin',
-          source: 'CRM',
-          ...updates,
-        },
+    await $fetch<any>('/api/leads/update', {
+      method: 'PUT',
+      body: {
+        telecallingId: lead._id || lead.id,
+        changedBy: currentUser?.userName || 'Admin',
+        ...updates,
       },
-    )
+    })
 
-    // Update local cache
     const leadId = lead._id || lead.id
     const idx = allLeads.value.findIndex((l: any) => (l._id || l.id) === leadId)
     if (idx !== -1) {
       Object.assign(allLeads.value[idx] as object, updates)
     }
 
+    // Refresh counts after status change
+    fetchCounts()
     toast.success(`Status updated to ${Object.values(updates).join(', ')}`)
   }
   catch (err: any) {
@@ -183,7 +171,6 @@ watch(() => formData.value.make, async (newMake, oldMake) => {
   if (newMake && oldMake !== undefined && newMake !== oldMake) {
     formData.value.model = ''
     formData.value.variant = ''
-    // Fetch all variants for this make once so we have them locally for cascading
     await fetchCarDropdowns({ search: newMake, limit: 1000 })
   }
 })
@@ -195,11 +182,11 @@ watch(() => formData.value.model, (newModel, oldModel) => {
   }
 })
 
-// ─── Client-side filtering by inspectionStatus + approvalStatus ───
+// ─── Client-side route filtering (on already-loaded data) ───
 const filteredItems = computed(() => {
   let result = allLeads.value as Record<string, any>[]
 
-  // Apply route-specific filters (e.g. inspectionStatus=Pending, approvalStatus=Pending)
+  // Apply route-specific filters (inspectionStatus/approvalStatus)
   // '*' = match any value (wildcard)
   if (props.filters) {
     const filters = props.filters
@@ -210,48 +197,25 @@ const filteredItems = computed(() => {
     )
   }
 
-  // Apply search across visible columns
-  if (search.value) {
-    const q = search.value.toLowerCase()
-    result = result.filter(item =>
-      props.columns.some(col =>
-        String(item[col.key] ?? '').toLowerCase().includes(q),
-      ),
-    )
-  }
-
   return result
 })
 
-// ─── Client-side infinite scroll (load more on scroll) ───
-const BATCH_SIZE = 30
-const visibleCount = ref(BATCH_SIZE)
-
-// Reset visible count when search or filters change
-watch(search, () => { visibleCount.value = BATCH_SIZE })
-
 const totalFiltered = computed(() => filteredItems.value.length)
-const hasMore = computed(() => visibleCount.value < totalFiltered.value)
 
-const visibleItems = computed(() => {
-  return filteredItems.value.slice(0, visibleCount.value)
+// ─── Search triggers server-side query ───
+watch(search, (q) => {
+  searchLeads(q)
 })
 
-function loadMore() {
-  if (hasMore.value) {
-    visibleCount.value = Math.min(visibleCount.value + BATCH_SIZE, totalFiltered.value)
-  }
-}
-
-// IntersectionObserver for the scroll sentinel
+// ─── IntersectionObserver for infinite scroll (loads from server) ───
 const scrollSentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 onMounted(() => {
   observer = new IntersectionObserver(
     (entries) => {
-      if (entries[0]?.isIntersecting) {
-        loadMore()
+      if (entries[0]?.isIntersecting && serverHasMore.value) {
+        loadMoreFromServer()
       }
     },
     { rootMargin: '200px' },
@@ -331,21 +295,15 @@ async function handleSave() {
     const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
 
     if (editingItem.value) {
-      // Update existing lead
-      await $fetch<any>(
-        `${apiBaseUrl.value}inspection/telecallings/update`,
-        {
-          method: 'PUT',
-          headers,
-          body: {
-            telecallingId: editingItem.value._id || editingItem.value.id,
-            appointmentId: editingItem.value.appointmentId,
-            changedBy: currentUser?.userName || 'Admin',
-            source: 'CRM',
-            ...formData.value,
-          },
+      // Update existing lead via local MongoDB route
+      await $fetch<any>('/api/leads/update', {
+        method: 'PUT',
+        body: {
+          telecallingId: editingItem.value._id || editingItem.value.id,
+          changedBy: currentUser?.userName || 'Admin',
+          ...formData.value,
         },
-      )
+      })
 
       // Update local cache
       const leadId = editingItem.value._id || editingItem.value.id
@@ -370,9 +328,14 @@ async function handleSave() {
         body: payload,
       })
 
+      // Instantly inject the new lead at the top of the list (no refresh needed)
+      if (response?.data) {
+        const newLead = { ...response.data, id: response.data._id || response.data.id }
+        allLeads.value.unshift(newLead)
+      }
+
+      fetchCounts() // Update tab counters
       toast.success(`${entity.value} created successfully`)
-      // Refresh list to show new item
-      await refreshLeads()
     }
     showDialog.value = false
   }
@@ -394,23 +357,19 @@ function confirmDelete(item: any) {
 async function handleDelete() {
   if (deletingItem.value) {
     try {
-      const headers: Record<string, string> = {}
-      if (authToken.value)
-        headers.Authorization = `Bearer ${authToken.value}`
-
-      await $fetch<any>(
-        `${apiBaseUrl.value}inspection/telecallings/delete`,
-        {
-          method: 'POST',
-          headers,
-          body: {
-            telecallingId: deletingItem.value._id || deletingItem.value.id,
-          },
+      await $fetch<any>('/api/leads/delete', {
+        method: 'POST',
+        body: {
+          telecallingId: deletingItem.value._id || deletingItem.value.id,
         },
-      )
+      })
 
+      // Remove from local cache instantly
+      const delId = deletingItem.value._id || deletingItem.value.id
+      allLeads.value = allLeads.value.filter((l: any) => (l._id || l.id) !== delId)
+
+      fetchCounts() // Update tab counters
       toast.success(`${entity.value} deleted successfully`)
-      await refreshLeads()
     }
     catch (err: any) {
       console.error('Delete failed:', err)
@@ -422,6 +381,7 @@ async function handleDelete() {
 }
 
 async function handleRefresh() {
+  search.value = '' // Clear search on refresh
   await refreshLeads()
   toast.success('Data refreshed from server')
 }
@@ -484,10 +444,10 @@ function getInitials(name: string): string {
   <HeaderActions>
     <div class="relative">
       <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-      <Input v-model="search" placeholder="Search leads..." class="pl-8 h-8 w-48 text-sm" />
+      <Input v-model="search" placeholder="Search all leads..." class="pl-8 h-8 w-48 text-sm" />
     </div>
     <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
-      {{ totalFiltered }} record{{ totalFiltered !== 1 ? 's' : '' }}
+      {{ totalFiltered }} of {{ totalCount }} records
     </p>
     <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="handleRefresh">
       <Icon name="i-lucide-refresh-cw" class="mr-1.5 size-3.5" :class="{ 'animate-spin': isLoading }" />
@@ -542,7 +502,7 @@ function getInitials(name: string): string {
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="item in visibleItems"
+            v-for="item in filteredItems"
             :key="item.id || item._id"
             class="group"
             :class="{ 'cursor-pointer hover:bg-muted/50': props.clickable }"
@@ -630,7 +590,7 @@ function getInitials(name: string): string {
               </div>
             </TableCell>
           </TableRow>
-          <TableRow v-if="visibleItems.length === 0 && !isLoading">
+          <TableRow v-if="filteredItems.length === 0 && !isLoading">
             <TableCell :colspan="columns.length + 1" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-inbox" class="size-8" />
@@ -645,11 +605,12 @@ function getInitials(name: string): string {
         </TableBody>
       </Table>
 
-      <!-- Scroll Sentinel for infinite loading -->
-      <div v-if="hasMore" ref="scrollSentinel" class="flex items-center justify-center py-6">
+      <!-- Scroll Sentinel for infinite loading from server -->
+      <div v-if="serverHasMore" ref="scrollSentinel" class="flex items-center justify-center py-6">
         <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <Icon name="i-lucide-loader-2" class="size-4 animate-spin" />
-          Loading more...
+          <Icon v-if="isLoadingMore" name="i-lucide-loader-2" class="size-4 animate-spin" />
+          <Icon v-else name="i-lucide-chevrons-down" class="size-4" />
+          {{ isLoadingMore ? 'Loading more...' : 'Scroll for more' }}
         </div>
       </div>
     </div>
@@ -657,7 +618,7 @@ function getInitials(name: string): string {
     <!-- Footer info bar -->
     <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex items-center justify-between">
       <p class="text-xs text-muted-foreground tabular-nums">
-        Showing {{ visibleItems.length }} of {{ totalFiltered }} records
+        Showing {{ filteredItems.length }} of {{ totalCount }} records
       </p>
     </div>
 

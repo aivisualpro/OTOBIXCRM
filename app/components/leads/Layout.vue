@@ -1,6 +1,11 @@
 <script setup lang="ts">
 const route = useRoute()
 
+const { statusCounts, fetchCounts } = useLeadsApi()
+
+// Fetch counts on mount (lightweight server call)
+onMounted(() => fetchCounts())
+
 const navItems = [
   { id: 'leads', title: 'Leads', icon: 'i-lucide-magnet', color: 'text-blue-500', link: '/leads' },
   { id: 'scheduled', title: 'Scheduled', icon: 'i-lucide-calendar', color: 'text-indigo-500', link: '/leads/scheduled' },
@@ -35,6 +40,13 @@ const currentActiveId = computed(() => {
         >
           <Icon :name="item.icon" class="size-3.5" :class="currentActiveId === item.id ? item.color : ''" />
           <span>{{ item.title }}</span>
+          <span
+            v-if="statusCounts[item.id]"
+            class="leads-tab-count"
+            :class="{ 'is-active': currentActiveId === item.id }"
+          >
+            {{ statusCounts[item.id] }}
+          </span>
         </NuxtLink>
       </div>
     </div>
@@ -69,5 +81,21 @@ const currentActiveId = computed(() => {
 .leads-tab.is-active {
   color: hsl(var(--foreground));
   border-bottom-color: hsl(var(--primary));
+}
+
+.leads-tab-count {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-variant-numeric: tabular-nums;
+}
+
+.leads-tab-count.is-active {
+  background: hsl(var(--primary) / 0.15);
+  color: hsl(var(--primary));
 }
 </style>

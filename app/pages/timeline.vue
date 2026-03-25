@@ -5,8 +5,8 @@ const { setHeader } = usePageHeader()
 setHeader({ title: 'Timeline', icon: 'i-lucide-activity', description: 'Lead lifecycle · status history · appointment flow' })
 
 // ── Fetch leads data ───────────────────────────────────
-const { allLeads, isLoading, fetchAllLeads } = useLeadsApi()
-onMounted(() => fetchAllLeads())
+const { allLeads, isLoading, fetchLeads, refreshLeads } = useLeadsApi()
+onMounted(() => fetchLeads())
 
 // ── Status pipeline (ordered journey) ──────────────────
 const statusPipeline = [
@@ -318,7 +318,7 @@ function onLeftPanelScroll() {
           <p class="text-xs text-muted-foreground tabular-nums hidden lg:block">
             {{ ganttRows.length }} leads
           </p>
-          <Button variant="outline" size="sm" class="h-8" @click="fetchAllLeads(true)">
+          <Button variant="outline" size="sm" class="h-8" @click="refreshLeads()">
             <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" />
             Refresh
           </Button>

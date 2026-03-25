@@ -42,13 +42,13 @@ export function usePrefetch() {
 
     try {
       // Import the composables dynamically to avoid SSR issues
-      const { fetchAllLeads } = useLeadsApi()
+      const { fetchLeads } = useLeadsApi()
       const { fetchAllUsers } = usePeopleApi()
       const { fetchCarDropdowns } = useCarDropdowns()
 
       // Fire all fetches in parallel — non-blocking, silent
       const tasks = [
-        fetchAllLeads().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 30, 90) }),
+        fetchLeads().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 30, 90) }),
         fetchAllUsers().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 30, 90) }),
         fetchCarDropdowns().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 30, 90) }),
       ]
@@ -87,8 +87,8 @@ export function usePrefetch() {
     targets.forEach((target) => {
       switch (target) {
         case 'leads': {
-          const { fetchAllLeads } = useLeadsApi()
-          fetchAllLeads() // no-op if already cached
+          const { fetchLeads } = useLeadsApi()
+          fetchLeads() // no-op if already cached
           break
         }
         case 'people': {
