@@ -13,6 +13,8 @@ export interface CrudFormField {
   options?: { label: string, value: string }[]
   required?: boolean
   placeholder?: string
+  hideOnCreate?: boolean
+  defaultValue?: any
 }
 
 export function useCrud<T extends Record<string, any>>(storeKey: string, initialData: T[] = []) {

@@ -383,7 +383,7 @@ function getCardColor(index: number) {
   <div>
     <!-- Teleport toolbar -->
     <ClientOnly>
-      <Teleport to="#header-actions">
+      <HeaderActions>
         <div class="relative">
           <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
           <Input v-model="search" placeholder="Search dropdowns..." class="pl-8 h-8 w-48 text-sm" />
@@ -399,7 +399,7 @@ function getCardColor(index: number) {
           <Icon name="i-lucide-plus" class="mr-1 size-3.5" />
           Add Dropdown
         </Button>
-      </Teleport>
+      </HeaderActions>
     </ClientOnly>
 
     <div class="w-full flex flex-col h-full overflow-hidden">

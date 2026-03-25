@@ -232,7 +232,7 @@ const addresses = computed(() => {
     <!-- Generic profile view -->
     <div v-else>
       <ClientOnly>
-        <Teleport to="#header-actions">
+        <HeaderActions>
           <Button variant="ghost" size="sm" class="h-8" @click="router.push(`/people/${categoryKey}`)">
             <Icon name="i-lucide-arrow-left" class="mr-1.5 size-3.5" />
             Back
@@ -258,7 +258,7 @@ const addresses = computed(() => {
               Save Changes
             </Button>
           </template>
-        </Teleport>
+        </HeaderActions>
       </ClientOnly>
 
       <div class="w-full h-full overflow-auto">

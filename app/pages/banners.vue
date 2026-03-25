@@ -341,7 +341,7 @@ function openPreview(banner: any) {
   <div>
     <!-- Teleport toolbar -->
     <ClientOnly>
-      <Teleport to="#header-actions">
+      <HeaderActions>
         <div class="relative">
           <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
           <Input v-model="search" placeholder="Search banners..." class="pl-8 h-8 w-48 text-sm" />
@@ -357,7 +357,7 @@ function openPreview(banner: any) {
           <Icon name="i-lucide-plus" class="mr-1 size-3.5" />
           Add Banner
         </Button>
-      </Teleport>
+      </HeaderActions>
     </ClientOnly>
 
     <div class="w-full flex flex-col h-full overflow-hidden">

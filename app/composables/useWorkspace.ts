@@ -45,28 +45,13 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
   { id: 'notifications', title: 'Notifications', icon: 'i-lucide-bell', link: '/notifications', group: 'Workspace' },
   { id: 'dropdowns', title: 'Dropdowns', icon: 'i-lucide-list', link: '/dropdowns', group: 'Workspace' },
   { id: 'banners', title: 'Banners', icon: 'i-lucide-image', link: '/banners', group: 'Workspace' },
+  { id: 'variances', title: 'Variances', icon: 'i-lucide-layers', link: '/variances', group: 'Workspace' },
   { id: 'car-margins', title: 'Car Margins', icon: 'i-lucide-percent', link: '/car-margins', group: 'Workspace' },
   // Apps
   { id: 'tasks', title: 'Tasks', icon: 'i-lucide-check-square', link: '/tasks', group: 'Apps' },
   { id: 'timeline', title: 'Timeline', icon: 'i-lucide-gantt-chart', link: '/timeline', group: 'Apps' },
   // Support
   { id: 'tickets', title: 'Tickets', icon: 'i-lucide-ticket', link: '/support/tickets', group: 'Support' },
-  // Retail
-  { id: 'purchase-requests', title: 'Purchase Requests', icon: 'i-lucide-file-text', link: '/retail/purchase-requests', group: 'Retail', disabled: true, comingSoon: true },
-  { id: 'pickup-requests', title: 'Pickup Requests', icon: 'i-lucide-receipt', link: '/retail/pickup-requests', group: 'Retail', disabled: true, comingSoon: true },
-  // Accounts
-  { id: 'customer-payments', title: 'Customer Payments', icon: 'i-lucide-wallet', link: '/accounts/customer-payments', group: 'Accounts', disabled: true, comingSoon: true },
-  { id: 'dealer-payments', title: 'Dealer Payments', icon: 'i-lucide-arrow-right-left', link: '/accounts/dealer-payments', group: 'Accounts', disabled: true, comingSoon: true },
-  // Finance
-  { id: 'expenses', title: 'Expenses', icon: 'i-lucide-credit-card', link: '/finance/expenses', group: 'Finance', disabled: true, comingSoon: true },
-  { id: 'tax-management', title: 'Tax Management', icon: 'i-lucide-percent', link: '/finance/taxes', group: 'Finance', disabled: true, comingSoon: true },
-  { id: 'balance-sheet', title: 'Balance Sheet', icon: 'i-lucide-landmark', link: '/finance/balance-sheet', group: 'Finance', disabled: true, comingSoon: true },
-  { id: 'income-statement', title: 'Income Statement', icon: 'i-lucide-receipt', link: '/finance/income-statement', group: 'Finance', disabled: true, comingSoon: true },
-  { id: 'financial-ratios', title: 'Financial Ratios', icon: 'i-lucide-chart-no-axes-combined', link: '/finance/ratios', group: 'Finance', disabled: true, comingSoon: true },
-  // Reports
-  { id: 'sales-reports', title: 'Sales Reports', icon: 'i-lucide-trending-up', link: '/reports/sales', group: 'Reports', disabled: true, comingSoon: true },
-  { id: 'financial-reports', title: 'Financial Reports', icon: 'i-lucide-pie-chart', link: '/reports/financial', group: 'Reports', disabled: true, comingSoon: true },
-  { id: 'business-health', title: 'Business Health', icon: 'i-lucide-heart-pulse', link: '/reports/business-health', group: 'Reports', disabled: true, comingSoon: true },
 ]
 
 // ─── Global state ───
@@ -87,7 +72,7 @@ const FALLBACK_WORKSPACES: Workspace[] = [
     workspaceId: 'inspection',
     name: 'OTOBIX INSPECTION',
     icon: 'i-lucide-scan-search',
-    menuIds: ['dashboard', 'leads', 'people', 'notifications', 'dropdowns', 'banners', 'tasks'],
+    menuIds: ['dashboard', 'leads', 'people', 'notifications', 'dropdowns', 'banners', 'variances', 'tasks'],
   },
   {
     workspaceId: 'dealers',

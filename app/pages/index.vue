@@ -115,14 +115,14 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
 <template>
   <div class="w-full flex flex-col gap-4">
     <ClientOnly>
-      <Teleport to="#header-actions">
+      <HeaderActions>
         <div class="flex items-center gap-2">
           <BaseDateRangePicker @update:range="onDateRangeUpdate" />
           <Button size="sm" class="h-8">
             Download
           </Button>
         </div>
-      </Teleport>
+      </HeaderActions>
     </ClientOnly>
 
     <main class="@container/main flex flex-1 flex-col gap-4 md:gap-8">

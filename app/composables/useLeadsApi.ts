@@ -94,11 +94,17 @@ export function useLeadsApi() {
       const responseData = (response as any)?.data || response
       const leadsArray = Array.isArray(responseData) ? responseData : responseData?.data || []
 
-      // Normalize: map _id → id
-      _allLeads.value = leadsArray.map((item: any) => ({
-        ...item,
-        id: item._id || item.id,
-      }))
+      // Normalize: map _id → id, sort newest first
+      _allLeads.value = leadsArray
+        .map((item: any) => ({
+          ...item,
+          id: item._id || item.id,
+        }))
+        .sort((a: any, b: any) => {
+          const dateA = new Date(a.createdAt || a.timeStamp || 0).getTime()
+          const dateB = new Date(b.createdAt || b.timeStamp || 0).getTime()
+          return dateB - dateA
+        })
 
       _isFetched.value = true
       _fetchedForEnv.value = currentEnv.value

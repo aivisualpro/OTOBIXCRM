@@ -21,17 +21,17 @@ interface CarDropdownResponse {
 const _carDropdowns = ref<CarDropdownItem[]>([])
 const _carDropdownsFetched = ref(false)
 const _carDropdownsFetching = ref(false)
+const _totalCount = ref(0)
 
 export function useCarDropdowns() {
   const { apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 
-  async function fetchCarDropdowns(force = false) {
-    if (_carDropdownsFetched.value && !force)
-      return
-    if (_carDropdownsFetching.value && !force)
+  async function fetchCarDropdowns(opts: { page?: number, limit?: number, search?: string, append?: boolean } = {}) {
+    if (_carDropdownsFetching.value)
       return
 
+    const { page = 1, limit = 50, search = '', append = false } = opts
     _carDropdownsFetching.value = true
 
     try {
@@ -39,14 +39,21 @@ export function useCarDropdowns() {
         `${apiBaseUrl.value}admin/customers/car-dropdowns/get-list`,
         {
           method: 'GET',
-          params: { page: 1, limit: 10000, search: '' },
+          params: { page, limit, search: search.trim() },
           headers: {
             Authorization: `Bearer ${authToken.value}`,
           },
         },
       )
 
-      _carDropdowns.value = response.data || []
+      const newData = response.data || []
+      if (append) {
+        _carDropdowns.value = [..._carDropdowns.value, ...newData]
+      }
+      else {
+        _carDropdowns.value = newData
+      }
+      _totalCount.value = response.total || response.totalCount || _carDropdowns.value.length
       _carDropdownsFetched.value = true
     }
     catch (err: any) {
@@ -57,7 +64,7 @@ export function useCarDropdowns() {
     }
   }
 
-  // Unique makes
+  // Unique makes (if needed, but note these will be limited by current paged cache)
   const makes = computed(() => {
     const set = new Set<string>()
     _carDropdowns.value.forEach((item) => {
@@ -91,10 +98,51 @@ export function useCarDropdowns() {
 
   return {
     carDropdowns: _carDropdowns,
+    totalCount: _totalCount,
     isFetched: _carDropdownsFetched,
+    isLoading: _carDropdownsFetching,
     makes,
     getModels,
     getVariants,
     fetchCarDropdowns,
+    addDropdown: async (payload: { make: string, model: string, variant: string }) => {
+      const response = await $fetch<any>(`${apiBaseUrl.value}admin/customers/car-dropdowns/add`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken.value}` },
+        body: payload,
+      })
+      await fetchCarDropdowns({ append: false })
+      return response
+    },
+    editDropdown: async (payload: { dropdownId: string, make: string, model: string, variant: string, isActive: boolean }) => {
+      const response = await $fetch<any>(`${apiBaseUrl.value}admin/customers/car-dropdowns/edit`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${authToken.value}` },
+        body: payload,
+      })
+      await fetchCarDropdowns({ append: false })
+      return response
+    },
+    deleteDropdown: async (dropdownId: string) => {
+      const response = await $fetch<any>(`${apiBaseUrl.value}admin/customers/car-dropdowns/delete`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${authToken.value}` },
+        body: { dropdownId },
+      })
+      await fetchCarDropdowns({ append: false })
+      return response
+    },
+    toggleStatus: async (dropdownId: string) => {
+      const response = await $fetch<any>(`${apiBaseUrl.value}admin/customers/car-dropdowns/toggle-status`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${authToken.value}` },
+        body: { dropdownId },
+      })
+      // Optimistic update
+      const item = _carDropdowns.value.find(d => d._id === dropdownId)
+      if (item)
+        item.isActive = !item.isActive
+      return response
+    },
   }
 }

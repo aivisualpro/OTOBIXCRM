@@ -211,12 +211,12 @@ async function handleDelete() {
 <template>
   <div>
     <ClientOnly>
-      <Teleport to="#header-actions">
+      <HeaderActions>
         <Button size="sm" class="h-8" @click="openCreate">
           <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
           Add Margin
         </Button>
-      </Teleport>
+      </HeaderActions>
     </ClientOnly>
 
     <div class="p-4 lg:p-6">

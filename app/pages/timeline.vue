@@ -309,7 +309,7 @@ function onLeftPanelScroll() {
 <template>
   <div class="w-full flex flex-col gap-4">
     <ClientOnly>
-      <Teleport to="#header-actions">
+      <HeaderActions>
         <div class="flex items-center gap-2">
           <div class="relative">
             <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -323,7 +323,7 @@ function onLeftPanelScroll() {
             Refresh
           </Button>
         </div>
-      </Teleport>
+      </HeaderActions>
     </ClientOnly>
 
     <!-- Stats Row -->

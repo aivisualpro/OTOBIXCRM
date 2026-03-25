@@ -269,7 +269,7 @@ function toggleSelectAllLocations() {
 <template>
   <!-- Teleport toolbar into the main header -->
   <ClientOnly>
-    <Teleport to="#header-actions">
+    <HeaderActions>
       <div v-if="showStatusCounts && isFetched" class="hidden sm:flex items-center gap-1.5">
         <Badge variant="outline" class="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs tabular-nums gap-1">
           <Icon name="i-lucide-check-circle" class="size-3" />
@@ -300,7 +300,7 @@ function toggleSelectAllLocations() {
         <Icon name="i-lucide-plus" class="mr-1 size-3.5" />
         Add User
       </Button>
-    </Teleport>
+    </HeaderActions>
   </ClientOnly>
 
   <div class="w-full flex flex-col h-full overflow-hidden">

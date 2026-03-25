@@ -38,12 +38,20 @@ const {
   getModels: getCarModels,
   getVariants: getCarVariants,
   fetchCarDropdowns,
+  isLoading: isCarLoading,
 } = useCarDropdowns()
 
+// City dropdown from DB
+const { getOptions: getDbOptions, fetchDropdowns: fetchDbDropdowns } = useDropdowns()
+const cityOptions = ref<{ label: string, value: string }[]>([])
+
 // Ensure data is loaded (usually already prefetched by boot)
-onMounted(() => {
+onMounted(async () => {
   fetchAllLeads() // no-op if already prefetched
-  fetchCarDropdowns()
+  // For initial makes, we'll fetch a larger set once (e.g. 500 across common brands)
+  fetchCarDropdowns({ limit: 500 })
+  await fetchDbDropdowns()
+  cityOptions.value = getDbOptions('Inspection City')
 })
 
 // ─── Instant Reveal Animation ───
@@ -170,11 +178,13 @@ const availableVariants = computed(() =>
     : [],
 )
 
-// When make changes, reset model + variant
-watch(() => formData.value.make, (newMake, oldMake) => {
-  if (oldMake !== undefined && newMake !== oldMake) {
+// When make changes, fetch it and reset model + variant
+watch(() => formData.value.make, async (newMake, oldMake) => {
+  if (newMake && oldMake !== undefined && newMake !== oldMake) {
     formData.value.model = ''
     formData.value.variant = ''
+    // Fetch all variants for this make once so we have them locally for cascading
+    await fetchCarDropdowns({ search: newMake, limit: 1000 })
   }
 })
 
@@ -263,7 +273,7 @@ const activeTab = ref('owner')
 
 const formTabs = [
   { id: 'owner', label: 'Owner Info', icon: 'i-lucide-user', keys: ['ownerName', 'customerContactNumber', 'emailAddress', 'ownershipSerialNumber'] },
-  { id: 'vehicle', label: 'Vehicle', icon: 'i-lucide-car', keys: ['carRegistrationNumber', 'make', 'model', 'variant', 'yearOfRegistration', 'yearOfManufacture', 'odometerReadingInKms'] },
+  { id: 'vehicle', label: 'Vehicle', icon: 'i-lucide-car', keys: ['vehicleStatus', 'make', 'model', 'variant', 'yearOfRegistration', 'yearOfManufacture', 'odometerReadingInKms'] },
   { id: 'location', label: 'Location', icon: 'i-lucide-map-pin', keys: ['city', 'zipCode', 'inspectionAddress', 'inspectionDateTime'] },
   { id: 'status', label: 'Status', icon: 'i-lucide-settings', keys: ['inspectionStatus', 'approvalStatus', 'priority', 'appointmentSource', 'allocatedTo', 'repName', 'repContact', 'bankSource', 'referenceName'] },
   { id: 'notes', label: 'Notes', icon: 'i-lucide-file-text', keys: ['remarks', 'additionalNotes'] },
@@ -273,7 +283,21 @@ function getFieldsForTab(tabId: string) {
   const tab = formTabs.find(t => t.id === tabId)
   if (!tab)
     return []
-  return props.formFields.filter(f => tab.keys.includes(f.key))
+  return props.formFields.filter((f) => {
+    // Basic tab check
+    if (!tab.keys.includes(f.key))
+      return false
+    // Hide fields on create if needed
+    if (!editingItem.value && f.hideOnCreate)
+      return false
+    return true
+  }).map((f) => {
+    // Overrides: if city field and we have DB options, use them
+    if (f.key === 'city' && cityOptions.value.length > 0) {
+      return { ...f, options: cityOptions.value }
+    }
+    return f
+  })
 }
 
 // ─── CRUD Handlers ───
@@ -281,7 +305,7 @@ function openCreate() {
   editingItem.value = null
   formData.value = {}
   props.formFields.forEach((f) => {
-    formData.value[f.key] = ''
+    formData.value[f.key] = f.defaultValue !== undefined ? f.defaultValue : ''
   })
   activeTab.value = 'owner'
   showDialog.value = true
@@ -333,13 +357,29 @@ async function handleSave() {
       toast.success(`${entity.value} updated successfully`)
     }
     else {
-      toast.info(`Create ${entity.value} will be sent to API (coming soon)`)
+      // Create new lead — direct MongoDB via local server route
+      const payload = {
+        ...formData.value,
+        addedBy: currentUser?.userName || 'Admin',
+        changedBy: currentUser?.userName || 'Admin',
+        source: 'CRM',
+      }
+
+      const response = await $fetch<any>('/api/leads/add', {
+        method: 'POST',
+        body: payload,
+      })
+
+      toast.success(`${entity.value} created successfully`)
+      // Refresh list to show new item
+      await refreshLeads()
     }
     showDialog.value = false
   }
   catch (err: any) {
-    console.error('Save failed:', err)
-    toast.error(err?.data?.message || err?.message || 'Failed to save')
+    const errBody = err?.data || err?.response?._data || {}
+    console.error('Save failed:', err, 'Response body:', errBody)
+    toast.error(errBody?.message || err?.message || 'Failed to save')
   }
   finally {
     isSaving.value = false
@@ -351,9 +391,31 @@ function confirmDelete(item: any) {
   showDeleteDialog.value = true
 }
 
-function handleDelete() {
+async function handleDelete() {
   if (deletingItem.value) {
-    toast.info(`Delete ${entity.value} will be sent to API (coming soon)`)
+    try {
+      const headers: Record<string, string> = {}
+      if (authToken.value)
+        headers.Authorization = `Bearer ${authToken.value}`
+
+      await $fetch<any>(
+        `${apiBaseUrl.value}inspection/telecallings/delete`,
+        {
+          method: 'POST',
+          headers,
+          body: {
+            telecallingId: deletingItem.value._id || deletingItem.value.id,
+          },
+        },
+      )
+
+      toast.success(`${entity.value} deleted successfully`)
+      await refreshLeads()
+    }
+    catch (err: any) {
+      console.error('Delete failed:', err)
+      toast.error(err?.data?.message || err?.message || 'Failed to delete')
+    }
   }
   showDeleteDialog.value = false
   deletingItem.value = null
@@ -419,7 +481,7 @@ function getInitials(name: string): string {
 
 <template>
   <!-- Teleport toolbar into the main header -->
-  <Teleport to="#header-actions">
+  <HeaderActions>
     <div class="relative">
       <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
       <Input v-model="search" placeholder="Search leads..." class="pl-8 h-8 w-48 text-sm" />
@@ -428,14 +490,14 @@ function getInitials(name: string): string {
       {{ totalFiltered }} record{{ totalFiltered !== 1 ? 's' : '' }}
     </p>
     <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="handleRefresh">
-      <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading }" />
+      <Icon name="i-lucide-refresh-cw" class="mr-1.5 size-3.5" :class="{ 'animate-spin': isLoading }" />
       Refresh
     </Button>
     <Button size="sm" class="h-8" @click="openCreate">
-      <Icon name="i-lucide-plus" class="mr-1 size-3.5" />
+      <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
       Add {{ entity }}
     </Button>
-  </Teleport>
+  </HeaderActions>
 
   <div class="w-full flex flex-col h-full overflow-hidden">
     <!-- Error Banner -->
@@ -630,58 +692,48 @@ function getInitials(name: string): string {
           </div>
 
           <!-- Tab Content -->
-          <div class="p-6 min-h-[320px]">
+          <div class="p-6 h-[450px] overflow-y-auto">
             <div class="space-y-4">
               <div v-for="field in getFieldsForTab(activeTab)" :key="field.key" class="space-y-2">
                 <Label :for="field.key">{{ field.label }}</Label>
 
                 <!-- Car Make dropdown -->
-                <Select v-if="field.key === 'make'" v-model="formData.make">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select make" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="m in carMakes" :key="m" :value="m">
-                      {{ m }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  v-if="field.key === 'make'"
+                  v-model="formData.make"
+                  :options="carMakes.map(m => ({ label: m, value: m }))"
+                  placeholder="Select Make"
+                  search-placeholder="Search brands..."
+                />
 
                 <!-- Car Model dropdown (filtered by make) -->
-                <Select v-else-if="field.key === 'model'" v-model="formData.model" :disabled="!formData.make">
-                  <SelectTrigger>
-                    <SelectValue :placeholder="formData.make ? 'Select model' : 'Select make first'" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="m in availableModels" :key="m" :value="m">
-                      {{ m }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  v-else-if="field.key === 'model'"
+                  v-model="formData.model"
+                  :options="availableModels.map(m => ({ label: m, value: m }))"
+                  :disabled="!formData.make || isCarLoading"
+                  :placeholder="isCarLoading ? 'Loading models...' : (formData.make ? 'Select Model' : 'Select make first')"
+                  search-placeholder="Search models..."
+                />
 
                 <!-- Car Variant dropdown (filtered by make + model) -->
-                <Select v-else-if="field.key === 'variant'" v-model="formData.variant" :disabled="!formData.model">
-                  <SelectTrigger>
-                    <SelectValue :placeholder="formData.model ? 'Select variant' : 'Select model first'" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="v in availableVariants" :key="v" :value="v">
-                      {{ v }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  v-else-if="field.key === 'variant'"
+                  v-model="formData.variant"
+                  :options="availableVariants.map(v => ({ label: v, value: v }))"
+                  :disabled="!formData.model || isCarLoading"
+                  :placeholder="isCarLoading ? 'Loading variants...' : (formData.model ? 'Select Variant' : 'Select model first')"
+                  search-placeholder="Search variants..."
+                />
 
-                <!-- Regular select fields -->
-                <Select v-else-if="field.type === 'select'" v-model="formData[field.key]">
-                  <SelectTrigger>
-                    <SelectValue :placeholder="field.placeholder || `Select ${field.label.toLowerCase()}`" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="opt in field.options" :key="opt.value" :value="opt.value">
-                      {{ opt.label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <!-- Searchable dropdown for generic select fields (like city) -->
+                <SearchableSelect
+                  v-else-if="field.type === 'select'"
+                  v-model="formData[field.key]"
+                  :options="field.options || []"
+                  :placeholder="field.placeholder || `Select ${field.label.toLowerCase()}`"
+                  :search-placeholder="`Search ${field.label.toLowerCase()}...`"
+                />
                 <Textarea
                   v-else-if="field.type === 'textarea'"
                   :id="field.key"

@@ -222,12 +222,12 @@ async function saveMenuConfig() {
 <template>
   <div>
     <ClientOnly>
-      <Teleport to="#header-actions">
+      <HeaderActions>
         <Button size="sm" class="h-8" @click="showAddDialog = true">
           <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
           Add Workspace
         </Button>
-      </Teleport>
+      </HeaderActions>
     </ClientOnly>
 
     <div class="space-y-6 p-4 lg:p-6">

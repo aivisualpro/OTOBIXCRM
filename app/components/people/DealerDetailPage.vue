@@ -78,12 +78,12 @@ const wishlist = computed(() => props.user?.wishlist || [])
 <template>
   <!-- Teleport header actions -->
   <ClientOnly>
-    <Teleport to="#header-actions">
+    <HeaderActions>
       <Button variant="ghost" size="sm" class="h-8" @click="router.push('/people/dealers')">
         <Icon name="i-lucide-arrow-left" class="mr-1.5 size-3.5" />
         Back
       </Button>
-    </Teleport>
+    </HeaderActions>
   </ClientOnly>
 
   <div class="w-full h-full overflow-auto">
