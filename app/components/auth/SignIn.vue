@@ -58,10 +58,12 @@ async function onSubmit(event: Event) {
     bootPrefetch()
 
     let redirectPath = '/'
-    if (response?.user?.userRole && (response?.user?._id || response?.user?.id)) {
-      const rolePath = response.user.userRole.toLowerCase().replace(/\s+/g, '-')
-      const id = response.user._id || response.user.id
-      redirectPath = `/people/${rolePath}/${id}`
+    const roleString = response?.user?.userType || response?.user?.userRole || response?.user?.role
+    const userId = response?.user?._id || response?.user?.id
+    
+    if (roleString && userId) {
+      const rolePath = String(roleString).toLowerCase().replace(/\s+/g, '-')
+      redirectPath = `/people/${rolePath}/${userId}`
     }
 
     navigateTo(redirectPath)

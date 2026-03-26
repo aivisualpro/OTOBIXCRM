@@ -698,39 +698,41 @@ const addresses = computed(() => {
                 </div>
               </template>
 
-              <!-- Staff Member Toggle -->
-              <div class="flex items-center justify-between rounded-lg border p-4">
-                <div>
-                  <Label for="edit-staff">Staff Member</Label>
-                  <p class="text-xs text-muted-foreground mt-0.5">
-                    Mark this user as Otobix staff (isStaff=true)
-                  </p>
+              <template v-if="editForm.userRole !== 'Telecaller'">
+                <!-- Staff Member Toggle -->
+                <div class="flex items-center justify-between rounded-lg border p-4">
+                  <div>
+                    <Label for="edit-staff">Staff Member</Label>
+                    <p class="text-xs text-muted-foreground mt-0.5">
+                      Mark this user as Otobix staff (isStaff=true)
+                    </p>
+                  </div>
+                  <Switch id="edit-staff" :checked="editForm.isStaff" @update:checked="editForm.isStaff = $event" />
                 </div>
-                <Switch id="edit-staff" :checked="editForm.isStaff" @update:checked="editForm.isStaff = $event" />
-              </div>
 
-              <!-- Addresses -->
-              <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <Label>Addresses</Label>
-                  <Button variant="ghost" size="sm" class="h-7 text-xs" @click="addAddress">
-                    <Icon name="i-lucide-plus" class="mr-1 size-3" />
-                    Add
-                  </Button>
+                <!-- Addresses -->
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <Label>Addresses</Label>
+                    <Button variant="ghost" size="sm" class="h-7 text-xs" @click="addAddress">
+                      <Icon name="i-lucide-plus" class="mr-1 size-3" />
+                      Add
+                    </Button>
+                  </div>
+                  <div v-for="(_, idx) in (editForm.addressList as string[])" :key="idx" class="flex items-center gap-2">
+                    <Input v-model="editForm.addressList[idx]" :placeholder="`Address ${Number(idx) + 1}`" class="flex-1" />
+                    <Button
+                      v-if="editForm.addressList.length > 1"
+                      variant="ghost"
+                      size="icon"
+                      class="size-8 shrink-0 text-muted-foreground hover:text-destructive"
+                      @click="removeAddress(Number(idx))"
+                    >
+                      <Icon name="i-lucide-x" class="size-3.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div v-for="(_, idx) in (editForm.addressList as string[])" :key="idx" class="flex items-center gap-2">
-                  <Input v-model="editForm.addressList[idx]" :placeholder="`Address ${Number(idx) + 1}`" class="flex-1" />
-                  <Button
-                    v-if="editForm.addressList.length > 1"
-                    variant="ghost"
-                    size="icon"
-                    class="size-8 shrink-0 text-muted-foreground hover:text-destructive"
-                    @click="removeAddress(Number(idx))"
-                  >
-                    <Icon name="i-lucide-x" class="size-3.5" />
-                  </Button>
-                </div>
-              </div>
+              </template>
             </div>
           </template>
         </div>

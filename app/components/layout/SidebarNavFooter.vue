@@ -6,6 +6,7 @@ defineProps<{
     name: string
     role: string
     avatar: string
+    profileUrl: string
   }
 }>()
 
@@ -71,19 +72,11 @@ const showModalTheme = ref(false)
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <Icon name="i-lucide-badge-check" />
-              Account
-            </DropdownMenuItem>
             <DropdownMenuItem as-child>
-              <NuxtLink to="/settings" @click="setOpenMobile(false)">
-                <Icon name="i-lucide-settings" />
-                Settings
+              <NuxtLink :to="user.profileUrl" @click="setOpenMobile(false)">
+                <Icon name="i-lucide-user" />
+                Profile
               </NuxtLink>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Icon name="i-lucide-bell" />
-              Notifications
             </DropdownMenuItem>
 
             <DropdownMenuItem @click="showModalTheme = true">

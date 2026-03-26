@@ -14,14 +14,20 @@ const userCookie = useCookie('userData')
 const user = computed(() => {
   try {
     const parsed = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
+    const roleString = String(parsed?.userType || parsed?.userRole || parsed?.role || 'Member')
+    const userId = parsed?.id || parsed?._id || ''
+    
     return {
       name: parsed?.userName || parsed?.name || 'User',
-      role: parsed?.userType || parsed?.userRole || parsed?.role || 'Member',
+      role: roleString,
       avatar: parsed?.avatar || parsed?.profileImage || parsed?.image || '',
+      profileUrl: userId && roleString !== 'Member' 
+        ? `/people/${roleString.toLowerCase().replace(/\s+/g, '-')}/${userId}`
+        : '/people'
     }
   }
   catch {
-    return { name: 'User', role: 'Member', avatar: '' }
+    return { name: 'User', role: 'Member', avatar: '', profileUrl: '/' }
   }
 })
 

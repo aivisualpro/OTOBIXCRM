@@ -40,10 +40,11 @@ export default defineNuxtRouteMiddleware((to, _from) => {
     if (userData.value) {
       try {
         const user = typeof userData.value === 'string' ? JSON.parse(userData.value) : userData.value
-        if (user?.userRole && (user?._id || user?.id)) {
-          const rolePath = user.userRole.toLowerCase().replace(/\s+/g, '-')
-          const id = user._id || user.id
-          redirectPath = `/people/${rolePath}/${id}`
+        const roleString = user?.userType || user?.userRole || user?.role
+        const userId = user?._id || user?.id
+        if (roleString && userId) {
+          const rolePath = String(roleString).toLowerCase().replace(/\s+/g, '-')
+          redirectPath = `/people/${rolePath}/${userId}`
         }
       }
       catch (e) {}

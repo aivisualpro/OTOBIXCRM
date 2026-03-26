@@ -537,33 +537,35 @@ function toggleSelectAllLocations() {
           <Input id="add-user-kam" v-model="form.assignedKam" placeholder="KAM name or ID" />
         </div>
 
-        <!-- Addresses -->
-        <div class="space-y-1.5">
-          <div class="flex items-center justify-between">
-            <Label>Addresses <span class="text-destructive">*</span></Label>
-            <Button variant="ghost" size="sm" class="h-7 text-xs" @click="addAddress">
-              <Icon name="i-lucide-plus" class="mr-1 size-3" />
-              Add
-            </Button>
+        <template v-if="form.userRole !== 'Telecaller'">
+          <!-- Addresses -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <Label>Addresses <span class="text-destructive">*</span></Label>
+              <Button variant="ghost" size="sm" class="h-7 text-xs" @click="addAddress">
+                <Icon name="i-lucide-plus" class="mr-1 size-3" />
+                Add
+              </Button>
+            </div>
+            <div v-for="(_, idx) in form.addressList" :key="idx" class="flex items-center gap-2">
+              <Input v-model="form.addressList[idx]" :placeholder="`Address ${idx + 1}`" class="flex-1" />
+              <Button v-if="form.addressList.length > 1" variant="ghost" size="icon" class="size-8 shrink-0 text-muted-foreground hover:text-destructive" @click="removeAddress(idx)">
+                <Icon name="i-lucide-x" class="size-3.5" />
+              </Button>
+            </div>
           </div>
-          <div v-for="(_, idx) in form.addressList" :key="idx" class="flex items-center gap-2">
-            <Input v-model="form.addressList[idx]" :placeholder="`Address ${idx + 1}`" class="flex-1" />
-            <Button v-if="form.addressList.length > 1" variant="ghost" size="icon" class="size-8 shrink-0 text-muted-foreground hover:text-destructive" @click="removeAddress(idx)">
-              <Icon name="i-lucide-x" class="size-3.5" />
-            </Button>
-          </div>
-        </div>
 
-        <!-- Is Staff toggle -->
-        <div class="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <Label for="add-user-staff">Staff Member</Label>
-            <p class="text-xs text-muted-foreground">
-              Mark this user as staff
-            </p>
+          <!-- Is Staff toggle -->
+          <div class="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <Label for="add-user-staff">Staff Member</Label>
+              <p class="text-xs text-muted-foreground">
+                Mark this user as staff
+              </p>
+            </div>
+            <Switch id="add-user-staff" :checked="form.isStaff" @update:checked="form.isStaff = $event" />
           </div>
-          <Switch id="add-user-staff" :checked="form.isStaff" @update:checked="form.isStaff = $event" />
-        </div>
+        </template>
       </div>
 
       <SheetFooter class="mt-6 pt-4 border-t">
