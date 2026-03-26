@@ -94,40 +94,74 @@ export function syncLeadToAppSheet(
   // Run entirely in background — do not await
   ;(async () => {
     try {
-      let rows: Record<string, any>[]
+      const execute = async (currentAction: string) => {
+        let rows: Record<string, any>[]
 
-      if (action === 'Delete') {
-        // For delete, only the key field is needed
-        rows = [{ 'Appointment ID': String(doc.appointmentId || '') }]
-      }
-      else {
-        rows = [toAppSheetRow(doc)]
-      }
+        if (currentAction === 'Delete') {
+          // For delete, only the key field is needed
+          rows = [{ 'Appointment ID': String(doc.appointmentId || '') }]
+        }
+        else {
+          rows = [toAppSheetRow(doc)]
+        }
 
-      const body = {
-        Action: action,
-        Properties: {
-          Locale: 'en-US',
-          RunAsUserEmail: doc.emailAddress || 'admin@otobix.in',
-        },
-        Rows: rows,
-      }
+        const body = {
+          Action: currentAction,
+          Properties: {
+            Locale: 'en-US',
+            RunAsUserEmail: doc.emailAddress || 'admin@otobix.in',
+          },
+          Rows: rows,
+        }
 
-      const res = await fetch(APPSHEET_BASE_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ApplicationAccessKey': APPSHEET_ACCESS_KEY,
-        },
-        body: JSON.stringify(body),
-      })
+        const res = await fetch(APPSHEET_BASE_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ApplicationAccessKey': APPSHEET_ACCESS_KEY,
+          },
+          body: JSON.stringify(body),
+        })
 
-      if (!res.ok) {
         const text = await res.text()
-        console.warn(`[AppSheet] ${action} sync failed (${res.status}):`, text.slice(0, 300))
+        
+        let isSuccess = res.ok
+        let isNotFound = false
+        let isDuplicate = false
+
+        // AppSheet can return 200 OK or 400 Bad Request but flag failures in the JSON body.
+        // It often logs "NotFound" or "not found" in the error strings when trying to edit non-existent rows.
+        if (text.toLowerCase().includes('not found') || text.includes('"StatusCode":"NotFound"')) {
+          isSuccess = false
+          isNotFound = true
+        } else if (text.toLowerCase().includes('already exists') || text.toLowerCase().includes('duplicate')) {
+          isSuccess = false
+          isDuplicate = true
+        }
+
+        return { isSuccess, isNotFound, isDuplicate, text, status: res.status }
+      }
+
+      // Initial execution attempt
+      let result = await execute(action)
+
+      // ─── Smart Upsert logic ───
+      // If we attempt an Edit but AppSheet rejects it because the row doesn't exist, seamlessly create it
+      if (!result.isSuccess && result.isNotFound && action === 'Edit') {
+        console.info(`[AppSheet] Row not found. Falling back to ADD action for Appointment ID: ${doc.appointmentId}`)
+        result = await execute('Add')
+      }
+      // If we attempt to Add but it already exists, seamlessly edit the existing record
+      else if (!result.isSuccess && result.isDuplicate && action === 'Add') {
+        console.info(`[AppSheet] Row already exists. Falling back to EDIT action for Appointment ID: ${doc.appointmentId}`)
+        result = await execute('Edit')
+      }
+
+      if (!result.isSuccess) {
+        console.warn(`[AppSheet] Final sync failed (${result.status}):`, result.text.slice(0, 300))
       }
       else {
-        console.info(`[AppSheet] ${action} synced → Appointment ID: ${doc.appointmentId}`)
+        console.info(`[AppSheet] Successfully synced → Appointment ID: ${doc.appointmentId}`)
       }
     }
     catch (err: any) {

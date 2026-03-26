@@ -58,6 +58,7 @@ const PAGE_SIZE = 100
 export function useLeadsApi() {
   // useState keyed calls — safe inside composable, shared across all callers via key
   const _leads = useState<TelecallingLead[]>('leads_data', () => [])
+  const _fetchSeq = useState<number>('leads_fetch_seq', () => 0)
   const _currentPage = useState('leads_currentPage', () => 0)
   const _totalCount = useState('leads_totalCount', () => 0)
   const _isLoading = useState('leads_isLoading', () => false)
@@ -103,6 +104,9 @@ export function useLeadsApi() {
 
     _isLoading.value = true
     _fetchError.value = null
+    
+    _fetchSeq.value++
+    const currentSeq = _fetchSeq.value
 
     try {
       const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
@@ -115,6 +119,9 @@ export function useLeadsApi() {
       }
 
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
+
+      // Bail if a newer fetch was initiated while we were waiting
+      if (_fetchSeq.value !== currentSeq) return
 
       _leads.value = normalize(response.data || [])
       _totalCount.value = response.totalCount
@@ -226,6 +233,8 @@ export function useLeadsApi() {
       _statusFilters.value = { ...filters }
       // Force reload with new filters
       _isInitialized.value = false
+      _leads.value = [] // Instantly clear old tab data
+      _totalCount.value = 0
       fetchLeads(true)
     }
   }
