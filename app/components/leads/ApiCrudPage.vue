@@ -306,7 +306,8 @@ const localFilters = ref({
   priority: '',
   allocatedTo: '',
   createdBy: '',
-  addedBy: ''
+  addedBy: '',
+  inspectionStatus: ''
 })
 
 const activeFilterCount = computed(() => {
@@ -318,6 +319,7 @@ const activeFilterCount = computed(() => {
   if (advancedFilters.value.allocatedTo) count++
   if (advancedFilters.value.createdBy) count++
   if (advancedFilters.value.addedBy) count++
+  if (advancedFilters.value.inspectionStatus) count++
   return count
 })
 
@@ -332,7 +334,8 @@ watch(advancedFilters, (newF) => {
     priority: newF.priority || '',
     allocatedTo: newF.allocatedTo || '',
     createdBy: newF.createdBy || '',
-    addedBy: newF.addedBy || ''
+    addedBy: newF.addedBy || '',
+    inspectionStatus: newF.inspectionStatus || ''
   }
 }, { deep: true, immediate: true })
 
@@ -345,7 +348,7 @@ function applyAdvancedFilters() {
 }
 
 function clearAdvancedFilters() {
-  localFilters.value = { startDate: '', endDate: '', dateField: 'inspectionDateTime', datePreset: '', make: '', city: '', priority: '', allocatedTo: '', createdBy: '', addedBy: '' }
+  localFilters.value = { startDate: '', endDate: '', dateField: 'inspectionDateTime', datePreset: '', make: '', city: '', priority: '', allocatedTo: '', createdBy: '', addedBy: '', inspectionStatus: '' }
   setAdvancedFilters({})
   showAdvancedFilters.value = false
   if (router.currentRoute.value.path === '/leads/search-results') {
@@ -847,9 +850,9 @@ function getInitials(name: string): string {
                   <div class="space-y-1.5">
                     <Label class="text-xs text-muted-foreground">Make</Label>
                     <Select v-model="localFilters.make">
-                      <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Any Make" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value=" ">Any Make</SelectItem>
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANY MAKE" /></SelectTrigger>
+                      <SelectContent class="uppercase">
+                        <SelectItem value=" ">ANY MAKE</SelectItem>
                         <SelectItem v-for="make in carMakes" :key="make" :value="make">{{ make }}</SelectItem>
                       </SelectContent>
                     </Select>
@@ -858,34 +861,46 @@ function getInitials(name: string): string {
                   <div class="space-y-1.5">
                     <Label class="text-xs text-muted-foreground">Priority</Label>
                     <Select v-model="localFilters.priority">
-                      <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Any Priority" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value=" ">Any Priority</SelectItem>
-                        <SelectItem value="High">High</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="Low">Low</SelectItem>
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANY PRIORITY" /></SelectTrigger>
+                      <SelectContent class="uppercase">
+                        <SelectItem value=" ">ANY PRIORITY</SelectItem>
+                        <SelectItem value="High">HIGH</SelectItem>
+                        <SelectItem value="Medium">MEDIUM</SelectItem>
+                        <SelectItem value="Low">LOW</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="space-y-1.5">
+                    <Label class="text-xs text-muted-foreground">Status</Label>
+                    <Select v-model="localFilters.inspectionStatus">
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANY STATUS" /></SelectTrigger>
+                      <SelectContent class="uppercase">
+                        <SelectItem value=" ">ANY STATUS</SelectItem>
+                        <SelectItem v-for="st in inspectionStatuses" :key="st" :value="st">{{ st }}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div class="space-y-1.5">
+                    <Label class="text-xs text-muted-foreground">City Location</Label>
+                    <Select v-model="localFilters.city">
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANY CITY" /></SelectTrigger>
+                      <SelectContent class="uppercase">
+                        <SelectItem value=" ">ANY CITY</SelectItem>
+                        <SelectItem v-for="c in cityOptions" :key="c.value" :value="c.value">{{ c.label }}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
                 <div class="space-y-1.5">
-                  <Label class="text-xs text-muted-foreground">City Location</Label>
-                  <Select v-model="localFilters.city">
-                    <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Any City" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value=" ">Any City</SelectItem>
-                      <SelectItem v-for="c in cityOptions" :key="c.value" :value="c.value">{{ c.label }}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div class="space-y-1.5">
                   <Label class="text-xs text-muted-foreground">Assigned Inspector</Label>
                   <Select v-model="localFilters.allocatedTo">
-                    <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Anyone" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value=" ">Anyone</SelectItem>
+                    <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANYONE" /></SelectTrigger>
+                    <SelectContent class="uppercase">
+                      <SelectItem value=" ">ANYONE</SelectItem>
                       <SelectItem v-for="insp in inspectors" :key="insp._id || insp.id" :value="insp.email">{{ getUserLabel(insp.email) }}</SelectItem>
                     </SelectContent>
                   </Select>
@@ -895,9 +910,9 @@ function getInitials(name: string): string {
                   <div class="space-y-1.5">
                     <Label class="text-xs text-muted-foreground">Created By</Label>
                     <Select v-model="localFilters.createdBy">
-                      <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Anyone" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value=" ">Anyone</SelectItem>
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANYONE" /></SelectTrigger>
+                      <SelectContent class="uppercase">
+                        <SelectItem value=" ">ANYONE</SelectItem>
                         <SelectItem v-for="u in dbCreatedByList" :key="u.email" :value="u.email">{{ u.name }}</SelectItem>
                       </SelectContent>
                     </Select>
@@ -905,9 +920,9 @@ function getInitials(name: string): string {
                   <div class="space-y-1.5">
                     <Label class="text-xs text-muted-foreground">Added By</Label>
                     <Select v-model="localFilters.addedBy">
-                      <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Anyone" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value=" ">Anyone</SelectItem>
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANYONE" /></SelectTrigger>
+                      <SelectContent class="uppercase">
+                        <SelectItem value=" ">ANYONE</SelectItem>
                         <SelectItem v-for="u in dbAddedByList" :key="u" :value="u">{{ u }}</SelectItem>
                       </SelectContent>
                     </Select>
