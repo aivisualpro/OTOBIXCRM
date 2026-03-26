@@ -12,12 +12,7 @@
  *    in the global cache, so the page renders instantly.
  */
 
-// Prefetch status tracking
-const _prefetchStarted = ref(false)
-const _prefetchComplete = ref(false)
-const _prefetchProgress = ref(0) // 0-100
-
-// Route-to-fetcher mapping
+// Route-to-fetcher mapping (plain const = safe at module level)
 const ROUTE_PREFETCH_MAP: Record<string, string[]> = {
   '/leads': ['leads', 'people', 'carDropdowns'],
   '/people': ['people'],
@@ -26,6 +21,10 @@ const ROUTE_PREFETCH_MAP: Record<string, string[]> = {
 }
 
 export function usePrefetch() {
+  const _prefetchStarted = useState('prefetch_started', () => false)
+  const _prefetchComplete = useState('prefetch_complete', () => false)
+  const _prefetchProgress = useState('prefetch_progress', () => 0)
+
   const isLoggedIn = useCookie('isLoggedIn')
 
   /**

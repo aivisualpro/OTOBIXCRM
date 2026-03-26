@@ -2,36 +2,36 @@
 import { toast } from 'vue-sonner'
 
 // ─── CSV Column Mapping ───
-// The CSV headers from the user's file → our DB field names
 const csvHeaderMap: Record<string, string> = {
   'createdAt': 'createdAt',
+  'appointmentId': 'appointmentId',
   'emailAddress': 'emailAddress',
-  'Appointment Month': '_appointmentMonth',
   'appointmentSource': 'appointmentSource',
-  'NCD/UCD Name': 'otherSource',
-  'NCD Representative Name': 'repName',
-  'NCD Representative Contact No.': 'repContact',
+  'otherSource': 'otherSource',
+  'NCDUCDName': 'ncdUcdName',
+  'NCDRepresentativeName': 'repName',
+  'NCDRepresentativeContactNo': 'repContact',
   'vehicleStatus': 'vehicleStatus',
-  'Address for Inspection': 'inspectionAddress',
+  'inspectionAddress': 'inspectionAddress',
   'zipCode': 'zipCode',
   'yearOfManufacture': 'yearOfManufacture',
   'make': 'make',
   'model': 'model',
   'variant': 'variant',
-  'Odometer Reading': 'odometerReadingInKms',
+  'odometerReading': 'odometerReadingInKms',
   'ownershipSerialNumber': 'ownershipSerialNumber',
   'inspectionDateTime': 'inspectionDateTime',
   'ownerName': 'ownerName',
   'customerContactNumber': 'customerContactNumber',
-  'Remarks': 'remarks',
-  'appointmentId': 'appointmentId',
+  'remarks': 'remarks',
   'city': 'city',
   'allocatedTo': 'allocatedTo',
+  'inspectionEngineerNumber': 'inspectionEngineerNumber',
   'inspectionStatus': 'inspectionStatus',
   'referenceName': 'referenceName',
   'bankSource': 'bankSource',
-  'otherSource': 'otherSource',
   'priority': 'priority',
+  'addedBy': 'addedBy',
 }
 
 // All target DB fields
@@ -63,10 +63,12 @@ const dbFields = [
   { value: 'bankSource', label: 'Bank Source' },
   { value: 'referenceName', label: 'Reference Name' },
   { value: 'otherSource', label: 'Other Source' },
+  { value: 'ncdUcdName', label: 'NCD/UCD Name' },
   { value: 'remarks', label: 'Remarks' },
   { value: 'additionalNotes', label: 'Additional Notes' },
   { value: 'appointmentId', label: 'Appointment ID' },
   { value: 'addedBy', label: 'Added By' },
+  { value: 'inspectionEngineerNumber', label: 'Inspection Engineer No.' },
   { value: 'createdAt', label: 'Created At' },
 ]
 
@@ -91,12 +93,19 @@ const batchSize = 200
 // Drag state
 const isDragging = ref(false)
 
-// ─── CSV Parser ───
+// ─── CSV Parser (auto-detects tab or comma delimiter) ───
 function parseCSV(text: string): { headers: string[], rows: string[][] } {
   const lines = text.split(/\r?\n/).filter(l => l.trim())
   if (lines.length < 2) return { headers: [], rows: [] }
 
+  // Auto-detect delimiter: tab or comma
+  const firstLine = lines[0]!
+  const delimiter = firstLine.split('\t').length > firstLine.split(',').length ? '\t' : ','
+
   function parseLine(line: string): string[] {
+    if (delimiter === '\t') {
+      return line.split('\t').map(v => v.trim().replace(/^"|"$/g, ''))
+    }
     const result: string[] = []
     let current = ''
     let inQuotes = false
@@ -123,7 +132,7 @@ function parseCSV(text: string): { headers: string[], rows: string[][] } {
     return result
   }
 
-  const headers = parseLine(lines[0]!)
+  const headers = parseLine(firstLine)
   const rows = lines.slice(1).map(l => parseLine(l))
   return { headers, rows }
 }
@@ -150,19 +159,26 @@ function handleFile(file: File) {
     rawHeaders.value = headers
     rawRows.value = rows
 
-    // Auto-map columns
+    // Auto-map columns using exact match, then normalized match, then fuzzy
     const mapping: Record<string, string> = {}
     headers.forEach((h) => {
-      const mapped = csvHeaderMap[h] || csvHeaderMap[h.trim()]
-      if (mapped) {
-        mapping[h] = mapped
+      // 1. Exact match
+      let mapped = csvHeaderMap[h] || csvHeaderMap[h.trim()]
+      // 2. Normalized match: strip spaces, slashes, underscores, lowercase
+      if (!mapped) {
+        const normalized = h.trim().replace(/[\s/_-]/g, '').toLowerCase()
+        const found = Object.entries(csvHeaderMap).find(
+          ([k]) => k.replace(/[\s/_-]/g, '').toLowerCase() === normalized,
+        )
+        mapped = found?.[1]
       }
-      else {
-        // Try fuzzy match by lowercase
+      // 3. Fuzzy match: compare against db field values/labels
+      if (!mapped) {
         const lower = h.toLowerCase().trim()
-        const found = dbFields.find(f => f.value.toLowerCase() === lower)
-        mapping[h] = found ? found.value : '_skip'
+        const found = dbFields.find(f => f.value.toLowerCase() === lower || f.label.toLowerCase() === lower)
+        mapped = found?.value
       }
+      mapping[h] = mapped || '_skip'
     })
     columnMapping.value = mapping
     wizardStep.value = 'mapping'

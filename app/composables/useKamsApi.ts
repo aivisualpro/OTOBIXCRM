@@ -10,13 +10,12 @@ export interface Kam {
   updatedAt?: string
 }
 
-// ─── Global cache ───
-const _allKams = ref<Kam[]>([])
-const _isFetched = ref(false)
-const _isFetching = ref(false)
-const _fetchError = ref<string | null>(null)
-
 export function useKamsApi() {
+  const _allKams = useState<Kam[]>('kams_data', () => [])
+  const _isFetched = useState('kams_isFetched', () => false)
+  const _isFetching = useState('kams_isFetching', () => false)
+  const _fetchError = useState<string | null>('kams_fetchError', () => null)
+
   const { apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 

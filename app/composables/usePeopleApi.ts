@@ -27,13 +27,13 @@ export interface PeopleUser {
   updatedAt: string
 }
 
-// ─── Global cache: single fetch, reused across all People sub-routes ───
-const _allUsers = ref<PeopleUser[]>([])
-const _isFetched = ref(false)
-const _isFetching = ref(false)
-const _fetchError = ref<string | null>(null)
-
 export function usePeopleApi() {
+  // useState keyed calls — safe inside composable, shared across all callers via key
+  const _allUsers = useState<PeopleUser[]>('people_users', () => [])
+  const _isFetched = useState('people_isFetched', () => false)
+  const _isFetching = useState('people_isFetching', () => false)
+  const _fetchError = useState<string | null>('people_fetchError', () => null)
+
   const { apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 

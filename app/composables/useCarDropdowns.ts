@@ -17,13 +17,12 @@ interface CarDropdownResponse {
   totalCount?: number
 }
 
-// Global cache
-const _carDropdowns = ref<CarDropdownItem[]>([])
-const _carDropdownsFetched = ref(false)
-const _carDropdownsFetching = ref(false)
-const _totalCount = ref(0)
-
 export function useCarDropdowns() {
+  const _carDropdowns = useState<CarDropdownItem[]>('carDropdowns_data', () => [])
+  const _carDropdownsFetched = useState('carDropdowns_fetched', () => false)
+  const _carDropdownsFetching = useState('carDropdowns_fetching', () => false)
+  const _totalCount = useState('carDropdowns_totalCount', () => 0)
+
   const { apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 

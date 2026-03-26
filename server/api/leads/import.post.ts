@@ -29,8 +29,6 @@ export default defineEventHandler(async (event) => {
         { upsert: true, returnDocument: 'after' },
       )
       const endSeq = (counterResult as any)?.seq || rowsNeedingId
-      // endSeq is the value AFTER incrementing by rowsNeedingId,
-      // so the batch starts at (endSeq - rowsNeedingId + 1)
       batchStartSeq = endSeq - rowsNeedingId + 1
     }
 
@@ -63,11 +61,11 @@ export default defineEventHandler(async (event) => {
       bankSource: row.bankSource || '',
       referenceName: row.referenceName || '',
       otherSource: row.otherSource || '',
+      ncdUcdName: row.ncdUcdName || '',
       remarks: row.remarks || '',
       additionalNotes: row.additionalNotes || '',
       addedBy: row.addedBy || 'CSV Import',
-      changedBy: 'CSV Import',
-      source: 'CSV Import',
+      inspectionEngineerNumber: row.inspectionEngineerNumber || '',
       isActive: true,
       createdAt: row.createdAt || now,
       updatedAt: now,

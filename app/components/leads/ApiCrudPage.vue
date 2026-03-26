@@ -351,7 +351,7 @@ const formTabs = [
   { id: 'owner', label: 'Owner Info', icon: 'i-lucide-user', keys: ['ownerName', 'customerContactNumber', 'carRegistrationNumber', 'emailAddress', 'ownershipSerialNumber'] },
   { id: 'vehicle', label: 'Vehicle', icon: 'i-lucide-car', keys: ['vehicleStatus', 'make', 'model', 'variant', 'yearOfRegistration', 'yearOfManufacture', 'odometerReadingInKms'] },
   { id: 'location', label: 'Location', icon: 'i-lucide-map-pin', keys: ['city', 'zipCode', 'inspectionAddress', 'inspectionDateTime'] },
-  { id: 'status', label: 'Status', icon: 'i-lucide-settings', keys: ['inspectionStatus', 'approvalStatus', 'priority', 'appointmentSource', 'allocatedTo', 'repName', 'repContact', 'bankSource', 'referenceName'] },
+  { id: 'status', label: 'Status', icon: 'i-lucide-settings', keys: ['inspectionStatus', 'approvalStatus', 'priority', 'appointmentSource', 'allocatedTo', 'repName', 'repContact', 'otherSource', 'bankSource', 'referenceName'] },
   { id: 'notes', label: 'Notes', icon: 'i-lucide-file-text', keys: ['remarks', 'additionalNotes'] },
 ]
 
@@ -374,6 +374,12 @@ function getFieldsForTab(tabId: string) {
     // Conditional logic based on Source
     if (f.key === 'bankSource' && formData.value.appointmentSource !== 'Bank') return false
     if (f.key === 'referenceName' && formData.value.appointmentSource !== 'Reference') return false
+    // NCD/UCD-only fields
+    const isNcdUcd = ['NCD', 'UCD'].includes(formData.value.appointmentSource)
+    if (f.key === 'repName' && !isNcdUcd) return false
+    if (f.key === 'repContact' && !isNcdUcd) return false
+    // Other-only fields
+    if (f.key === 'otherSource' && formData.value.appointmentSource !== 'Other') return false
 
     return true
   }).map((f) => {

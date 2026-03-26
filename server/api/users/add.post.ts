@@ -18,7 +18,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'userName, email, Role and conditionally Phone are strictly required' })
   }
 
-  // Hardcode environment strictly routing mapping permanently pointing directly to Production exclusively
   const dbName = String(config.productionMongodbDbName || 'otobix_auction_app')
   try {
     if (!_client) {
@@ -36,23 +35,33 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 409, message: `User with email "${body.email}" already exists` })
     }
 
-    // Use bcrypt standard salting for optimal security and interoperability
+    // Check for duplicate phone number (only if provided)
+    if (body.phoneNumber) {
+      const phoneDup = await db.collection('users').findOne({ phoneNumber: body.phoneNumber })
+      if (phoneDup) {
+        throw createError({ statusCode: 409, message: `Phone number "${body.phoneNumber}" is already registered to another user` })
+      }
+    }
+
     const saltRounds = 10
     const rawPassword = body.password || ''
     const hashedPassword = rawPassword ? await bcrypt.hash(rawPassword, saltRounds) : ''
+
+    // Inspection Engineer is always a staff member
+    const isStaff = body.userRole === 'Inspection Engineer' ? true : (body.isStaff ?? false)
 
     const doc = {
       userName: body.userName || '',
       email: body.email || '',
       phoneNumber: body.phoneNumber || '',
       userRole: body.userRole || 'Customer',
-      password: rawPassword, // Retain human-readable plain text for explicit UI rendering exactly as requested
-      passwordHash: hashedPassword, // Store isolated secure Bcrypt instance dynamically for universally compatible auth routing
+      password: rawPassword,
+      passwordHash: hashedPassword,
       location: Array.isArray(body.location) ? body.location.join(', ') : (body.location || ''),
       dealershipName: body.dealershipName || '',
       entityType: body.entityType || '',
       image: body.image || '',
-      isStaff: body.isStaff ?? false,
+      isStaff,
       primaryContactPerson: body.primaryContactPerson || '',
       primaryContactNumber: body.primaryContactNumber || '',
       secondaryContactPerson: body.secondaryContactPerson || '',

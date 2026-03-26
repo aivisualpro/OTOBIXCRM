@@ -17,14 +17,13 @@ export interface BannerFilters {
   status?: string
 }
 
-// ─── Global cache ───
-const _allBanners = ref<Banner[]>([])
-const _isFetched = ref(false)
-const _isFetching = ref(false)
-const _fetchError = ref<string | null>(null)
-const _totalCount = ref(0)
-
 export function useBannersApi() {
+  const _allBanners = useState<Banner[]>('banners_data', () => [])
+  const _isFetched = useState('banners_isFetched', () => false)
+  const _isFetching = useState('banners_isFetching', () => false)
+  const _fetchError = useState<string | null>('banners_fetchError', () => null)
+  const _totalCount = useState('banners_totalCount', () => 0)
+
   const { apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 

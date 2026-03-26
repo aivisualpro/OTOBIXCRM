@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Loader2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import PasswordInput from '~/components/PasswordInput.vue'
 
@@ -108,7 +107,7 @@ async function onSubmit(event: Event) {
       {{ errorMessage }}
     </div>
     <Button type="submit" class="w-full" :disabled="isLoading">
-      <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
+      <Icon v-if="isLoading" name="i-lucide-loader-2" class="mr-2 h-4 w-4 animate-spin" />
       Login
     </Button>
   </form>

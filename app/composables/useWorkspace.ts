@@ -60,13 +60,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
   { id: 'imports', title: 'Data Imports', icon: 'i-lucide-database-backup', link: '/settings/imports', group: 'System' },
 ]
 
-// ─── Global state ───
-const _workspaces = ref<Workspace[]>([])
-const _activeWorkspaceId = ref('admin')
-const _initialized = ref(false)
-const _loading = ref(false)
-
-// Fallback defaults for SSR or before API loads
+// Fallback defaults for SSR or before API loads (plain const = safe at module level)
 const FALLBACK_WORKSPACES: Workspace[] = [
   {
     workspaceId: 'admin',
@@ -89,6 +83,12 @@ const FALLBACK_WORKSPACES: Workspace[] = [
 ]
 
 export function useWorkspace() {
+  // useState keyed calls — safe inside composable, shared across all callers via key
+  const _workspaces = useState<Workspace[]>('workspace_list', () => [])
+  const _activeWorkspaceId = useState('workspace_activeId', () => 'admin')
+  const _initialized = useState('workspace_initialized', () => false)
+  const _loading = useState('workspace_loading', () => false)
+
   // Initialize — load from API once
   if (!_initialized.value) {
     _initialized.value = true

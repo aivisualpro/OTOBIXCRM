@@ -20,7 +20,7 @@ export interface TelecallingLead {
   inspectionStatus: string
   approvalStatus: string
   priority: string
-  ncdUcdName: string
+  otherSource: string
   repName: string
   repContact: string
   bankSource: string
@@ -52,25 +52,24 @@ interface CountsResponse {
   counts: Record<string, number>
 }
 
-// ─── Shared state (persists across route navigations) ───
+// ─── Shared state key (PAGE_SIZE is safe at module level - just a constant) ───
 const PAGE_SIZE = 100
 
-const _leads = ref<TelecallingLead[]>([])
-const _currentPage = ref(0) // Pages loaded so far
-const _totalCount = ref(0) // Total matching records on server
-const _isLoading = ref(false) // Initial load in progress
-const _isLoadingMore = ref(false) // "Load more" in progress
-const _fetchError = ref<string | null>(null)
-const _isInitialized = ref(false)
-const _fetchedForEnv = ref<string>('')
-const _serverSearch = ref('') // Current server-side search term
-const _statusFilters = ref<Record<string, string>>({}) // Server-side status filters
-
-// Status group counts (whole database)
-const _counts = ref<Record<string, number>>({})
-const _countsTotal = ref(0)
-
 export function useLeadsApi() {
+  // useState keyed calls — safe inside composable, shared across all callers via key
+  const _leads = useState<TelecallingLead[]>('leads_data', () => [])
+  const _currentPage = useState('leads_currentPage', () => 0)
+  const _totalCount = useState('leads_totalCount', () => 0)
+  const _isLoading = useState('leads_isLoading', () => false)
+  const _isLoadingMore = useState('leads_isLoadingMore', () => false)
+  const _fetchError = useState<string | null>('leads_fetchError', () => null)
+  const _isInitialized = useState('leads_isInitialized', () => false)
+  const _fetchedForEnv = useState('leads_fetchedForEnv', () => '')
+  const _serverSearch = useState('leads_serverSearch', () => '')
+  const _statusFilters = useState<Record<string, string>>('leads_statusFilters', () => ({}))
+  const _counts = useState<Record<string, number>>('leads_counts', () => ({}))
+  const _countsTotal = useState('leads_countsTotal', () => 0)
+
   const { currentEnv } = useApiEnvironment()
 
   // ─── Normalize raw items ───

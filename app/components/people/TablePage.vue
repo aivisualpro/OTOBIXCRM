@@ -603,12 +603,12 @@ function toggleSelectAllWorkspaces() {
         </div>
 
         <!-- Assigned KAM -->
-        <div v-if="form.userRole !== 'Telecaller'" class="space-y-1.5">
+        <div v-if="form.userRole !== 'Telecaller' && form.userRole !== 'Inspection Engineer'" class="space-y-1.5">
           <Label for="add-user-kam">Assigned KAM</Label>
           <Input id="add-user-kam" v-model="form.assignedKam" placeholder="KAM name or ID" />
         </div>
 
-        <template v-if="form.userRole !== 'Telecaller'">
+        <template v-if="form.userRole !== 'Telecaller' && form.userRole !== 'Inspection Engineer'">
           <!-- Addresses -->
           <div class="space-y-1.5">
             <div class="flex items-center justify-between">

@@ -37,13 +37,12 @@ export interface AuctionCar {
   imageUrls: { title: string, url: string }[]
 }
 
-// ─── Global cache: fetch once, reuse across all Auction sub-routes ───
-const _allCars = ref<AuctionCar[]>([])
-const _isFetched = ref(false)
-const _isFetching = ref(false)
-const _fetchError = ref<string | null>(null)
-
 export function useAuctionsApi() {
+  const _allCars = useState<AuctionCar[]>('auctions_data', () => [])
+  const _isFetched = useState('auctions_isFetched', () => false)
+  const _isFetching = useState('auctions_isFetching', () => false)
+  const _fetchError = useState<string | null>('auctions_fetchError', () => null)
+
   const { apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 

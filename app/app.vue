@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Analytics } from '@vercel/analytics/nuxt'
-import { ConfigProvider } from 'reka-ui'
 import { Toaster } from '@/components/ui/sonner'
 import 'vue-sonner/style.css'
 
@@ -64,22 +63,19 @@ const dir = computed(() => textDirection.value === 'rtl' ? 'rtl' : 'ltr')
 
 <template>
   <Body class="overscroll-none antialiased bg-background text-foreground">
-    <ConfigProvider :dir="dir">
-      <div id="app" vaul-drawer-wrapper class="relative h-full overflow-hidden">
-        <!-- No environment indicator, strictly production only now -->
-        <NuxtLayout>
-          <NuxtPage />
-        </NuxtLayout>
-      </div>
+    <div id="app" :dir="dir" vaul-drawer-wrapper class="relative h-full overflow-hidden">
+      <!-- No environment indicator, strictly production only now -->
+      <NuxtLayout>
+        <NuxtPage />
+      </NuxtLayout>
+    </div>
 
+    <ClientOnly>
       <Toaster :theme="colorMode.preference as any || 'system'" />
-    </ConfigProvider>
-
-    <!-- PWA Components -->
-    <PwaServiceWorkerRegistration />
-    <PwaInstallPrompt />
-
-    <Analytics :debug="false" />
+      <PwaServiceWorkerRegistration />
+      <PwaInstallPrompt />
+      <Analytics :debug="false" />
+    </ClientOnly>
   </Body>
 </template>
 

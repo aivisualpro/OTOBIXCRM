@@ -16,13 +16,15 @@ function handleLogout() {
   const isLoggedIn = useCookie('isLoggedIn')
   const authToken = useCookie('authToken')
   const userData = useCookie('userData')
+  const activeWorkspace = useCookie('activeWorkspace')
   isLoggedIn.value = null
   authToken.value = null
   userData.value = null
+  activeWorkspace.value = null
   if (isMobile.value)
     setOpenMobile(false)
-  // Hard redirect to clear all cached state
-  window.location.href = '/login'
+  // Use navigateTo to keep app client-side (avoids SSR re-render crash)
+  navigateTo('/login')
 }
 
 const showModalTheme = ref(false)
