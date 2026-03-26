@@ -4,6 +4,13 @@ import { peopleColumns, peopleRouteFilters } from '~/constants/people'
 const route = useRoute()
 const categoryKey = computed(() => route.params.category as string)
 const filter = computed(() => peopleRouteFilters[categoryKey.value])
+
+const activeColumns = computed(() => {
+  return peopleColumns.filter(col => {
+    if (col.key === 'phoneNumber' && categoryKey.value === 'telecaller') return false
+    return true
+  })
+})
 </script>
 
 <template>
@@ -13,7 +20,7 @@ const filter = computed(() => peopleRouteFilters[categoryKey.value])
     description=""
     icon="i-lucide-users"
     entity-name="Person"
-    :columns="peopleColumns"
+    :columns="activeColumns"
     :filter-fn="filter.filterFn"
     :show-status-counts="filter.showStatusCounts"
     :category-key="categoryKey"

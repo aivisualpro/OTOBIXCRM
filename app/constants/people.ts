@@ -4,7 +4,6 @@ export const peopleColumns: CrudColumn[] = [
   { key: 'userName', label: 'Name', type: 'avatar' },
   { key: 'email', label: 'Email' },
   { key: 'phoneNumber', label: 'Phone' },
-  { key: 'userRole', label: 'Staff', type: 'badge' },
   { key: 'approvalStatus', label: 'Status', type: 'badge' },
   { key: 'createdAt', label: 'Created', type: 'date' },
   { key: 'updatedAt', label: 'Updated', type: 'date' },
