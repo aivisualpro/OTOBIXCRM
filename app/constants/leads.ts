@@ -1,6 +1,6 @@
 export const leadsColumns = [
   { key: 'appointmentId', label: 'Appt. ID' },
-  { key: 'ownerName', label: 'Owner', type: 'avatar' as const },
+  { key: 'ownerName', label: 'Owner' },
   { key: 'customerContactNumber', label: 'Contact' },
   { key: 'make', label: 'Make' },
   { key: 'model', label: 'Model' },
@@ -10,14 +10,15 @@ export const leadsColumns = [
   { key: 'inspectionStatus', label: 'Inspection', type: 'badge' as const },
   { key: 'priority', label: 'Priority', type: 'badge' as const },
   { key: 'inspectionDateTime', label: 'Inspection Date', type: 'date' as const },
-  { key: 'addedBy', label: 'Created By' },
+  { key: 'addedBy', label: 'Added By' },
+  { key: 'emailAddress', label: 'Created By' },
   { key: 'createdAt', label: 'Created At', type: 'date' as const },
 ]
 
 /** Columns for /leads/scheduled — shows Allocated To + inspectionStatus */
 export const scheduledColumns = [
   { key: 'appointmentId', label: 'Appt. ID' },
-  { key: 'ownerName', label: 'Owner', type: 'avatar' as const },
+  { key: 'ownerName', label: 'Owner' },
   { key: 'customerContactNumber', label: 'Contact' },
   { key: 'make', label: 'Make' },
   { key: 'model', label: 'Model' },
@@ -28,7 +29,8 @@ export const scheduledColumns = [
   { key: 'inspectionStatus', label: 'Inspection', type: 'badge' as const },
   { key: 'priority', label: 'Priority', type: 'badge' as const },
   { key: 'inspectionDateTime', label: 'Inspection Date', type: 'date' as const },
-  { key: 'addedBy', label: 'Created By' },
+  { key: 'addedBy', label: 'Added By' },
+  { key: 'emailAddress', label: 'Created By' },
   { key: 'createdAt', label: 'Created At', type: 'date' as const },
 ]
 
@@ -40,7 +42,7 @@ export const routeColumnsMap: Record<string, typeof leadsColumns> = {
 export const leadsFormFields = [
   { key: 'ownerName', label: 'Owner Name', placeholder: 'Full Name', required: true },
   { key: 'customerContactNumber', label: 'Contact Number', placeholder: '+91 9999999999', required: true },
-  { key: 'carRegistrationNumber', label: 'Car Registration Number', placeholder: 'e.g. WB-26-AB-1234', required: true },
+  { key: 'carRegistrationNumber', label: 'Car Registration Number', placeholder: 'e.g. WB-26-AB-1234' },
   {
     key: 'vehicleStatus',
     label: 'Vehicle Status',

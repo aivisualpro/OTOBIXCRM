@@ -11,25 +11,32 @@ export default defineEventHandler(async (event) => {
     const db = await getLeadsDb(event)
     const now = new Date().toISOString()
 
-    // Generate base appointment ID
-    const yearPrefix = String(new Date().getFullYear()).slice(-2)
-    const latest = await db
-      .collection('telecallings')
-      .find({ appointmentId: { $regex: `^${yearPrefix}-` } })
-      .sort({ appointmentId: -1 })
-      .limit(1)
-      .toArray()
+    // Count how many rows need auto-generated IDs
+    const rowsNeedingId = rows.filter((r: any) => !r.appointmentId).length
 
-    let nextNum = 100001
-    if (latest.length > 0) {
-      const match = latest[0].appointmentId?.match(/\d+-(\d+)/)
-      if (match) {
-        nextNum = parseInt(match[1], 10) + 1
-      }
+    // Atomically reserve a batch of IDs from the counter (same counter as add.post.ts)
+    const yearPrefix = String(new Date().getFullYear()).slice(-2)
+    let batchStartSeq = 0
+    if (rowsNeedingId > 0) {
+      const counterId = `appointmentId_${yearPrefix}`
+      const counterResult = await db.collection('counters').findOneAndUpdate(
+        { _id: counterId } as any,
+        {
+          $inc: { seq: rowsNeedingId },
+          $set: { updatedAt: now },
+          $setOnInsert: { createdAt: now },
+        },
+        { upsert: true, returnDocument: 'after' },
+      )
+      const endSeq = (counterResult as any)?.seq || rowsNeedingId
+      // endSeq is the value AFTER incrementing by rowsNeedingId,
+      // so the batch starts at (endSeq - rowsNeedingId + 1)
+      batchStartSeq = endSeq - rowsNeedingId + 1
     }
 
-    const docs = rows.map((row, idx) => ({
-      appointmentId: row.appointmentId || `${yearPrefix}-${nextNum + idx}`,
+    let autoIdIndex = 0
+    const docs = rows.map((row: any) => ({
+      appointmentId: row.appointmentId || `${yearPrefix}-${100000 + batchStartSeq + autoIdIndex++}`,
       ownerName: row.ownerName || '',
       customerContactNumber: row.customerContactNumber || '',
       carRegistrationNumber: row.carRegistrationNumber || '',

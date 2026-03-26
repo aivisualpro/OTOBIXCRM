@@ -18,24 +18,6 @@ export const peopleColumns: CrudColumn[] = [
   { key: 'isStaff', label: 'Staff', type: 'badge' },
 ]
 
-export const otobixColumns: CrudColumn[] = [
-  { key: 'userName', label: 'Name', type: 'avatar' },
-  { key: 'userRole', label: 'Role', type: 'badge' },
-  { key: 'email', label: 'Email' },
-  { key: 'phoneNumber', label: 'Phone' },
-  { key: 'location', label: 'Location' },
-  { key: 'secondaryContactPerson', label: 'Secondary Contact' },
-  { key: 'secondaryContactNumber', label: 'Secondary Phone' },
-  { key: 'addressList', label: 'Addresses', type: 'tags' },
-  { key: 'approvalStatus', label: 'Status', type: 'badge' },
-  { key: 'rejectionComment', label: 'Rejection Comment' },
-  { key: 'wishlist', label: 'Wishlist', type: 'tags' },
-  { key: 'createdAt', label: 'Created', type: 'date' },
-  { key: 'updatedAt', label: 'Updated', type: 'date' },
-  { key: 'assignedKam', label: 'Assigned KAM' },
-  { key: 'isStaff', label: 'Staff', type: 'badge' },
-]
-
 // Each sub-route defines how to filter the global users list
 export interface PeopleRouteFilter {
   label: string
@@ -43,23 +25,45 @@ export interface PeopleRouteFilter {
   showStatusCounts: boolean
 }
 
-/** Known Otobix staff roles */
-const STAFF_ROLES = ['Inspection Engineer', 'Retailer', 'Sales Manager', 'Telecaller', 'QC']
-
 export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
-  otobix: {
-    label: 'Otobix',
-    filterFn: (user: any) => user.isStaff === true || STAFF_ROLES.includes(user.userRole),
-    showStatusCounts: true,
-  },
-  dealers: {
-    label: 'Dealers',
+  dealer: {
+    label: 'Dealer',
     filterFn: (user: any) => user.userRole === 'Dealer',
     showStatusCounts: true,
   },
-  customers: {
-    label: 'Customers',
+  customer: {
+    label: 'Customer',
     filterFn: (user: any) => user.userRole === 'Customer',
+    showStatusCounts: true,
+  },
+  'inspection-engineer': {
+    label: 'Inspection Engineer',
+    filterFn: (user: any) => user.userRole === 'Inspection Engineer',
+    showStatusCounts: true,
+  },
+  admin: {
+    label: 'Admin',
+    filterFn: (user: any) => user.userRole === 'Admin' || user.userRole === 'Super Admin',
+    showStatusCounts: true,
+  },
+  retailer: {
+    label: 'Retailer',
+    filterFn: (user: any) => user.userRole === 'Retailer',
+    showStatusCounts: true,
+  },
+  'sales-manager': {
+    label: 'Sales Manager',
+    filterFn: (user: any) => user.userRole === 'Sales Manager',
+    showStatusCounts: true,
+  },
+  telecaller: {
+    label: 'Telecaller',
+    filterFn: (user: any) => user.userRole === 'Telecaller',
+    showStatusCounts: true,
+  },
+  qc: {
+    label: 'QC',
+    filterFn: (user: any) => user.userRole === 'QC',
     showStatusCounts: true,
   },
 }

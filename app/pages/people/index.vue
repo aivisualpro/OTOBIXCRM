@@ -2,7 +2,7 @@
 definePageMeta({
   middleware: [
     (_to, _from) => {
-      return navigateTo('/people/otobix', { replace: true })
+      return navigateTo('/people/dealer', { replace: true })
     },
   ],
 })

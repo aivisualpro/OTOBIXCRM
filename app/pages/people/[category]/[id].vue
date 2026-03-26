@@ -5,7 +5,7 @@ const route = useRoute()
 const router = useRouter()
 const categoryKey = computed(() => route.params.category as string)
 const userId = computed(() => route.params.id as string)
-const isDealer = computed(() => categoryKey.value === 'dealers')
+const isDealer = computed(() => categoryKey.value === 'dealer')
 
 const { setHeader } = usePageHeader()
 
@@ -26,10 +26,14 @@ const user = computed(() => getUserById(userId.value))
 
 // Map category → human-readable detail title & icon
 const CATEGORY_META: Record<string, { title: string, icon: string }> = {
-  otobix: { title: 'User Details', icon: 'i-lucide-shield-check' },
-  dealers: { title: 'Dealer Details', icon: 'i-lucide-store' },
-  customers: { title: 'Customer Details', icon: 'i-lucide-user-round' },
-  kams: { title: 'KAM Details', icon: 'i-lucide-briefcase' },
+  dealer: { title: 'Dealer Details', icon: 'i-lucide-store' },
+  customer: { title: 'Customer Details', icon: 'i-lucide-user-round' },
+  'inspection-engineer': { title: 'Inspection Engineer Details', icon: 'i-lucide-clipboard-check' },
+  admin: { title: 'Admin Details', icon: 'i-lucide-shield-check' },
+  retailer: { title: 'Retailer Details', icon: 'i-lucide-shopping-bag' },
+  'sales-manager': { title: 'Sales Manager Details', icon: 'i-lucide-briefcase' },
+  telecaller: { title: 'Telecaller Details', icon: 'i-lucide-phone-call' },
+  qc: { title: 'QC Details', icon: 'i-lucide-badge-check' },
 }
 
 // Set header immediately from category — no waiting for user data

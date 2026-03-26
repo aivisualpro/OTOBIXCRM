@@ -318,7 +318,8 @@ function handlePrevTab() {
 }
 
 // ─── CRUD Handlers ───
-function openCreate() {
+
+async function openCreate() {
   editingItem.value = null
   formData.value = {}
   props.formFields.forEach((f) => {
@@ -326,6 +327,7 @@ function openCreate() {
   })
   activeTab.value = 'owner'
   tabValidationErrors.value = {}
+
   showDialog.value = true
 }
 
@@ -371,6 +373,7 @@ async function handleSave() {
     }
     else {
       // Create new lead — direct MongoDB via local server route
+      // appointmentId is generated server-side at insert time (no pre-reservation)
       const payload = {
         ...formData.value,
         addedBy: currentUser?.userName || 'Admin',
@@ -681,7 +684,12 @@ function getInitials(name: string): string {
     <Dialog v-model:open="showDialog">
       <DialogContent class="sm:max-w-[600px] p-0 gap-0">
         <DialogHeader class="p-6 pb-4">
-          <DialogTitle>{{ editingItem ? 'Edit' : 'New' }} {{ entity }}</DialogTitle>
+          <DialogTitle class="flex items-center gap-2">
+            {{ editingItem ? 'Edit' : 'New' }} {{ entity }}
+            <Badge v-if="!editingItem" variant="outline" class="text-xs font-mono text-muted-foreground">
+              ID: Auto-generated
+            </Badge>
+          </DialogTitle>
           <DialogDescription class="sr-only">
             {{ editingItem ? 'Edit' : 'Create' }} a {{ entity.toLowerCase() }} record
           </DialogDescription>

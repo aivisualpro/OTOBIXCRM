@@ -1,23 +1,19 @@
 <script setup lang="ts">
-import { otobixColumns, peopleColumns, peopleRouteFilters } from '~/constants/people'
+import { peopleColumns, peopleRouteFilters } from '~/constants/people'
 
 const route = useRoute()
 const categoryKey = computed(() => route.params.category as string)
-const isKams = computed(() => categoryKey.value === 'kams')
 const filter = computed(() => peopleRouteFilters[categoryKey.value])
-const activeColumns = computed(() => categoryKey.value === 'otobix' ? otobixColumns : peopleColumns)
 </script>
 
 <template>
-  <!-- KAMs have their own dedicated component & API -->
-  <PeopleKamsPage v-if="isKams" />
   <PeopleTablePage
-    v-else-if="filter"
+    v-if="filter"
     :title="filter.label"
     description=""
     icon="i-lucide-users"
     entity-name="Person"
-    :columns="activeColumns"
+    :columns="peopleColumns"
     :filter-fn="filter.filterFn"
     :show-status-counts="filter.showStatusCounts"
     :category-key="categoryKey"

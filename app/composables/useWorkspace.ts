@@ -40,7 +40,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
   // Workspace
   { id: 'dashboard', title: 'Dashboard', icon: 'i-lucide-layout-dashboard', link: '/', group: 'Workspace' },
   { id: 'leads', title: 'Leads', icon: 'i-lucide-magnet', link: '/leads', group: 'Workspace' },
-  { id: 'people', title: 'People', icon: 'i-lucide-users', link: '/people/otobix', group: 'Workspace' },
+  { id: 'people', title: 'People', icon: 'i-lucide-users', link: '/people/dealer', group: 'Workspace' },
   { id: 'auctions', title: 'Auctions', icon: 'i-lucide-gavel', link: '/auctions/upcoming', group: 'Workspace' },
   { id: 'notifications', title: 'Notifications', icon: 'i-lucide-bell', link: '/notifications', group: 'Workspace' },
   { id: 'dropdowns', title: 'Dropdowns', icon: 'i-lucide-list', link: '/dropdowns', group: 'Workspace' },

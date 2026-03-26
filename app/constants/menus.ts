@@ -17,7 +17,7 @@ export const navMenu: NavMenu[] = [
       {
         title: 'People',
         icon: 'i-lucide-users',
-        link: '/people/otobix',
+        link: '/people/dealer',
       },
       {
         title: 'Auctions',

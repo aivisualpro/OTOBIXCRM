@@ -2,17 +2,19 @@
 const route = useRoute()
 
 const navItems = [
-  { id: 'otobix', title: 'Otobix', icon: 'i-lucide-shield-check', color: 'text-blue-500', link: '/people/otobix' },
-  { id: 'dealers', title: 'Dealers', icon: 'i-lucide-store', color: 'text-amber-500', link: '/people/dealers' },
-  { id: 'customers', title: 'Customers', icon: 'i-lucide-user-round', color: 'text-emerald-500', link: '/people/customers' },
-  { id: 'kams', title: 'KAMs', icon: 'i-lucide-briefcase', color: 'text-orange-500', link: '/people/kams' },
+  { id: 'dealer', title: 'Dealer', icon: 'i-lucide-store', color: 'text-amber-500', link: '/people/dealer' },
+  { id: 'customer', title: 'Customer', icon: 'i-lucide-user-round', color: 'text-emerald-500', link: '/people/customer' },
+  { id: 'inspection-engineer', title: 'Inspection Engineer', icon: 'i-lucide-clipboard-check', color: 'text-purple-500', link: '/people/inspection-engineer' },
+  { id: 'admin', title: 'Admin', icon: 'i-lucide-shield-check', color: 'text-blue-500', link: '/people/admin' },
+  { id: 'retailer', title: 'Retailer', icon: 'i-lucide-shopping-bag', color: 'text-cyan-500', link: '/people/retailer' },
+  { id: 'sales-manager', title: 'Sales Manager', icon: 'i-lucide-briefcase', color: 'text-sky-500', link: '/people/sales-manager' },
+  { id: 'telecaller', title: 'Telecaller', icon: 'i-lucide-phone-call', color: 'text-pink-500', link: '/people/telecaller' },
+  { id: 'qc', title: 'QC', icon: 'i-lucide-badge-check', color: 'text-orange-500', link: '/people/qc' },
 ]
 
 const currentActiveId = computed(() => {
   const segments = route.path.split('/').filter(Boolean)
-  // /people/otobix -> ['people', 'otobix']
-  // /people/otobix/abc123 -> ['people', 'otobix', 'abc123']
-  return segments[1] || 'otobix'
+  return segments[1] || 'dealer'
 })
 </script>
 
