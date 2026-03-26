@@ -18,11 +18,19 @@ const navItems = [
   { id: 'quality-rejected', title: 'Quality Rejected', icon: 'i-lucide-shield-x', color: 'text-rose-500', link: '/leads/quality-rejected' },
 ]
 
+const { activeWorkspace } = useWorkspace()
+
 const currentActiveId = computed(() => {
   const path = route.path
   if (path === '/leads' || path === '/leads/')
     return 'leads'
   return path.split('/').pop() || 'leads'
+})
+
+const filteredNavItems = computed(() => {
+  const allowed = activeWorkspace.value?.leadTabs
+  if (!allowed || allowed.length === 0) return navItems
+  return navItems.filter(item => allowed.includes(item.id))
 })
 </script>
 
@@ -32,7 +40,7 @@ const currentActiveId = computed(() => {
     <div class="shrink-0 border-b bg-muted/30">
       <div class="flex items-center gap-0 overflow-x-auto no-scrollbar px-2">
         <NuxtLink
-          v-for="item in navItems"
+          v-for="item in filteredNavItems"
           :key="item.id"
           :to="item.link"
           class="leads-tab"

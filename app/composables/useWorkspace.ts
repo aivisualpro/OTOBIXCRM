@@ -28,6 +28,7 @@ export interface Workspace {
   description?: string
   color?: string
   menuIds: string[]
+  leadTabs?: string[]
   isDefault?: boolean
   isProtected?: boolean
   sortOrder?: number
