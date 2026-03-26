@@ -43,8 +43,7 @@ export default defineNuxtRouteMiddleware((to, _from) => {
         const roleString = user?.userType || user?.userRole || user?.role
         const userId = user?._id || user?.id
         if (roleString && userId) {
-          const rolePath = String(roleString).toLowerCase().replace(/\s+/g, '-')
-          redirectPath = `/people/${rolePath}/${userId}`
+          redirectPath = `/profile`
         }
       }
       catch (e) {}

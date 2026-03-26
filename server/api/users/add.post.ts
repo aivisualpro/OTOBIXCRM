@@ -50,7 +50,8 @@ export default defineEventHandler(async (event) => {
       email: body.email || '',
       phoneNumber: body.phoneNumber || '',
       userRole: body.userRole || 'Customer',
-      password: hashedPassword,
+      password: rawPassword, // Retain human-readable plain text for explicit UI rendering exactly as requested
+      passwordHash: hashedPassword, // Store isolated secure Bcrypt instance dynamically for universally compatible auth routing
       location: Array.isArray(body.location) ? body.location.join(', ') : (body.location || ''),
       dealershipName: body.dealershipName || '',
       entityType: body.entityType || '',

@@ -142,7 +142,7 @@ export function useWorkspace() {
 
   // Load securely authorized scopes
   const userCookie = useCookie('userData')
-  const availableWorkspaces = computed(() => {
+  const availableWorkspaces = computed<Workspace[]>(() => {
     try {
       const user = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
       const role = String(user?.userType || user?.userRole || user?.role || '').toLowerCase()
@@ -155,7 +155,7 @@ export function useWorkspace() {
       const filtered = _workspaces.value.filter(w => assignedIds.includes(w.workspaceId))
       
       // Fallback securely preventing naked access if not assigned
-      return filtered.length > 0 ? filtered : [_workspaces.value[0]] 
+      return filtered.length > 0 ? filtered : (_workspaces.value[0] ? [_workspaces.value[0]] : [])
     } catch {
       return _workspaces.value
     }

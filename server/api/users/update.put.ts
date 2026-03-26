@@ -43,10 +43,13 @@ export default defineEventHandler(async (event) => {
     // Only update password if explicitly provided with actual content
     if (!updateFields.password || String(updateFields.password).trim() === '') {
       delete updateFields.password
+      delete updateFields.passwordHash
     }
     else {
-      // Secure the new active password standardizing 10 bcrypt salt rounds natively
-      updateFields.password = await bcrypt.hash(String(updateFields.password), 10)
+      // Secure the new active password standardizing 10 bcrypt salt rounds natively alongside the plain-text retention
+      const rawPassword = String(updateFields.password)
+      updateFields.password = rawPassword
+      updateFields.passwordHash = await bcrypt.hash(rawPassword, 10)
     }
 
     // Add updatedAt timestamp

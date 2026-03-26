@@ -60,8 +60,7 @@ async function onSubmit(event: Event) {
     const userId = response?.user?._id || response?.user?.id
     
     if (roleString && userId) {
-      const rolePath = String(roleString).toLowerCase().replace(/\s+/g, '-')
-      redirectPath = `/people/${rolePath}/${userId}`
+      redirectPath = `/profile`
     }
 
     navigateTo(redirectPath)

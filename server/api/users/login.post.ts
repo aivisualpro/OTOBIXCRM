@@ -40,12 +40,17 @@ export default defineEventHandler(async (event) => {
     }
 
     // Safely compare using securely salted bcrypt algorithm (cross-compatible standard)
-    // NOTE: This comparison is forward-compatible. If they have legacy plain text passwords in Mongo right now from old endpoints, this logic accommodates migrating it or just checks strictly for new Bcrypt hashes.
     let isValidPassword = false
-    if (user.password && user.password.startsWith('$2')) {
+    if (user.passwordHash && user.passwordHash.startsWith('$2')) {
+      // Primary standard: check isolated hash
+      isValidPassword = await bcrypt.compare(body.password, user.passwordHash)
+    } 
+    else if (user.password && user.password.startsWith('$2')) {
+      // Legacy migration: check if DB temporarily stored bcrypt inside .password directly
       isValidPassword = await bcrypt.compare(body.password, user.password)
-    } else {
-      // Legacy fallback allowing pre-existing non-hashed users to still log in
+    } 
+    else {
+      // Secure literal-match fallback to migrate strictly clear-text older records seamlessly
       isValidPassword = (user.password === body.password)
     }
 

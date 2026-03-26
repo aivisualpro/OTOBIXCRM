@@ -22,8 +22,8 @@ const user = computed(() => {
       role: roleString,
       avatar: parsed?.avatar || parsed?.profileImage || parsed?.image || '',
       profileUrl: userId && roleString !== 'Member' 
-        ? `/people/${roleString.toLowerCase().replace(/\s+/g, '-')}/${userId}`
-        : '/people'
+        ? `/profile`
+        : '/'
     }
   }
   catch {
