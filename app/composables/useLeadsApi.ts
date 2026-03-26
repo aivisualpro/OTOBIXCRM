@@ -64,6 +64,7 @@ const _fetchError = ref<string | null>(null)
 const _isInitialized = ref(false)
 const _fetchedForEnv = ref<string>('')
 const _serverSearch = ref('') // Current server-side search term
+const _statusFilters = ref<Record<string, string>>({}) // Server-side status filters
 
 // Status group counts (whole database)
 const _counts = ref<Record<string, number>>({})
@@ -107,6 +108,8 @@ export function useLeadsApi() {
     try {
       const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
       if (_serverSearch.value) params.search = _serverSearch.value
+      if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
+      if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
 
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
 
@@ -139,6 +142,8 @@ export function useLeadsApi() {
       const nextPage = _currentPage.value + 1
       const params: Record<string, any> = { page: nextPage, limit: PAGE_SIZE }
       if (_serverSearch.value) params.search = _serverSearch.value
+      if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
+      if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
 
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
       const newItems = normalize(response.data || [])
@@ -169,6 +174,8 @@ export function useLeadsApi() {
       try {
         const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
         if (_serverSearch.value) params.search = _serverSearch.value
+        if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
+        if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
 
         const response = await $fetch<LocalApiResponse>('/api/leads', { params })
         _leads.value = normalize(response.data || [])
@@ -195,6 +202,21 @@ export function useLeadsApi() {
   // ─── Computed ───
   const hasMore = computed(() => _leads.value.length < _totalCount.value)
 
+  // ─── Set server-side status filters ───
+  function setFilters(filters: Record<string, string>) {
+    const newInsp = filters.inspectionStatus || ''
+    const newAppr = filters.approvalStatus || ''
+    const oldInsp = _statusFilters.value.inspectionStatus || ''
+    const oldAppr = _statusFilters.value.approvalStatus || ''
+
+    if (newInsp !== oldInsp || newAppr !== oldAppr) {
+      _statusFilters.value = { ...filters }
+      // Force reload with new filters
+      _isInitialized.value = false
+      fetchLeads(true)
+    }
+  }
+
   return {
     // Data
     allLeads: _leads,
@@ -217,5 +239,6 @@ export function useLeadsApi() {
     loadMore,
     searchLeads,
     refreshLeads,
+    setFilters,
   }
 }

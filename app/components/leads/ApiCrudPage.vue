@@ -36,6 +36,7 @@ const {
   searchLeads,
   refreshLeads,
   fetchCounts,
+  setFilters,
 } = useLeadsApi()
 
 // Car dropdowns for Make / Model / Variant
@@ -51,13 +52,25 @@ const {
 const { getOptions: getDbOptions, fetchDropdowns: fetchDbDropdowns } = useDropdowns()
 const cityOptions = ref<{ label: string, value: string }[]>([])
 
-// Ensure data is loaded (usually already prefetched by boot)
+// Ensure data is loaded with server-side status filters
 onMounted(async () => {
-  fetchLeads() // no-op if already loaded
+  if (props.filters) {
+    setFilters(props.filters)
+  }
+  else {
+    fetchLeads()
+  }
   fetchCarDropdowns({ limit: 500 })
   await fetchDbDropdowns()
   cityOptions.value = getDbOptions('Inspection City')
 })
+
+// Re-apply server filters when route changes (e.g. switching tabs)
+watch(() => props.filters, (newFilters) => {
+  if (newFilters) {
+    setFilters(newFilters)
+  }
+}, { deep: true })
 
 // ─── Instant Reveal Animation ───
 const isRevealed = ref(false)

@@ -11,6 +11,17 @@ export default defineEventHandler(async (event) => {
 
     // Build filter
     const filter: Record<string, any> = {}
+
+    // Status filters (server-side filtering for paginated status tabs)
+    const inspectionStatus = (query.inspectionStatus as string || '').trim()
+    const approvalStatus = (query.approvalStatus as string || '').trim()
+    if (inspectionStatus && inspectionStatus !== '*') {
+      filter.inspectionStatus = { $regex: `^${inspectionStatus}$`, $options: 'i' }
+    }
+    if (approvalStatus && approvalStatus !== '*') {
+      filter.approvalStatus = { $regex: `^${approvalStatus}$`, $options: 'i' }
+    }
+
     if (search) {
       filter.$or = [
         { ownerName: { $regex: search, $options: 'i' } },
