@@ -296,6 +296,7 @@ const localFilters = ref({
   startDate: '',
   endDate: '',
   dateField: 'inspectionDateTime',
+  datePreset: '',
   make: '',
   city: '',
   priority: '',
@@ -317,6 +318,7 @@ watch(advancedFilters, (newF) => {
     startDate: newF.startDate || '',
     endDate: newF.endDate || '',
     dateField: newF.dateField || 'inspectionDateTime',
+    datePreset: newF.datePreset || '',
     make: newF.make || '',
     city: newF.city || '',
     priority: newF.priority || '',
@@ -333,7 +335,7 @@ function applyAdvancedFilters() {
 }
 
 function clearAdvancedFilters() {
-  localFilters.value = { startDate: '', endDate: '', dateField: 'inspectionDateTime', make: '', city: '', priority: '', allocatedTo: '' }
+  localFilters.value = { startDate: '', endDate: '', dateField: 'inspectionDateTime', datePreset: '', make: '', city: '', priority: '', allocatedTo: '' }
   setAdvancedFilters({})
   showAdvancedFilters.value = false
   if (router.currentRoute.value.path === '/leads/search-results') {
@@ -347,9 +349,11 @@ function setDatePreset(preset: string) {
   
   const toLocalISOString = (d: Date) => new Date(d.getTime() - tzo).toISOString().split('T')[0] || '';
 
+  localFilters.value.datePreset = preset
+
   if (preset === 'Today') {
     localFilters.value.startDate = toLocalISOString(dt)
-    localFilters.value.endDate = localFilters.value.startDate
+    localFilters.value.endDate = toLocalISOString(dt)
   } else if (preset === 'Yesterday') {
     const yest = new Date(dt)
     yest.setDate(dt.getDate() - 1)
@@ -795,18 +799,18 @@ function getInitials(name: string): string {
             <div class="space-y-3">
               <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1"><Icon name="i-lucide-calendar-days" class="size-3" /> Date Range</Label>
               <div class="flex flex-wrap gap-1.5">
-                <Badge v-for="p in ['Today', 'Yesterday', 'Tomorrow', 'This Month', 'This Year', 'Last Year']" :key="p" variant="secondary" class="cursor-pointer text-[10px] font-normal hover:bg-primary hover:text-primary-foreground transition-colors" @click="setDatePreset(p)">
+                <Badge v-for="p in ['Today', 'Yesterday', 'Tomorrow', 'This Month', 'This Year', 'Last Year']" :key="p" variant="secondary" class="cursor-pointer text-[10px] font-normal transition-colors" :class="localFilters.datePreset === p ? 'bg-primary text-primary-foreground' : 'hover:bg-primary/50 text-muted-foreground'" @click="setDatePreset(p)">
                   {{ p }}
                 </Badge>
               </div>
               <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1.5">
                   <Label class="text-[10px] uppercase text-muted-foreground">From</Label>
-                  <Input type="date" v-model="localFilters.startDate" class="h-8 text-xs bg-muted/30 focus:bg-background" />
+                  <Input type="date" v-model="localFilters.startDate" @input="localFilters.datePreset = ''" class="h-8 text-xs bg-muted/30 focus:bg-background" />
                 </div>
                 <div class="space-y-1.5">
                   <Label class="text-[10px] uppercase text-muted-foreground">To</Label>
-                  <Input type="date" v-model="localFilters.endDate" class="h-8 text-xs bg-muted/30 focus:bg-background" />
+                  <Input type="date" v-model="localFilters.endDate" @input="localFilters.datePreset = ''" class="h-8 text-xs bg-muted/30 focus:bg-background" />
                 </div>
               </div>
               <div class="space-y-1.5 mt-2">
