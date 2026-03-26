@@ -55,8 +55,13 @@ const {
 
 // Dropdowns from DB
 const { getOptions: getDbOptions, fetchDropdowns: fetchDbDropdowns } = useDropdowns()
-const cityOptions = ref<{ label: string, value: string }[]>([])
 const bankSourceOptions = ref<{ label: string, value: string }[]>([])
+
+// Dynamically fetch strictly populated unique tracking lists natively preventing complete database bleed
+const { data: dbFiltersData } = useFetch('/api/leads/filters', { server: false })
+const dbCreatedByList = computed(() => dbFiltersData.value?.emails || [])
+const dbAddedByList = computed(() => dbFiltersData.value?.addedBys || [])
+const cityOptions = computed(() => (dbFiltersData.value?.cities || []).map((c: string) => ({ label: c, value: c })))
 
 // Ensure data is loaded with server-side status filters
 onMounted(async () => {
@@ -68,7 +73,6 @@ onMounted(async () => {
   }
   fetchCarDropdowns({ limit: 500 })
   await fetchDbDropdowns()
-  cityOptions.value = getDbOptions('Inspection City')
   bankSourceOptions.value = getDbOptions('Bank Source')
 })
 
@@ -300,7 +304,9 @@ const localFilters = ref({
   make: '',
   city: '',
   priority: '',
-  allocatedTo: ''
+  allocatedTo: '',
+  createdBy: '',
+  addedBy: ''
 })
 
 const activeFilterCount = computed(() => {
@@ -310,6 +316,8 @@ const activeFilterCount = computed(() => {
   if (advancedFilters.value.city) count++
   if (advancedFilters.value.priority) count++
   if (advancedFilters.value.allocatedTo) count++
+  if (advancedFilters.value.createdBy) count++
+  if (advancedFilters.value.addedBy) count++
   return count
 })
 
@@ -322,7 +330,9 @@ watch(advancedFilters, (newF) => {
     make: newF.make || '',
     city: newF.city || '',
     priority: newF.priority || '',
-    allocatedTo: newF.allocatedTo || ''
+    allocatedTo: newF.allocatedTo || '',
+    createdBy: newF.createdBy || '',
+    addedBy: newF.addedBy || ''
   }
 }, { deep: true, immediate: true })
 
@@ -335,7 +345,7 @@ function applyAdvancedFilters() {
 }
 
 function clearAdvancedFilters() {
-  localFilters.value = { startDate: '', endDate: '', dateField: 'inspectionDateTime', datePreset: '', make: '', city: '', priority: '', allocatedTo: '' }
+  localFilters.value = { startDate: '', endDate: '', dateField: 'inspectionDateTime', datePreset: '', make: '', city: '', priority: '', allocatedTo: '', createdBy: '', addedBy: '' }
   setAdvancedFilters({})
   showAdvancedFilters.value = false
   if (router.currentRoute.value.path === '/leads/search-results') {
@@ -879,6 +889,29 @@ function getInitials(name: string): string {
                       <SelectItem v-for="insp in inspectors" :key="insp._id || insp.id" :value="insp.email">{{ getUserLabel(insp.email) }}</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="space-y-1.5">
+                    <Label class="text-xs text-muted-foreground">Created By</Label>
+                    <Select v-model="localFilters.createdBy">
+                      <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Anyone" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value=" ">Anyone</SelectItem>
+                        <SelectItem v-for="u in dbCreatedByList" :key="u.email" :value="u.email">{{ u.name }}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div class="space-y-1.5">
+                    <Label class="text-xs text-muted-foreground">Added By</Label>
+                    <Select v-model="localFilters.addedBy">
+                      <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Anyone" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value=" ">Anyone</SelectItem>
+                        <SelectItem v-for="u in dbAddedByList" :key="u" :value="u">{{ u }}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             </div>

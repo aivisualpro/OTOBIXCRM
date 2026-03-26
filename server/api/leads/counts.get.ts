@@ -62,6 +62,15 @@ export default defineEventHandler(async (event) => {
     const filterAllocatedTo = String(query.allocatedTo || '').trim()
     if (filterAllocatedTo) filter.allocatedTo = filterAllocatedTo
 
+    const filterCreatedBy = String(query.createdBy || '').trim()
+    if (filterCreatedBy) filter.emailAddress = filterCreatedBy
+
+    const filterAddedBy = String(query.addedBy || '').trim()
+    if (filterAddedBy) {
+      filter.$and = filter.$and || []
+      filter.$and.push({ addedBy: { $regex: filterAddedBy, $options: 'i' } })
+    }
+
     if (search) {
       filter.$and = filter.$and || []
       filter.$and.push({

@@ -97,6 +97,8 @@ export function useLeadsApi() {
         if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
         if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
         if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
+        if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
+        if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
       }
 
       const res = await $fetch<CountsResponse>('/api/leads/counts', { params })
@@ -140,6 +142,8 @@ export function useLeadsApi() {
         if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
         if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
         if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
+        if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
+        if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
       }
 
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
@@ -190,6 +194,8 @@ export function useLeadsApi() {
         if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
         if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
         if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
+        if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
+        if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
       }
 
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
@@ -236,6 +242,8 @@ export function useLeadsApi() {
           if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
           if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
           if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
+          if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
+          if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
         }
 
         const response = await $fetch<LocalApiResponse>('/api/leads', { params })
