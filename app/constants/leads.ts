@@ -42,7 +42,7 @@ export const routeColumnsMap: Record<string, typeof leadsColumns> = {
 export const leadsFormFields = [
   { key: 'ownerName', label: 'Owner Name', placeholder: 'Full Name', required: true },
   { key: 'customerContactNumber', label: 'Contact Number', placeholder: '+91 9999999999', required: true },
-  { key: 'carRegistrationNumber', label: 'Car Registration Number', placeholder: 'e.g. WB-26-AB-1234' },
+  { key: 'carRegistrationNumber', label: 'Car Registration Number', placeholder: 'e.g. WB-26-AB-1234', hideOnCreate: true },
   {
     key: 'vehicleStatus',
     label: 'Vehicle Status',
@@ -56,13 +56,13 @@ export const leadsFormFields = [
       { label: 'Test Drive Vehicle/ Dealer Vehicle', value: 'Test Drive Vehicle/ Dealer Vehicle' },
     ],
   },
-  { key: 'make', label: 'Make', type: 'select' as const, placeholder: 'Select Make', required: true },
-  { key: 'model', label: 'Model', type: 'select' as const, placeholder: 'Select Model', required: true },
-  { key: 'variant', label: 'Variant', type: 'select' as const, placeholder: 'Select Variant', required: true },
-  { key: 'yearOfRegistration', label: 'Year of Registration', placeholder: '2024', required: true },
-  { key: 'yearOfManufacture', label: 'Year of Manufacture', placeholder: '2023', required: true },
-  { key: 'odometerReadingInKms', label: 'Odometer (KM)', type: 'number' as const, placeholder: '15000', required: true },
-  { key: 'ownershipSerialNumber', label: 'Ownership Number', type: 'number' as const, placeholder: '1', required: true },
+  { key: 'make', label: 'Make', type: 'select' as const, placeholder: 'Select Make' },
+  { key: 'model', label: 'Model', type: 'select' as const, placeholder: 'Select Model' },
+  { key: 'variant', label: 'Variant', type: 'select' as const, placeholder: 'Select Variant' },
+  { key: 'yearOfRegistration', label: 'Year of Registration', placeholder: '2024' },
+  { key: 'yearOfManufacture', label: 'Year of Manufacture', placeholder: '2023' },
+  { key: 'odometerReadingInKms', label: 'Odometer (KM)', type: 'number' as const, placeholder: '15000' },
+  { key: 'ownershipSerialNumber', label: 'Ownership Number', type: 'number' as const, placeholder: '1' },
   {
     key: 'city',
     label: 'City',
@@ -91,7 +91,7 @@ export const leadsFormFields = [
       { label: 'Visakhapatnam', value: 'Visakhapatnam' },
     ],
   },
-  { key: 'zipCode', label: 'ZIP Code', placeholder: '400001', required: true },
+  { key: 'zipCode', label: 'ZIP Code', placeholder: '400001' },
   { key: 'inspectionAddress', label: 'Inspection Address', type: 'textarea' as const, placeholder: 'Full address for inspection', required: true },
   { key: 'inspectionDateTime', label: 'Inspection Date & Time', type: 'datetime-local' as const, required: true },
   {
@@ -161,8 +161,8 @@ export const leadsFormFields = [
   { key: 'repContact', label: 'Representative Contact', placeholder: '+91 9999999999', hideOnCreate: true },
   { key: 'bankSource', label: 'Bank Source', placeholder: 'Bank name', required: true },
   { key: 'referenceName', label: 'Reference Name', placeholder: 'Reference', required: true },
-  { key: 'remarks', label: 'Remarks', type: 'textarea' as const, placeholder: 'Any additional remarks...', required: true },
-  { key: 'additionalNotes', label: 'Additional Notes', type: 'textarea' as const, placeholder: 'Notes...', required: true },
+  { key: 'remarks', label: 'Remarks', type: 'textarea' as const, placeholder: 'Any additional remarks...' },
+  { key: 'additionalNotes', label: 'Additional Notes', type: 'textarea' as const, placeholder: 'Notes...', hideOnCreate: true },
 ]
 
 // No longer needed — data comes from API
@@ -178,9 +178,9 @@ export interface LeadRouteFilter {
 export const routeFilters = {
   // /leads (index)
   'leads': {
-    inspectionStatus: 'Pending',
-    approvalStatus: 'Pending',
-    label: 'Leads',
+    inspectionStatus: '*',
+    approvalStatus: '*',
+    label: 'All Leads',
   },
   // /leads/scheduled
   'scheduled': {

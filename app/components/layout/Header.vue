@@ -28,30 +28,25 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
 <template>
   <header class="sticky top-0 md:peer-data-[variant=inset]:top-2 z-10 h-(--header-height) flex items-center gap-4 border-b bg-background/80 backdrop-blur-xl px-4 md:px-6 md:rounded-tl-xl md:rounded-tr-xl">
     <div class="flex items-center gap-3 min-w-0">
-      <SidebarTrigger />
-      <Separator orientation="vertical" class="h-4 opacity-30" />
-      <div class="flex items-center gap-2.5 min-w-0">
+      <SidebarTrigger class="hover:bg-accent/50 transition-colors rounded-lg" />
+      <div class="h-5 w-px bg-border/60 mx-1" />
+      <div class="flex items-center gap-3 min-w-0">
         <ClientOnly>
           <div
             v-if="headerState.icon"
-            class="size-7 rounded-lg flex items-center justify-center shrink-0 ring-1 ring-primary/20"
-            :style="{ background: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 18%, transparent), color-mix(in oklch, var(--primary) 8%, transparent))' }"
+            class="size-8 rounded-xl flex items-center justify-center shrink-0 border border-primary/10 shadow-sm transition-all"
+            :style="{ background: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 12%, transparent), color-mix(in oklch, var(--primary) 3%, transparent))' }"
           >
-            <Icon :name="headerState.icon" class="size-3.5 text-primary" />
+            <Icon :name="headerState.icon" class="size-4 text-primary" />
           </div>
         </ClientOnly>
-        <div class="min-w-0">
+        <div class="min-w-0 flex items-center">
           <h1
-            class="text-sm font-bold leading-tight tracking-tight truncate"
-            style="background: linear-gradient(to right, var(--foreground) 60%, color-mix(in oklch, var(--foreground) 45%, transparent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"
+            class="text-base font-bold tracking-tight truncate drop-shadow-sm"
+            style="background: linear-gradient(110deg, var(--foreground) 30%, color-mix(in oklch, var(--foreground) 70%, transparent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"
           >
             {{ displayTitle }}
           </h1>
-          <ClientOnly>
-            <p v-if="headerState.description" class="text-[10.5px] text-muted-foreground/70 leading-tight truncate hidden md:block mt-px font-medium tracking-wide">
-              {{ headerState.description }}
-            </p>
-          </ClientOnly>
         </div>
       </div>
     </div>

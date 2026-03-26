@@ -48,9 +48,10 @@ const {
   isLoading: isCarLoading,
 } = useCarDropdowns()
 
-// City dropdown from DB
+// Dropdowns from DB
 const { getOptions: getDbOptions, fetchDropdowns: fetchDbDropdowns } = useDropdowns()
 const cityOptions = ref<{ label: string, value: string }[]>([])
+const bankSourceOptions = ref<{ label: string, value: string }[]>([])
 
 // Ensure data is loaded with server-side status filters
 onMounted(async () => {
@@ -63,6 +64,7 @@ onMounted(async () => {
   fetchCarDropdowns({ limit: 500 })
   await fetchDbDropdowns()
   cityOptions.value = getDbOptions('Inspection City')
+  bankSourceOptions.value = getDbOptions('Bank Source')
 })
 
 // Re-apply server filters when route changes (e.g. switching tabs)
@@ -272,11 +274,20 @@ function getFieldsForTab(tabId: string) {
     // Hide fields on create if needed
     if (!editingItem.value && f.hideOnCreate)
       return false
+      
+    // Conditional logic based on Source
+    if (f.key === 'bankSource' && formData.value.appointmentSource !== 'Bank') return false
+    if (f.key === 'referenceName' && formData.value.appointmentSource !== 'Reference') return false
+
     return true
   }).map((f) => {
     // Overrides: if city field and we have DB options, use them
     if (f.key === 'city' && cityOptions.value.length > 0) {
       return { ...f, options: cityOptions.value }
+    }
+    // Override: bank source list from dropdown configuration
+    if (f.key === 'bankSource') {
+      return { ...f, type: 'select', options: bankSourceOptions.value }
     }
     return f
   })

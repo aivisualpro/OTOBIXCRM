@@ -56,7 +56,14 @@ async function onSubmit(event: Event) {
     const { bootPrefetch } = usePrefetch()
     bootPrefetch()
 
-    navigateTo('/')
+    let redirectPath = '/'
+    if (response?.user?.userRole && (response?.user?._id || response?.user?.id)) {
+      const rolePath = response.user.userRole.toLowerCase().replace(/\s+/g, '-')
+      const id = response.user._id || response.user.id
+      redirectPath = `/people/${rolePath}/${id}`
+    }
+
+    navigateTo(redirectPath)
   }
   catch (err: any) {
     const message = err?.data?.message || err?.statusMessage || 'Login failed. Please check your credentials.'

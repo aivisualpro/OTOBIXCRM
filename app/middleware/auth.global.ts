@@ -36,6 +36,18 @@ export default defineNuxtRouteMiddleware((to, _from) => {
 
   // Redirect authenticated users away from /login
   if (isLoggedIn.value && to.path === '/login') {
-    return navigateTo('/')
+    let redirectPath = '/'
+    if (userData.value) {
+      try {
+        const user = typeof userData.value === 'string' ? JSON.parse(userData.value) : userData.value
+        if (user?.userRole && (user?._id || user?.id)) {
+          const rolePath = user.userRole.toLowerCase().replace(/\s+/g, '-')
+          const id = user._id || user.id
+          redirectPath = `/people/${rolePath}/${id}`
+        }
+      }
+      catch (e) {}
+    }
+    return navigateTo(redirectPath)
   }
 })
