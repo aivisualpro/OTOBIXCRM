@@ -931,10 +931,27 @@ function getInitials(name: string): string {
                     @update:model-value="(v) => formData[field.key] = String(v).replace(/\D/g, '').slice(0, 10)"
                   />
                 </div>
+                <!-- Interactive Ownership Number Buttons -->
+                <div v-else-if="field.key === 'ownershipSerialNumber'" class="flex flex-wrap gap-2 pt-1">
+                  <button
+                    v-for="num in [1, 2, 3, 4, 5]"
+                    :key="num"
+                    type="button"
+                    class="h-10 w-12 rounded-lg border font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                    :class="Number(formData[field.key]) === num
+                      ? 'border-primary bg-primary text-primary-foreground shadow-sm scale-105'
+                      : 'border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground'"
+                    @click="formData[field.key] = num"
+                  >
+                    {{ num }}
+                  </button>
+                </div>
+                <!-- Textarea -->
                 <Textarea
                   v-else-if="field.type === 'textarea'"
                   :id="field.key"
                   v-model="formData[field.key]"
+
                   :placeholder="field.placeholder"
                   :required="field.required"
                   rows="3"
