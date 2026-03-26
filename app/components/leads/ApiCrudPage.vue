@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CrudColumn, CrudFormField } from '~/composables/useCrud'
 import { toast } from 'vue-sonner'
+import { routeFilters } from '~/constants/leads'
 
 const props = defineProps<{
   title: string
@@ -26,6 +27,7 @@ setHeader({ title: props.title, description: props.description, icon: props.icon
 const {
   allLeads,
   totalCount,
+  statusCounts,
   hasMore: serverHasMore,
   isLoading,
   isLoadingMore,
@@ -181,7 +183,7 @@ async function doStatusUpdate(lead: any, updates: Record<string, string>) {
 }
 
 // ─── UI State ───
-const search = ref('')
+const search = ref(String(useRoute().query.search || ''))
 const showDialog = ref(false)
 const showDeleteDialog = ref(false)
 const editingItem = ref<any>(null)
@@ -217,8 +219,8 @@ const filteredItems = computed(() => {
   let result = allLeads.value as Record<string, any>[]
 
   // Apply route-specific filters (inspectionStatus/approvalStatus)
-  // '*' = match any value (wildcard)
-  if (props.filters) {
+  // Bypass gracefully explicitly locally resolving purely natively handling cross-tab searching explicitly
+  if (props.filters && !search.value) {
     const filters = props.filters
     result = result.filter(item =>
       Object.entries(filters).every(([field, val]) =>
@@ -235,6 +237,29 @@ const totalFiltered = computed(() => filteredItems.value.length)
 // ─── Search triggers server-side query ───
 watch(search, (q) => {
   searchLeads(q)
+}, { immediate: !!search.value })
+
+// ─── Smart Universal Auto-Routing on Global Match ───
+watch(() => allLeads.value, (newLeads) => {
+  // Triggers exact contextual tab switching when cross-stage searching explicitly natively returning 1 match uniquely
+  if (search.value && search.value.length > 2 && newLeads.length === 1) {
+    const lead = newLeads[0]
+    if (!lead) return
+    let targetId = 'leads'
+    for (const [id, filterMap] of Object.entries(routeFilters)) {
+      const inspMatch = filterMap.inspectionStatus === '*' || String(filterMap.inspectionStatus).toLowerCase() === String(lead.inspectionStatus || '').toLowerCase()
+      const appMatch = filterMap.approvalStatus === '*' || String(filterMap.approvalStatus).toLowerCase() === String(lead.approvalStatus || '').toLowerCase()
+      if (inspMatch && appMatch) {
+         targetId = id
+         break
+      }
+    }
+    const targetPath = targetId === 'leads' ? '/leads' : `/leads/${targetId}`
+    if (String(useRoute().path) !== targetPath) {
+      router.replace({ path: targetPath, query: { search: search.value } })
+      toast.success(`Redirected naturally explicitly finding match remotely correctly directly syncing tab!`)
+    }
+  }
 })
 
 // ─── IntersectionObserver for infinite scroll (loads from server) ───
@@ -542,11 +567,29 @@ function getInitials(name: string): string {
   <HeaderActions>
     <div class="relative">
       <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-      <Input v-model="search" placeholder="Search all leads..." class="pl-8 h-8 w-48 text-sm" />
+      <Input v-model="search" placeholder="Search global leads..." class="pl-8 h-8 w-[220px] text-sm flex-1 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" />
+      <Button 
+        v-if="search" 
+        variant="ghost" 
+        size="icon" 
+        class="absolute right-0 top-0 h-full size-8 rounded-l-none text-muted-foreground hover:bg-transparent hover:text-foreground" 
+        @click="search = ''; router.replace({ query: {} })"
+      >
+        <Icon name="i-lucide-x" class="size-3.5" />
+      </Button>
     </div>
-    <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
-      {{ totalFiltered }} of {{ totalCount }} records
-    </p>
+    
+    <!-- Ultra-Dense Universal Counters Overlay -->
+    <div class="hidden xl:flex items-center gap-1.5 overflow-x-auto no-scrollbar mx-2 mr-auto" v-if="statusCounts">
+      <Badge 
+        v-for="(val, key) in statusCounts" 
+        :key="key" 
+        variant="outline" 
+        class="h-[22px] px-1.5 text-[9px] uppercase font-mono tracking-wider text-muted-foreground border-border/60 bg-muted/20 tabular-nums whitespace-nowrap shrink-0"
+      >
+        {{ String(key).replace(/-/g, ' ') }}: <span class="font-medium ml-1 text-foreground/80 font-sans tracking-normal">{{ formatNumber(val) }}</span>
+      </Badge>
+    </div>
     <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="handleRefresh">
       <Icon name="i-lucide-refresh-cw" class="mr-1.5 size-3.5" :class="{ 'animate-spin': isLoading }" />
       Refresh

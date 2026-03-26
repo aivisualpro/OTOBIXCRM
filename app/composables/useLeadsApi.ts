@@ -141,9 +141,13 @@ export function useLeadsApi() {
     try {
       const nextPage = _currentPage.value + 1
       const params: Record<string, any> = { page: nextPage, limit: PAGE_SIZE }
-      if (_serverSearch.value) params.search = _serverSearch.value
-      if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
-      if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+      if (_serverSearch.value) {
+        params.search = _serverSearch.value
+      }
+      else {
+        if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
+        if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+      }
 
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
       const newItems = normalize(response.data || [])
@@ -173,9 +177,15 @@ export function useLeadsApi() {
       _fetchError.value = null
       try {
         const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
-        if (_serverSearch.value) params.search = _serverSearch.value
-        if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
-        if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+        if (_serverSearch.value) {
+          // Global overriding behavior: search across all active queues
+          params.search = _serverSearch.value
+        }
+        else {
+          // Strictly apply tab filters seamlessly when not performing global search
+          if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
+          if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+        }
 
         const response = await $fetch<LocalApiResponse>('/api/leads', { params })
         _leads.value = normalize(response.data || [])
