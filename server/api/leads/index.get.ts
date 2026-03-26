@@ -32,16 +32,46 @@ export default defineEventHandler(async (event) => {
     // Advanced Filters
     const startDate = (query.startDate as string || '').trim()
     const endDate = (query.endDate as string || '').trim()
-    const dateField = (query.dateField as string || 'createdAt').trim()
+    const dateField = (query.dateField as string || 'inspectionDateTime').trim()
 
     if (startDate || endDate) {
-      filter[dateField] = {}
-      if (startDate) {
-        filter[dateField].$gte = startDate
-      }
+      const matchString: any = {}
+      const matchDate: any = {}
+
+      let endStr = endDate
       if (endDate) {
         const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(endDate)
-        filter[dateField].$lte = isDateOnly ? `${endDate}T23:59:59.999Z` : endDate
+        endStr = isDateOnly ? `${endDate}T23:59:59.999Z` : endDate
+      }
+
+      if (startDate) {
+        matchString.$gte = startDate
+        matchDate.$gte = new Date(startDate)
+      }
+      if (endDate) {
+        matchString.$lte = endStr
+        matchDate.$lte = new Date(endStr)
+      }
+
+      filter.$and = filter.$and || []
+      
+      // If the UI targets the default 'createdAt', dynamically hook legacy 'timeStamp' too so older records drop in securely.
+      if (dateField === 'createdAt') {
+        filter.$and.push({
+          $or: [
+            { createdAt: matchString },
+            { createdAt: matchDate },
+            { timeStamp: matchString },
+            { timeStamp: matchDate }
+          ]
+        })
+      } else {
+        filter.$and.push({
+          $or: [
+            { [dateField]: matchString },
+            { [dateField]: matchDate }
+          ]
+        })
       }
     }
 
@@ -58,14 +88,17 @@ export default defineEventHandler(async (event) => {
     if (filterAllocatedTo) filter.allocatedTo = filterAllocatedTo
 
     if (search) {
-      filter.$or = [
-        { ownerName: { $regex: search, $options: 'i' } },
-        { customerContactNumber: { $regex: search, $options: 'i' } },
-        { appointmentId: { $regex: search, $options: 'i' } },
-        { make: { $regex: search, $options: 'i' } },
-        { model: { $regex: search, $options: 'i' } },
-        { city: { $regex: search, $options: 'i' } },
-      ]
+      filter.$and = filter.$and || []
+      filter.$and.push({
+        $or: [
+          { ownerName: { $regex: search, $options: 'i' } },
+          { customerContactNumber: { $regex: search, $options: 'i' } },
+          { appointmentId: { $regex: search, $options: 'i' } },
+          { make: { $regex: search, $options: 'i' } },
+          { model: { $regex: search, $options: 'i' } },
+          { city: { $regex: search, $options: 'i' } },
+        ]
+      })
     }
 
     // Use aggregation to sort by createdAt OR timeStamp (older records may not have createdAt)

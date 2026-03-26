@@ -295,7 +295,7 @@ const showAdvancedFilters = ref(false)
 const localFilters = ref({
   startDate: '',
   endDate: '',
-  dateField: 'createdAt',
+  dateField: 'inspectionDateTime',
   make: '',
   city: '',
   priority: '',
@@ -316,7 +316,7 @@ watch(advancedFilters, (newF) => {
   localFilters.value = { 
     startDate: newF.startDate || '',
     endDate: newF.endDate || '',
-    dateField: newF.dateField || 'createdAt',
+    dateField: newF.dateField || 'inspectionDateTime',
     make: newF.make || '',
     city: newF.city || '',
     priority: newF.priority || '',
@@ -333,7 +333,7 @@ function applyAdvancedFilters() {
 }
 
 function clearAdvancedFilters() {
-  localFilters.value = { startDate: '', endDate: '', dateField: 'createdAt', make: '', city: '', priority: '', allocatedTo: '' }
+  localFilters.value = { startDate: '', endDate: '', dateField: 'inspectionDateTime', make: '', city: '', priority: '', allocatedTo: '' }
   setAdvancedFilters({})
   showAdvancedFilters.value = false
   if (router.currentRoute.value.path === '/leads/search-results') {
@@ -809,6 +809,17 @@ function getInitials(name: string): string {
                   <Input type="date" v-model="localFilters.endDate" class="h-8 text-xs bg-muted/30 focus:bg-background" />
                 </div>
               </div>
+              <div class="space-y-1.5 mt-2">
+                <Label class="text-[10px] uppercase text-muted-foreground">Date Tracking Field</Label>
+                <div class="flex gap-2">
+                  <Badge variant="outline" :class="localFilters.dateField === 'createdAt' ? 'bg-primary/10 text-primary border-primary' : 'bg-muted/10'" class="cursor-pointer font-normal rounded-md" @click="localFilters.dateField = 'createdAt'">
+                    Created Date
+                  </Badge>
+                  <Badge variant="outline" :class="localFilters.dateField === 'inspectionDateTime' ? 'bg-primary/10 text-primary border-primary' : 'bg-muted/10'" class="cursor-pointer font-normal rounded-md" @click="localFilters.dateField = 'inspectionDateTime'">
+                    Inspection Date
+                  </Badge>
+                </div>
+              </div>
             </div>
 
             <Separator class="bg-muted/50" />
@@ -872,7 +883,10 @@ function getInitials(name: string): string {
           <!-- Footer -->
           <div class="px-4 py-3 border-t bg-muted/20 flex justify-between gap-2">
             <Button variant="outline" size="sm" @click="showAdvancedFilters = false" class="h-8 text-xs">Cancel</Button>
-            <Button size="sm" class="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-sm" @click="applyAdvancedFilters">Apply {{ activeFilterCount > 0 ? `(${activeFilterCount})` : '' }}</Button>
+            <div class="flex gap-2">
+              <Button variant="secondary" size="sm" class="h-8 text-xs" @click="clearAdvancedFilters">Clear</Button>
+              <Button size="sm" class="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-sm" @click="applyAdvancedFilters">Apply {{ activeFilterCount > 0 ? `(${activeFilterCount})` : '' }}</Button>
+            </div>
           </div>
         </div>
       </PopoverContent>
