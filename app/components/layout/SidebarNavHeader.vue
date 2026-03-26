@@ -12,6 +12,16 @@ const emit = defineEmits<{
 }>()
 
 const { isMobile } = useSidebar()
+const userCookie = useCookie('userData')
+const isAdmin = computed(() => {
+  try {
+    const user = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
+    const role = user?.userType || user?.userRole || user?.role || ''
+    return typeof role === 'string' && role.toLowerCase() === 'admin'
+  } catch {
+    return false
+  }
+})
 </script>
 
 <template>
@@ -25,13 +35,14 @@ const { isMobile } = useSidebar()
           >
             <div class="grid flex-1 text-left text-sm leading-tight ml-2">
               <span class="truncate font-semibold">
-                {{ activeWorkspace.name }}
+                {{ activeWorkspace?.name || 'Workspace' }}
               </span>
             </div>
-            <Icon name="i-lucide-chevrons-up-down" class="ml-auto" />
+            <Icon v-if="workspaces.length > 1" name="i-lucide-chevrons-up-down" class="ml-auto" />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent
+          v-if="workspaces.length > 1"
           class="min-w-56 w-[--radix-dropdown-menu-trigger-width] rounded-lg"
           align="start"
           :side="isMobile ? 'bottom' : 'right'"
@@ -52,8 +63,8 @@ const { isMobile } = useSidebar()
               ⌘{{ index + 1 }}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem as-child class="gap-2 p-2">
+          <DropdownMenuSeparator v-if="isAdmin" />
+          <DropdownMenuItem v-if="isAdmin" as-child class="gap-2 p-2">
             <NuxtLink to="/settings/workspaces">
               <Icon name="i-lucide-settings" class="size-4" />
               Manage Workspaces

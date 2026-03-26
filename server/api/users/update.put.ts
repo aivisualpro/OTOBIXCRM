@@ -1,4 +1,5 @@
 import { MongoClient, ObjectId } from 'mongodb'
+import bcrypt from 'bcryptjs'
 
 let _client: MongoClient | null = null
 
@@ -42,6 +43,10 @@ export default defineEventHandler(async (event) => {
     // Only update password if explicitly provided with actual content
     if (!updateFields.password || String(updateFields.password).trim() === '') {
       delete updateFields.password
+    }
+    else {
+      // Secure the new active password standardizing 10 bcrypt salt rounds natively
+      updateFields.password = await bcrypt.hash(String(updateFields.password), 10)
     }
 
     // Add updatedAt timestamp

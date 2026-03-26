@@ -4,7 +4,6 @@ import { toast } from 'vue-sonner'
 import PasswordInput from '~/components/PasswordInput.vue'
 
 const username = ref('')
-const contactNumber = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -15,7 +14,7 @@ async function onSubmit(event: Event) {
   event.preventDefault()
   errorMessage.value = ''
 
-  if (!username.value || !contactNumber.value || !password.value) {
+  if (!username.value || !password.value) {
     errorMessage.value = 'Please fill in all fields'
     return
   }
@@ -28,7 +27,6 @@ async function onSubmit(event: Event) {
       method: 'POST',
       body: {
         userName: username.value,
-        phoneNumber: contactNumber.value,
         password: password.value,
       },
     })
@@ -90,18 +88,6 @@ async function onSubmit(event: Event) {
         v-model="username"
         type="text"
         placeholder="Enter your username"
-        :disabled="isLoading"
-      />
-    </div>
-    <div class="grid gap-2">
-      <Label for="contact">
-        Contact Number
-      </Label>
-      <Input
-        id="contact"
-        v-model="contactNumber"
-        type="tel"
-        placeholder="+1 (555) 000-0000"
         :disabled="isLoading"
       />
     </div>

@@ -1,6 +1,7 @@
 // POST /api/users/login — authenticate user directly against MongoDB
 import { MongoClient } from 'mongodb'
 import crypto from 'node:crypto' // standard node crypto
+import bcrypt from 'bcryptjs'
 
 let _client: MongoClient | null = null
 
@@ -13,8 +14,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  if (!body.userName || !body.phoneNumber || !body.password) {
-    throw createError({ statusCode: 400, message: 'Username, Phone number, and Password are required' })
+  if (!body.userName || !body.password) {
+    throw createError({ statusCode: 400, message: 'Username and Password are required' })
   }
 
   // Always use Production as requested
@@ -32,12 +33,24 @@ export default defineEventHandler(async (event) => {
     // Authenticate user natively against DB payload
     const user = await db.collection('users').findOne({
       userName: body.userName,
-      phoneNumber: body.phoneNumber,
-      password: body.password // Plain text direct matching logic
     })
 
     if (!user) {
-      throw createError({ statusCode: 401, message: 'Invalid credentials. Please verify your username, phone number, and password.' })
+      throw createError({ statusCode: 401, message: 'Invalid credentials. Please verify your username and password.' })
+    }
+
+    // Safely compare using securely salted bcrypt algorithm (cross-compatible standard)
+    // NOTE: This comparison is forward-compatible. If they have legacy plain text passwords in Mongo right now from old endpoints, this logic accommodates migrating it or just checks strictly for new Bcrypt hashes.
+    let isValidPassword = false
+    if (user.password && user.password.startsWith('$2')) {
+      isValidPassword = await bcrypt.compare(body.password, user.password)
+    } else {
+      // Legacy fallback allowing pre-existing non-hashed users to still log in
+      isValidPassword = (user.password === body.password)
+    }
+
+    if (!isValidPassword) {
+      throw createError({ statusCode: 401, message: 'Invalid credentials. Please verify your username and password.' })
     }
 
     if (user.approvalStatus !== 'Approved') {

@@ -1,5 +1,6 @@
 // POST /api/users/add — create a new user directly in MongoDB
 import { MongoClient } from 'mongodb'
+import bcrypt from 'bcryptjs'
 
 let _client: MongoClient | null = null
 
@@ -39,12 +40,17 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 409, message: `User with email "${body.email}" already exists` })
     }
 
+    // Use bcrypt standard salting for optimal security and interoperability
+    const saltRounds = 10
+    const rawPassword = body.password || ''
+    const hashedPassword = rawPassword ? await bcrypt.hash(rawPassword, saltRounds) : ''
+
     const doc = {
       userName: body.userName || '',
       email: body.email || '',
       phoneNumber: body.phoneNumber || '',
       userRole: body.userRole || 'Customer',
-      password: body.password || '',
+      password: hashedPassword,
       location: Array.isArray(body.location) ? body.location.join(', ') : (body.location || ''),
       dealershipName: body.dealershipName || '',
       entityType: body.entityType || '',
@@ -55,6 +61,7 @@ export default defineEventHandler(async (event) => {
       secondaryContactPerson: body.secondaryContactPerson || '',
       secondaryContactNumber: body.secondaryContactNumber || '',
       addressList: Array.isArray(body.addressList) ? body.addressList.filter((a: string) => a?.trim()) : [],
+      workspaces: Array.isArray(body.workspaces) ? body.workspaces : [],
       approvalStatus: body.approvalStatus || 'Approved',
       rejectionComment: '',
       wishlist: [],

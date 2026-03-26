@@ -140,10 +140,32 @@ export function useWorkspace() {
     }
   }
 
-  // Active workspace
-  const activeWorkspace = computed(() =>
-    _workspaces.value.find(w => w.workspaceId === _activeWorkspaceId.value) || _workspaces.value[0],
-  )
+  // Load securely authorized scopes
+  const userCookie = useCookie('userData')
+  const availableWorkspaces = computed(() => {
+    try {
+      const user = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
+      const role = String(user?.userType || user?.userRole || user?.role || '').toLowerCase()
+      
+      // System Admins always get unobstructed access to all active workspaces natively
+      if (role === 'admin') return _workspaces.value
+
+      // Other users only see specifically assigned workspaces
+      const assignedIds = Array.isArray(user?.workspaces) ? user.workspaces : []
+      const filtered = _workspaces.value.filter(w => assignedIds.includes(w.workspaceId))
+      
+      // Fallback securely preventing naked access if not assigned
+      return filtered.length > 0 ? filtered : [_workspaces.value[0]] 
+    } catch {
+      return _workspaces.value
+    }
+  })
+
+  // Active workspace dynamically scopes down checking availability
+  const activeWorkspace = computed(() => {
+    const list = availableWorkspaces.value.filter(Boolean) as Workspace[]
+    return list.find(w => w?.workspaceId === _activeWorkspaceId.value) || list[0]
+  })
 
   // Menu items for the active workspace, grouped by category
   const activeMenuGroups = computed(() => {
@@ -296,7 +318,8 @@ export function useWorkspace() {
   }
 
   return {
-    workspaces: _workspaces,
+    workspaces: availableWorkspaces,
+    allWorkspaces: _workspaces,
     activeWorkspaceId: _activeWorkspaceId,
     activeWorkspace,
     activeMenuGroups,

@@ -84,6 +84,33 @@ function toggleSelectAllEditLocations() {
   }
 }
 
+// ─── Workspaces ───
+const { allWorkspaces } = useWorkspace()
+const workspacePopoverOpen = ref(false)
+
+function toggleWorkspaceLink(wsId: string) {
+  if (!editForm.value.workspaces) editForm.value.workspaces = []
+  const idx = editForm.value.workspaces.indexOf(wsId)
+  if (idx >= 0) editForm.value.workspaces.splice(idx, 1)
+  else editForm.value.workspaces.push(wsId)
+}
+
+function removeWorkspaceLink(wsId: string) {
+  if (!editForm.value.workspaces) return
+  editForm.value.workspaces = editForm.value.workspaces.filter((w: string) => w !== wsId)
+}
+
+const allWorkspacesSelected = computed(() => (editForm.value.workspaces?.length || 0) === allWorkspaces.value.length)
+
+function toggleSelectAllWorkspaces() {
+  if (allWorkspacesSelected.value) {
+    editForm.value.workspaces = []
+  }
+  else {
+    editForm.value.workspaces = allWorkspaces.value.map(w => w.workspaceId)
+  }
+}
+
 const showPassword = ref(false)
 
 function generatePassword() {
@@ -116,6 +143,7 @@ function startEdit() {
     assignedKam: user.value.assignedKam || '',
     isStaff: user.value.isStaff || false,
     addressList: [...(user.value.addressList || [])],
+    workspaces: Array.isArray(user.value.workspaces) ? [...user.value.workspaces] : [],
   }
   isEditing.value = true
 }

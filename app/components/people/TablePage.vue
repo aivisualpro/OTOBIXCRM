@@ -202,8 +202,11 @@ function defaultForm() {
     assignedKam: '',
     addressList: [''],
     isStaff: false,
+    workspaces: [] as string[],
   }
 }
+
+const { allWorkspaces } = useWorkspace()
 
 const form = ref(defaultForm())
 
@@ -279,6 +282,31 @@ function toggleSelectAllLocations() {
   }
   else {
     form.value.location = [...locationOptions]
+  }
+}
+
+// ─── Workspaces ───
+const workspacePopoverOpen = ref(false)
+
+function toggleWorkspaceLink(wsId: string) {
+  const idx = form.value.workspaces.indexOf(wsId)
+  if (idx >= 0)
+    form.value.workspaces.splice(idx, 1)
+  else form.value.workspaces.push(wsId)
+}
+
+function removeWorkspaceLink(wsId: string) {
+  form.value.workspaces = form.value.workspaces.filter(w => w !== wsId)
+}
+
+const allWorkspacesSelected = computed(() => form.value.workspaces.length === allWorkspaces.value.length)
+
+function toggleSelectAllWorkspaces() {
+  if (allWorkspacesSelected.value) {
+    form.value.workspaces = []
+  }
+  else {
+    form.value.workspaces = allWorkspaces.value.map(w => w.workspaceId)
   }
 }
 </script>
@@ -525,6 +553,50 @@ function toggleSelectAllLocations() {
                   <Checkbox :checked="form.location.includes(loc)" class="pointer-events-none" />
                   {{ loc }}
                   <Icon v-if="form.location.includes(loc)" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <!-- Workspaces (multi-select) -->
+        <div class="space-y-1.5">
+          <Label>Allocated Workspaces</Label>
+          <Popover v-model:open="workspacePopoverOpen">
+            <PopoverTrigger as-child>
+              <Button variant="outline" role="combobox" class="w-full justify-between h-auto min-h-9 font-normal">
+                <span v-if="form.workspaces.length === 0" class="text-muted-foreground">Select workspaces...</span>
+                <div v-else class="flex flex-wrap gap-1">
+                  <Badge v-for="wsId in form.workspaces" :key="wsId" variant="secondary" class="text-xs gap-1 max-w-[12rem] truncate">
+                    {{ allWorkspaces.find(w => w.workspaceId === wsId)?.name || wsId }}
+                    <Icon name="i-lucide-x" class="size-3 cursor-pointer hover:text-destructive shrink-0 ml-1" @click.stop="removeWorkspaceLink(wsId)" />
+                  </Badge>
+                </div>
+                <Icon name="i-lucide-chevrons-up-down" class="ml-2 size-3.5 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-[--reka-popover-trigger-width] p-0" align="start">
+              <div class="max-h-56 overflow-y-auto p-1">
+                <!-- Select All -->
+                <button
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-medium hover:bg-accent cursor-pointer border-b mb-1 pb-1.5"
+                  @click="toggleSelectAllWorkspaces()"
+                >
+                  <Checkbox :checked="allWorkspacesSelected" class="pointer-events-none" />
+                  Select All
+                  <span class="ml-auto text-xs text-muted-foreground">{{ form.workspaces.length }}/{{ allWorkspaces.length }}</span>
+                </button>
+                <!-- Individual workspaces -->
+                <button
+                  v-for="ws in allWorkspaces"
+                  :key="ws.workspaceId"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer transition-colors"
+                  :class="form.workspaces.includes(ws.workspaceId) ? 'bg-primary/5 text-primary hover:bg-primary/10' : 'hover:bg-accent'"
+                  @click="toggleWorkspaceLink(ws.workspaceId)"
+                >
+                  <Checkbox :checked="form.workspaces.includes(ws.workspaceId)" class="pointer-events-none" />
+                  {{ ws.name }}
+                  <Icon v-if="form.workspaces.includes(ws.workspaceId)" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
                 </button>
               </div>
             </PopoverContent>
