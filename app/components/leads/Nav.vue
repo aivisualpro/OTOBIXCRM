@@ -1,7 +1,10 @@
 <script setup lang="ts">
-const route = useRoute()
+import { useLeadsApi } from '~/composables/useLeadsApi'
 
-const navItems = [
+const route = useRoute()
+const { activeAdvancedFilterCount } = useLeadsApi()
+
+const baseNavItems = [
   { id: 'leads', title: 'Leads', icon: 'i-lucide-magnet', color: 'text-blue-500', link: '/leads' },
   { id: 'scheduled', title: 'Scheduled', icon: 'i-lucide-calendar', color: 'text-indigo-500', link: '/leads/scheduled' },
   { id: 're-scheduled', title: 'Re-Scheduled', icon: 'i-lucide-calendar-range', color: 'text-purple-500', link: '/leads/re-scheduled' },
@@ -12,6 +15,20 @@ const navItems = [
   { id: 'quality-approved', title: 'Quality Approved', icon: 'i-lucide-shield-check', color: 'text-teal-500', link: '/leads/quality-approved' },
   { id: 'quality-rejected', title: 'Quality Rejected', icon: 'i-lucide-shield-x', color: 'text-rose-500', link: '/leads/quality-rejected' },
 ]
+
+const navItems = computed(() => {
+  const items = [...baseNavItems]
+  if (activeAdvancedFilterCount.value > 0 || route.path.includes('/search-results')) {
+    items.unshift({
+      id: 'search-results',
+      title: 'Search Results',
+      icon: 'i-lucide-list-filter',
+      color: 'text-amber-500',
+      link: '/leads/search-results'
+    })
+  }
+  return items
+})
 
 function isNavNavItem(item: any): item is { id: string, title: string, icon: string, color: string, link: string } {
   return 'id' in item

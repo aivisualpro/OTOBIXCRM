@@ -327,12 +327,18 @@ watch(advancedFilters, (newF) => {
 function applyAdvancedFilters() {
   setAdvancedFilters(localFilters.value)
   showAdvancedFilters.value = false
+  if (activeFilterCount.value > 0 && router.currentRoute.value.path !== '/leads/search-results') {
+    router.push('/leads/search-results')
+  }
 }
 
 function clearAdvancedFilters() {
   localFilters.value = { startDate: '', endDate: '', dateField: 'createdAt', make: '', city: '', priority: '', allocatedTo: '' }
   setAdvancedFilters({})
   showAdvancedFilters.value = false
+  if (router.currentRoute.value.path === '/leads/search-results') {
+    router.push('/leads')
+  }
 }
 
 function setDatePreset(preset: string) {

@@ -267,6 +267,16 @@ export function useLeadsApi() {
   }
 
   // ─── Set advanced UI filters ───
+  const activeAdvancedFilterCount = computed(() => {
+    let count = 0
+    if (_advancedFilters.value.startDate || _advancedFilters.value.endDate) count++
+    if (_advancedFilters.value.make && _advancedFilters.value.make !== ' ') count++
+    if (_advancedFilters.value.city && _advancedFilters.value.city !== ' ') count++
+    if (_advancedFilters.value.priority && _advancedFilters.value.priority !== ' ') count++
+    if (_advancedFilters.value.allocatedTo && _advancedFilters.value.allocatedTo !== ' ') count++
+    return count
+  })
+
   function setAdvancedFilters(filters: Record<string, string>) {
     _advancedFilters.value = { ...filters }
     _isInitialized.value = false
@@ -300,5 +310,6 @@ export function useLeadsApi() {
     setFilters,
     setAdvancedFilters,
     advancedFilters: _advancedFilters,
+    activeAdvancedFilterCount,
   }
 }

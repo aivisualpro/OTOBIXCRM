@@ -224,15 +224,7 @@ export const routeFilters = {
     label: 'Inspected',
   },
   // /leads/under-review
-  'under-review': {
-    inspectionStatus: 'Inspected',
-    approvalStatus: 'Under Review',
-    label: 'Under Review',
-  },
-  // /leads/quality-rejected
-  'quality-rejected': {
-    inspectionStatus: 'Inspected',
-    approvalStatus: 'Rejected',
-    label: 'Quality Rejected',
-  },
+  'under-review': { label: 'Under Review', inspectionStatus: 'Inspected', approvalStatus: 'Under Review' },
+  'quality-rejected': { label: 'Quality Rejected', inspectionStatus: 'Inspected', approvalStatus: 'Quality Rejected' },
+  'search-results': { label: 'Search Results', inspectionStatus: '*', approvalStatus: '*' },
 }
