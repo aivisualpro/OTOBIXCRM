@@ -230,10 +230,9 @@ function resetForm() {
 }
 
 async function handleCreateUser() {
-  // Validate required fields
   const f = form.value
-  if (!f.userName.trim() || !f.email.trim() || !f.phoneNumber.trim() || !f.userRole) {
-    toast.error('Please fill all required fields (Name, Email, Phone, Role)')
+  if (!f.userName.trim() || !f.email.trim() || (f.userRole !== 'Telecaller' && !f.phoneNumber.trim()) || !f.userRole) {
+    toast.error('Please fill all required fields (Name, Email, Role' + (f.userRole !== 'Telecaller' ? ', Phone' : '') + ')')
     return
   }
 
@@ -461,30 +460,6 @@ function toggleSelectAllWorkspaces() {
       </SheetHeader>
 
       <div class="mt-6 space-y-4">
-        <!-- Name -->
-        <div class="space-y-1.5">
-          <Label for="add-user-name">Full Name <span class="text-destructive">*</span></Label>
-          <Input id="add-user-name" v-model="form.userName" placeholder="John Doe" />
-        </div>
-
-        <!-- Email -->
-        <div class="space-y-1.5">
-          <Label for="add-user-email">Email <span class="text-destructive">*</span></Label>
-          <Input id="add-user-email" v-model="form.email" type="email" placeholder="john@otobix.com" />
-        </div>
-
-        <!-- Password -->
-        <div class="space-y-1.5">
-          <Label for="add-user-password">Password <span class="text-destructive">*</span></Label>
-          <Input id="add-user-password" v-model="form.password" type="password" placeholder="Minimum 6 characters" />
-        </div>
-
-        <!-- Phone -->
-        <div class="space-y-1.5">
-          <Label for="add-user-phone">Phone Number <span class="text-destructive">*</span></Label>
-          <Input id="add-user-phone" v-model="form.phoneNumber" placeholder="+91 9876543210" />
-        </div>
-
         <!-- Role + Status row -->
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-1.5">
@@ -513,6 +488,30 @@ function toggleSelectAllWorkspaces() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <!-- Name -->
+        <div class="space-y-1.5">
+          <Label for="add-user-name">Full Name <span class="text-destructive">*</span></Label>
+          <Input id="add-user-name" v-model="form.userName" placeholder="John Doe" />
+        </div>
+
+        <!-- Email -->
+        <div class="space-y-1.5">
+          <Label for="add-user-email">Email <span class="text-destructive">*</span></Label>
+          <Input id="add-user-email" v-model="form.email" type="email" placeholder="john@otobix.com" />
+        </div>
+
+        <!-- Password -->
+        <div class="space-y-1.5">
+          <Label for="add-user-password">Password <span class="text-destructive">*</span></Label>
+          <Input id="add-user-password" v-model="form.password" type="password" placeholder="Minimum 6 characters" />
+        </div>
+
+        <!-- Phone -->
+        <div v-if="form.userRole !== 'Telecaller'" class="space-y-1.5">
+          <Label for="add-user-phone">Phone Number <span class="text-destructive">*</span></Label>
+          <Input id="add-user-phone" v-model="form.phoneNumber" placeholder="+91 9876543210" />
         </div>
 
         <!-- Location (multi-select) -->

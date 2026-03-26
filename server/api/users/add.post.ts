@@ -14,8 +14,8 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event)
 
-  if (!body?.userName || !body?.email || !body?.phoneNumber || !body?.userRole) {
-    throw createError({ statusCode: 400, message: 'userName, email, phoneNumber, and userRole are required' })
+  if (!body?.userName || !body?.email || (body?.userRole !== 'Telecaller' && !body?.phoneNumber) || !body?.userRole) {
+    throw createError({ statusCode: 400, message: 'userName, email, Role and conditionally Phone are strictly required' })
   }
 
   // Hardcode environment strictly routing mapping permanently pointing directly to Production exclusively

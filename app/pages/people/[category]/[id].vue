@@ -379,7 +379,7 @@ const addresses = computed(() => {
                     {{ user.userName || '—' }}
                   </p>
                 </div>
-                <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
+                <div v-if="user.userRole !== 'Telecaller' || user.phoneNumber" class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
                   <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Phone Number</span>
                   <p class="text-sm font-medium font-mono">
                     {{ user.phoneNumber || '—' }}
@@ -421,7 +421,7 @@ const addresses = computed(() => {
                 </p>
               </div>
 
-              <div class="rounded-xl border bg-card p-4 space-y-2">
+              <div v-if="user.userRole !== 'Telecaller' || user.phoneNumber" class="rounded-xl border bg-card p-4 space-y-2">
                 <div class="flex items-center gap-2">
                   <div class="rounded-lg p-2 bg-emerald-500/10">
                     <Icon name="i-lucide-phone" class="size-4 text-emerald-500" />
@@ -610,11 +610,11 @@ const addresses = computed(() => {
 
               <!-- Phone & Role -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-1.5">
+                <div v-if="editForm.userRole !== 'Telecaller'" class="space-y-1.5">
                   <Label for="edit-phone">Phone Number</Label>
                   <Input id="edit-phone" v-model="editForm.phoneNumber" placeholder="+91 9876543210" />
                 </div>
-                <div class="space-y-1.5">
+                <div :class="['space-y-1.5', editForm.userRole === 'Telecaller' ? 'md:col-span-2' : '']">
                   <Label for="edit-role">Role</Label>
                   <Select v-model="editForm.userRole">
                     <SelectTrigger id="edit-role">
