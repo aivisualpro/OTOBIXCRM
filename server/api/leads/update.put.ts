@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb'
+import { syncLeadToAppSheet } from '../../utils/appsheet'
 
 // PUT /api/leads/update — update a telecalling record
 export default defineEventHandler(async (event) => {
@@ -21,16 +22,23 @@ export default defineEventHandler(async (event) => {
       ? { _id: new ObjectId(telecallingId) }
       : { appointmentId: telecallingId }
 
-    const result = await db.collection('telecallings').updateOne(filter, { $set: updates })
+    const result = await db.collection('telecallings').findOneAndUpdate(
+      filter,
+      { $set: updates },
+      { returnDocument: 'after' }
+    )
 
-    if (result.matchedCount === 0) {
+    if (!result) {
       throw createError({ statusCode: 404, message: 'Lead not found' })
     }
+
+    // Sync to AppSheet in background (uses Appointment ID as key)
+    syncLeadToAppSheet('Edit', result)
 
     return {
       success: true,
       message: 'Lead updated successfully',
-      modifiedCount: result.modifiedCount,
+      modifiedCount: 1,
     }
   }
   catch (err: any) {

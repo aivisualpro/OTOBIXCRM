@@ -1,3 +1,5 @@
+import { syncLeadToAppSheet } from '../../utils/appsheet'
+
 // POST /api/leads/add — create a new lead directly in MongoDB
 export default defineEventHandler(async (event) => {
   try {
@@ -62,6 +64,9 @@ export default defineEventHandler(async (event) => {
     }
 
     const result = await db.collection('telecallings').insertOne(doc)
+
+    // Sync to AppSheet in background (non-blocking)
+    syncLeadToAppSheet('Add', doc)
 
     return {
       success: true,

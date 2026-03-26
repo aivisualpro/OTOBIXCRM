@@ -238,9 +238,15 @@ async function doStatusUpdate(lead: any, updates: Record<string, string>) {
 // ─── UI State ───
 const search = ref(String(useRoute().query.search || ''))
 const showDialog = ref(false)
-const showDeleteDialog = ref(false)
 const editingItem = ref<any>(null)
-const deletingItem = ref<any>(null)
+const isSyncing = ref(false)
+const isAdmin = computed(() => {
+  const userCookie = useCookie<any>('userData')
+  if (!userCookie.value) return false
+  const user = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
+  const role = String(user?.userType || user?.userRole || user?.role || '').toLowerCase()
+  return role === 'admin'
+})
 const formData = ref<Record<string, any>>({})
 
 // Cascading: computed models/variants based on current form selection
@@ -267,12 +273,25 @@ watch(() => formData.value.model, (newModel, oldModel) => {
   }
 })
 
+// ─── Sort state (default: appointmentId descending) ───
+const sortKey = ref('appointmentId')
+const sortDir = ref<'asc' | 'desc'>('desc')
+
+function toggleSort(key: string) {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  }
+  else {
+    sortKey.value = key
+    sortDir.value = 'asc'
+  }
+}
+
 // ─── Client-side route filtering (on already-loaded data) ───
 const filteredItems = computed(() => {
   let result = allLeads.value as Record<string, any>[]
 
   // Apply route-specific filters (inspectionStatus/approvalStatus)
-  // Bypass gracefully explicitly locally resolving purely natively handling cross-tab searching explicitly
   if (props.filters && !search.value) {
     const filters = props.filters
     result = result.filter(item =>
@@ -284,6 +303,26 @@ const filteredItems = computed(() => {
       })
     )
   }
+
+  // Sort
+  const key = sortKey.value
+  const dir = sortDir.value
+  result = [...result].sort((a, b) => {
+    const av = a[key] ?? ''
+    const bv = b[key] ?? ''
+    // Numeric sort for numbers/IDs like '26-100013'
+    const an = Number(String(av).replace(/\D/g, ''))
+    const bn = Number(String(bv).replace(/\D/g, ''))
+    if (!isNaN(an) && !isNaN(bn) && an !== bn) {
+      return dir === 'asc' ? an - bn : bn - an
+    }
+    // String sort
+    const as = String(av).toLowerCase()
+    const bs = String(bv).toLowerCase()
+    if (as < bs) return dir === 'asc' ? -1 : 1
+    if (as > bs) return dir === 'asc' ? 1 : -1
+    return 0
+  })
 
   return result
 })
@@ -555,35 +594,25 @@ async function handleSave() {
   }
 }
 
-function confirmDelete(item: any) {
-  deletingItem.value = item
-  showDeleteDialog.value = true
-}
+async function syncAppSheet(item: any) {
+  try {
+    isSyncing.value = true
+    toast.info('Syncing to AppSheet...')
+    
+    await $fetch('/api/leads/sync', {
+      method: 'POST',
+      body: { appointmentId: item.appointmentId },
+    })
 
-async function handleDelete() {
-  if (deletingItem.value) {
-    try {
-      await $fetch<any>('/api/leads/delete', {
-        method: 'POST',
-        body: {
-          telecallingId: deletingItem.value._id || deletingItem.value.id,
-        },
-      })
-
-      // Remove from local cache instantly
-      const delId = deletingItem.value._id || deletingItem.value.id
-      allLeads.value = allLeads.value.filter((l: any) => (l._id || l.id) !== delId)
-
-      fetchCounts() // Update tab counters
-      toast.success(`${entity.value} deleted successfully`)
-    }
-    catch (err: any) {
-      console.error('Delete failed:', err)
-      toast.error(err?.data?.message || err?.message || 'Failed to delete')
-    }
+    toast.success(`Synced ${item.appointmentId} to AppSheet`)
   }
-  showDeleteDialog.value = false
-  deletingItem.value = null
+  catch (err: any) {
+    console.error('Sync failed:', err)
+    toast.error(err?.data?.message || err?.message || 'Failed to sync')
+  }
+  finally {
+    isSyncing.value = false
+  }
 }
 
 async function handleRefresh() {
@@ -711,8 +740,21 @@ function getInitials(name: string): string {
       <Table>
         <TableHeader class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
           <TableRow>
-            <TableHead v-for="col in columns" :key="col.key">
-              {{ col.label }}
+            <TableHead
+              v-for="col in columns"
+              :key="col.key"
+              class="cursor-pointer select-none hover:bg-muted/80 transition-colors whitespace-nowrap"
+              @click="toggleSort(col.key)"
+            >
+              <div class="flex items-center gap-1">
+                {{ col.label }}
+                <span class="text-muted-foreground/60 text-xs">
+                  <template v-if="sortKey === col.key">
+                    {{ sortDir === 'asc' ? '↑' : '↓' }}
+                  </template>
+                  <template v-else>↕</template>
+                </span>
+              </div>
             </TableHead>
             <TableHead class="w-[80px] text-right">
               Actions
@@ -804,11 +846,11 @@ function getInitials(name: string): string {
             </TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="ghost" size="icon" class="size-8" @click="openEdit(item)">
+                <Button variant="ghost" size="icon" class="size-8" @click.stop="openEdit(item)">
                   <Icon name="i-lucide-pencil" class="size-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" class="size-8 text-destructive hover:text-destructive" @click="confirmDelete(item)">
-                  <Icon name="i-lucide-trash-2" class="size-3.5" />
+                <Button v-if="isAdmin" variant="ghost" size="icon" class="size-8 text-blue-600 hover:text-blue-700" :disabled="isSyncing" @click.stop="syncAppSheet(item)" title="Force Sync to AppSheet">
+                  <Icon name="i-lucide-refresh-cw" class="size-3.5" :class="{ 'animate-spin': isSyncing }" />
                 </Button>
               </div>
             </TableCell>
@@ -1064,23 +1106,7 @@ function getInitials(name: string): string {
       </DialogContent>
     </Dialog>
 
-    <!-- Delete Confirmation -->
-    <AlertDialog v-model:open="showDeleteDialog">
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete this {{ entity.toLowerCase() }} record.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="handleDelete">
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+
 
     <!-- Assign Inspector Dialog -->
     <Dialog v-model:open="showAssignDialog">

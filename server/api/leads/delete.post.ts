@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb'
+import { syncLeadToAppSheet } from '../../utils/appsheet'
 
 // POST /api/leads/delete — delete a telecalling record
 export default defineEventHandler(async (event) => {
@@ -16,11 +17,14 @@ export default defineEventHandler(async (event) => {
       ? { _id: new ObjectId(telecallingId) }
       : { appointmentId: telecallingId }
 
-    const result = await db.collection('telecallings').deleteOne(filter)
+    const result = await db.collection('telecallings').findOneAndDelete(filter)
 
-    if (result.deletedCount === 0) {
+    if (!result) {
       throw createError({ statusCode: 404, message: 'Lead not found' })
     }
+
+    // Sync deletion to AppSheet (uses Appointment ID as key)
+    syncLeadToAppSheet('Delete', result)
 
     return {
       success: true,
