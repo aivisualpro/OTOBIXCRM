@@ -106,9 +106,13 @@ export function useLeadsApi() {
 
     try {
       const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
-      if (_serverSearch.value) params.search = _serverSearch.value
-      if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
-      if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+      if (_serverSearch.value) {
+        params.search = _serverSearch.value
+      }
+      else {
+        if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
+        if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+      }
 
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
 

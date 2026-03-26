@@ -140,11 +140,11 @@ export function usePeopleApi() {
     return response
   }
 
-  /** Delete user */
+  /** Delete user — direct MongoDB via our own API */
   async function deleteUser(userId: string) {
     const response = await $fetch<any>(
-      `${apiBaseUrl.value}user/delete-profile`,
-      { method: 'DELETE', headers: _headers(), body: { userId } },
+      '/api/users/delete',
+      { method: 'DELETE', body: { userId } },
     )
     await refreshUsers()
     return response

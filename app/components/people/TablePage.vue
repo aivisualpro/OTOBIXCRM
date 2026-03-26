@@ -400,7 +400,7 @@ function toggleSelectAllWorkspaces() {
                     {{ getInitials(item[col.key]) }}
                   </AvatarFallback>
                 </Avatar>
-                <span class="font-medium">{{ item[col.key] || '—' }}</span>
+                <span class="font-medium uppercase">{{ item[col.key] || '—' }}</span>
               </div>
               <!-- Badge -->
               <Badge v-else-if="col.type === 'badge'" variant="outline" :class="getBadgeClass(item[col.key])">

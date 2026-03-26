@@ -199,11 +199,15 @@ async function handleDelete() {
   if (!user.value)
     return
   isDeleting.value = true
+  const name = user.value.userName // capture before user ref is invalidated
   try {
-    await deleteUser(userId.value)
-    toast.success(`User "${user.value.userName}" deleted successfully`)
+    await $fetch('/api/users/delete', { method: 'DELETE', body: { userId: userId.value } })
+    toast.success(`User "${name}" deleted successfully`)
     showDeleteDialog.value = false
-    router.push(`/people/${categoryKey.value}`)
+    // Navigate FIRST — then refresh so the reactive user ref doesn't crash
+    await router.push(`/people/${categoryKey.value}`)
+    const { refreshUsers } = usePeopleApi()
+    refreshUsers()
   }
   catch (err: any) {
     toast.error(err?.data?.message || err?.message || 'Failed to delete user')
@@ -341,7 +345,7 @@ const addresses = computed(() => {
                 </Avatar>
                 <div class="pb-1 flex-1 min-w-0">
                   <h2 class="text-xl font-bold truncate">
-                    {{ user.userName || '—' }}
+                    <span class="uppercase">{{ user.userName || '—' }}</span>
                   </h2>
                   <div class="flex items-center gap-2 mt-1 flex-wrap">
                     <Badge variant="outline" class="text-xs" :class="statusBadge[user.approvalStatus] || ''">
@@ -376,7 +380,7 @@ const addresses = computed(() => {
                 <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
                   <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Username</span>
                   <p class="text-sm font-medium">
-                    {{ user.userName || '—' }}
+                    <span class="uppercase">{{ user.userName || '—' }}</span>
                   </p>
                 </div>
                 <div v-if="user.userRole !== 'Telecaller' || user.phoneNumber" class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
