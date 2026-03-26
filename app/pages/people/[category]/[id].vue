@@ -686,6 +686,48 @@ const addresses = computed(() => {
                 </div>
               </div>
 
+              <!-- Workspaces -->
+              <div class="space-y-1.5 mt-4">
+                <Label>Allocated Workspaces</Label>
+                <Popover v-model:open="workspacePopoverOpen">
+                  <PopoverTrigger as-child>
+                    <Button variant="outline" role="combobox" class="w-full justify-between h-auto min-h-9 font-normal">
+                      <span v-if="(editForm.workspaces as string[]).length === 0" class="text-muted-foreground">Select workspaces...</span>
+                      <div v-else class="flex flex-wrap gap-1">
+                        <Badge v-for="wsId in (editForm.workspaces as string[])" :key="wsId" variant="secondary" class="text-xs gap-1 max-w-[12rem] truncate">
+                          {{ allWorkspaces.find(w => w.workspaceId === wsId)?.name || wsId }}
+                          <Icon name="i-lucide-x" class="size-3 cursor-pointer hover:text-destructive shrink-0 ml-1" @click.stop="removeWorkspaceLink(wsId)" />
+                        </Badge>
+                      </div>
+                      <Icon name="i-lucide-chevrons-up-down" class="ml-2 size-3.5 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent class="w-[--reka-popover-trigger-width] p-0" align="start">
+                    <div class="max-h-56 overflow-y-auto p-1">
+                      <button
+                        class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-medium hover:bg-accent cursor-pointer border-b mb-1 pb-1.5"
+                        @click="toggleSelectAllWorkspaces()"
+                      >
+                        <Checkbox :checked="allWorkspacesSelected" class="pointer-events-none" />
+                        Select All
+                        <span class="ml-auto text-xs text-muted-foreground">{{ (editForm.workspaces as string[]).length }}/{{ allWorkspaces.length }}</span>
+                      </button>
+                      <button
+                        v-for="ws in allWorkspaces"
+                        :key="ws.workspaceId"
+                        class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer transition-colors"
+                        :class="(editForm.workspaces as string[]).includes(ws.workspaceId) ? 'bg-primary/5 text-primary hover:bg-primary/10' : 'hover:bg-accent'"
+                        @click="toggleWorkspaceLink(ws.workspaceId)"
+                      >
+                        <Checkbox :checked="(editForm.workspaces as string[]).includes(ws.workspaceId)" class="pointer-events-none" />
+                        {{ ws.name }}
+                        <Icon v-if="(editForm.workspaces as string[]).includes(ws.workspaceId)" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
               <template v-if="editForm.userRole !== 'Telecaller'">
                 <!-- Dealership & Entity Type -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
