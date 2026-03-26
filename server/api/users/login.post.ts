@@ -14,8 +14,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event)
-  if (!body.userName || !body.password) {
-    throw createError({ statusCode: 400, message: 'Username and Password are required' })
+  const incomingUserStr = (body.userName || body.username || body.email || '').trim()
+
+  if (!incomingUserStr || !body.password) {
+    throw createError({ statusCode: 400, message: 'Username/Email and Password are required' })
   }
 
   // Always use Production as requested
@@ -30,9 +32,14 @@ export default defineEventHandler(async (event) => {
 
     const db = _client.db(dbName)
 
-    // Authenticate user natively against DB payload
+    // Authenticate user natively against DB payload (Case Insensitive to support mobile apps)
+    // Checks userName OR email OR phoneNumber fallback 
     const user = await db.collection('users').findOne({
-      userName: body.userName,
+      $or: [
+        { userName: { $regex: `^${incomingUserStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } },
+        { email: { $regex: `^${incomingUserStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } },
+        { phoneNumber: incomingUserStr }
+      ]
     })
 
     if (!user) {

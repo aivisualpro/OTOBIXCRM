@@ -59,6 +59,7 @@ export function useLeadsApi() {
   // useState keyed calls — safe inside composable, shared across all callers via key
   const _leads = useState<TelecallingLead[]>('leads_data', () => [])
   const _fetchSeq = useState<number>('leads_fetch_seq', () => 0)
+  const _advancedFilters = useState<Record<string, string>>('leads_advancedFilters', () => ({}))
   const _currentPage = useState('leads_currentPage', () => 0)
   const _totalCount = useState('leads_totalCount', () => 0)
   const _isLoading = useState('leads_isLoading', () => false)
@@ -116,6 +117,15 @@ export function useLeadsApi() {
       else {
         if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
         if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+
+        // Apply advanced UI filters
+        if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
+        if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
+        if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
+        if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
+        if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
+        if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
+        if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
       }
 
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
@@ -157,6 +167,15 @@ export function useLeadsApi() {
       else {
         if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
         if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+
+        // Apply advanced UI filters
+        if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
+        if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
+        if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
+        if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
+        if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
+        if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
+        if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
       }
 
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
@@ -195,6 +214,14 @@ export function useLeadsApi() {
           // Strictly apply tab filters seamlessly when not performing global search
           if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
           if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+
+          if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
+          if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
+          if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
+          if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
+          if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
+          if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
+          if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
         }
 
         const response = await $fetch<LocalApiResponse>('/api/leads', { params })
@@ -239,6 +266,15 @@ export function useLeadsApi() {
     }
   }
 
+  // ─── Set advanced UI filters ───
+  function setAdvancedFilters(filters: Record<string, string>) {
+    _advancedFilters.value = { ...filters }
+    _isInitialized.value = false
+    _leads.value = []
+    _totalCount.value = 0
+    fetchLeads(true)
+  }
+
   return {
     // Data
     allLeads: _leads,
@@ -262,5 +298,7 @@ export function useLeadsApi() {
     searchLeads,
     refreshLeads,
     setFilters,
+    setAdvancedFilters,
+    advancedFilters: _advancedFilters,
   }
 }

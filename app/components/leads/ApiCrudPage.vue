@@ -40,6 +40,8 @@ const {
   refreshLeads,
   fetchCounts,
   setFilters,
+  advancedFilters,
+  setAdvancedFilters,
 } = useLeadsApi()
 
 // Car dropdowns for Make / Model / Variant
@@ -112,10 +114,10 @@ function getUserLabel(emailOrName: string) {
     String(u.emailAddress || '').toLowerCase() === val
   )
   if (found) {
-    if (found.fullName) return found.fullName
-    if (found.userName) return found.userName
+    if (found.fullName) return found.fullName.toUpperCase()
+    if (found.userName) return found.userName.toUpperCase()
   }
-  return emailOrName
+  return String(emailOrName).toUpperCase()
 }
 
 const showAssignDialog = ref(false)
@@ -156,7 +158,7 @@ async function updateLeadStatus(lead: any, field: string, newStatus: string) {
 async function confirmAssignInspector() {
   if (!assigningLead.value) return
   const lead = assigningLead.value
-  const inspectorUser = allUsers.value.find((u: any) => u.userName === selectedInspector.value)
+  const inspectorUser = allUsers.value.find((u: any) => u.email === selectedInspector.value)
   const inspectorPhone = inspectorUser?.phoneNumber || ''
 
   await doStatusUpdate(lead, {
@@ -284,6 +286,89 @@ function toggleSort(key: string) {
   else {
     sortKey.value = key
     sortDir.value = 'asc'
+  }
+}
+
+// ─── Advanced Filters UI State ───
+const showAdvancedFilters = ref(false)
+
+const localFilters = ref({
+  startDate: '',
+  endDate: '',
+  dateField: 'createdAt',
+  make: '',
+  city: '',
+  priority: '',
+  allocatedTo: ''
+})
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (advancedFilters.value.startDate || advancedFilters.value.endDate) count++
+  if (advancedFilters.value.make) count++
+  if (advancedFilters.value.city) count++
+  if (advancedFilters.value.priority) count++
+  if (advancedFilters.value.allocatedTo) count++
+  return count
+})
+
+watch(advancedFilters, (newF) => {
+  localFilters.value = { 
+    startDate: newF.startDate || '',
+    endDate: newF.endDate || '',
+    dateField: newF.dateField || 'createdAt',
+    make: newF.make || '',
+    city: newF.city || '',
+    priority: newF.priority || '',
+    allocatedTo: newF.allocatedTo || ''
+  }
+}, { deep: true, immediate: true })
+
+function applyAdvancedFilters() {
+  setAdvancedFilters(localFilters.value)
+  showAdvancedFilters.value = false
+}
+
+function clearAdvancedFilters() {
+  localFilters.value = { startDate: '', endDate: '', dateField: 'createdAt', make: '', city: '', priority: '', allocatedTo: '' }
+  setAdvancedFilters({})
+  showAdvancedFilters.value = false
+}
+
+function setDatePreset(preset: string) {
+  const dt = new Date()
+  const tzo = dt.getTimezoneOffset() * 60000;
+  
+  const toLocalISOString = (d: Date) => new Date(d.getTime() - tzo).toISOString().split('T')[0] || '';
+
+  if (preset === 'Today') {
+    localFilters.value.startDate = toLocalISOString(dt)
+    localFilters.value.endDate = localFilters.value.startDate
+  } else if (preset === 'Yesterday') {
+    const yest = new Date(dt)
+    yest.setDate(dt.getDate() - 1)
+    localFilters.value.startDate = toLocalISOString(yest)
+    localFilters.value.endDate = localFilters.value.startDate
+  } else if (preset === 'Tomorrow') {
+    const tmrw = new Date(dt)
+    tmrw.setDate(dt.getDate() + 1)
+    localFilters.value.startDate = toLocalISOString(tmrw)
+    localFilters.value.endDate = localFilters.value.startDate
+  } else if (preset === 'This Month') {
+    const firstDay = new Date(dt.getFullYear(), dt.getMonth(), 1)
+    const lastDay = new Date(dt.getFullYear(), dt.getMonth() + 1, 0)
+    localFilters.value.startDate = toLocalISOString(firstDay)
+    localFilters.value.endDate = toLocalISOString(lastDay)
+  } else if (preset === 'This Year') {
+    const firstDay = new Date(dt.getFullYear(), 0, 1)
+    const lastDay = new Date(dt.getFullYear(), 11, 31)
+    localFilters.value.startDate = toLocalISOString(firstDay)
+    localFilters.value.endDate = toLocalISOString(lastDay)
+  } else if (preset === 'Last Year') {
+    const firstDay = new Date(dt.getFullYear() - 1, 0, 1)
+    const lastDay = new Date(dt.getFullYear() - 1, 11, 31)
+    localFilters.value.startDate = toLocalISOString(firstDay)
+    localFilters.value.endDate = toLocalISOString(lastDay)
   }
 }
 
@@ -677,6 +762,115 @@ function getInitials(name: string): string {
         <Icon name="i-lucide-x" class="size-3.5" />
       </Button>
     </div>
+
+    <!-- Advanced Filters Popover -->
+    <Popover v-model:open="showAdvancedFilters">
+      <PopoverTrigger as-child>
+        <Button variant="outline" size="sm" class="relative bg-muted/20 border-muted/50 h-8 ml-2 gap-2 hover:bg-muted/50 transition-colors">
+          <Icon name="i-lucide-filter" class="size-3.5 text-muted-foreground" />
+          Filter
+          <Badge v-if="activeFilterCount > 0" class="absolute -right-2 -top-2 size-4 flex items-center justify-center p-0 text-[9px] bg-blue-600 text-white rounded-full">
+            {{ activeFilterCount }}
+          </Badge>
+        </Button>
+      </PopoverTrigger>
+      
+      <PopoverContent class="w-[340px] p-0 shadow-lg border-muted" align="start">
+        <div class="flex flex-col">
+          <!-- Header -->
+          <div class="px-4 py-3 border-b bg-muted/10 flex items-center justify-between">
+            <h4 class="font-medium text-sm text-foreground flex items-center gap-1.5"><Icon name="i-lucide-sliders-horizontal" class="size-4 text-primary" /> Advanced Filters</h4>
+            <Button v-if="activeFilterCount > 0" variant="ghost" size="sm" class="h-6 px-2 text-xs text-muted-foreground hover:text-destructive" @click="clearAdvancedFilters">Clear All</Button>
+          </div>
+          
+          <!-- Content -->
+          <div class="p-4 space-y-5 max-h-[400px] overflow-y-auto custom-scrollbar">
+            <!-- Date Filters -->
+            <div class="space-y-3">
+              <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1"><Icon name="i-lucide-calendar-days" class="size-3" /> Date Range</Label>
+              <div class="flex flex-wrap gap-1.5">
+                <Badge v-for="p in ['Today', 'Yesterday', 'Tomorrow', 'This Month', 'This Year', 'Last Year']" :key="p" variant="secondary" class="cursor-pointer text-[10px] font-normal hover:bg-primary hover:text-primary-foreground transition-colors" @click="setDatePreset(p)">
+                  {{ p }}
+                </Badge>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1.5">
+                  <Label class="text-[10px] uppercase text-muted-foreground">From</Label>
+                  <Input type="date" v-model="localFilters.startDate" class="h-8 text-xs bg-muted/30 focus:bg-background" />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-[10px] uppercase text-muted-foreground">To</Label>
+                  <Input type="date" v-model="localFilters.endDate" class="h-8 text-xs bg-muted/30 focus:bg-background" />
+                </div>
+              </div>
+            </div>
+
+            <Separator class="bg-muted/50" />
+
+            <!-- Field Filters -->
+            <div class="space-y-3">
+              <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1"><Icon name="i-lucide-list-filter" class="size-3" /> Properties</Label>
+              <div class="grid gap-3">
+                <div class="grid grid-cols-2 gap-3">
+                  <!-- Make -->
+                  <div class="space-y-1.5">
+                    <Label class="text-xs text-muted-foreground">Make</Label>
+                    <Select v-model="localFilters.make">
+                      <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Any Make" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value=" ">Any Make</SelectItem>
+                        <SelectItem v-for="make in carMakes" :key="make" :value="make">{{ make }}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <!-- Priority -->
+                  <div class="space-y-1.5">
+                    <Label class="text-xs text-muted-foreground">Priority</Label>
+                    <Select v-model="localFilters.priority">
+                      <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Any Priority" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value=" ">Any Priority</SelectItem>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="Low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div class="space-y-1.5">
+                  <Label class="text-xs text-muted-foreground">City Location</Label>
+                  <Select v-model="localFilters.city">
+                    <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Any City" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value=" ">Any City</SelectItem>
+                      <SelectItem v-for="c in cityOptions" :key="c.value" :value="c.value">{{ c.label }}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div class="space-y-1.5">
+                  <Label class="text-xs text-muted-foreground">Assigned Inspector</Label>
+                  <Select v-model="localFilters.allocatedTo">
+                    <SelectTrigger class="h-8 text-xs bg-muted/30"><SelectValue placeholder="Anyone" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value=" ">Anyone</SelectItem>
+                      <SelectItem v-for="insp in inspectors" :key="insp._id || insp.id" :value="insp.email">{{ getUserLabel(insp.email) }}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div class="px-4 py-3 border-t bg-muted/20 flex justify-between gap-2">
+            <Button variant="outline" size="sm" @click="showAdvancedFilters = false" class="h-8 text-xs">Cancel</Button>
+            <Button size="sm" class="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-sm" @click="applyAdvancedFilters">Apply {{ activeFilterCount > 0 ? `(${activeFilterCount})` : '' }}</Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
     
     <!-- Total Counter -->
     <div class="hidden sm:flex items-center mx-2 mr-auto" v-if="countsTotal > 0">
@@ -822,7 +1016,7 @@ function getInitials(name: string): string {
                 </Badge>
               </div>
               <!-- User Identifiers -->
-              <span v-else-if="col.key === 'createdBy' || col.key === 'addedBy'" class="text-sm">
+              <span v-else-if="['createdBy', 'createdByFullName', 'addedBy', 'allocatedTo'].includes(col.key)" class="text-sm font-medium">
                 {{ getUserLabel(item[col.key]) }}
               </span>
               <!-- Default text -->
@@ -1123,7 +1317,7 @@ function getInitials(name: string): string {
                 <SelectValue placeholder="Select an inspector" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="insp in inspectors" :key="insp._id || insp.id" :value="insp.userName">
+                <SelectItem v-for="insp in inspectors" :key="insp._id || insp.id" :value="insp.email">
                   <div class="flex items-center gap-2">
                     <Avatar class="size-5">
                       <AvatarFallback class="text-[9px]">

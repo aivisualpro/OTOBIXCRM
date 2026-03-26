@@ -29,6 +29,34 @@ export default defineEventHandler(async (event) => {
       filter.approvalStatus = { $regex: `^\\s*${approvalStatus}\\s*$`, $options: 'i' }
     }
 
+    // Advanced Filters
+    const startDate = (query.startDate as string || '').trim()
+    const endDate = (query.endDate as string || '').trim()
+    const dateField = (query.dateField as string || 'createdAt').trim()
+
+    if (startDate || endDate) {
+      filter[dateField] = {}
+      if (startDate) {
+        filter[dateField].$gte = startDate
+      }
+      if (endDate) {
+        const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(endDate)
+        filter[dateField].$lte = isDateOnly ? `${endDate}T23:59:59.999Z` : endDate
+      }
+    }
+
+    const filterMake = (query.make as string || '').trim()
+    if (filterMake) filter.make = filterMake
+
+    const filterCity = (query.city as string || '').trim()
+    if (filterCity) filter.city = filterCity
+
+    const filterPriority = (query.priority as string || '').trim()
+    if (filterPriority) filter.priority = filterPriority
+
+    const filterAllocatedTo = (query.allocatedTo as string || '').trim()
+    if (filterAllocatedTo) filter.allocatedTo = filterAllocatedTo
+
     if (search) {
       filter.$or = [
         { ownerName: { $regex: search, $options: 'i' } },

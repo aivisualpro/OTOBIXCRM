@@ -98,8 +98,8 @@ export function syncLeadToAppSheet(
     try {
       const _doc = { ...doc }
 
-      // Map "allocatedTo" from userName to user email for AppSheet
-      if (_doc.allocatedTo && db) {
+      // Map "allocatedTo" from userName to user email for AppSheet (Legacy fallback)
+      if (_doc.allocatedTo && !_doc.allocatedTo.includes('@') && db) {
         try {
           const user = await db.collection('users').findOne({ userName: _doc.allocatedTo })
           if (user && user.email) {
