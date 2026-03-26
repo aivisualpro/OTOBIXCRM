@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 
-const { statusCounts, fetchCounts } = useLeadsApi()
+const { statusCounts, fetchCounts, activeAdvancedFilterCount } = useLeadsApi()
 
 // Fetch counts on mount (lightweight server call)
 onMounted(() => fetchCounts())
@@ -30,8 +30,23 @@ const currentActiveId = computed(() => {
 
 const filteredNavItems = computed(() => {
   const allowed = activeWorkspace.value?.leadTabs
-  if (!allowed || allowed.length === 0) return navItems
-  return navItems.filter(item => allowed.includes(item.id))
+  let items = [...navItems]
+  
+  if (allowed && allowed.length > 0) {
+    items = navItems.filter(item => allowed.includes(item.id))
+  }
+
+  if (activeAdvancedFilterCount.value > 0 || route.path.includes('/search-results')) {
+    items.unshift({
+      id: 'search-results',
+      title: 'Search Results',
+      icon: 'i-lucide-list-filter',
+      color: 'text-amber-500',
+      link: '/leads/search-results'
+    })
+  }
+  
+  return items
 })
 </script>
 
