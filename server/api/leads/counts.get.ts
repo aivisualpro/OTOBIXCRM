@@ -4,14 +4,76 @@ export default defineEventHandler(async (event) => {
     const db = await getLeadsDb(event)
     const col = db.collection('telecallings')
 
-    // Parse session identity tightly mapping active roles securely
-    const userCookieStr = getCookie(event, 'userData')
-    let currentUser: Record<string, any> | null = null
-    try { if (userCookieStr) currentUser = JSON.parse(userCookieStr) } catch (e) {}
-
+    // Parse query parameters from frontend Advanced Filters seamlessly
+    const query = getQuery(event)
     const filter: Record<string, any> = {}
-    if (currentUser && String(currentUser.userRole || currentUser.userType || currentUser.role) === 'Telecaller') {
-      filter.emailAddress = currentUser.email || ''
+    const search = String(query.search || '').trim()
+
+    // Date Filters dynamically
+    const startDate = String(query.startDate || '').trim()
+    const endDate = String(query.endDate || '').trim()
+    const dateField = String(query.dateField || 'inspectionDateTime').trim()
+
+    if (startDate || endDate) {
+      let gteDate = startDate ? new Date(startDate) : null
+      let lteDate: Date | null = null
+      
+      if (endDate) {
+        const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(endDate)
+        const endStr = isDateOnly ? `${endDate}T23:59:59.999Z` : endDate
+        lteDate = new Date(endStr)
+      }
+
+      // Evaluates generic erratic strings like "03/27/2026 10:00 AM" uniformly as verifiable timestamps dynamically at runtime without crashing limits
+      const buildDateExpr = (fieldKey: string) => {
+        const fieldSelector = `$${fieldKey}`
+        const dateParserObj = { $convert: { input: fieldSelector, to: 'date', onError: null, onNull: null } }
+        
+        let conditions = []
+        if (gteDate) conditions.push({ $gte: [ dateParserObj, gteDate ] })
+        if (lteDate) conditions.push({ $lte: [ dateParserObj, lteDate ] })
+        return { $and: conditions }
+      }
+
+      filter.$and = filter.$and || []
+      
+      if (dateField === 'createdAt') {
+        filter.$and.push({
+          $expr: {
+            $or: [ buildDateExpr('createdAt'), buildDateExpr('timeStamp') ]
+          }
+        })
+      } else {
+        filter.$and.push({
+          $expr: buildDateExpr(dateField)
+        })
+      }
+    }
+
+    const filterMake = String(query.make || '').trim()
+    if (filterMake) filter.make = filterMake
+
+    const filterCity = String(query.city || '').trim()
+    if (filterCity) filter.city = filterCity
+
+    const filterPriority = String(query.priority || '').trim()
+    if (filterPriority) filter.priority = filterPriority
+
+    const filterAllocatedTo = String(query.allocatedTo || '').trim()
+    if (filterAllocatedTo) filter.allocatedTo = filterAllocatedTo
+
+    if (search) {
+      filter.$and = filter.$and || []
+      filter.$and.push({
+        $or: [
+          { ownerName: { $regex: search, $options: 'i' } },
+          { customerContactNumber: { $regex: search, $options: 'i' } },
+          { appointmentId: { $regex: search, $options: 'i' } },
+          { make: { $regex: search, $options: 'i' } },
+          { model: { $regex: search, $options: 'i' } },
+          { city: { $regex: search, $options: 'i' } },
+        ]
+      })
     }
 
     // Single aggregate pipeline to count by compound (inspectionStatus + approvalStatus)

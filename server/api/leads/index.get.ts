@@ -35,42 +35,37 @@ export default defineEventHandler(async (event) => {
     const dateField = (query.dateField as string || 'inspectionDateTime').trim()
 
     if (startDate || endDate) {
-      const matchString: any = {}
-      const matchDate: any = {}
-
-      let endStr = endDate
+      let gteDate = startDate ? new Date(startDate) : null
+      let lteDate: Date | null = null
+      
       if (endDate) {
         const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(endDate)
-        endStr = isDateOnly ? `${endDate}T23:59:59.999Z` : endDate
+        const endStr = isDateOnly ? `${endDate}T23:59:59.999Z` : endDate
+        lteDate = new Date(endStr)
       }
 
-      if (startDate) {
-        matchString.$gte = startDate
-        matchDate.$gte = new Date(startDate)
-      }
-      if (endDate) {
-        matchString.$lte = endStr
-        matchDate.$lte = new Date(endStr)
+      // Evaluates generic erratic strings like "03/27/2026 10:00 AM" uniformly as verifiable timestamps dynamically at runtime without crashing limits
+      const buildDateExpr = (fieldKey: string) => {
+        const fieldSelector = `$${fieldKey}`
+        const dateParserObj = { $convert: { input: fieldSelector, to: 'date', onError: null, onNull: null } }
+        
+        let conditions = []
+        if (gteDate) conditions.push({ $gte: [ dateParserObj, gteDate ] })
+        if (lteDate) conditions.push({ $lte: [ dateParserObj, lteDate ] })
+        return { $and: conditions }
       }
 
       filter.$and = filter.$and || []
       
-      // If the UI targets the default 'createdAt', dynamically hook legacy 'timeStamp' too so older records drop in securely.
       if (dateField === 'createdAt') {
         filter.$and.push({
-          $or: [
-            { createdAt: matchString },
-            { createdAt: matchDate },
-            { timeStamp: matchString },
-            { timeStamp: matchDate }
-          ]
+          $expr: {
+            $or: [ buildDateExpr('createdAt'), buildDateExpr('timeStamp') ]
+          }
         })
       } else {
         filter.$and.push({
-          $or: [
-            { [dateField]: matchString },
-            { [dateField]: matchDate }
-          ]
+          $expr: buildDateExpr(dateField)
         })
       }
     }

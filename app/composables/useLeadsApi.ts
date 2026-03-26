@@ -85,7 +85,21 @@ export function useLeadsApi() {
   // ─── Fetch counts (lightweight, runs independently) ───
   async function fetchCounts() {
     try {
-      const res = await $fetch<CountsResponse>('/api/leads/counts')
+      const params: Record<string, string> = {}
+      
+      if (_serverSearch.value) {
+        params.search = _serverSearch.value
+      } else {
+        if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
+        if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
+        if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
+        if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
+        if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
+        if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
+        if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
+      }
+
+      const res = await $fetch<CountsResponse>('/api/leads/counts', { params })
       _counts.value = res.counts || {}
       _countsTotal.value = res.totalCount || 0
     }
