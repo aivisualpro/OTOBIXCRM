@@ -188,7 +188,7 @@ export const routeFilters = {
   },
   // /leads/re-scheduled
   're-scheduled': {
-    inspectionStatus: 'Rescheduled',
+    inspectionStatus: 'Re-Scheduled',
     approvalStatus: 'Pending',
     label: 'Re-Scheduled',
   },

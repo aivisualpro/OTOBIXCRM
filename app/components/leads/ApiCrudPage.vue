@@ -28,6 +28,7 @@ const {
   allLeads,
   totalCount,
   statusCounts,
+  countsTotal,
   hasMore: serverHasMore,
   isLoading,
   isLoadingMore,
@@ -129,6 +130,12 @@ async function updateLeadStatus(lead: any, field: string, newStatus: string) {
     showAssignDialog.value = true
     return
   }
+  if (field === 'inspectionStatus' && newStatus === 'Re-Scheduled') {
+    reschedulingLead.value = { ...lead, _pendingStatus: newStatus }
+    newInspectionDateTime.value = lead.inspectionDateTime || ''
+    showRescheduleDialog.value = true
+    return
+  }
   await doStatusUpdate(lead, { [field]: newStatus })
 }
 
@@ -146,6 +153,26 @@ async function confirmAssignInspector() {
   showAssignDialog.value = false
   assigningLead.value = null
   selectedInspector.value = ''
+}
+
+const showRescheduleDialog = ref(false)
+const reschedulingLead = ref<any>(null)
+const newInspectionDateTime = ref('')
+
+async function confirmReschedule() {
+  if (!reschedulingLead.value) return
+  if (!newInspectionDateTime.value) {
+     toast.error('Please select a new date and time')
+     return
+  }
+  const lead = reschedulingLead.value
+  await doStatusUpdate(lead, {
+    inspectionStatus: lead._pendingStatus || 'Re-Scheduled',
+    inspectionDateTime: newInspectionDateTime.value
+  })
+  showRescheduleDialog.value = false
+  reschedulingLead.value = null
+  newInspectionDateTime.value = ''
 }
 
 async function doStatusUpdate(lead: any, updates: Record<string, string>) {
@@ -311,8 +338,8 @@ function getFieldsForTab(tabId: string) {
     // Basic tab check
     if (!tab.keys.includes(f.key))
       return false
-    // Hide fields on create if needed
-    if (!editingItem.value && f.hideOnCreate)
+    // Hide fields conditionally unified fully for both New and Edit states equivalently 
+    if (f.hideOnCreate)
       return false
       
     // Conditional logic based on Source
@@ -579,15 +606,10 @@ function getInitials(name: string): string {
       </Button>
     </div>
     
-    <!-- Ultra-Dense Universal Counters Overlay -->
-    <div class="hidden xl:flex items-center gap-1.5 overflow-x-auto no-scrollbar mx-2 mr-auto" v-if="statusCounts">
-      <Badge 
-        v-for="(val, key) in statusCounts" 
-        :key="key" 
-        variant="outline" 
-        class="h-[22px] px-1.5 text-[9px] uppercase font-mono tracking-wider text-muted-foreground border-border/60 bg-muted/20 tabular-nums whitespace-nowrap shrink-0"
-      >
-        {{ String(key).replace(/-/g, ' ') }}: <span class="font-medium ml-1 text-foreground/80 font-sans tracking-normal">{{ formatNumber(val) }}</span>
+    <!-- Total Counter -->
+    <div class="hidden sm:flex items-center mx-2 mr-auto" v-if="countsTotal > 0">
+      <Badge variant="outline" class="bg-muted/30 border-primary/20 text-muted-foreground uppercase text-[10px] tracking-wider font-mono h-[24px]">
+        Total Records: <span class="text-primary font-semibold ml-1.5 text-xs tracking-normal">{{ formatNumber(countsTotal) }}</span>
       </Badge>
     </div>
     <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="handleRefresh">
@@ -969,7 +991,6 @@ function getInitials(name: string): string {
 
           <!-- Inspector Select -->
           <div class="space-y-2">
-            <Label for="inspector-select">Inspector</Label>
             <Select v-model="selectedInspector">
               <SelectTrigger id="inspector-select">
                 <SelectValue placeholder="Select an inspector" />
@@ -988,19 +1009,51 @@ function getInitials(name: string): string {
               </SelectContent>
             </Select>
             <p v-if="inspectors.length === 0" class="text-xs text-muted-foreground">
-              No inspectors found. Add users with role "Inspection Engineer" first.
+              No inspectors available.
             </p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" @click="showAssignDialog = false">
-            Cancel
-          </Button>
-          <Button :disabled="!selectedInspector || isUpdatingStatus" @click="confirmAssignInspector">
-            <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
-            <Icon v-else name="i-lucide-check" class="mr-1.5 size-3.5" />
+          <Button variant="outline" @click="showAssignDialog = false">Cancel</Button>
+          <Button @click="confirmAssignInspector" :disabled="!selectedInspector || isUpdatingStatus" class="bg-blue-600 hover:bg-blue-700">
+            <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
             Assign & Schedule
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Reschedule Inspector Dialog -->
+    <Dialog v-model:open="showRescheduleDialog">
+      <DialogContent class="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon name="i-lucide-calendar-clock" class="size-5 text-purple-500" />
+            Reschedule Inspection
+          </DialogTitle>
+          <DialogDescription>
+            Record a new inspection date and time.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <div v-if="reschedulingLead" class="rounded-lg border bg-muted/30 p-3 space-y-1">
+            <p class="text-sm font-medium">{{ reschedulingLead.ownerName || 'Unknown' }}</p>
+            <p class="text-xs text-muted-foreground">{{ reschedulingLead.make }} {{ reschedulingLead.model }} — {{ reschedulingLead.carRegistrationNumber }}</p>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="reschedule-datetime">New Date & Time</Label>
+            <Input id="reschedule-datetime" type="datetime-local" v-model="newInspectionDateTime" />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="showRescheduleDialog = false">Cancel</Button>
+          <Button @click="confirmReschedule" :disabled="!newInspectionDateTime || isUpdatingStatus" class="bg-purple-600 hover:bg-purple-700">
+            <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
+            Confirm Reschedule
           </Button>
         </DialogFooter>
       </DialogContent>

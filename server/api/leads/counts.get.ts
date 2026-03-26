@@ -56,7 +56,7 @@ export default defineEventHandler(async (event) => {
       counts: {
         'leads': countFor('Pending', 'Pending'),
         'scheduled': countFor('Scheduled', 'Pending'),
-        're-scheduled': countFor('Rescheduled', 'Pending'),
+        're-scheduled': countFor('Re-Scheduled', 'Pending'),
         'cancelled': countFor('Cancelled', 'Pending'),
         're-inspection': countFor('Re-Inspected', '*'),
         'inspected': countFor('Inspected', 'Pending'),
