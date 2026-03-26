@@ -9,7 +9,7 @@ export interface CrudColumn {
 export interface CrudFormField {
   key: string
   label: string
-  type?: 'text' | 'email' | 'number' | 'select' | 'date' | 'textarea' | 'url'
+  type?: 'text' | 'email' | 'number' | 'select' | 'date' | 'datetime-local' | 'textarea' | 'url'
   options?: { label: string, value: string }[]
   required?: boolean
   placeholder?: string

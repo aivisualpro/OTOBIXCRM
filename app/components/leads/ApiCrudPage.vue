@@ -234,14 +234,19 @@ watch(scrollSentinel, (el) => {
 
 // ─── Form Tabs ───
 const activeTab = ref('owner')
+const tabValidationErrors = ref<Record<string, string>>({})
 
 const formTabs = [
-  { id: 'owner', label: 'Owner Info', icon: 'i-lucide-user', keys: ['ownerName', 'customerContactNumber', 'emailAddress', 'ownershipSerialNumber'] },
+  { id: 'owner', label: 'Owner Info', icon: 'i-lucide-user', keys: ['ownerName', 'customerContactNumber', 'carRegistrationNumber', 'emailAddress', 'ownershipSerialNumber'] },
   { id: 'vehicle', label: 'Vehicle', icon: 'i-lucide-car', keys: ['vehicleStatus', 'make', 'model', 'variant', 'yearOfRegistration', 'yearOfManufacture', 'odometerReadingInKms'] },
   { id: 'location', label: 'Location', icon: 'i-lucide-map-pin', keys: ['city', 'zipCode', 'inspectionAddress', 'inspectionDateTime'] },
   { id: 'status', label: 'Status', icon: 'i-lucide-settings', keys: ['inspectionStatus', 'approvalStatus', 'priority', 'appointmentSource', 'allocatedTo', 'repName', 'repContact', 'bankSource', 'referenceName'] },
   { id: 'notes', label: 'Notes', icon: 'i-lucide-file-text', keys: ['remarks', 'additionalNotes'] },
 ]
+
+const currentTabIndex = computed(() => formTabs.findIndex(t => t.id === activeTab.value))
+const isFirstTab = computed(() => currentTabIndex.value === 0)
+const isLastTab = computed(() => currentTabIndex.value === formTabs.length - 1)
 
 function getFieldsForTab(tabId: string) {
   const tab = formTabs.find(t => t.id === tabId)
@@ -264,6 +269,41 @@ function getFieldsForTab(tabId: string) {
   })
 }
 
+function validateCurrentTab(): boolean {
+  tabValidationErrors.value = {}
+  const fields = getFieldsForTab(activeTab.value)
+  let valid = true
+  for (const field of fields) {
+    if (field.required) {
+      const value = formData.value[field.key]
+      if (value === undefined || value === null || String(value).trim() === '') {
+        tabValidationErrors.value[field.key] = `${field.label} is required`
+        valid = false
+      }
+    }
+  }
+  return valid
+}
+
+function handleNextTab() {
+  if (!validateCurrentTab()) {
+    toast.error('Please fill in all required fields')
+    return
+  }
+  const nextIndex = currentTabIndex.value + 1
+  if (nextIndex < formTabs.length) {
+    activeTab.value = formTabs[nextIndex]!.id
+  }
+}
+
+function handlePrevTab() {
+  tabValidationErrors.value = {}
+  const prevIndex = currentTabIndex.value - 1
+  if (prevIndex >= 0) {
+    activeTab.value = formTabs[prevIndex]!.id
+  }
+}
+
 // ─── CRUD Handlers ───
 function openCreate() {
   editingItem.value = null
@@ -272,6 +312,7 @@ function openCreate() {
     formData.value[f.key] = f.defaultValue !== undefined ? f.defaultValue : ''
   })
   activeTab.value = 'owner'
+  tabValidationErrors.value = {}
   showDialog.value = true
 }
 
@@ -279,6 +320,7 @@ function openEdit(item: any) {
   editingItem.value = item
   formData.value = { ...item }
   activeTab.value = 'owner'
+  tabValidationErrors.value = {}
   showDialog.value = true
 }
 
@@ -656,7 +698,10 @@ function getInitials(name: string): string {
           <div class="p-6 h-[450px] overflow-y-auto">
             <div class="space-y-4">
               <div v-for="field in getFieldsForTab(activeTab)" :key="field.key" class="space-y-2">
-                <Label :for="field.key">{{ field.label }}</Label>
+                <Label :for="field.key" class="flex items-center gap-1">
+                  {{ field.label }}
+                  <span v-if="field.required" class="text-destructive text-xs">*</span>
+                </Label>
 
                 <!-- Car Make dropdown -->
                 <SearchableSelect
@@ -665,6 +710,7 @@ function getInitials(name: string): string {
                   :options="carMakes.map(m => ({ label: m, value: m }))"
                   placeholder="Select Make"
                   search-placeholder="Search brands..."
+                  :class="{ 'ring-1 ring-destructive rounded-md': tabValidationErrors[field.key] }"
                 />
 
                 <!-- Car Model dropdown (filtered by make) -->
@@ -675,6 +721,7 @@ function getInitials(name: string): string {
                   :disabled="!formData.make || isCarLoading"
                   :placeholder="isCarLoading ? 'Loading models...' : (formData.make ? 'Select Model' : 'Select make first')"
                   search-placeholder="Search models..."
+                  :class="{ 'ring-1 ring-destructive rounded-md': tabValidationErrors[field.key] }"
                 />
 
                 <!-- Car Variant dropdown (filtered by make + model) -->
@@ -685,6 +732,7 @@ function getInitials(name: string): string {
                   :disabled="!formData.model || isCarLoading"
                   :placeholder="isCarLoading ? 'Loading variants...' : (formData.model ? 'Select Variant' : 'Select model first')"
                   search-placeholder="Search variants..."
+                  :class="{ 'ring-1 ring-destructive rounded-md': tabValidationErrors[field.key] }"
                 />
 
                 <!-- Searchable dropdown for generic select fields (like city) -->
@@ -694,13 +742,16 @@ function getInitials(name: string): string {
                   :options="field.options || []"
                   :placeholder="field.placeholder || `Select ${field.label.toLowerCase()}`"
                   :search-placeholder="`Search ${field.label.toLowerCase()}...`"
+                  :class="{ 'ring-1 ring-destructive rounded-md': tabValidationErrors[field.key] }"
                 />
                 <Textarea
                   v-else-if="field.type === 'textarea'"
                   :id="field.key"
                   v-model="formData[field.key]"
                   :placeholder="field.placeholder"
+                  :required="field.required"
                   rows="3"
+                  :class="{ 'ring-1 ring-destructive': tabValidationErrors[field.key] }"
                 />
                 <Input
                   v-else
@@ -708,7 +759,12 @@ function getInitials(name: string): string {
                   v-model="formData[field.key]"
                   :type="field.type || 'text'"
                   :placeholder="field.placeholder"
+                  :required="field.required"
+                  :class="{ 'ring-1 ring-destructive': tabValidationErrors[field.key] }"
                 />
+                <p v-if="tabValidationErrors[field.key]" class="text-xs text-destructive mt-1">
+                  {{ tabValidationErrors[field.key] }}
+                </p>
               </div>
             </div>
           </div>
@@ -719,10 +775,22 @@ function getInitials(name: string): string {
               {{ formTabs.findIndex(t => t.id === activeTab) + 1 }} of {{ formTabs.length }}
             </p>
             <div class="flex gap-2">
+              <!-- Back button (shown on tabs 2+) -->
+              <Button v-if="!isFirstTab" variant="outline" type="button" @click="handlePrevTab">
+                <Icon name="i-lucide-arrow-left" class="mr-1.5 size-3.5" />
+                Back
+              </Button>
+              <!-- Cancel (always shown) -->
               <Button variant="outline" type="button" :disabled="isSaving" @click="showDialog = false">
                 Cancel
               </Button>
-              <Button type="submit" :disabled="isSaving">
+              <!-- Next button (shown on all tabs except last) -->
+              <Button v-if="!isLastTab" type="button" @click="handleNextTab">
+                Next
+                <Icon name="i-lucide-arrow-right" class="ml-1.5 size-3.5" />
+              </Button>
+              <!-- Create/Update button (only on last tab) -->
+              <Button v-else type="submit" :disabled="isSaving">
                 <Icon v-if="isSaving" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
                 {{ editingItem ? 'Update' : 'Create' }}
               </Button>

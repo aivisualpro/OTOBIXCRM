@@ -34,6 +34,7 @@ export default defineEventHandler(async (event) => {
       appointmentId,
       ownerName: body.ownerName || '',
       customerContactNumber: body.customerContactNumber || '',
+      carRegistrationNumber: body.carRegistrationNumber || '',
       make: body.make || '',
       model: body.model || '',
       variant: body.variant || '',

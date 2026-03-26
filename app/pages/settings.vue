@@ -12,6 +12,7 @@ const router = useRouter()
 const tabs = [
   { id: 'workspaces', label: 'Workspaces', icon: 'i-lucide-layers' },
   { id: 'system', label: 'System', icon: 'i-lucide-monitor-cog' },
+  { id: 'imports', label: 'Imports', icon: 'i-lucide-upload' },
 ]
 
 const activeTab = ref('workspaces')
@@ -66,7 +67,7 @@ function switchTab(id: string) {
 
     <!-- Tab Content -->
     <div class="flex-1 min-h-0 overflow-y-auto">
-      <div class="max-w-5xl">
+      <div class="max-w-7xl">
         <NuxtPage />
       </div>
     </div>

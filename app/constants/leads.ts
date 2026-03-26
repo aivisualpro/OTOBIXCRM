@@ -40,10 +40,12 @@ export const routeColumnsMap: Record<string, typeof leadsColumns> = {
 export const leadsFormFields = [
   { key: 'ownerName', label: 'Owner Name', placeholder: 'Full Name', required: true },
   { key: 'customerContactNumber', label: 'Contact Number', placeholder: '+91 9999999999', required: true },
+  { key: 'carRegistrationNumber', label: 'Car Registration Number', placeholder: 'e.g. WB-26-AB-1234', required: true },
   {
     key: 'vehicleStatus',
     label: 'Vehicle Status',
     type: 'select' as const,
+    required: true,
     defaultValue: 'Home Inspection',
     options: [
       { label: 'Home Inspection', value: 'Home Inspection' },
@@ -52,17 +54,18 @@ export const leadsFormFields = [
       { label: 'Test Drive Vehicle/ Dealer Vehicle', value: 'Test Drive Vehicle/ Dealer Vehicle' },
     ],
   },
-  { key: 'make', label: 'Make', type: 'select' as const, placeholder: 'Select Make' },
-  { key: 'model', label: 'Model', type: 'select' as const, placeholder: 'Select Model' },
-  { key: 'variant', label: 'Variant', type: 'select' as const, placeholder: 'Select Variant' },
-  { key: 'yearOfRegistration', label: 'Year of Registration', placeholder: '2024' },
-  { key: 'yearOfManufacture', label: 'Year of Manufacture', placeholder: '2023' },
-  { key: 'odometerReadingInKms', label: 'Odometer (KM)', type: 'number' as const, placeholder: '15000' },
-  { key: 'ownershipSerialNumber', label: 'Ownership Number', type: 'number' as const, placeholder: '1' },
+  { key: 'make', label: 'Make', type: 'select' as const, placeholder: 'Select Make', required: true },
+  { key: 'model', label: 'Model', type: 'select' as const, placeholder: 'Select Model', required: true },
+  { key: 'variant', label: 'Variant', type: 'select' as const, placeholder: 'Select Variant', required: true },
+  { key: 'yearOfRegistration', label: 'Year of Registration', placeholder: '2024', required: true },
+  { key: 'yearOfManufacture', label: 'Year of Manufacture', placeholder: '2023', required: true },
+  { key: 'odometerReadingInKms', label: 'Odometer (KM)', type: 'number' as const, placeholder: '15000', required: true },
+  { key: 'ownershipSerialNumber', label: 'Ownership Number', type: 'number' as const, placeholder: '1', required: true },
   {
     key: 'city',
     label: 'City',
     type: 'select' as const,
+    required: true,
     options: [
       { label: 'Kolkata', value: 'KOLKATA' },
       { label: 'Mumbai', value: 'Mumbai' },
@@ -86,9 +89,9 @@ export const leadsFormFields = [
       { label: 'Visakhapatnam', value: 'Visakhapatnam' },
     ],
   },
-  { key: 'zipCode', label: 'ZIP Code', placeholder: '400001' },
-  { key: 'inspectionAddress', label: 'Inspection Address', type: 'textarea' as const, placeholder: 'Full address for inspection' },
-  { key: 'inspectionDateTime', label: 'Inspection Date & Time', type: 'date' as const },
+  { key: 'zipCode', label: 'ZIP Code', placeholder: '400001', required: true },
+  { key: 'inspectionAddress', label: 'Inspection Address', type: 'textarea' as const, placeholder: 'Full address for inspection', required: true },
+  { key: 'inspectionDateTime', label: 'Inspection Date & Time', type: 'datetime-local' as const, required: true },
   {
     key: 'inspectionStatus',
     label: 'Inspection Status',
@@ -121,6 +124,7 @@ export const leadsFormFields = [
     key: 'priority',
     label: 'Priority',
     type: 'select' as const,
+    required: true,
     options: [
       { label: 'High', value: 'High' },
       { label: 'Medium', value: 'Medium' },
@@ -131,6 +135,7 @@ export const leadsFormFields = [
     key: 'appointmentSource',
     label: 'Source',
     type: 'select' as const,
+    required: true,
     defaultValue: 'OLX',
     options: [
       { label: 'Reference', value: 'Reference' },
@@ -152,10 +157,10 @@ export const leadsFormFields = [
   { key: 'allocatedTo', label: 'Allocated To', placeholder: 'Team member name', hideOnCreate: true },
   { key: 'repName', label: 'Representative Name', placeholder: 'Rep name', hideOnCreate: true },
   { key: 'repContact', label: 'Representative Contact', placeholder: '+91 9999999999', hideOnCreate: true },
-  { key: 'bankSource', label: 'Bank Source', placeholder: 'Bank name' },
-  { key: 'referenceName', label: 'Reference Name', placeholder: 'Reference' },
-  { key: 'remarks', label: 'Remarks', type: 'textarea' as const, placeholder: 'Any additional remarks...' },
-  { key: 'additionalNotes', label: 'Additional Notes', type: 'textarea' as const, placeholder: 'Notes...' },
+  { key: 'bankSource', label: 'Bank Source', placeholder: 'Bank name', required: true },
+  { key: 'referenceName', label: 'Reference Name', placeholder: 'Reference', required: true },
+  { key: 'remarks', label: 'Remarks', type: 'textarea' as const, placeholder: 'Any additional remarks...', required: true },
+  { key: 'additionalNotes', label: 'Additional Notes', type: 'textarea' as const, placeholder: 'Notes...', required: true },
 ]
 
 // No longer needed — data comes from API
