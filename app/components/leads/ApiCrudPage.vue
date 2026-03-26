@@ -697,10 +697,7 @@ function getInitials(name: string): string {
         Total Records: <span class="text-primary font-semibold ml-1.5 text-xs tracking-normal">{{ formatNumber(countsTotal) }}</span>
       </Badge>
     </div>
-    <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="handleRefresh">
-      <Icon name="i-lucide-refresh-cw" class="mr-1.5 size-3.5" :class="{ 'animate-spin': isLoading }" />
-      Refresh
-    </Button>
+
     <Button size="sm" class="h-8" @click="openCreate">
       <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
       Add {{ entity }}
