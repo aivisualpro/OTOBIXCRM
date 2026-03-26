@@ -84,6 +84,18 @@ function toggleSelectAllEditLocations() {
   }
 }
 
+const showPassword = ref(false)
+
+function generatePassword() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
+  let pass = ''
+  for (let i = 0; i < 12; i++) {
+    pass += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  editForm.value.password = pass
+  showPassword.value = true
+}
+
 function startEdit() {
   if (!user.value)
     return
@@ -91,6 +103,7 @@ function startEdit() {
     userName: user.value.userName || '',
     email: user.value.email || '',
     phoneNumber: user.value.phoneNumber || '',
+    password: user.value.password || '',
     userRole: user.value.userRole || '',
     location: parseLocations(user.value.location),
     dealershipName: user.value.dealershipName || '',
@@ -111,6 +124,19 @@ function cancelEdit() {
   isEditing.value = false
   editForm.value = {}
 }
+
+watch(() => editForm.value.userRole, (newRole) => {
+  if (newRole === 'Telecaller') {
+    editForm.value.isStaff = true
+    editForm.value.dealershipName = ''
+    editForm.value.entityType = ''
+    editForm.value.assignedKam = ''
+    editForm.value.primaryContactPerson = ''
+    editForm.value.primaryContactNumber = ''
+    editForm.value.secondaryContactPerson = ''
+    editForm.value.secondaryContactNumber = ''
+  }
+})
 
 async function saveEdit() {
   if (!user.value)
@@ -312,6 +338,47 @@ const addresses = computed(() => {
 
           <!-- VIEW MODE -->
           <template v-if="!isEditing">
+            <!-- Login Credentials Grid -->
+            <div class="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-4 mb-4">
+              <h3 class="text-sm font-semibold flex items-center gap-2 text-primary">
+                <Icon name="i-lucide-key-round" class="size-4" />
+                Login Credentials
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
+                  <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Username</span>
+                  <p class="text-sm font-medium">
+                    {{ user.userName || '—' }}
+                  </p>
+                </div>
+                <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
+                  <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Phone Number</span>
+                  <p class="text-sm font-medium font-mono">
+                    {{ user.phoneNumber || '—' }}
+                  </p>
+                </div>
+                <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Password</span>
+                    <button v-if="user.password" type="button" @click="showPassword = !showPassword" class="text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded">
+                      <Icon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-3.5" />
+                    </button>
+                  </div>
+                  <p class="text-sm font-medium font-mono tracking-widest mt-0.5">
+                    <template v-if="!user.password">
+                      <span class="text-muted-foreground/50 text-xs italic tracking-normal">Password not set</span>
+                    </template>
+                    <template v-else-if="showPassword">
+                      <span class="tracking-normal">{{ user.password }}</span>
+                    </template>
+                    <template v-else>
+                      ••••••••
+                    </template>
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <!-- Contact Info Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="rounded-xl border bg-card p-4 space-y-2">
@@ -486,6 +553,33 @@ const addresses = computed(() => {
                 </div>
               </div>
 
+              <!-- Password -->
+              <div class="space-y-1.5">
+                <Label for="edit-password">Password</Label>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div class="relative flex-1">
+                    <Input 
+                      id="edit-password" 
+                      v-model="editForm.password" 
+                      :type="showPassword ? 'text' : 'password'" 
+                      placeholder="Leave blank to keep unchanged" 
+                      class="pr-10" 
+                    />
+                    <button 
+                      type="button" 
+                      class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      @click="showPassword = !showPassword"
+                    >
+                      <Icon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-4" />
+                    </button>
+                  </div>
+                  <Button type="button" variant="outline" class="shrink-0" @click="generatePassword">
+                    <Icon name="i-lucide-wand-2" class="mr-1.5 size-3.5 text-primary" />
+                    Suggest Strong
+                  </Button>
+                </div>
+              </div>
+
               <!-- Phone & Role -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-1.5">
@@ -564,43 +658,45 @@ const addresses = computed(() => {
                 </div>
               </div>
 
-              <!-- Dealership & Entity Type -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                  <Label for="edit-dealership">Dealership Name</Label>
-                  <Input id="edit-dealership" v-model="editForm.dealershipName" placeholder="Dealership name" />
+              <template v-if="editForm.userRole !== 'Telecaller'">
+                <!-- Dealership & Entity Type -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="space-y-1.5">
+                    <Label for="edit-dealership">Dealership Name</Label>
+                    <Input id="edit-dealership" v-model="editForm.dealershipName" placeholder="Dealership name" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <Label for="edit-entity">Entity Type</Label>
+                    <Input id="edit-entity" v-model="editForm.entityType" placeholder="Entity type" />
+                  </div>
                 </div>
-                <div class="space-y-1.5">
-                  <Label for="edit-entity">Entity Type</Label>
-                  <Input id="edit-entity" v-model="editForm.entityType" placeholder="Entity type" />
-                </div>
-              </div>
 
-              <!-- Assigned KAM -->
-              <div class="space-y-1.5">
-                <Label for="edit-kam">Assigned KAM</Label>
-                <Input id="edit-kam" v-model="editForm.assignedKam" placeholder="KAM name or ID" />
-              </div>
+                <!-- Assigned KAM -->
+                <div class="space-y-1.5">
+                  <Label for="edit-kam">Assigned KAM</Label>
+                  <Input id="edit-kam" v-model="editForm.assignedKam" placeholder="KAM name or ID" />
+                </div>
 
-              <!-- Contact People -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                  <Label for="edit-primary-person">Primary Contact Person</Label>
-                  <Input id="edit-primary-person" v-model="editForm.primaryContactPerson" placeholder="Contact name" />
+                <!-- Contact People -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="space-y-1.5">
+                    <Label for="edit-primary-person">Primary Contact Person</Label>
+                    <Input id="edit-primary-person" v-model="editForm.primaryContactPerson" placeholder="Contact name" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <Label for="edit-primary-number">Primary Contact Number</Label>
+                    <Input id="edit-primary-number" v-model="editForm.primaryContactNumber" placeholder="Contact number" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <Label for="edit-secondary-person">Secondary Contact Person</Label>
+                    <Input id="edit-secondary-person" v-model="editForm.secondaryContactPerson" placeholder="Contact name" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <Label for="edit-secondary-number">Secondary Contact Number</Label>
+                    <Input id="edit-secondary-number" v-model="editForm.secondaryContactNumber" placeholder="Contact number" />
+                  </div>
                 </div>
-                <div class="space-y-1.5">
-                  <Label for="edit-primary-number">Primary Contact Number</Label>
-                  <Input id="edit-primary-number" v-model="editForm.primaryContactNumber" placeholder="Contact number" />
-                </div>
-                <div class="space-y-1.5">
-                  <Label for="edit-secondary-person">Secondary Contact Person</Label>
-                  <Input id="edit-secondary-person" v-model="editForm.secondaryContactPerson" placeholder="Contact name" />
-                </div>
-                <div class="space-y-1.5">
-                  <Label for="edit-secondary-number">Secondary Contact Number</Label>
-                  <Input id="edit-secondary-number" v-model="editForm.secondaryContactNumber" placeholder="Contact number" />
-                </div>
-              </div>
+              </template>
 
               <!-- Staff Member Toggle -->
               <div class="flex items-center justify-between rounded-lg border p-4">

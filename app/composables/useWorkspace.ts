@@ -53,6 +53,11 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
   { id: 'timeline', title: 'Timeline', icon: 'i-lucide-gantt-chart', link: '/timeline', group: 'Apps' },
   // Support
   { id: 'tickets', title: 'Tickets', icon: 'i-lucide-ticket', link: '/support/tickets', group: 'Support' },
+  // System
+  { id: 'settings', title: 'General Settings', icon: 'i-lucide-settings', link: '/settings', group: 'System' },
+  { id: 'workspaces', title: 'Workspaces', icon: 'i-lucide-briefcase', link: '/settings/workspaces', group: 'System' },
+  { id: 'system', title: 'System Logs', icon: 'i-lucide-server-cog', link: '/settings/system', group: 'System' },
+  { id: 'imports', title: 'Data Imports', icon: 'i-lucide-database-backup', link: '/settings/imports', group: 'System' },
 ]
 
 // ─── Global state ───

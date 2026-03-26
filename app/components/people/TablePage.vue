@@ -207,6 +207,13 @@ function defaultForm() {
 
 const form = ref(defaultForm())
 
+watch(() => form.value.userRole, (newRole) => {
+  if (newRole === 'Telecaller') {
+    form.value.isStaff = true
+    form.value.assignedKam = ''
+  }
+})
+
 function addAddress() {
   form.value.addressList.push('')
 }
@@ -525,7 +532,7 @@ function toggleSelectAllLocations() {
         </div>
 
         <!-- Assigned KAM -->
-        <div class="space-y-1.5">
+        <div v-if="form.userRole !== 'Telecaller'" class="space-y-1.5">
           <Label for="add-user-kam">Assigned KAM</Label>
           <Input id="add-user-kam" v-model="form.assignedKam" placeholder="KAM name or ID" />
         </div>

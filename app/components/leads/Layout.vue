@@ -10,6 +10,7 @@ const navItems = [
   { id: 'leads', title: 'Leads', icon: 'i-lucide-magnet', color: 'text-blue-500', link: '/leads' },
   { id: 'scheduled', title: 'Scheduled', icon: 'i-lucide-calendar', color: 'text-indigo-500', link: '/leads/scheduled' },
   { id: 're-scheduled', title: 'Re-Scheduled', icon: 'i-lucide-calendar-range', color: 'text-purple-500', link: '/leads/re-scheduled' },
+  { id: 'running', title: 'Running', icon: 'i-lucide-activity', color: 'text-green-500', link: '/leads/running' },
   { id: 'cancelled', title: 'Cancelled', icon: 'i-lucide-ban', color: 'text-red-500', link: '/leads/cancelled' },
   { id: 're-inspection', title: 'Re-Inspection', icon: 'i-lucide-rotate-ccw', color: 'text-amber-500', link: '/leads/re-inspection' },
   { id: 'inspected', title: 'Inspected', icon: 'i-lucide-check-circle', color: 'text-emerald-500', link: '/leads/inspected' },

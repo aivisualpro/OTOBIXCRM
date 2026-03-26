@@ -179,6 +179,7 @@ const LEADS_TABS = [
   { id: 'leads', title: 'Leads' },
   { id: 'scheduled', title: 'Scheduled' },
   { id: 're-scheduled', title: 'Re-Scheduled' },
+  { id: 'running', title: 'Running' },
   { id: 'cancelled', title: 'Cancelled' },
   { id: 're-inspection', title: 'Re-Inspection' },
   { id: 'inspected', title: 'Inspected' },

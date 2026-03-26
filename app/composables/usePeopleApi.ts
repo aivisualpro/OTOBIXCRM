@@ -56,10 +56,7 @@ export function usePeopleApi() {
     _fetchError.value = null
 
     try {
-      const response = await $fetch<any>(
-        `${apiBaseUrl.value}user/all-users-list`,
-        { method: 'GET', headers: _headers() },
-      )
+      const response = await $fetch<any>('/api/users', { method: 'GET' })
 
       const usersArray = Array.isArray(response)
         ? response
@@ -129,7 +126,17 @@ export function usePeopleApi() {
       '/api/users/update',
       { method: 'PUT', body },
     )
-    await refreshUsers()
+    
+    // Patch local cache directly. Do NOT call refreshUsers() here because the 
+    // external API's GET endpoint aggressively strips sensitive fields like passwords, 
+    // causing the UI to falsely appear as if the save failed!
+    const idx = _allUsers.value.findIndex(u => u.id === userId || u._id === userId)
+    if (idx !== -1 && _allUsers.value[idx]) {
+      Object.assign(_allUsers.value[idx]!, payload)
+      // Normalise location locally just like we did for the API
+      _allUsers.value[idx]!.location = body.location
+    }
+    
     return response
   }
 

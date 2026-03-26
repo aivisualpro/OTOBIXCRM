@@ -100,6 +100,21 @@ const inspectors = computed(() =>
 
 onMounted(() => fetchAllUsers())
 
+function getUserLabel(emailOrName: string) {
+  if (!emailOrName) return '—'
+  const val = String(emailOrName).trim().toLowerCase()
+  const found = allUsers.value.find((u: any) => 
+    String(u.email || '').toLowerCase() === val || 
+    String(u.userName || '').toLowerCase() === val || 
+    String(u.emailAddress || '').toLowerCase() === val
+  )
+  if (found) {
+    if (found.fullName) return found.fullName
+    if (found.userName) return found.userName
+  }
+  return emailOrName
+}
+
 const showAssignDialog = ref(false)
 const assigningLead = ref<any>(null)
 const selectedInspector = ref('')
@@ -305,6 +320,15 @@ function validateCurrentTab(): boolean {
         valid = false
       }
     }
+
+    // Strict 10-digit validation for new leads
+    if (!editingItem.value && field.key === 'customerContactNumber') {
+      const value = String(formData.value[field.key] || '')
+      if (value.length !== 10 || !/^\d{10}$/.test(value)) {
+        tabValidationErrors.value[field.key] = `Contact number must be exactly 10 digits`
+        valid = false
+      }
+    }
   }
   return valid
 }
@@ -385,11 +409,16 @@ async function handleSave() {
     else {
       // Create new lead — direct MongoDB via local server route
       // appointmentId is generated server-side at insert time (no pre-reservation)
-      const payload = {
+      const payload: Record<string, any> = {
         ...formData.value,
         addedBy: currentUser?.userName || 'Admin',
         changedBy: currentUser?.userName || 'Admin',
         source: 'CRM',
+      }
+
+      // Ensure +91 prefix on new leads
+      if (payload.customerContactNumber && !payload.customerContactNumber.startsWith('+91')) {
+        payload.customerContactNumber = `+91 ${payload.customerContactNumber}`
       }
 
       const response = await $fetch<any>('/api/leads/add', {
@@ -645,6 +674,10 @@ function getInitials(name: string): string {
                   {{ tag }}
                 </Badge>
               </div>
+              <!-- User Identifiers -->
+              <span v-else-if="col.key === 'createdBy' || col.key === 'addedBy'" class="text-sm">
+                {{ getUserLabel(item[col.key]) }}
+              </span>
               <!-- Default text -->
               <span v-else class="text-sm">{{ item[col.key] ?? '—' }}</span>
             </TableCell>
@@ -776,6 +809,23 @@ function getInitials(name: string): string {
                   :search-placeholder="`Search ${field.label.toLowerCase()}...`"
                   :class="{ 'ring-1 ring-destructive rounded-md': tabValidationErrors[field.key] }"
                 />
+                <!-- Special Phone Field for New Leads -->
+                <div v-else-if="field.key === 'customerContactNumber' && !editingItem" class="flex items-center">
+                  <span class="flex items-center justify-center px-3 border border-r-0 rounded-l-md bg-muted font-semibold text-muted-foreground text-sm h-9 w-[3.5rem] shrink-0">
+                    +91
+                  </span>
+                  <Input
+                    :id="field.key"
+                    :model-value="formData[field.key]"
+                    type="text"
+                    maxlength="10"
+                    placeholder="9999999999"
+                    :required="field.required"
+                    class="rounded-l-none pl-3 font-medium tabular-nums shadow-none"
+                    :class="{ 'ring-1 ring-destructive': tabValidationErrors[field.key] }"
+                    @update:model-value="(v) => formData[field.key] = String(v).replace(/\D/g, '').slice(0, 10)"
+                  />
+                </div>
                 <Textarea
                   v-else-if="field.type === 'textarea'"
                   :id="field.key"

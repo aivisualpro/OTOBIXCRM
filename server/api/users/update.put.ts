@@ -34,11 +34,15 @@ export default defineEventHandler(async (event) => {
     // Extract userId and build update fields
     const { userId, ...updateFields } = body
 
-    // Remove fields that shouldn't be updated directly
+    // Remove metadata fields that shouldn't be overridden
     delete updateFields._id
     delete updateFields.id
-    delete updateFields.password
     delete updateFields.__v
+
+    // Only update password if explicitly provided with actual content
+    if (!updateFields.password || String(updateFields.password).trim() === '') {
+      delete updateFields.password
+    }
 
     // Add updatedAt timestamp
     updateFields.updatedAt = new Date().toISOString()

@@ -27,12 +27,7 @@ const user = computed(() => {
 
 const { sidebar } = useAppSettings()
 
-// Settings link (always shown after workspace menus)
-const settingsLink = {
-  title: 'Settings',
-  icon: 'i-lucide-settings',
-  link: '/settings',
-}
+
 </script>
 
 <template>
@@ -40,7 +35,7 @@ const settingsLink = {
     <SidebarHeader>
       <LayoutSidebarNavHeader
         :workspaces="workspaces"
-        :active-workspace="activeWorkspace"
+        :active-workspace="activeWorkspace!"
         @workspace-change="setActiveWorkspace($event as string)"
       />
     </SidebarHeader>
@@ -53,11 +48,7 @@ const settingsLink = {
         <component :is="resolveNavItemComponent(item)" v-for="(item, index) in nav.items" :key="index" :item="item" />
       </SidebarGroup>
 
-      <!-- Settings (always visible) -->
-      <SidebarGroup>
-        <SidebarGroupLabel>System</SidebarGroupLabel>
-        <LayoutSidebarNavLink :item="settingsLink" />
-      </SidebarGroup>
+
 
       <!-- Bottom spacer -->
       <SidebarGroup class="mt-auto" />
