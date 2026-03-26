@@ -178,9 +178,9 @@ export interface LeadRouteFilter {
 export const routeFilters = {
   // /leads (index)
   'leads': {
-    inspectionStatus: '*',
+    inspectionStatus: 'Pending',
     approvalStatus: '*',
-    label: 'All Leads',
+    label: 'Leads',
   },
   // /leads/scheduled
   'scheduled': {
