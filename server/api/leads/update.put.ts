@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Sync to AppSheet in background (uses Appointment ID as key)
-    syncLeadToAppSheet('Edit', result)
+    syncLeadToAppSheet('Edit', result, db)
 
     return {
       success: true,

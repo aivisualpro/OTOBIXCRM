@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
     const result = await db.collection('telecallings').insertOne(doc)
 
     // Sync to AppSheet in background (non-blocking)
-    syncLeadToAppSheet('Add', doc)
+    syncLeadToAppSheet('Add', doc, db)
 
     return {
       success: true,

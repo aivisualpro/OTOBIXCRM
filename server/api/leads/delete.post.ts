@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Sync deletion to AppSheet (uses Appointment ID as key)
-    syncLeadToAppSheet('Delete', result)
+    syncLeadToAppSheet('Delete', result, db)
 
     return {
       success: true,

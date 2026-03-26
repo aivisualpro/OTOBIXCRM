@@ -3,6 +3,7 @@
  * Syncs lead data to AppSheet in the background (non-blocking).
  * App: Otobix CRM | Table: LEADS
  */
+import type { Db } from 'mongodb'
 
 const APPSHEET_APP_ID = '9f2c56c3-a499-441a-b602-514840bc6612'
 const APPSHEET_ACCESS_KEY = 'V2-nuIjb-g2V71-tLs6Y-lLJRx-LC476-FwaKk-EePUi-Hjc0b'
@@ -90,26 +91,41 @@ function toAppSheetRow(doc: Record<string, any>): Record<string, any> {
 export function syncLeadToAppSheet(
   action: 'Add' | 'Edit' | 'Delete',
   doc: Record<string, any>,
+  db?: Db
 ): void {
   // Run entirely in background — do not await
   ;(async () => {
     try {
+      const _doc = { ...doc }
+
+      // Map "allocatedTo" from userName to user email for AppSheet
+      if (_doc.allocatedTo && db) {
+        try {
+          const user = await db.collection('users').findOne({ userName: _doc.allocatedTo })
+          if (user && user.email) {
+            _doc.allocatedTo = user.email
+          }
+        } catch (err: any) {
+          console.warn('[AppSheet] DB lookup failed for allocatedTo email:', err.message)
+        }
+      }
+
       const execute = async (currentAction: string) => {
         let rows: Record<string, any>[]
 
         if (currentAction === 'Delete') {
           // For delete, only the key field is needed
-          rows = [{ 'Appointment ID': String(doc.appointmentId || '') }]
+          rows = [{ 'Appointment ID': String(_doc.appointmentId || '') }]
         }
         else {
-          rows = [toAppSheetRow(doc)]
+          rows = [toAppSheetRow(_doc)]
         }
 
         const body = {
           Action: currentAction,
           Properties: {
             Locale: 'en-US',
-            RunAsUserEmail: doc.emailAddress || 'admin@otobix.in',
+            RunAsUserEmail: _doc.emailAddress || 'admin@otobix.in',
           },
           Rows: rows,
         }
@@ -148,12 +164,12 @@ export function syncLeadToAppSheet(
       // ─── Smart Upsert logic ───
       // If we attempt an Edit but AppSheet rejects it because the row doesn't exist, seamlessly create it
       if (!result.isSuccess && result.isNotFound && action === 'Edit') {
-        console.info(`[AppSheet] Row not found. Falling back to ADD action for Appointment ID: ${doc.appointmentId}`)
+        console.info(`[AppSheet] Row not found. Falling back to ADD action for Appointment ID: ${_doc.appointmentId}`)
         result = await execute('Add')
       }
       // If we attempt to Add but it already exists, seamlessly edit the existing record
       else if (!result.isSuccess && result.isDuplicate && action === 'Add') {
-        console.info(`[AppSheet] Row already exists. Falling back to EDIT action for Appointment ID: ${doc.appointmentId}`)
+        console.info(`[AppSheet] Row already exists. Falling back to EDIT action for Appointment ID: ${_doc.appointmentId}`)
         result = await execute('Edit')
       }
 
@@ -161,7 +177,7 @@ export function syncLeadToAppSheet(
         console.warn(`[AppSheet] Final sync failed (${result.status}):`, result.text.slice(0, 300))
       }
       else {
-        console.info(`[AppSheet] Successfully synced → Appointment ID: ${doc.appointmentId}`)
+        console.info(`[AppSheet] Successfully synced → Appointment ID: ${_doc.appointmentId}`)
       }
     }
     catch (err: any) {

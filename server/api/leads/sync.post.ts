@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Force sync as an "Edit" (upserts in AppSheet safely assuming key exists or acts as add)
-    syncLeadToAppSheet('Edit', doc)
+    syncLeadToAppSheet('Edit', doc, db)
 
     return {
       success: true,

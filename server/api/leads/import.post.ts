@@ -105,7 +105,7 @@ export default defineEventHandler(async (event) => {
       // If the bulkWrite upserted this specific appointmentId, it's an Add. Otherwise it's an Edit.
       // (Simplified approach: AppSheet might tolerate 'Edit' if configured, but to be robust 
       // we check if it was newly inserted. However, bulkWrite upsertedIds is an object mapped by index)
-      syncLeadToAppSheet('Edit', doc) 
+      syncLeadToAppSheet('Edit', doc, db) 
       // Note: If AppSheet rejects 'Edit' for new records, you can switch to a combined workflow.
       // Assuming 'Edit' works as an upsert in AppSheet or they are already present.
     })
