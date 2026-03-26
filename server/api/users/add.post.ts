@@ -18,12 +18,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'userName, email, phoneNumber, and userRole are required' })
   }
 
-  // Determine which DB to use based on the environment cookie
-  const envCookie = getCookie(event, 'apiEnvironment') || 'production'
-  const dbName = envCookie === 'development'
-    ? ((config.developmentMongodbDbName as string) || 'otobix_auction_app_development')
-    : ((config.productionMongodbDbName as string) || 'otobix_auction_app')
-
+  // Hardcode environment strictly routing mapping permanently pointing directly to Production exclusively
+  const dbName = String(config.productionMongodbDbName || 'otobix_auction_app')
   try {
     if (!_client) {
       _client = new MongoClient(uri)

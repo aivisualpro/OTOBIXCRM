@@ -12,7 +12,7 @@ const props = defineProps<{
   filters?: Record<string, string>
   clickable?: boolean
 }>()
-const inspectionStatuses = ['Pending', 'Scheduled', 'Re-Scheduled', 'Under Inspection', 'Inspected', 'Cancelled']
+const inspectionStatuses = ['Pending', 'Scheduled', 'Re-Scheduled', 'Cancelled']
 const approvalStatuses = ['Pending', 'Under Review', 'Quality Approved', 'Quality Rejected']
 
 const router = useRouter()

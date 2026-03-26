@@ -103,10 +103,7 @@ export const leadsFormFields = [
     options: [
       { label: 'Pending', value: 'Pending' },
       { label: 'Scheduled', value: 'Scheduled' },
-      { label: 'Re-Scheduled', value: 'Re-Scheduled' },
-      { label: 'Running', value: 'Running' },
-      { label: 'Under Inspection', value: 'Under Inspection' },
-      { label: 'Inspected', value: 'Inspected' },
+      { label: 'Re-Schedule', value: 'Re-Scheduled' },
       { label: 'Cancelled', value: 'Cancelled' },
     ],
   },

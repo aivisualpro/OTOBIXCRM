@@ -33,77 +33,18 @@ const user = computed(() => getUserById(userId.value))
 // Set header immediately from category — no waiting for user data
 setHeader({ title: 'My Profile', description: 'Manage your personal account settings and credentials', icon: 'i-lucide-user' })
 
-// ─── Edit Mode ───
-const isEditing = ref(false)
+// ─── Change Password ───
+const showPasswordDialog = ref(false)
+const showPassword = ref(false)
+const newPassword = ref('')
+const confirmPassword = ref('')
 const isSaving = ref(false)
 
-const roleOptions = ['Inspection Engineer', 'Retailer', 'Sales Manager', 'Telecaller', 'QC']
-const statusOptions = ['Approved', 'Pending', 'Rejected']
-const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR', 'KOLKATA', 'KRISHNANAGAR', 'CUTTACK', 'ASANSOL', 'RANCHI']
-
-const editLocationPopoverOpen = ref(false)
-
-function parseLocations(loc: any): string[] {
-  if (!loc)
-    return []
-  if (Array.isArray(loc))
-    return loc.filter(Boolean)
-  return String(loc).split(',').map((l: string) => l.trim()).filter(Boolean)
+function openPasswordDialog() {
+  newPassword.value = ''
+  confirmPassword.value = ''
+  showPasswordDialog.value = true
 }
-
-const editForm = ref<Record<string, any>>({})
-
-function toggleEditLocation(loc: string) {
-  const arr = editForm.value.location as string[]
-  const idx = arr.indexOf(loc)
-  if (idx >= 0)
-    arr.splice(idx, 1)
-  else arr.push(loc)
-}
-
-function removeEditLocation(loc: string) {
-  editForm.value.location = (editForm.value.location as string[]).filter((l: string) => l !== loc)
-}
-
-const allEditLocationsSelected = computed(() => (editForm.value.location as string[])?.length === locationOptions.length)
-
-function toggleSelectAllEditLocations() {
-  if (allEditLocationsSelected.value) {
-    editForm.value.location = []
-  }
-  else {
-    editForm.value.location = [...locationOptions]
-  }
-}
-
-// ─── Workspaces ───
-const { allWorkspaces } = useWorkspace()
-const workspacePopoverOpen = ref(false)
-
-function toggleWorkspaceLink(wsId: string) {
-  if (!editForm.value.workspaces) editForm.value.workspaces = []
-  const idx = editForm.value.workspaces.indexOf(wsId)
-  if (idx >= 0) editForm.value.workspaces.splice(idx, 1)
-  else editForm.value.workspaces.push(wsId)
-}
-
-function removeWorkspaceLink(wsId: string) {
-  if (!editForm.value.workspaces) return
-  editForm.value.workspaces = editForm.value.workspaces.filter((w: string) => w !== wsId)
-}
-
-const allWorkspacesSelected = computed(() => (editForm.value.workspaces?.length || 0) === allWorkspaces.value.length)
-
-function toggleSelectAllWorkspaces() {
-  if (allWorkspacesSelected.value) {
-    editForm.value.workspaces = []
-  }
-  else {
-    editForm.value.workspaces = allWorkspaces.value.map(w => w.workspaceId)
-  }
-}
-
-const showPassword = ref(false)
 
 function generatePassword() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
@@ -111,76 +52,34 @@ function generatePassword() {
   for (let i = 0; i < 12; i++) {
     pass += chars.charAt(Math.floor(Math.random() * chars.length))
   }
-  editForm.value.password = pass
-  showPassword.value = true
+  newPassword.value = pass
+  confirmPassword.value = pass
 }
 
-function startEdit() {
-  if (!user.value)
+async function savePassword() {
+  if (!user.value) return
+  if (!newPassword.value) {
+    toast.error('Please enter a new password')
     return
-  editForm.value = {
-    userName: user.value.userName || '',
-    email: user.value.email || '',
-    phoneNumber: user.value.phoneNumber || '',
-    password: user.value.password || '',
-    userRole: user.value.userRole || '',
-    location: parseLocations(user.value.location),
-    dealershipName: user.value.dealershipName || '',
-    entityType: user.value.entityType || '',
-    primaryContactPerson: user.value.primaryContactPerson || '',
-    primaryContactNumber: user.value.primaryContactNumber || '',
-    secondaryContactPerson: user.value.secondaryContactPerson || '',
-    secondaryContactNumber: user.value.secondaryContactNumber || '',
-    approvalStatus: user.value.approvalStatus || '',
-    assignedKam: user.value.assignedKam || '',
-    isStaff: user.value.isStaff || false,
-    addressList: [...(user.value.addressList || [])],
-    workspaces: Array.isArray(user.value.workspaces) ? [...user.value.workspaces] : [],
   }
-  isEditing.value = true
-}
-
-function cancelEdit() {
-  isEditing.value = false
-  editForm.value = {}
-}
-
-watch(() => editForm.value.userRole, (newRole) => {
-  if (newRole === 'Telecaller') {
-    editForm.value.isStaff = true
-    editForm.value.dealershipName = ''
-    editForm.value.entityType = ''
-    editForm.value.assignedKam = ''
-    editForm.value.primaryContactPerson = ''
-    editForm.value.primaryContactNumber = ''
-    editForm.value.secondaryContactPerson = ''
-    editForm.value.secondaryContactNumber = ''
-  }
-})
-
-async function saveEdit() {
-  if (!user.value)
+  if (newPassword.value !== confirmPassword.value) {
+    toast.error('Passwords do not match')
     return
+  }
+  
   isSaving.value = true
   try {
-    await updateUser(userId.value, editForm.value)
-    toast.success('Profile updated successfully')
-    isEditing.value = false
+    await updateUser(userId.value, { password: newPassword.value })
+    toast.success('Password updated successfully')
+    showPasswordDialog.value = false
+    user.value.password = newPassword.value // Update local state reactively
   }
   catch (err: any) {
-    toast.error(err?.data?.message || err?.message || 'Failed to update profile')
+    toast.error(err?.data?.message || err?.message || 'Failed to update password')
   }
   finally {
     isSaving.value = false
   }
-}
-
-function addAddress() {
-  editForm.value.addressList.push('')
-}
-
-function removeAddress(index: number) {
-  editForm.value.addressList.splice(index, 1)
 }
 
 // ─── Formatters ───
@@ -258,22 +157,10 @@ const addresses = computed(() => {
     <div v-else>
       <ClientOnly>
         <HeaderActions>
-          <template v-if="!isEditing">
-            <Button size="sm" class="h-8" @click="startEdit">
-              <Icon name="i-lucide-pencil" class="mr-1.5 size-3.5" />
-              Edit Profile
-            </Button>
-          </template>
-          <template v-else>
-            <Button variant="outline" size="sm" class="h-8" @click="cancelEdit">
-              Cancel
-            </Button>
-            <Button size="sm" class="h-8" :disabled="isSaving" @click="saveEdit">
-              <Icon v-if="isSaving" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
-              <Icon v-else name="i-lucide-check" class="mr-1.5 size-3.5" />
-              Save Changes
-            </Button>
-          </template>
+          <Button size="sm" class="h-8" @click="openPasswordDialog">
+            <Icon name="i-lucide-key-round" class="mr-1.5 size-3.5" />
+            Change Password
+          </Button>
         </HeaderActions>
       </ClientOnly>
 
@@ -323,7 +210,7 @@ const addresses = computed(() => {
           </div>
 
           <!-- VIEW MODE -->
-          <template v-if="!isEditing">
+          
             <!-- Login Credentials Grid -->
             <div class="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-4 mb-4">
               <h3 class="text-sm font-semibold flex items-center gap-2 text-primary">
@@ -517,256 +404,45 @@ const addresses = computed(() => {
                 </code>
               </div>
             </div>
-          </template>
-
-          <!-- EDIT MODE -->
-          <template v-else>
-            <div class="rounded-xl border bg-card p-6 space-y-5">
-              <h3 class="text-sm font-semibold flex items-center gap-2 mb-2">
-                <Icon name="i-lucide-pencil" class="size-4 text-primary" />
-                Edit Profile
-              </h3>
-
-              <!-- Name & Email row -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                  <Label for="edit-name">Full Name</Label>
-                  <Input id="edit-name" v-model="editForm.userName" placeholder="John Doe" />
-                </div>
-                <div class="space-y-1.5">
-                  <Label for="edit-email">Email</Label>
-                  <Input id="edit-email" v-model="editForm.email" type="email" placeholder="john@otobix.com" />
-                </div>
-              </div>
-
-              <!-- Password -->
-              <div class="space-y-1.5">
-                <Label for="edit-password">Password</Label>
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <div class="relative flex-1">
-                    <Input 
-                      id="edit-password" 
-                      v-model="editForm.password" 
-                      :type="showPassword ? 'text' : 'password'" 
-                      placeholder="Leave blank to keep unchanged" 
-                      class="pr-10" 
-                    />
-                    <button 
-                      type="button" 
-                      class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                      @click="showPassword = !showPassword"
-                    >
-                      <Icon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-4" />
-                    </button>
-                  </div>
-                  <Button type="button" variant="outline" class="shrink-0" @click="generatePassword">
-                    <Icon name="i-lucide-wand-2" class="mr-1.5 size-3.5 text-primary" />
-                    Suggest Strong
-                  </Button>
-                </div>
-              </div>
-
-              <!-- Phone & Role -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                  <Label for="edit-phone">Phone Number</Label>
-                  <Input id="edit-phone" v-model="editForm.phoneNumber" placeholder="+91 9876543210" />
-                </div>
-                <div class="space-y-1.5">
-                  <Label for="edit-role">Role</Label>
-                  <Select v-model="editForm.userRole">
-                    <SelectTrigger id="edit-role">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="r in roleOptions" :key="r" :value="r">
-                        {{ r }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <!-- Status & Location -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                  <Label for="edit-status">Approval Status</Label>
-                  <Select v-model="editForm.approvalStatus">
-                    <SelectTrigger id="edit-status">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="s in statusOptions" :key="s" :value="s">
-                        {{ s }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div class="space-y-1.5">
-                  <Label>Location</Label>
-                  <Popover v-model:open="editLocationPopoverOpen">
-                    <PopoverTrigger as-child>
-                      <Button variant="outline" role="combobox" class="w-full justify-between h-auto min-h-9 font-normal">
-                        <span v-if="(editForm.location as string[]).length === 0" class="text-muted-foreground">Select locations...</span>
-                        <div v-else class="flex flex-wrap gap-1">
-                          <Badge v-for="loc in (editForm.location as string[])" :key="loc" variant="secondary" class="text-xs gap-1">
-                            {{ loc }}
-                            <Icon name="i-lucide-x" class="size-3 cursor-pointer hover:text-destructive" @click.stop="removeEditLocation(loc)" />
-                          </Badge>
-                        </div>
-                        <Icon name="i-lucide-chevrons-up-down" class="ml-2 size-3.5 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent class="w-[--reka-popover-trigger-width] p-0" align="start">
-                      <div class="max-h-56 overflow-y-auto p-1">
-                        <button
-                          class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-medium hover:bg-accent cursor-pointer border-b mb-1 pb-1.5"
-                          @click="toggleSelectAllEditLocations()"
-                        >
-                          <Checkbox :checked="allEditLocationsSelected" class="pointer-events-none" />
-                          Select All
-                          <span class="ml-auto text-xs text-muted-foreground">{{ (editForm.location as string[]).length }}/{{ locationOptions.length }}</span>
-                        </button>
-                        <button
-                          v-for="loc in locationOptions"
-                          :key="loc"
-                          class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer transition-colors"
-                          :class="(editForm.location as string[]).includes(loc) ? 'bg-primary/5 text-primary hover:bg-primary/10' : 'hover:bg-accent'"
-                          @click="toggleEditLocation(loc)"
-                        >
-                          <Checkbox :checked="(editForm.location as string[]).includes(loc)" class="pointer-events-none" />
-                          {{ loc }}
-                          <Icon v-if="(editForm.location as string[]).includes(loc)" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
-                        </button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-
-              <!-- Workspaces -->
-              <div class="space-y-1.5 mt-4">
-                <Label>Allocated Workspaces</Label>
-                <Popover v-model:open="workspacePopoverOpen">
-                  <PopoverTrigger as-child>
-                    <Button variant="outline" role="combobox" class="w-full justify-between h-auto min-h-9 font-normal">
-                      <span v-if="(editForm.workspaces as string[]).length === 0" class="text-muted-foreground">Select workspaces...</span>
-                      <div v-else class="flex flex-wrap gap-1">
-                        <Badge v-for="wsId in (editForm.workspaces as string[])" :key="wsId" variant="secondary" class="text-xs gap-1 max-w-[12rem] truncate">
-                          {{ allWorkspaces.find(w => w.workspaceId === wsId)?.name || wsId }}
-                          <Icon name="i-lucide-x" class="size-3 cursor-pointer hover:text-destructive shrink-0 ml-1" @click.stop="removeWorkspaceLink(wsId)" />
-                        </Badge>
-                      </div>
-                      <Icon name="i-lucide-chevrons-up-down" class="ml-2 size-3.5 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent class="w-[--reka-popover-trigger-width] p-0" align="start">
-                    <div class="max-h-56 overflow-y-auto p-1">
-                      <button
-                        class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-medium hover:bg-accent cursor-pointer border-b mb-1 pb-1.5"
-                        @click="toggleSelectAllWorkspaces()"
-                      >
-                        <Checkbox :checked="allWorkspacesSelected" class="pointer-events-none" />
-                        Select All
-                        <span class="ml-auto text-xs text-muted-foreground">{{ (editForm.workspaces as string[]).length }}/{{ allWorkspaces.length }}</span>
-                      </button>
-                      <button
-                        v-for="ws in allWorkspaces"
-                        :key="ws.workspaceId"
-                        class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer transition-colors"
-                        :class="(editForm.workspaces as string[]).includes(ws.workspaceId) ? 'bg-primary/5 text-primary hover:bg-primary/10' : 'hover:bg-accent'"
-                        @click="toggleWorkspaceLink(ws.workspaceId)"
-                      >
-                        <Checkbox :checked="(editForm.workspaces as string[]).includes(ws.workspaceId)" class="pointer-events-none" />
-                        {{ ws.name }}
-                        <Icon v-if="(editForm.workspaces as string[]).includes(ws.workspaceId)" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
-                      </button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <template v-if="editForm.userRole !== 'Telecaller'">
-                <!-- Dealership & Entity Type -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div class="space-y-1.5">
-                    <Label for="edit-dealership">Dealership Name</Label>
-                    <Input id="edit-dealership" v-model="editForm.dealershipName" placeholder="Dealership name" />
-                  </div>
-                  <div class="space-y-1.5">
-                    <Label for="edit-entity">Entity Type</Label>
-                    <Input id="edit-entity" v-model="editForm.entityType" placeholder="Entity type" />
-                  </div>
-                </div>
-
-                <!-- Assigned KAM -->
-                <div class="space-y-1.5">
-                  <Label for="edit-kam">Assigned KAM</Label>
-                  <Input id="edit-kam" v-model="editForm.assignedKam" placeholder="KAM name or ID" />
-                </div>
-
-                <!-- Contact People -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div class="space-y-1.5">
-                    <Label for="edit-primary-person">Primary Contact Person</Label>
-                    <Input id="edit-primary-person" v-model="editForm.primaryContactPerson" placeholder="Contact name" />
-                  </div>
-                  <div class="space-y-1.5">
-                    <Label for="edit-primary-number">Primary Contact Number</Label>
-                    <Input id="edit-primary-number" v-model="editForm.primaryContactNumber" placeholder="Contact number" />
-                  </div>
-                  <div class="space-y-1.5">
-                    <Label for="edit-secondary-person">Secondary Contact Person</Label>
-                    <Input id="edit-secondary-person" v-model="editForm.secondaryContactPerson" placeholder="Contact name" />
-                  </div>
-                  <div class="space-y-1.5">
-                    <Label for="edit-secondary-number">Secondary Contact Number</Label>
-                    <Input id="edit-secondary-number" v-model="editForm.secondaryContactNumber" placeholder="Contact number" />
-                  </div>
-                </div>
-              </template>
-
-              <template v-if="editForm.userRole !== 'Telecaller'">
-                <!-- Staff Member Toggle -->
-                <div class="flex items-center justify-between rounded-lg border p-4">
-                  <div>
-                    <Label for="edit-staff">Staff Member</Label>
-                    <p class="text-xs text-muted-foreground mt-0.5">
-                      Mark this user as Otobix staff (isStaff=true)
-                    </p>
-                  </div>
-                  <Switch id="edit-staff" :checked="editForm.isStaff" @update:checked="editForm.isStaff = $event" />
-                </div>
-
-                <!-- Addresses -->
-                <div class="space-y-2">
-                  <div class="flex items-center justify-between">
-                    <Label>Addresses</Label>
-                    <Button variant="ghost" size="sm" class="h-7 text-xs" @click="addAddress">
-                      <Icon name="i-lucide-plus" class="mr-1 size-3" />
-                      Add
-                    </Button>
-                  </div>
-                  <div v-for="(_, idx) in (editForm.addressList as string[])" :key="idx" class="flex items-center gap-2">
-                    <Input v-model="editForm.addressList[idx]" :placeholder="`Address ${Number(idx) + 1}`" class="flex-1" />
-                    <Button
-                      v-if="editForm.addressList.length > 1"
-                      variant="ghost"
-                      size="icon"
-                      class="size-8 shrink-0 text-muted-foreground hover:text-destructive"
-                      @click="removeAddress(Number(idx))"
-                    >
-                      <Icon name="i-lucide-x" class="size-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              </template>
-            </div>
-          </template>
         </div>
       </div>
 
-
+      <!-- Password Change Dialog -->
+      <Dialog v-model:open="showPasswordDialog">
+        <DialogContent class="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>
+              Update your account password. Strong passwords include numbers, symbols, and mixed-case letters.
+            </DialogDescription>
+          </DialogHeader>
+          <div class="grid gap-4 py-4">
+            <div class="space-y-2">
+              <Label>New Password</Label>
+              <div class="relative">
+                <Input v-model="newPassword" type="text" placeholder="Enter new password" class="font-mono text-sm" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <Label>Confirm Password</Label>
+              <Input v-model="confirmPassword" type="text" placeholder="Confirm new password" class="font-mono text-sm" />
+            </div>
+            <Button type="button" variant="outline" class="w-full mt-2" @click="generatePassword">
+              <Icon name="i-lucide-wand-2" class="mr-2 size-4 text-primary" />
+              Suggest Strong Password
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" @click="showPasswordDialog = false">
+              Cancel
+            </Button>
+            <Button :disabled="isSaving || !newPassword || newPassword !== confirmPassword" @click="savePassword">
+              <Icon v-if="isSaving" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
+              Save Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div><!-- end scroll wrapper -->
   </div><!-- end v-else generic profile -->
 </template>

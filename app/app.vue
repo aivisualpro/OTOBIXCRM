@@ -66,14 +66,7 @@ const dir = computed(() => textDirection.value === 'rtl' ? 'rtl' : 'ltr')
   <Body class="overscroll-none antialiased bg-background text-foreground">
     <ConfigProvider :dir="dir">
       <div id="app" vaul-drawer-wrapper class="relative h-full overflow-hidden">
-        <!-- Environment dot: green=production, amber=development -->
-        <span
-          class="env-dot"
-          :class="{
-            'bg-emerald-500 shadow-[0_0_6px_2px_rgba(16,185,129,0.6)]': currentEnv === 'production',
-            'bg-amber-400 shadow-[0_0_6px_2px_rgba(251,191,36,0.6)]': currentEnv === 'development',
-          }"
-        />
+        <!-- No environment indicator, strictly production only now -->
         <NuxtLayout>
           <NuxtPage />
         </NuxtLayout>
@@ -90,20 +83,3 @@ const dir = computed(() => textDirection.value === 'rtl' ? 'rtl' : 'ltr')
   </Body>
 </template>
 
-<style>
-.env-dot {
-  position: fixed;
-  top: 8px;
-  left: 8px;
-  z-index: 9999;
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  animation: env-blink 2s ease-in-out infinite;
-}
-
-@keyframes env-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-</style>
