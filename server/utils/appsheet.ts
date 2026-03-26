@@ -108,7 +108,7 @@ export function syncLeadToAppSheet(
         Action: action,
         Properties: {
           Locale: 'en-US',
-          RunAsUserEmail: '',
+          RunAsUserEmail: doc.emailAddress || 'admin@otobix.in',
         },
         Rows: rows,
       }

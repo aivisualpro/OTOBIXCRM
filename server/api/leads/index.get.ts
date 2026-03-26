@@ -17,9 +17,7 @@ export default defineEventHandler(async (event) => {
     let currentUser: Record<string, any> | null = null
     try { if (userCookieStr) currentUser = JSON.parse(userCookieStr) } catch (e) {}
 
-    if (currentUser && String(currentUser.userRole || currentUser.userType || currentUser.role) === 'Telecaller') {
-      filter.emailAddress = currentUser.email || ''
-    }
+    // (Telecallers now have unrestricted view access per user request)
 
     // Status filters (server-side filtering for paginated status tabs)
     const inspectionStatus = (query.inspectionStatus as string || '').trim()

@@ -287,22 +287,9 @@ function toggleSort(key: string) {
   }
 }
 
-// ─── Client-side route filtering (on already-loaded data) ───
+// ─── Sorted display (we rely on server-side status filtering implicitly) ───
 const filteredItems = computed(() => {
   let result = allLeads.value as Record<string, any>[]
-
-  // Apply route-specific filters (inspectionStatus/approvalStatus)
-  if (props.filters && !search.value) {
-    const filters = props.filters
-    result = result.filter(item =>
-      Object.entries(filters).every(([field, val]) => {
-        if (val === '*') return true
-        const iVal = String(item[field] || '').trim().toLowerCase().replace(/\s+/g, '')
-        const cVal = String(val || '').trim().toLowerCase().replace(/\s+/g, '')
-        return iVal === cVal || iVal.includes(cVal)
-      })
-    )
-  }
 
   // Sort
   const key = sortKey.value
