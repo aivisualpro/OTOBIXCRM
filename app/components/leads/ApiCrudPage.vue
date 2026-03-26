@@ -501,11 +501,21 @@ async function handleSave() {
     else {
       // Create new lead — direct MongoDB via local server route
       // appointmentId is generated server-side at insert time (no pre-reservation)
+      const roleStr = String(currentUser?.userRole || currentUser?.appRole || currentUser?.role || '')
+      const isTelecaller = roleStr === 'Telecaller'
+
       const payload: Record<string, any> = {
         ...formData.value,
-        addedBy: currentUser?.userName || 'Admin',
+        addedBy: isTelecaller ? 'Telecaller' : (currentUser?.userName || 'Admin'),
         changedBy: currentUser?.userName || 'Admin',
         source: 'CRM',
+      }
+
+      if (isTelecaller) {
+        payload.emailAddress = currentUser?.email || ''
+        payload.createdByFullName = currentUser?.userName || ''
+      } else {
+        payload.createdByFullName = currentUser?.userName || ''
       }
 
       // Ensure +91 prefix on new leads
@@ -904,6 +914,50 @@ function getInitials(name: string): string {
                   search-placeholder="Search variants..."
                   :class="{ 'ring-1 ring-destructive rounded-md': tabValidationErrors[field.key] }"
                 />
+
+                <!-- Premium Priority Selector -->
+                <div v-else-if="field.key === 'priority'" class="grid grid-cols-3 gap-2 pt-1">
+                  <button
+                    v-for="p in [
+                      { label: 'High', value: 'High', icon: 'i-lucide-flame', color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20', active: 'ring-2 ring-red-500/40 bg-red-500/5' },
+                      { label: 'Medium', value: 'Medium', icon: 'i-lucide-activity', color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20', active: 'ring-2 ring-amber-500/40 bg-amber-500/5' },
+                      { label: 'Low', value: 'Low', icon: 'i-lucide-arrow-down-to-line', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', active: 'ring-2 ring-blue-500/40 bg-blue-500/5' }
+                    ]"
+                    :key="p.value"
+                    type="button"
+                    class="group flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    :class="formData[field.key] === p.value
+                      ? `${p.border} ${p.active} shadow-sm scale-[1.02]`
+                      : 'border-input bg-background hover:bg-muted/50 hover:border-border'"
+                    @click="formData[field.key] = p.value"
+                  >
+                    <div class="p-2.5 rounded-full mb-2 transition-colors duration-200"
+                      :class="formData[field.key] === p.value ? p.bg : 'bg-muted group-hover:bg-muted/80'">
+                      <Icon :name="p.icon" class="size-5 transition-colors"
+                        :class="formData[field.key] === p.value ? p.color : 'text-muted-foreground group-hover:text-foreground'" />
+                    </div>
+                    <span class="text-xs font-semibold tracking-wide transition-colors"
+                      :class="formData[field.key] === p.value ? p.color : 'text-muted-foreground'">
+                      {{ p.label }}
+                    </span>
+                  </button>
+                </div>
+
+                <!-- Interactive Ownership Number Buttons -->
+                <div v-else-if="field.key === 'ownershipSerialNumber'" class="flex flex-wrap gap-2 pt-1">
+                  <button
+                    v-for="num in [1, 2, 3, 4, 5]"
+                    :key="num"
+                    type="button"
+                    class="h-10 w-12 rounded-lg border font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                    :class="Number(formData[field.key]) === num
+                      ? 'border-primary bg-primary text-primary-foreground shadow-sm scale-105'
+                      : 'border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground'"
+                    @click="formData[field.key] = num"
+                  >
+                    {{ num }}
+                  </button>
+                </div>
 
                 <!-- Searchable dropdown for generic select fields (like city) -->
                 <SearchableSelect
