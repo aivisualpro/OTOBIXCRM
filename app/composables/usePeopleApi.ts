@@ -92,21 +92,25 @@ export function usePeopleApi() {
     location: string | string[]
     userName: string
     email: string
-    password: string
-    addressList: string[]
-    approvalStatus: string
-    assignedKam: string
-    isStaff: boolean
+    password?: string
+    addressList?: string[]
+    approvalStatus?: string
+    assignedKam?: string
+    isStaff?: boolean
+    dealershipName?: string
+    entityType?: string
   }) {
-    const body = {
-      ...payload,
-      location: Array.isArray(payload.location) ? payload.location.join(', ') : payload.location,
+    const response = await $fetch<any>('/api/users/add', {
+      method: 'POST',
+      body: payload,
+    })
+
+    // Inject the new user into the local cache immediately
+    if (response?.data) {
+      const newUser = { ...response.data, id: response.data._id || response.data.id }
+      _allUsers.value.unshift(newUser)
     }
-    const response = await $fetch<any>(
-      `${apiBaseUrl.value}admin/create-user-through-admin`,
-      { method: 'POST', headers: _headers(), body },
-    )
-    await refreshUsers()
+
     return response
   }
 

@@ -13,7 +13,18 @@ const props = defineProps<{
   categoryKey?: string
 }>()
 
-const isOtobix = computed(() => props.categoryKey === 'otobix')
+// Map categoryKey → default userRole for new user creation
+const CATEGORY_ROLE_MAP: Record<string, string> = {
+  dealer: 'Dealer',
+  customer: 'Customer',
+  'inspection-engineer': 'Inspection Engineer',
+  admin: 'Admin',
+  retailer: 'Retailer',
+  'sales-manager': 'Sales Manager',
+  telecaller: 'Telecaller',
+  qc: 'QC',
+}
+const defaultRole = computed(() => CATEGORY_ROLE_MAP[props.categoryKey || ''] || 'Customer')
 
 const _entity = computed(() => props.entityName || 'Person')
 
@@ -185,12 +196,12 @@ function defaultForm() {
     email: '',
     password: '',
     phoneNumber: '',
-    userRole: 'Staff',
+    userRole: defaultRole.value,
     location: [] as string[],
     approvalStatus: 'Approved',
     assignedKam: '',
     addressList: [''],
-    isStaff: true,
+    isStaff: false,
   }
 }
 
@@ -209,11 +220,10 @@ function resetForm() {
 }
 
 async function handleCreateUser() {
-  // Validate all required fields
+  // Validate required fields
   const f = form.value
-  const filledAddresses = f.addressList.filter(a => a.trim())
-  if (!f.userName.trim() || !f.email.trim() || !f.password.trim() || !f.phoneNumber.trim() || !f.userRole || f.location.length === 0 || filledAddresses.length === 0) {
-    toast.error('Please fill all required fields (Name, Email, Password, Phone, Role, Location, Address)')
+  if (!f.userName.trim() || !f.email.trim() || !f.phoneNumber.trim() || !f.userRole) {
+    toast.error('Please fill all required fields (Name, Email, Phone, Role)')
     return
   }
 
@@ -237,7 +247,7 @@ async function handleCreateUser() {
   }
 }
 
-const roleOptions = ['Inspection Engineer', 'Retailer', 'Sales Manager', 'Telecaller', 'QC']
+const roleOptions = ['Dealer', 'Customer', 'Inspection Engineer', 'Admin', 'Retailer', 'Sales Manager', 'Telecaller', 'QC']
 const statusOptions = ['Approved', 'Pending', 'Rejected']
 const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR', 'KOLKATA', 'KRISHNANAGAR', 'CUTTACK', 'ASANSOL', 'RANCHI']
 
@@ -296,7 +306,7 @@ function toggleSelectAllLocations() {
         <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading }" />
         Refresh
       </Button>
-      <Button v-if="isOtobix" size="sm" class="h-8" @click="showAddDialog = true">
+      <Button size="sm" class="h-8" @click="showAddDialog = true">
         <Icon name="i-lucide-plus" class="mr-1 size-3.5" />
         Add User
       </Button>
@@ -537,15 +547,15 @@ function toggleSelectAllLocations() {
           </div>
         </div>
 
-        <!-- Is Staff toggle (auto-on & locked for Otobix) -->
-        <div class="flex items-center justify-between rounded-lg border p-3" :class="{ 'opacity-60': isOtobix }">
+        <!-- Is Staff toggle -->
+        <div class="flex items-center justify-between rounded-lg border p-3">
           <div>
             <Label for="add-user-staff">Staff Member</Label>
             <p class="text-xs text-muted-foreground">
-              {{ isOtobix ? 'Always enabled for Otobix staff' : 'Mark this user as Otobix staff' }}
+              Mark this user as staff
             </p>
           </div>
-          <Switch id="add-user-staff" :checked="form.isStaff" :disabled="isOtobix" @update:checked="form.isStaff = $event" />
+          <Switch id="add-user-staff" :checked="form.isStaff" @update:checked="form.isStaff = $event" />
         </div>
       </div>
 
