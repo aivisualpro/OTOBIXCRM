@@ -4,8 +4,19 @@ export default defineEventHandler(async (event) => {
     const db = await getLeadsDb(event)
     const col = db.collection('telecallings')
 
+    // Parse session identity tightly mapping active roles securely
+    const userCookieStr = getCookie(event, 'userData')
+    let currentUser: Record<string, any> | null = null
+    try { if (userCookieStr) currentUser = JSON.parse(userCookieStr) } catch (e) {}
+
+    const filter: Record<string, any> = {}
+    if (currentUser && String(currentUser.userRole || currentUser.userType || currentUser.role) === 'Telecaller') {
+      filter.emailAddress = currentUser.email || ''
+    }
+
     // Single aggregate pipeline to count by compound (inspectionStatus + approvalStatus)
-    const pipeline = [
+    const pipeline: any[] = [
+      { $match: filter },
       {
         $group: {
           _id: {
@@ -18,7 +29,7 @@ export default defineEventHandler(async (event) => {
     ]
 
     const buckets = await col.aggregate(pipeline).toArray()
-    const totalCount = await col.countDocuments()
+    const totalCount = await col.countDocuments(filter)
 
     // Build a flat map: "inspectionStatus::approvalStatus" → count
     const map: Record<string, number> = {}

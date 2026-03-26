@@ -11,7 +11,7 @@ export const leadsColumns = [
   { key: 'priority', label: 'Priority', type: 'badge' as const },
   { key: 'inspectionDateTime', label: 'Inspection Date', type: 'date' as const },
   { key: 'addedBy', label: 'Added By' },
-  { key: 'emailAddress', label: 'Created By' },
+  { key: 'createdByFullName', label: 'Created By' },
   { key: 'createdAt', label: 'Created At', type: 'date' as const },
 ]
 
@@ -30,7 +30,7 @@ export const scheduledColumns = [
   { key: 'priority', label: 'Priority', type: 'badge' as const },
   { key: 'inspectionDateTime', label: 'Inspection Date', type: 'date' as const },
   { key: 'addedBy', label: 'Added By' },
-  { key: 'emailAddress', label: 'Created By' },
+  { key: 'createdByFullName', label: 'Created By' },
   { key: 'createdAt', label: 'Created At', type: 'date' as const },
 ]
 

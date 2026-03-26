@@ -12,6 +12,15 @@ export default defineEventHandler(async (event) => {
     // Build filter
     const filter: Record<string, any> = {}
 
+    // Security scope filtering for constrained roles
+    const userCookieStr = getCookie(event, 'userData')
+    let currentUser: Record<string, any> | null = null
+    try { if (userCookieStr) currentUser = JSON.parse(userCookieStr) } catch (e) {}
+
+    if (currentUser && String(currentUser.userRole || currentUser.userType || currentUser.role) === 'Telecaller') {
+      filter.emailAddress = currentUser.email || ''
+    }
+
     // Status filters (server-side filtering for paginated status tabs)
     const inspectionStatus = (query.inspectionStatus as string || '').trim()
     const approvalStatus = (query.approvalStatus as string || '').trim()
@@ -50,6 +59,26 @@ export default defineEventHandler(async (event) => {
       { $skip: skip },
       { $limit: limit },
       { $unset: '_sortDate' },
+      // Lookup the creator name inside strictly linked `users` instance
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'emailAddress',
+          foreignField: 'email',
+          as: 'creatorPopulated'
+        }
+      },
+      {
+        $addFields: {
+          createdByFullName: {
+            $ifNull: [
+              { $arrayElemAt: ['$creatorPopulated.userName', 0] },
+              '$emailAddress' // fallback correctly naturally to strictly raw email if not fully found matching legacy behavior requested
+            ]
+          }
+        }
+      },
+      { $unset: 'creatorPopulated' }
     ]
 
     const [data, totalCount] = await Promise.all([
