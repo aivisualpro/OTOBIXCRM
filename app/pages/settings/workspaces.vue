@@ -381,7 +381,7 @@ async function saveMenuConfig() {
                 <Switch
                   :checked="editingWorkspace!.menuIds.includes(item.id)"
                   :disabled="item.comingSoon"
-                  class="scale-90"
+                  class="scale-90 pointer-events-none"
                 />
               </div>
             </div>

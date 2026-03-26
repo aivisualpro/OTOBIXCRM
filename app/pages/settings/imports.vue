@@ -308,8 +308,8 @@ const progressPercent = computed(() => {
       <!-- File info bar -->
       <div class="rounded-xl border bg-card p-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="size-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-            <Icon name="i-lucide-file-check" class="size-5 text-emerald-600" />
+          <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Icon name="i-lucide-file-check" class="size-5 text-primary" />
           </div>
           <div>
             <p class="text-sm font-semibold">{{ fileName }}</p>
@@ -317,11 +317,11 @@ const progressPercent = computed(() => {
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <Badge variant="outline" class="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+          <Badge variant="outline" class="text-xs">
             <Icon name="i-lucide-check-circle" class="size-3 mr-1" />
             {{ mappedFieldCount }} mapped
           </Badge>
-          <Badge v-if="skippedFieldCount > 0" variant="outline" class="text-xs bg-amber-500/10 text-amber-600 border-amber-500/20">
+          <Badge v-if="skippedFieldCount > 0" variant="outline" class="text-xs">
             <Icon name="i-lucide-eye-off" class="size-3 mr-1" />
             {{ skippedFieldCount }} skipped
           </Badge>
@@ -413,8 +413,8 @@ const progressPercent = computed(() => {
       <div class="rounded-xl border bg-card p-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="size-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <Icon name="i-lucide-table-2" class="size-5 text-blue-600" />
+            <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Icon name="i-lucide-table-2" class="size-5 text-primary" />
             </div>
             <div>
               <p class="text-sm font-semibold">Data Preview</p>
@@ -424,7 +424,7 @@ const progressPercent = computed(() => {
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <Badge variant="outline" class="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20">
+            <Badge variant="outline" class="text-xs">
               <Icon name="i-lucide-database" class="size-3 mr-1" />
               {{ rawRows.length }} total rows
             </Badge>
@@ -478,10 +478,7 @@ const progressPercent = computed(() => {
           <p class="text-xs text-muted-foreground">
             Ready to import <strong>{{ rawRows.length }}</strong> leads
           </p>
-          <Button
-            class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-0 hover:from-emerald-600 hover:to-teal-700 shadow-md shadow-emerald-500/20"
-            @click="startImport"
-          >
+          <Button @click="startImport">
             <Icon name="i-lucide-rocket" class="mr-1.5 size-4" />
             Start Import
           </Button>
@@ -493,8 +490,8 @@ const progressPercent = computed(() => {
     <div v-else-if="wizardStep === 'importing'" class="space-y-6">
       <div class="rounded-2xl border bg-card p-8 max-w-lg mx-auto text-center space-y-6">
         <!-- Animated icon -->
-        <div class="mx-auto size-20 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-xl shadow-blue-500/30 animate-pulse">
-          <Icon name="i-lucide-upload" class="size-10 text-white" />
+        <div class="mx-auto size-16 rounded-xl bg-primary/10 flex items-center justify-center animate-pulse">
+          <Icon name="i-lucide-upload" class="size-8 text-primary" />
         </div>
 
         <div>
@@ -508,7 +505,7 @@ const progressPercent = computed(() => {
         <div class="space-y-2">
           <div class="h-3 rounded-full bg-muted overflow-hidden">
             <div
-              class="h-full rounded-full bg-gradient-to-r from-blue-500 to-violet-500 transition-all duration-500 ease-out"
+              class="h-full rounded-full bg-primary transition-all duration-500 ease-out"
               :style="{ width: `${progressPercent}%` }"
             />
           </div>
@@ -522,7 +519,7 @@ const progressPercent = computed(() => {
             Batch size: {{ batchSize }}
           </span>
           <span class="flex items-center gap-1">
-            <Icon name="i-lucide-check-circle" class="size-3.5 text-emerald-500" />
+            <Icon name="i-lucide-check-circle" class="size-3.5 text-primary" />
             {{ importedCount }} imported
           </span>
         </div>
@@ -534,12 +531,13 @@ const progressPercent = computed(() => {
       <div class="rounded-2xl border bg-card p-8 max-w-lg mx-auto text-center space-y-6">
         <!-- Success/Error icon -->
         <div
-          class="mx-auto size-20 rounded-2xl flex items-center justify-center shadow-xl"
-          :class="importErrors.length === 0 ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/30' : 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/30'"
+          class="mx-auto size-16 rounded-xl flex items-center justify-center"
+          :class="importErrors.length === 0 ? 'bg-primary/10' : 'bg-destructive/10'"
         >
           <Icon
             :name="importErrors.length === 0 ? 'i-lucide-check-circle' : 'i-lucide-alert-triangle'"
-            class="size-10 text-white"
+            class="size-8"
+            :class="importErrors.length === 0 ? 'text-primary' : 'text-destructive'"
           />
         </div>
 
@@ -554,25 +552,25 @@ const progressPercent = computed(() => {
 
         <!-- Stats -->
         <div class="grid grid-cols-3 gap-3">
-          <div class="rounded-xl bg-emerald-500/10 p-3">
-            <p class="text-2xl font-bold text-emerald-600 tabular-nums">{{ importedCount }}</p>
-            <p class="text-[11px] text-emerald-600/70 font-medium mt-0.5">Imported</p>
+          <div class="rounded-xl bg-primary/10 p-3">
+            <p class="text-2xl font-bold text-primary tabular-nums">{{ importedCount }}</p>
+            <p class="text-[11px] text-primary/70 font-medium mt-0.5">Imported</p>
           </div>
-          <div class="rounded-xl bg-blue-500/10 p-3">
-            <p class="text-2xl font-bold text-blue-600 tabular-nums">{{ importTotal }}</p>
-            <p class="text-[11px] text-blue-600/70 font-medium mt-0.5">Total Rows</p>
+          <div class="rounded-xl bg-muted p-3">
+            <p class="text-2xl font-bold text-foreground tabular-nums">{{ importTotal }}</p>
+            <p class="text-[11px] text-muted-foreground font-medium mt-0.5">Total Rows</p>
           </div>
-          <div class="rounded-xl bg-red-500/10 p-3">
-            <p class="text-2xl font-bold text-red-600 tabular-nums">{{ importErrors.length }}</p>
-            <p class="text-[11px] text-red-600/70 font-medium mt-0.5">Errors</p>
+          <div class="rounded-xl bg-destructive/10 p-3">
+            <p class="text-2xl font-bold text-destructive tabular-nums">{{ importErrors.length }}</p>
+            <p class="text-[11px] text-destructive/70 font-medium mt-0.5">Errors</p>
           </div>
         </div>
 
         <!-- Errors detail -->
-        <div v-if="importErrors.length > 0" class="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-left">
-          <p class="text-sm font-medium text-red-600 mb-2">Error Details</p>
+        <div v-if="importErrors.length > 0" class="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-left">
+          <p class="text-sm font-medium text-destructive mb-2">Error Details</p>
           <ul class="space-y-1">
-            <li v-for="(err, i) in importErrors" :key="i" class="text-xs text-red-500 flex items-start gap-1.5">
+            <li v-for="(err, i) in importErrors" :key="i" class="text-xs text-destructive flex items-start gap-1.5">
               <Icon name="i-lucide-x-circle" class="size-3.5 shrink-0 mt-0.5" />
               {{ err }}
             </li>
@@ -586,7 +584,7 @@ const progressPercent = computed(() => {
             Import More
           </Button>
           <NuxtLink to="/leads/leads">
-            <Button class="bg-gradient-to-r from-blue-500 to-violet-600 text-white border-0 hover:from-blue-600 hover:to-violet-700">
+            <Button>
               <Icon name="i-lucide-external-link" class="mr-1.5 size-3.5" />
               View Leads
             </Button>
