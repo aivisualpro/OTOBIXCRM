@@ -43,7 +43,9 @@ export default defineEventHandler(async (event) => {
       if (inspStatus === '*' && appStatus === '*') return totalCount
       let total = 0
       for (const [k, v] of Object.entries(map)) {
-        const [is, as_] = k.split('::')
+        const [isRaw, asRaw] = k.split('::')
+        const is = String(isRaw || '').trim()
+        const as_ = String(asRaw || '').trim()
         if ((inspStatus === '*' || is === inspStatus) && (appStatus === '*' || as_ === appStatus)) {
           total += v
         }

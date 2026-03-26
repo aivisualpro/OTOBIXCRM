@@ -121,6 +121,14 @@ function getUserLabel(emailOrName: string) {
 const showAssignDialog = ref(false)
 const assigningLead = ref<any>(null)
 const selectedInspector = ref('')
+const showRescheduleDialog = ref(false)
+const reschedulingLead = ref<any>(null)
+const newInspectionDateTime = ref('')
+
+const showCancelDialog = ref(false)
+const cancellingLead = ref<any>(null)
+const cancelNotes = ref('')
+
 const isUpdatingStatus = ref(false)
 
 async function updateLeadStatus(lead: any, field: string, newStatus: string) {
@@ -134,6 +142,12 @@ async function updateLeadStatus(lead: any, field: string, newStatus: string) {
     reschedulingLead.value = { ...lead, _pendingStatus: newStatus }
     newInspectionDateTime.value = lead.inspectionDateTime || ''
     showRescheduleDialog.value = true
+    return
+  }
+  if (field === 'inspectionStatus' && newStatus === 'Cancelled') {
+    cancellingLead.value = { ...lead, _pendingStatus: newStatus }
+    cancelNotes.value = lead.additionalNotes || ''
+    showCancelDialog.value = true
     return
   }
   await doStatusUpdate(lead, { [field]: newStatus })
@@ -155,10 +169,6 @@ async function confirmAssignInspector() {
   selectedInspector.value = ''
 }
 
-const showRescheduleDialog = ref(false)
-const reschedulingLead = ref<any>(null)
-const newInspectionDateTime = ref('')
-
 async function confirmReschedule() {
   if (!reschedulingLead.value) return
   if (!newInspectionDateTime.value) {
@@ -173,6 +183,22 @@ async function confirmReschedule() {
   showRescheduleDialog.value = false
   reschedulingLead.value = null
   newInspectionDateTime.value = ''
+}
+
+async function confirmCancel() {
+  if (!cancellingLead.value) return
+  if (!cancelNotes.value.trim()) {
+     toast.error('Additional notes are required to cancel a lead')
+     return
+  }
+  const lead = cancellingLead.value
+  await doStatusUpdate(lead, {
+    inspectionStatus: lead._pendingStatus || 'Cancelled',
+    additionalNotes: cancelNotes.value.trim()
+  })
+  showCancelDialog.value = false
+  cancellingLead.value = null
+  cancelNotes.value = ''
 }
 
 async function doStatusUpdate(lead: any, updates: Record<string, string>) {
@@ -250,9 +276,12 @@ const filteredItems = computed(() => {
   if (props.filters && !search.value) {
     const filters = props.filters
     result = result.filter(item =>
-      Object.entries(filters).every(([field, val]) =>
-        val === '*' || String(item[field] ?? '').toLowerCase() === val.toLowerCase(),
-      ),
+      Object.entries(filters).every(([field, val]) => {
+        if (val === '*') return true
+        const iVal = String(item[field] || '').trim().toLowerCase().replace(/\s+/g, '')
+        const cVal = String(val || '').trim().toLowerCase().replace(/\s+/g, '')
+        return iVal === cVal || iVal.includes(cVal)
+      })
     )
   }
 
@@ -274,8 +303,8 @@ watch(() => allLeads.value, (newLeads) => {
     if (!lead) return
     let targetId = 'leads'
     for (const [id, filterMap] of Object.entries(routeFilters)) {
-      const inspMatch = filterMap.inspectionStatus === '*' || String(filterMap.inspectionStatus).toLowerCase() === String(lead.inspectionStatus || '').toLowerCase()
-      const appMatch = filterMap.approvalStatus === '*' || String(filterMap.approvalStatus).toLowerCase() === String(lead.approvalStatus || '').toLowerCase()
+      const inspMatch = filterMap.inspectionStatus === '*' || String(filterMap.inspectionStatus).trim().toLowerCase() === String(lead.inspectionStatus || '').trim().toLowerCase()
+      const appMatch = filterMap.approvalStatus === '*' || String(filterMap.approvalStatus).trim().toLowerCase() === String(lead.approvalStatus || '').trim().toLowerCase()
       if (inspMatch && appMatch) {
          targetId = id
          break
@@ -420,7 +449,18 @@ async function openCreate() {
 
 function openEdit(item: any) {
   editingItem.value = item
-  formData.value = { ...item }
+  const cloned = { ...item }
+  props.formFields.forEach(f => {
+    if (f.type === 'datetime-local' && cloned[f.key]) {
+      const dbDate = new Date(String(cloned[f.key]).trim())
+      if (!isNaN(dbDate.getTime())) {
+        const offset = dbDate.getTimezoneOffset()
+        const localDt = new Date(dbDate.getTime() - (offset * 60000))
+        cloned[f.key] = localDt.toISOString().slice(0, 16)
+      }
+    }
+  })
+  formData.value = cloned
   activeTab.value = 'owner'
   tabValidationErrors.value = {}
   showDialog.value = true
@@ -1054,6 +1094,46 @@ function getInitials(name: string): string {
           <Button @click="confirmReschedule" :disabled="!newInspectionDateTime || isUpdatingStatus" class="bg-purple-600 hover:bg-purple-700">
             <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
             Confirm Reschedule
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Cancel Confirmation Dialog -->
+    <Dialog v-model:open="showCancelDialog">
+      <DialogContent class="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon name="i-lucide-ban" class="size-5 text-destructive" />
+            Cancel Inspection
+          </DialogTitle>
+          <DialogDescription>
+            You must provide a cancellation reason.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <div v-if="cancellingLead" class="rounded-lg border bg-muted/30 p-3 space-y-1">
+            <p class="text-sm font-medium">{{ cancellingLead.ownerName || 'Unknown' }}</p>
+            <p class="text-xs text-muted-foreground">{{ cancellingLead.make }} {{ cancellingLead.model }} — {{ cancellingLead.carRegistrationNumber }}</p>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="cancel-notes" class="flex gap-1">Reason <span class="text-destructive">*</span></Label>
+            <Textarea 
+              id="cancel-notes" 
+              placeholder="Provide a required reason for cancellation..." 
+              v-model="cancelNotes" 
+              rows="4" 
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="showCancelDialog = false">Abort</Button>
+          <Button @click="confirmCancel" :disabled="!cancelNotes.trim() || isUpdatingStatus" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
+            Confirm Cancellation
           </Button>
         </DialogFooter>
       </DialogContent>

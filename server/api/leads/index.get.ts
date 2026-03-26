@@ -25,10 +25,10 @@ export default defineEventHandler(async (event) => {
     const inspectionStatus = (query.inspectionStatus as string || '').trim()
     const approvalStatus = (query.approvalStatus as string || '').trim()
     if (inspectionStatus && inspectionStatus !== '*') {
-      filter.inspectionStatus = { $regex: `^${inspectionStatus}$`, $options: 'i' }
+      filter.inspectionStatus = { $regex: `^\\s*${inspectionStatus}\\s*$`, $options: 'i' }
     }
     if (approvalStatus && approvalStatus !== '*') {
-      filter.approvalStatus = { $regex: `^${approvalStatus}$`, $options: 'i' }
+      filter.approvalStatus = { $regex: `^\\s*${approvalStatus}\\s*$`, $options: 'i' }
     }
 
     if (search) {

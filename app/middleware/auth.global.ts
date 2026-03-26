@@ -50,4 +50,26 @@ export default defineNuxtRouteMiddleware((to, _from) => {
     }
     return navigateTo(redirectPath)
   }
+
+  // ─── Strict Workspace Allocation Sandboxing ───
+  if (isLoggedIn.value && to.path !== '/login' && to.path !== '/profile') {
+    const wCookie = useCookie('activeWorkspace', cookieOptions)
+    let activeW = null
+    try { activeW = wCookie.value ? (typeof wCookie.value === 'string' ? JSON.parse(wCookie.value) : wCookie.value) : null } catch(e) {}
+    
+    if (activeW && Array.isArray(activeW.menuIds)) {
+      const allowed = activeW.menuIds as string[]
+      const pathRoot = to.path.split('/')[1] || ''
+      
+      // Strict root-level module locking (disregard generic globals)
+      const isSystemRoot = ['settings', 'profile'].includes(pathRoot)
+      
+      // If the module attempts a generic root load not natively in scope
+      if (pathRoot && !isSystemRoot && !allowed.includes(pathRoot)) {
+        console.warn(`[Scope Lockdown] Workspace blocked access to module: /${pathRoot}`)
+        const fallback = allowed.length > 0 ? `/${allowed[0]}` : '/profile'
+        return navigateTo(fallback, { replace: true })
+      }
+    }
+  }
 })

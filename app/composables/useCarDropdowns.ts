@@ -36,13 +36,10 @@ export function useCarDropdowns() {
 
     try {
       const response = await $fetch<CarDropdownResponse>(
-        `${apiBaseUrl.value}admin/customers/car-dropdowns/get-list`,
+        '/api/car-dropdowns/get-list',
         {
           method: 'GET',
-          params: { page, limit, search: search.trim() },
-          headers: {
-            Authorization: `Bearer ${authToken.value}`,
-          },
+          params: { page, limit, search: search.trim() }
         },
       )
 

@@ -41,17 +41,25 @@ export function usePrefetch() {
     _prefetchProgress.value = 10
 
     try {
-      // Import the composables dynamically to avoid SSR issues
-      const { fetchLeads } = useLeadsApi()
-      const { fetchAllUsers } = usePeopleApi()
-      const { fetchCarDropdowns } = useCarDropdowns()
+      const { activeWorkspace } = useWorkspace()
+      const allowed = activeWorkspace.value?.menuIds || []
 
-      // Fire all fetches in parallel — non-blocking, silent
-      const tasks = [
-        fetchLeads().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 30, 90) }),
-        fetchAllUsers().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 30, 90) }),
-        fetchCarDropdowns().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 30, 90) }),
-      ]
+      const tasks: Promise<any>[] = []
+
+      if (allowed.includes('leads')) {
+        const { fetchLeads } = useLeadsApi()
+        tasks.push(fetchLeads().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 30, 90) }))
+      }
+
+      if (allowed.includes('people') || allowed.includes('leads') || allowed.includes('support')) {
+        const { fetchAllUsers } = usePeopleApi()
+        tasks.push(fetchAllUsers().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 30, 90) }))
+      }
+
+      if (allowed.includes('dropdowns') || allowed.includes('leads')) {
+        const { fetchCarDropdowns } = useCarDropdowns()
+        tasks.push(fetchCarDropdowns().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 30, 90) }))
+      }
 
       await Promise.allSettled(tasks)
       _prefetchProgress.value = 100
