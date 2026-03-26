@@ -167,6 +167,15 @@ export function useWorkspace() {
     return list.find(w => w?.workspaceId === _activeWorkspaceId.value) || list[0]
   })
 
+  // Synchronously transmit active configuration natively to Nuxt Cookies so SSR Route Middleware instantly blocks unauthorized navigations natively reducing UI flashes entirely to 0.
+  watch(activeWorkspace, (ws) => {
+    if (ws) {
+      const wCookie = useCookie('activeWorkspace', { maxAge: 30 * 24 * 60 * 60, path: '/' })
+      // Double tap assignment to prevent string coercion failure
+      wCookie.value = typeof ws === 'string' ? JSON.parse(ws) : ws
+    }
+  }, { deep: true, immediate: true })
+
   // Menu items for the active workspace, grouped by category
   const activeMenuGroups = computed(() => {
     const ws = activeWorkspace.value
