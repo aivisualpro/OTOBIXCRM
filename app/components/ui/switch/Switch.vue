@@ -9,6 +9,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   id?: string
   name?: string
+  activeColor?: string
 }>(), {
   modelValue: null,
 })
@@ -45,13 +46,14 @@ function toggle(event: MouseEvent) {
     role="switch"
     :aria-checked="isOn"
     :disabled="disabled"
+    :style="isOn && activeColor ? { backgroundColor: activeColor, borderColor: activeColor } : {}"
     :class="cn(
       'peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent',
       'shadow-sm transition-all duration-200 outline-none',
       'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1',
       'disabled:cursor-not-allowed disabled:opacity-50',
       isOn
-        ? 'bg-primary'
+        ? (activeColor ? '' : 'bg-primary')
         : 'bg-muted-foreground/30 dark:bg-input/80',
       props.class,
     )"

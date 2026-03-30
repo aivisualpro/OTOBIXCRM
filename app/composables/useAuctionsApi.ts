@@ -57,15 +57,7 @@ export function useAuctionsApi() {
     _fetchError.value = null
 
     try {
-      const response = await $fetch<any>(
-        `${apiBaseUrl.value}car/cars-list`,
-        {
-          method: 'GET',
-          headers: {
-            ...(authToken.value ? { Authorization: `Bearer ${authToken.value}` } : {}),
-          },
-        },
-      )
+      const response = await $fetch<any>('/api/cars', { method: 'GET' })
 
       // Extract cars array from response
       const carsArray = Array.isArray(response)

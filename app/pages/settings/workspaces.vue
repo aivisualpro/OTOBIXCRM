@@ -206,6 +206,61 @@ function localToggleLeadTab(tabId: string) {
   isDirty.value = true
 }
 
+// ─── Dashboard Widgets Sub-Config ───
+const DASHBOARD_WIDGETS = [
+  { id: 'auctions_closed', title: 'Auctions Closed' },
+  { id: 'new_customers', title: 'New Customers' },
+  { id: 'active_accounts', title: 'Active Accounts' },
+  { id: 'growth_rate', title: 'Growth Rate' },
+  { id: 'auction_trends', title: 'Auction & Customer Trends' },
+  { id: 'total_dealers', title: 'Total Dealers' },
+  { id: 'total_cars', title: 'Total Cars' },
+  { id: 'dealers_overview', title: 'Dealers Overview' },
+]
+
+function localToggleDashboardWidget(widgetId: string) {
+  const ws = editingWorkspace.value
+  if (!ws) return
+
+  if (!ws.dashboardWidgets) ws.dashboardWidgets = DASHBOARD_WIDGETS.map(w => w.id) // Default all
+
+  const current = [...ws.dashboardWidgets]
+  const idx = current.indexOf(widgetId)
+  if (idx >= 0) {
+    current.splice(idx, 1)
+  }
+  else {
+    current.push(widgetId)
+  }
+  ws.dashboardWidgets = current
+  isDirty.value = true
+}
+
+// ─── System Settings Sub-Config ───
+const SYSTEM_SETTINGS = [
+  { id: 'workspaces', title: 'Workspaces' },
+  { id: 'system_logs', title: 'System Logs' },
+  { id: 'data_imports', title: 'Data Imports' },
+]
+
+function localToggleSystemSetting(settingId: string) {
+  const ws = editingWorkspace.value
+  if (!ws) return
+
+  if (!ws.systemSettings) ws.systemSettings = SYSTEM_SETTINGS.map(s => s.id) // Default all
+
+  const current = [...ws.systemSettings]
+  const idx = current.indexOf(settingId)
+  if (idx >= 0) {
+    current.splice(idx, 1)
+  }
+  else {
+    current.push(settingId)
+  }
+  ws.systemSettings = current
+  isDirty.value = true
+}
+
 function isGroupAllSelected(items: typeof allMenuItems): boolean {
   const ws = editingWorkspace.value
   if (!ws)
@@ -228,6 +283,17 @@ function toggleGroupAll(items: typeof allMenuItems) {
   isDirty.value = true
 }
 
+// ─── Default Routes Mutators ───
+function safeGetDefaultRoute(ws: Workspace, itemId: string) {
+  if (!ws.defaultRoutes) ws.defaultRoutes = {}
+  return ws.defaultRoutes[itemId] || ''
+}
+function safeSetDefaultRoute(ws: Workspace, itemId: string, val: string) {
+  if (!ws.defaultRoutes) ws.defaultRoutes = {}
+  ws.defaultRoutes[itemId] = val
+  isDirty.value = true
+}
+
 // ─── Save to MongoDB ───
 const isSavingMenu = ref(false)
 
@@ -242,6 +308,9 @@ async function saveMenuConfig() {
   try {
     const updates: Partial<Workspace> = { menuIds: [...ws.menuIds] }
     if (ws.leadTabs) updates.leadTabs = [...ws.leadTabs]
+    if (ws.dashboardWidgets) updates.dashboardWidgets = [...ws.dashboardWidgets]
+    if (ws.systemSettings) updates.systemSettings = [...ws.systemSettings]
+    if (ws.defaultRoutes) updates.defaultRoutes = { ...ws.defaultRoutes }
 
     await updateWorkspace(ws.workspaceId, updates)
     isDirty.value = false
@@ -408,10 +477,11 @@ async function saveMenuConfig() {
                   v-for="item in items"
                   :key="item.id"
                   class="group flex flex-col p-2.5 rounded-lg border transition-all"
+                  :style="editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon && editingWorkspace!.color ? { borderColor: editingWorkspace!.color + '4D', backgroundColor: editingWorkspace!.color + '0D', boxShadow: `0 0 0 1px ${editingWorkspace!.color}1A` } : {}"
                   :class="[
                     item.comingSoon ? 'opacity-50 cursor-not-allowed bg-muted/20' : '',
                     editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon
-                      ? 'border-primary/30 bg-primary/5 ring-1 ring-primary/10'
+                      ? (editingWorkspace!.color ? '' : 'border-primary/30 bg-primary/5 ring-1 ring-primary/10')
                       : 'bg-background/80 hover:bg-accent/50',
                   ]"
                 >
@@ -434,6 +504,7 @@ async function saveMenuConfig() {
                     <Switch
                       :checked="editingWorkspace!.menuIds.includes(item.id)"
                       :disabled="item.comingSoon"
+                      :active-color="editingWorkspace!.color"
                       class="scale-90 pointer-events-none"
                     />
                   </div>
@@ -443,18 +514,103 @@ async function saveMenuConfig() {
                     v-if="item.id === 'leads' && editingWorkspace!.menuIds.includes('leads')"
                     class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
                   >
-                    <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">Visible Lead Tabs</p>
+                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                      Visible Lead Tabs
+                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                    </p>
                     <div
                       v-for="subTab in LEADS_TABS"
                       :key="subTab.id"
-                      class="flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
                       @click="localToggleLeadTab(subTab.id)"
                     >
-                      <span class="text-[11px]">{{ subTab.title }}</span>
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <button 
+                          v-if="(editingWorkspace!.leadTabs || LEADS_TABS.map(t=>t.id)).includes(subTab.id)"
+                          title="Set as Default Route"
+                          :class="[
+                            safeGetDefaultRoute(editingWorkspace!, 'leads') === (subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`) ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100',
+                            'transition-opacity p-0.5 mt-0.5'
+                          ]"
+                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'leads', subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`)"
+                        >
+                          <Icon 
+                            name="i-lucide-star" 
+                            class="size-3 block transition-colors"
+                            :class="safeGetDefaultRoute(editingWorkspace!, 'leads') === (subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`) ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'" 
+                          />
+                        </button>
+                        <span class="text-[11px] truncate" :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t=>t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
+                      </div>
                       <Icon
                         :name="(editingWorkspace!.leadTabs || LEADS_TABS.map(t=>t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
                         class="size-3.5"
-                        :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t=>t.id)).includes(subTab.id) ? 'text-primary' : 'text-muted-foreground/40'"
+                        :style="(editingWorkspace!.leadTabs || LEADS_TABS.map(t=>t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t=>t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Dashboard Widgets Options -->
+                  <div
+                    v-if="item.id === 'dashboard' && editingWorkspace!.menuIds.includes('dashboard')"
+                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+                  >
+                    <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">Dashboard Widgets</p>
+                    <div
+                      v-for="widget in DASHBOARD_WIDGETS"
+                      :key="widget.id"
+                      class="flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                      @click="localToggleDashboardWidget(widget.id)"
+                    >
+                      <span class="text-[11px]">{{ widget.title }}</span>
+                      <Icon
+                        :name="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w=>w.id)).includes(widget.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                        class="size-3.5"
+                        :style="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w=>w.id)).includes(widget.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w=>w.id)).includes(widget.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- System Settings Options -->
+                  <div
+                    v-if="item.id === 'settings' && editingWorkspace!.menuIds.includes('settings')"
+                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+                  >
+                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                      System Menus
+                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                    </p>
+                    <div
+                      v-for="setting in SYSTEM_SETTINGS"
+                      :key="setting.id"
+                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                      @click="localToggleSystemSetting(setting.id)"
+                    >
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <button 
+                          v-if="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s=>s.id)).includes(setting.id)"
+                          title="Set as Default Route"
+                          :class="[
+                            safeGetDefaultRoute(editingWorkspace!, 'settings') === `/settings/${setting.id}` ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100',
+                            'transition-opacity p-0.5 mt-0.5'
+                          ]"
+                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'settings', `/settings/${setting.id}`)"
+                        >
+                          <Icon 
+                            name="i-lucide-star" 
+                            class="size-3 block transition-colors"
+                            :class="safeGetDefaultRoute(editingWorkspace!, 'settings') === `/settings/${setting.id}` ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'" 
+                          />
+                        </button>
+                        <span class="text-[11px] truncate" :class="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s=>s.id)).includes(setting.id) ? '' : 'pl-4'">{{ setting.title }}</span>
+                      </div>
+                      <Icon
+                        :name="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s=>s.id)).includes(setting.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                        class="size-3.5"
+                        :style="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s=>s.id)).includes(setting.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s=>s.id)).includes(setting.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
                       />
                     </div>
                   </div>

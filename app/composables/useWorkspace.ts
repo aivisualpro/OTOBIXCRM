@@ -29,6 +29,9 @@ export interface Workspace {
   color?: string
   menuIds: string[]
   leadTabs?: string[]
+  dashboardWidgets?: string[]
+  systemSettings?: string[]
+  defaultRoutes?: Record<string, string>
   isDefault?: boolean
   isProtected?: boolean
   sortOrder?: number
@@ -55,9 +58,6 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
   { id: 'tickets', title: 'Tickets', icon: 'i-lucide-ticket', link: '/support/tickets', group: 'Support' },
   // System
   { id: 'settings', title: 'General Settings', icon: 'i-lucide-settings', link: '/settings', group: 'System' },
-  { id: 'workspaces', title: 'Workspaces', icon: 'i-lucide-briefcase', link: '/settings/workspaces', group: 'System' },
-  { id: 'system', title: 'System Logs', icon: 'i-lucide-server-cog', link: '/settings/system', group: 'System' },
-  { id: 'imports', title: 'Data Imports', icon: 'i-lucide-database-backup', link: '/settings/imports', group: 'System' },
 ]
 
 // Fallback defaults for SSR or before API loads (plain const = safe at module level)
@@ -188,10 +188,18 @@ export function useWorkspace() {
     const groups: Record<string, NavLink[]> = {}
     items.forEach((item) => {
       const group = (groups[item.group] ??= [])
+
+      let link = ws.defaultRoutes?.[item.id] || item.link
+
+      // Dynamic Sidebar Redirect fallback to first tab if they explicitly lock out the index leads
+      if (item.id === 'leads' && ws.leadTabs && ws.leadTabs.length > 0 && !ws.leadTabs.includes('leads')) {
+        link = ws.defaultRoutes?.[item.id] || `/leads/${ws.leadTabs[0]}`
+      }
+
       group.push({
         title: item.title,
         icon: item.icon,
-        link: item.link,
+        link,
         disabled: item.disabled,
         comingSoon: item.comingSoon,
       })

@@ -20,6 +20,9 @@ export interface DashboardKpi {
 
   growthRate: number // % change: (current - prev) / prev * 100
   growthRateDirection: 'up' | 'down' | 'flat'
+
+  totalDealers: number // Total dealers in the system
+  totalCars: number // Total cars in the system
 }
 
 /**
@@ -126,6 +129,9 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
     const growthRateDirection: 'up' | 'down' | 'flat'
       = growthRate > 0 ? 'up' : growthRate < 0 ? 'down' : 'flat'
 
+    const totalDealers = allUsers.value.filter(u => u.userRole?.toLowerCase() === 'dealer' || u.userRole?.toLowerCase() === 'users').length
+    const totalCars = allCars.value.length
+
     return {
       auctionsClosed,
       auctionsClosedCount,
@@ -138,6 +144,8 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
       activeAccountsCustomers: approvedCustomers.value.length,
       growthRate,
       growthRateDirection,
+      totalDealers,
+      totalCars,
     }
   })
 
@@ -204,6 +212,19 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
     return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date))
   })
 
+  // ─── Dealers Overview ───
+  const dealersOverview = computed(() => {
+    const allD = allUsers.value.filter(u => u.userRole?.toLowerCase() === 'dealer' || u.userRole?.toLowerCase() === 'users')
+    const approved = allD.filter(d => d.approvalStatus?.toLowerCase() === 'approved').length
+    const pending = allD.filter(d => d.approvalStatus?.toLowerCase() === 'pending').length
+    const rejected = allD.filter(d => d.approvalStatus?.toLowerCase() === 'rejected').length
+    
+    // Recent 5 joined dealers
+    const recent = [...allD].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5)
+
+    return { total: allD.length, approved, pending, rejected, recent }
+  })
+
   return {
     isLoading,
     kpi,
@@ -213,5 +234,6 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
     customerChartData,
     soldCarsInPeriod,
     customersInPeriod,
+    dealersOverview,
   }
 }

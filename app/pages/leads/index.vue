@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { leadsColumns, leadsFormFields, routeFilters } from '~/constants/leads'
 
+const { activeWorkspace } = useWorkspace()
+
+// Gatekeep the index route itself
+const ws = activeWorkspace.value
+const allowed = ws?.leadTabs || []
+if (allowed.length > 0 && !allowed.includes('leads')) {
+  const fallback = ws?.defaultRoutes?.leads || `/leads/${allowed[0]}`
+  
+  // Replace the history state instantly so 'back' button doesn't trap them
+  navigateTo(fallback, { replace: true })
+}
+
 // /leads index route uses the 'leads' filter: inspectionStatus=Pending & approvalStatus=Pending
 const filter = routeFilters.leads
 </script>
