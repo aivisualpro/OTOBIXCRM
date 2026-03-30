@@ -1,10 +1,23 @@
 <script setup lang="ts">
 const route = useRoute()
 
-const { statusCounts, fetchCounts, activeAdvancedFilterCount } = useLeadsApi()
+const { statusCounts, fetchCounts, activeAdvancedFilterCount, serverSearch, totalCount, matchingTabIds } = useLeadsApi()
 
 // Fetch counts on mount (lightweight server call)
 onMounted(() => fetchCounts())
+
+// For the search-results tab, use the live totalCount from the composable
+function getTabCount(itemId: string): number | undefined {
+  if (itemId === 'search-results') {
+    return totalCount.value || undefined
+  }
+  return statusCounts.value[itemId]
+}
+
+// Check if a tab has matching records from search results (for animated highlight)
+function hasSearchMatches(itemId: string): boolean {
+  return currentActiveId.value === 'search-results' && matchingTabIds.value.includes(itemId)
+}
 
 const navItems = [
   { id: 'leads', title: 'Leads', icon: 'i-lucide-magnet', color: 'text-blue-500', link: '/leads' },
@@ -36,7 +49,7 @@ const filteredNavItems = computed(() => {
     items = navItems.filter(item => allowed.includes(item.id))
   }
 
-  if (activeAdvancedFilterCount.value > 0 || route.path.includes('/search-results')) {
+  if (activeAdvancedFilterCount.value > 0 || serverSearch.value || route.path.includes('/search-results')) {
     items.unshift({
       id: 'search-results',
       title: 'Search Results',
@@ -60,16 +73,22 @@ const filteredNavItems = computed(() => {
           :key="item.id"
           :to="item.link"
           class="leads-tab"
-          :class="{ 'is-active': currentActiveId === item.id }"
+          :class="{
+            'is-active': currentActiveId === item.id,
+            'has-matches': hasSearchMatches(item.id),
+          }"
         >
-          <Icon :name="item.icon" class="size-3.5" :class="currentActiveId === item.id ? item.color : ''" />
+          <Icon :name="item.icon" class="size-3.5 shrink-0" :class="currentActiveId === item.id ? item.color : hasSearchMatches(item.id) ? 'text-amber-500' : ''" />
           <span>{{ item.title }}</span>
           <span
-            v-if="statusCounts[item.id]"
+            v-if="getTabCount(item.id)"
             class="leads-tab-count"
-            :class="{ 'is-active': currentActiveId === item.id }"
+            :class="{
+              'is-active': currentActiveId === item.id,
+              'is-matching': hasSearchMatches(item.id) && currentActiveId !== item.id,
+            }"
           >
-            {{ statusCounts[item.id] }}
+            {{ getTabCount(item.id) }}
           </span>
         </NuxtLink>
       </div>
@@ -87,7 +106,7 @@ const filteredNavItems = computed(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 14px;
+  padding: 10px 12px;
   font-size: 13px;
   font-weight: 500;
   color: hsl(var(--muted-foreground));
@@ -95,6 +114,8 @@ const filteredNavItems = computed(() => {
   border-bottom: 2px solid transparent;
   transition: all 0.15s ease;
   margin-bottom: -1px;
+  flex-shrink: 0;
+  position: relative;
 }
 
 .leads-tab:hover {
@@ -107,19 +128,75 @@ const filteredNavItems = computed(() => {
   border-bottom-color: hsl(var(--primary));
 }
 
+/* Animated pulsing border for tabs with matching search results */
+.leads-tab.has-matches {
+  color: hsl(var(--foreground));
+  animation: tab-pulse 2s ease-in-out infinite;
+}
+
+.leads-tab.has-matches::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, hsl(38 92% 50%), hsl(45 93% 58%), hsl(38 92% 50%));
+  background-size: 200% 100%;
+  animation: tab-border-shimmer 2s ease-in-out infinite;
+  border-radius: 1px;
+}
+
+@keyframes tab-pulse {
+  0%, 100% {
+    background: hsl(38 92% 50% / 0.06);
+  }
+  50% {
+    background: hsl(38 92% 50% / 0.14);
+  }
+}
+
+@keyframes tab-border-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Counter badges — always visible, never clipped */
 .leads-tab-count {
   font-size: 10px;
   font-weight: 600;
   line-height: 1;
-  padding: 2px 6px;
+  padding: 3px 6px;
   border-radius: 999px;
   background: hsl(var(--muted));
   color: hsl(var(--muted-foreground));
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 18px;
+  text-align: center;
 }
 
 .leads-tab-count.is-active {
   background: hsl(var(--primary) / 0.15);
   color: hsl(var(--primary));
+}
+
+.leads-tab-count.is-matching {
+  background: hsl(38 92% 50% / 0.2);
+  color: hsl(38 92% 50%);
+  animation: count-pulse 2s ease-in-out infinite;
+}
+
+@keyframes count-pulse {
+  0%, 100% {
+    background: hsl(38 92% 50% / 0.15);
+  }
+  50% {
+    background: hsl(38 92% 50% / 0.3);
+  }
 }
 </style>

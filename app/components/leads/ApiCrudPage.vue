@@ -42,6 +42,7 @@ const {
   setFilters,
   advancedFilters,
   setAdvancedFilters,
+  serverSearch,
 } = useLeadsApi()
 
 // Car dropdowns for Make / Model / Variant
@@ -242,7 +243,7 @@ async function doStatusUpdate(lead: any, updates: Record<string, string>) {
 }
 
 // ─── UI State ───
-const search = ref(String(useRoute().query.search || ''))
+const search = ref(serverSearch.value || String(useRoute().query.search || ''))
 const showDialog = ref(false)
 const editingItem = ref<any>(null)
 const isSyncing = ref(false)
@@ -342,7 +343,7 @@ watch(advancedFilters, (newF) => {
 function applyAdvancedFilters() {
   setAdvancedFilters(localFilters.value)
   showAdvancedFilters.value = false
-  if (activeFilterCount.value > 0 && router.currentRoute.value.path !== '/leads/search-results') {
+  if (router.currentRoute.value.path !== '/leads/search-results') {
     router.push('/leads/search-results')
   }
 }
@@ -351,7 +352,8 @@ function clearAdvancedFilters() {
   localFilters.value = { startDate: '', endDate: '', dateField: 'inspectionDateTime', datePreset: '', make: '', city: '', priority: '', allocatedTo: '', createdBy: '', addedBy: '', inspectionStatus: '' }
   setAdvancedFilters({})
   showAdvancedFilters.value = false
-  if (router.currentRoute.value.path === '/leads/search-results') {
+  // Only leave search-results if there's also no active text search
+  if (router.currentRoute.value.path === '/leads/search-results' && !serverSearch.value) {
     router.push('/leads')
   }
 }
@@ -424,30 +426,27 @@ const filteredItems = computed(() => {
 
 const totalFiltered = computed(() => filteredItems.value.length)
 
-// ─── Search triggers server-side query ───
+// ─── Search triggers server-side query & auto-navigates to Search Results tab ───
 watch(search, (q) => {
-  searchLeads(q)
-}, { immediate: !!search.value })
+  const trimmed = q.trim()
+  // Update the global serverSearch state immediately
+  serverSearch.value = trimmed
 
-// ─── Smart Universal Auto-Routing on Global Match ───
-watch(() => allLeads.value, (newLeads) => {
-  // Triggers exact contextual tab switching when cross-stage searching explicitly natively returning 1 match uniquely
-  if (search.value && search.value.length > 2 && newLeads.length === 1) {
-    const lead = newLeads[0]
-    if (!lead) return
-    let targetId = 'leads'
-    for (const [id, filterMap] of Object.entries(routeFilters)) {
-      const inspMatch = filterMap.inspectionStatus === '*' || String(filterMap.inspectionStatus).trim().toLowerCase() === String(lead.inspectionStatus || '').trim().toLowerCase()
-      const appMatch = filterMap.approvalStatus === '*' || String(filterMap.approvalStatus).trim().toLowerCase() === String(lead.approvalStatus || '').trim().toLowerCase()
-      if (inspMatch && appMatch) {
-         targetId = id
-         break
-      }
+  if (trimmed) {
+    // If not already on search-results, navigate there.
+    // The tab's * filters + serverSearch will produce a global search fetch via setFilters.
+    if (router.currentRoute.value.path !== '/leads/search-results') {
+      router.push('/leads/search-results')
+    } else {
+      // Already on search-results, just debounce-search within the tab
+      searchLeads(q)
     }
-    const targetPath = targetId === 'leads' ? '/leads' : `/leads/${targetId}`
-    if (String(useRoute().path) !== targetPath) {
-      router.replace({ path: targetPath, query: { search: search.value } })
-      toast.success(`Redirected naturally explicitly finding match remotely correctly directly syncing tab!`)
+  } else {
+    // Search cleared — if on search-results and no advanced filters, go back to /leads
+    if (router.currentRoute.value.path === '/leads/search-results' && activeFilterCount.value === 0) {
+      router.push('/leads')
+    } else {
+      searchLeads(q)
     }
   }
 })
@@ -951,7 +950,7 @@ function getInitials(name: string): string {
       </Badge>
     </div>
 
-    <Button size="sm" class="h-8" @click="openCreate">
+    <Button v-if="router.currentRoute.value.path === '/leads'" size="sm" class="h-8" @click="openCreate">
       <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
       Add {{ entity }}
     </Button>
@@ -1096,7 +1095,7 @@ function getInitials(name: string): string {
             </TableCell>
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="ghost" size="icon" class="size-8" @click.stop="openEdit(item)">
+                <Button v-if="router.currentRoute.value.path === '/leads'" variant="ghost" size="icon" class="size-8" @click.stop="openEdit(item)">
                   <Icon name="i-lucide-pencil" class="size-3.5" />
                 </Button>
                 <Button v-if="isAdmin" variant="ghost" size="icon" class="size-8 text-blue-600 hover:text-blue-700" :disabled="isSyncing" @click.stop="syncAppSheet(item)" title="Force Sync to AppSheet">
@@ -1110,7 +1109,7 @@ function getInitials(name: string): string {
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-inbox" class="size-8" />
                 <p>No leads found</p>
-                <Button size="sm" variant="outline" @click="openCreate">
+                <Button v-if="router.currentRoute.value.path === '/leads'" size="sm" variant="outline" @click="openCreate">
                   <Icon name="i-lucide-plus" class="mr-1 size-4" />
                   Add {{ entity }}
                 </Button>

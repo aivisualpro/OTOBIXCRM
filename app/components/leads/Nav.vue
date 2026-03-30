@@ -2,7 +2,7 @@
 import { useLeadsApi } from '~/composables/useLeadsApi'
 
 const route = useRoute()
-const { activeAdvancedFilterCount } = useLeadsApi()
+const { activeAdvancedFilterCount, serverSearch } = useLeadsApi()
 
 const baseNavItems = [
   { id: 'leads', title: 'Leads', icon: 'i-lucide-magnet', color: 'text-blue-500', link: '/leads' },
@@ -18,7 +18,7 @@ const baseNavItems = [
 
 const navItems = computed(() => {
   const items = [...baseNavItems]
-  if (activeAdvancedFilterCount.value > 0 || route.path.includes('/search-results')) {
+  if (activeAdvancedFilterCount.value > 0 || serverSearch.value || route.path.includes('/search-results')) {
     items.unshift({
       id: 'search-results',
       title: 'Search Results',

@@ -1,3 +1,5 @@
+import { routeFilters } from '~/constants/leads'
+
 export interface TelecallingLead {
   [key: string]: any
   _id: string
@@ -131,22 +133,21 @@ export function useLeadsApi() {
       if (_serverSearch.value) {
         params.search = _serverSearch.value
       }
-      else {
-        if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
-        if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
 
-        // Apply advanced UI filters
-        if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
-        if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
-        if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
-        if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
-        if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
-        if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
-        if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
-        if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
-        if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
-        if (_advancedFilters.value.inspectionStatus) params.inspectionStatus = _advancedFilters.value.inspectionStatus
-      }
+      if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
+      if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+
+      // Apply advanced UI filters
+      if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
+      if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
+      if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
+      if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
+      if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
+      if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
+      if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
+      if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
+      if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
+      if (_advancedFilters.value.inspectionStatus) params.inspectionStatus = _advancedFilters.value.inspectionStatus
 
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
 
@@ -184,22 +185,21 @@ export function useLeadsApi() {
       if (_serverSearch.value) {
         params.search = _serverSearch.value
       }
-      else {
-        if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
-        if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
 
-        // Apply advanced UI filters
-        if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
-        if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
-        if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
-        if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
-        if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
-        if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
-        if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
-        if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
-        if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
-        if (_advancedFilters.value.inspectionStatus) params.inspectionStatus = _advancedFilters.value.inspectionStatus
-      }
+      if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
+      if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+
+      // Apply advanced UI filters
+      if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
+      if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
+      if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
+      if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
+      if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
+      if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
+      if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
+      if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
+      if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
+      if (_advancedFilters.value.inspectionStatus) params.inspectionStatus = _advancedFilters.value.inspectionStatus
 
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
       const newItems = normalize(response.data || [])
@@ -230,25 +230,22 @@ export function useLeadsApi() {
       try {
         const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
         if (_serverSearch.value) {
-          // Global overriding behavior: search across all active queues
           params.search = _serverSearch.value
         }
-        else {
-          // Strictly apply tab filters seamlessly when not performing global search
-          if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
-          if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
 
-          if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
-          if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
-          if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
-          if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
-          if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
-          if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
-          if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
-          if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
-          if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
-          if (_advancedFilters.value.inspectionStatus) params.inspectionStatus = _advancedFilters.value.inspectionStatus
-        }
+        if (_statusFilters.value.inspectionStatus) params.inspectionStatus = _statusFilters.value.inspectionStatus
+        if (_statusFilters.value.approvalStatus) params.approvalStatus = _statusFilters.value.approvalStatus
+
+        if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
+        if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
+        if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
+        if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
+        if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
+        if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
+        if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
+        if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
+        if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
+        if (_advancedFilters.value.inspectionStatus) params.inspectionStatus = _advancedFilters.value.inspectionStatus
 
         const response = await $fetch<LocalApiResponse>('/api/leads', { params })
         _leads.value = normalize(response.data || [])
@@ -303,6 +300,26 @@ export function useLeadsApi() {
     return count
   })
 
+  // ─── Matching tabs: which tabs contain records from search results ───
+  const matchingTabIds = computed(() => {
+    const hasSearch = !!_serverSearch.value
+    const hasFilters = Object.values(_advancedFilters.value).some(v => !!v && String(v).trim() !== '')
+    if (!hasSearch && !hasFilters) return [] as string[]
+
+    const tabs = new Set<string>()
+    for (const lead of _leads.value) {
+      for (const [tabId, filter] of Object.entries(routeFilters)) {
+        if (tabId === 'search-results') continue
+        const inspMatch = filter.inspectionStatus === '*' ||
+          String(filter.inspectionStatus).trim().toLowerCase() === String(lead.inspectionStatus || '').trim().toLowerCase()
+        const appMatch = filter.approvalStatus === '*' ||
+          String(filter.approvalStatus).trim().toLowerCase() === String(lead.approvalStatus || '').trim().toLowerCase()
+        if (inspMatch && appMatch) tabs.add(tabId)
+      }
+    }
+    return Array.from(tabs)
+  })
+
   function setAdvancedFilters(filters: Record<string, string>) {
     _advancedFilters.value = { ...filters }
     _isInitialized.value = false
@@ -337,5 +354,7 @@ export function useLeadsApi() {
     setAdvancedFilters,
     advancedFilters: _advancedFilters,
     activeAdvancedFilterCount,
+    serverSearch: _serverSearch,
+    matchingTabIds,
   }
 }

@@ -203,7 +203,7 @@ export const routeFilters = {
   },
   // /leads/quality-approved
   'quality-approved': {
-    inspectionStatus: 'Running',
+    inspectionStatus: 'Inspected',
     approvalStatus: 'Approved',
     label: 'Quality Approved',
   },
@@ -226,7 +226,7 @@ export const routeFilters = {
     label: 'Inspected',
   },
   // /leads/under-review
-  'under-review': { label: 'Under Review', inspectionStatus: 'Inspected', approvalStatus: 'Under Review' },
+  'under-review': { label: 'Under Review', inspectionStatus: 'Inspected', approvalStatus: 'Pending' },
   'quality-rejected': { label: 'Quality Rejected', inspectionStatus: 'Inspected', approvalStatus: 'Quality Rejected' },
   'search-results': { label: 'Search Results', inspectionStatus: '*', approvalStatus: '*' },
 }
