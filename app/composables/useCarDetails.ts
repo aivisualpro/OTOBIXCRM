@@ -18,16 +18,7 @@ export function useCarDetails() {
     error.value = null
 
     try {
-      const response = await $fetch<CarDetailsResponse>(
-        `${apiBaseUrl.value}car/details/carId`,
-        {
-          method: 'GET',
-          params: { appointmentId: carId },
-          headers: {
-            ...(authToken.value ? { Authorization: `Bearer ${authToken.value}` } : {}),
-          },
-        },
-      )
+      const response = await $fetch<CarDetailsResponse>(`/api/leads/${carId}`)
 
       carDetails.value = response.carDetails || response
     }

@@ -59,7 +59,7 @@ export default defineNuxtRouteMiddleware((to, _from) => {
       
       const pathRootFragment = to.path.split('/')[1] || ''
       const requestedId = pathRootFragment === '' ? 'dashboard' : pathRootFragment
-      const isSystemRoot = ['settings', 'profile'].includes(requestedId)
+      const isSystemRoot = ['settings', 'profile', 'inspection'].includes(requestedId)
 
       if (!activeW) {
         // If the workspace session token expires or is not generated yet, securely deny naked module access by routing to safe-zone profiling where clientside hooks will rehydrate the workspace token.

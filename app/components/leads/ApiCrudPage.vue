@@ -254,6 +254,10 @@ const isAdmin = computed(() => {
   const role = String(user?.userType || user?.userRole || user?.role || '').toLowerCase()
   return role === 'admin'
 })
+const isInspectionStatusEditable = computed(() => {
+  const path = useRoute().path
+  return path === '/leads' || path === '/leads/' || path === '/leads/scheduled' || path === '/leads/re-scheduled'
+})
 const formData = ref<Record<string, any>>({})
 
 // Cascading: computed models/variants based on current form selection
@@ -1015,8 +1019,8 @@ function getInitials(name: string): string {
             v-for="item in filteredItems"
             :key="item.id || item._id"
             class="group"
-            :class="{ 'cursor-pointer hover:bg-muted/50': props.clickable }"
-            @click="props.clickable && item.appointmentId ? router.push(`/inspection/${item.appointmentId}`) : undefined"
+            :class="{ 'cursor-pointer hover:bg-muted/50': props.clickable || item.inspectionStatus === 'Inspected' }"
+            @click="(props.clickable || item.inspectionStatus === 'Inspected') && item.appointmentId ? router.push(`/inspection/${item.appointmentId}`) : undefined"
           >
             <TableCell v-for="col in columns" :key="col.key">
               <!-- Avatar -->
@@ -1030,35 +1034,45 @@ function getInitials(name: string): string {
                 <span class="font-medium">{{ item[col.key] || '—' }}</span>
               </div>
               <!-- Clickable Badge (Status columns) -->
-              <DropdownMenu v-else-if="col.type === 'badge' && (col.key === 'inspectionStatus' || col.key === 'approvalStatus')">
-                <DropdownMenuTrigger as-child>
-                  <Badge
-                    variant="outline"
-                    class="cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all"
-                    :class="[getBadgeClass(item[col.key]), col.key === 'inspectionStatus' ? 'uppercase' : '']"
-                  >
-                    {{ item[col.key] || '—' }}
-                    <Icon name="i-lucide-chevron-down" class="size-3 ml-1 opacity-50" />
-                  </Badge>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" class="min-w-[160px]">
-                  <DropdownMenuLabel class="text-xs">
-                    {{ col.label }}
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    v-for="status in (col.key === 'inspectionStatus' ? inspectionStatuses : approvalStatuses)"
-                    :key="status"
-                    :class="{ 'bg-accent': item[col.key] === status }"
-                    @click.stop="updateLeadStatus(item, col.key, status)"
-                  >
-                    <Badge variant="outline" :class="[getBadgeClass(status), col.key === 'inspectionStatus' ? 'uppercase' : '']" class="text-[10px] h-5">
-                      {{ status }}
+              <template v-else-if="col.type === 'badge' && (col.key === 'inspectionStatus' || col.key === 'approvalStatus')">
+                <DropdownMenu v-if="col.key === 'approvalStatus' || (col.key === 'inspectionStatus' && isInspectionStatusEditable)">
+                  <DropdownMenuTrigger as-child>
+                    <Badge
+                      variant="outline"
+                      class="cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all"
+                      :class="[getBadgeClass(item[col.key]), col.key === 'inspectionStatus' ? 'uppercase' : '']"
+                    >
+                      {{ item[col.key] || '—' }}
+                      <Icon name="i-lucide-chevron-down" class="size-3 ml-1 opacity-50" />
                     </Badge>
-                    <Icon v-if="item[col.key] === status" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" class="min-w-[160px]">
+                    <DropdownMenuLabel class="text-xs">
+                      {{ col.label }}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      v-for="status in (col.key === 'inspectionStatus' ? inspectionStatuses : approvalStatuses)"
+                      :key="status"
+                      :class="{ 'bg-accent': item[col.key] === status }"
+                      @click.stop="updateLeadStatus(item, col.key, status)"
+                    >
+                      <Badge variant="outline" :class="[getBadgeClass(status), col.key === 'inspectionStatus' ? 'uppercase' : '']" class="text-[10px] h-5">
+                        {{ status }}
+                      </Badge>
+                      <Icon v-if="item[col.key] === status" name="i-lucide-check" class="ml-auto size-3.5 text-primary" />
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Badge
+                  v-else
+                  variant="outline"
+                  class="cursor-default"
+                  :class="[getBadgeClass(item[col.key]), col.key === 'inspectionStatus' ? 'uppercase' : '']"
+                >
+                  {{ item[col.key] || '—' }}
+                </Badge>
+              </template>
               <!-- Other Badge columns -->
               <Badge v-else-if="col.type === 'badge'" variant="outline" :class="getBadgeClass(item[col.key])">
                 {{ item[col.key] || '—' }}

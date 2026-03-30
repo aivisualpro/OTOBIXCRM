@@ -6,7 +6,12 @@ const { activeWorkspace } = useWorkspace()
 // Gatekeep the index route itself
 const ws = activeWorkspace.value
 const allowed = ws?.leadTabs || []
-if (allowed.length > 0 && !allowed.includes('leads')) {
+// If the user has an active global search or advanced filter, and they click the root Leads menu, take them directly back to their search results.
+const { serverSearch, activeAdvancedFilterCount } = useLeadsApi()
+if (serverSearch.value || activeAdvancedFilterCount.value > 0) {
+  navigateTo('/leads/search-results', { replace: true })
+}
+else if (allowed.length > 0 && !allowed.includes('leads')) {
   const fallback = ws?.defaultRoutes?.leads || `/leads/${allowed[0]}`
   
   // Replace the history state instantly so 'back' button doesn't trap them
