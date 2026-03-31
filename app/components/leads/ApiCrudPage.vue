@@ -42,6 +42,7 @@ const {
   advancedFilters,
   setAdvancedFilters,
   serverSearch,
+  cancelSearch,
 } = useLeadsApi()
 
 // Car dropdowns for Make / Model / Variant
@@ -260,10 +261,12 @@ const isAdmin = computed(() => {
   const role = String(user?.userType || user?.userRole || user?.role || '').toLowerCase()
   return role === 'admin'
 })
-const isInspectionStatusEditable = computed(() => {
-  const path = useRoute().path
-  return path === '/leads' || path === '/leads/' || path === '/leads/scheduled' || path === '/leads/re-scheduled'
-})
+// Status is editable inline when the lead's current inspectionStatus is one of these
+const EDITABLE_INSPECTION_STATUSES = ['pending', 'scheduled', 're-scheduled']
+function isInspectionStatusEditable(item: Record<string, any>): boolean {
+  const current = String(item?.inspectionStatus || '').trim().toLowerCase()
+  return EDITABLE_INSPECTION_STATUSES.includes(current)
+}
 const formData = ref<Record<string, any>>({})
 
 // Cascading: computed models/variants based on current form selection
@@ -452,29 +455,51 @@ const filteredItems = computed(() => {
 const _totalFiltered = computed(() => filteredItems.value.length)
 
 // ─── Search triggers server-side query & auto-navigates to Search Results tab ───
+let _localSearchDebounce: ReturnType<typeof setTimeout> | null = null
+
 watch(search, (q) => {
   const trimmed = q.trim()
+
+  // Cancel any pending debounce immediately
+  if (_localSearchDebounce) {
+    clearTimeout(_localSearchDebounce)
+    _localSearchDebounce = null
+  }
+
   // Update the global serverSearch state immediately
   serverSearch.value = trimmed
 
   if (trimmed) {
     // If not already on search-results, navigate there.
-    // The tab's * filters + serverSearch will produce a global search fetch via setFilters.
     if (router.currentRoute.value.path !== '/leads/search-results') {
       router.push('/leads/search-results')
     }
     else {
-      // Already on search-results, just debounce-search within the tab
-      searchLeads(q)
+      // Already on search-results — debounce then hit server
+      _localSearchDebounce = setTimeout(() => {
+        searchLeads(trimmed)
+      }, 300)
     }
   }
   else {
-    // Search cleared — if on search-results and no advanced filters, go back to /leads
+    // Search cleared — kill all pending debounces and force-reset
+    cancelSearch()
+    serverSearch.value = ''
+
     if (router.currentRoute.value.path === '/leads/search-results' && activeFilterCount.value === 0) {
+      // Go back to main leads tab and let it re-fetch with its own filters
       router.push('/leads')
     }
+    else if (router.currentRoute.value.path === '/leads/search-results') {
+      // Still has advanced filters — reload search-results without search text
+      searchLeads('')
+    }
     else {
-      searchLeads(q)
+      // User cleared search on a normal tab — force refresh with tab's filters
+      refreshLeads()
+      if (props.filters) {
+        nextTick(() => setFilters(props.filters!))
+      }
     }
   }
 })
@@ -1121,7 +1146,7 @@ function getInitials(name: string): string {
               </div>
               <!-- Clickable Badge (Status columns) -->
               <template v-else-if="col.type === 'badge' && (col.key === 'inspectionStatus' || col.key === 'approvalStatus')">
-                <DropdownMenu v-if="col.key === 'approvalStatus' || (col.key === 'inspectionStatus' && isInspectionStatusEditable)">
+                <DropdownMenu v-if="col.key === 'approvalStatus' || (col.key === 'inspectionStatus' && isInspectionStatusEditable(item))">
                   <DropdownMenuTrigger as-child>
                     <Badge
                       variant="outline"

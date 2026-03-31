@@ -316,7 +316,15 @@ export function useLeadsApi() {
   }
 
   // ─── Force refresh ───
+  function cancelSearch() {
+    if (_searchDebounce) {
+      clearTimeout(_searchDebounce)
+      _searchDebounce = null
+    }
+  }
+
   async function refreshLeads() {
+    cancelSearch()
     _serverSearch.value = ''
     _isInitialized.value = false
     await fetchLeads(true)
@@ -416,6 +424,7 @@ export function useLeadsApi() {
     advancedFilters: _advancedFilters,
     activeAdvancedFilterCount,
     serverSearch: _serverSearch,
+    cancelSearch,
     matchingTabIds,
   }
 }
