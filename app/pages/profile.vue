@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 
-const router = useRouter()
+const _router = useRouter()
 const userCookie = useCookie('userData')
 
 const parsedCookie = computed(() => {
   try {
     return typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
-  } catch {
+  }
+  catch {
     return null
   }
 })
@@ -57,7 +58,8 @@ function generatePassword() {
 }
 
 async function savePassword() {
-  if (!user.value) return
+  if (!user.value)
+    return
   if (!newPassword.value) {
     toast.error('Please enter a new password')
     return
@@ -66,7 +68,7 @@ async function savePassword() {
     toast.error('Passwords do not match')
     return
   }
-  
+
   isSaving.value = true
   try {
     await updateUser(userId.value, { password: newPassword.value })
@@ -210,200 +212,200 @@ const addresses = computed(() => {
           </div>
 
           <!-- VIEW MODE -->
-          
-            <!-- Login Credentials Grid -->
-            <div class="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-4 mb-4">
-              <h3 class="text-sm font-semibold flex items-center gap-2 text-primary">
-                <Icon name="i-lucide-key-round" class="size-4" />
-                Login Credentials
-              </h3>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
-                  <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Username</span>
-                  <p class="text-sm font-medium">
-                    {{ user.userName || '—' }}
-                  </p>
-                </div>
-                <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
-                  <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Phone Number</span>
-                  <p class="text-sm font-medium font-mono">
-                    {{ user.phoneNumber || '—' }}
-                  </p>
-                </div>
-                <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
-                  <div class="flex items-center justify-between">
-                    <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Password</span>
-                    <button v-if="user.password" type="button" @click="showPassword = !showPassword" class="text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded">
-                      <Icon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-3.5" />
-                    </button>
-                  </div>
-                  <p class="text-sm font-medium font-mono tracking-widest mt-0.5">
-                    <template v-if="!user.password">
-                      <span class="text-muted-foreground/50 text-xs italic tracking-normal">Password not set</span>
-                    </template>
-                    <template v-else-if="showPassword">
-                      <span class="tracking-normal">{{ user.password }}</span>
-                    </template>
-                    <template v-else>
-                      ••••••••
-                    </template>
-                  </p>
-                </div>
-              </div>
-            </div>
 
-            <!-- Contact Info Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="rounded-xl border bg-card p-4 space-y-2">
-                <div class="flex items-center gap-2">
-                  <div class="rounded-lg p-2 bg-blue-500/10">
-                    <Icon name="i-lucide-mail" class="size-4 text-blue-500" />
-                  </div>
-                  <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
-                </div>
-                <p class="text-sm font-medium pl-10">
-                  {{ user.email || '—' }}
+          <!-- Login Credentials Grid -->
+          <div class="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-4 mb-4">
+            <h3 class="text-sm font-semibold flex items-center gap-2 text-primary">
+              <Icon name="i-lucide-key-round" class="size-4" />
+              Login Credentials
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
+                <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Username</span>
+                <p class="text-sm font-medium">
+                  {{ user.userName || '—' }}
                 </p>
               </div>
-
-              <div class="rounded-xl border bg-card p-4 space-y-2">
-                <div class="flex items-center gap-2">
-                  <div class="rounded-lg p-2 bg-emerald-500/10">
-                    <Icon name="i-lucide-phone" class="size-4 text-emerald-500" />
-                  </div>
-                  <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Phone</span>
-                </div>
-                <p class="text-sm font-medium pl-10 font-mono">
+              <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
+                <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Phone Number</span>
+                <p class="text-sm font-medium font-mono">
                   {{ user.phoneNumber || '—' }}
                 </p>
               </div>
-
-              <div v-if="user.dealershipName" class="rounded-xl border bg-card p-4 space-y-2">
-                <div class="flex items-center gap-2">
-                  <div class="rounded-lg p-2 bg-amber-500/10">
-                    <Icon name="i-lucide-building-2" class="size-4 text-amber-500" />
-                  </div>
-                  <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Dealership</span>
+              <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Password</span>
+                  <button v-if="user.password" type="button" class="text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded" @click="showPassword = !showPassword">
+                    <Icon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-3.5" />
+                  </button>
                 </div>
-                <p class="text-sm font-medium pl-10">
-                  {{ user.dealershipName }}
-                </p>
-              </div>
-
-              <div v-if="user.assignedKam" class="rounded-xl border bg-card p-4 space-y-2">
-                <div class="flex items-center gap-2">
-                  <div class="rounded-lg p-2 bg-orange-500/10">
-                    <Icon name="i-lucide-user-check" class="size-4 text-orange-500" />
-                  </div>
-                  <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Assigned KAM</span>
-                </div>
-                <p class="text-sm font-medium pl-10">
-                  {{ user.assignedKam }}
-                </p>
-              </div>
-
-              <div v-if="user.entityType" class="rounded-xl border bg-card p-4 space-y-2">
-                <div class="flex items-center gap-2">
-                  <div class="rounded-lg p-2 bg-pink-500/10">
-                    <Icon name="i-lucide-tag" class="size-4 text-pink-500" />
-                  </div>
-                  <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Entity Type</span>
-                </div>
-                <p class="text-sm font-medium pl-10">
-                  {{ user.entityType }}
+                <p class="text-sm font-medium font-mono tracking-widest mt-0.5">
+                  <template v-if="!user.password">
+                    <span class="text-muted-foreground/50 text-xs italic tracking-normal">Password not set</span>
+                  </template>
+                  <template v-else-if="showPassword">
+                    <span class="tracking-normal">{{ user.password }}</span>
+                  </template>
+                  <template v-else>
+                    ••••••••
+                  </template>
                 </p>
               </div>
             </div>
+          </div>
 
-            <!-- Primary & Secondary Contact -->
-            <div v-if="user.primaryContactPerson || user.secondaryContactPerson" class="rounded-xl border bg-card p-5 space-y-4">
-              <h3 class="text-sm font-semibold flex items-center gap-2">
-                <Icon name="i-lucide-contact" class="size-4 text-indigo-500" />
-                Contact People
-              </h3>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div v-if="user.primaryContactPerson" class="rounded-lg bg-muted/30 border p-3 space-y-1">
-                  <span class="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Primary</span>
-                  <p class="text-sm font-medium">
-                    {{ user.primaryContactPerson }}
-                  </p>
-                  <p v-if="user.primaryContactNumber" class="text-xs text-muted-foreground font-mono">
-                    {{ user.primaryContactNumber }}
-                  </p>
+          <!-- Contact Info Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="rounded-xl border bg-card p-4 space-y-2">
+              <div class="flex items-center gap-2">
+                <div class="rounded-lg p-2 bg-blue-500/10">
+                  <Icon name="i-lucide-mail" class="size-4 text-blue-500" />
                 </div>
-                <div v-if="user.secondaryContactPerson" class="rounded-lg bg-muted/30 border p-3 space-y-1">
-                  <span class="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Secondary</span>
-                  <p class="text-sm font-medium">
-                    {{ user.secondaryContactPerson }}
-                  </p>
-                  <p v-if="user.secondaryContactNumber" class="text-xs text-muted-foreground font-mono">
-                    {{ user.secondaryContactNumber }}
-                  </p>
-                </div>
+                <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>
               </div>
+              <p class="text-sm font-medium pl-10">
+                {{ user.email || '—' }}
+              </p>
             </div>
 
-            <!-- Locations -->
-            <div v-if="locations.length > 0" class="rounded-xl border bg-card p-5 space-y-3">
-              <h3 class="text-sm font-semibold flex items-center gap-2">
-                <Icon name="i-lucide-map-pin" class="size-4 text-rose-500" />
-                Locations
-              </h3>
-              <div class="flex flex-wrap gap-2">
-                <Badge
-                  v-for="loc in locations"
-                  :key="loc"
-                  variant="outline"
-                  class="bg-rose-500/5 text-rose-600 border-rose-500/15 text-xs px-3 py-1"
-                >
-                  <Icon name="i-lucide-map-pin" class="size-3 mr-1.5" />
-                  {{ loc }}
-                </Badge>
+            <div class="rounded-xl border bg-card p-4 space-y-2">
+              <div class="flex items-center gap-2">
+                <div class="rounded-lg p-2 bg-emerald-500/10">
+                  <Icon name="i-lucide-phone" class="size-4 text-emerald-500" />
+                </div>
+                <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Phone</span>
               </div>
+              <p class="text-sm font-medium pl-10 font-mono">
+                {{ user.phoneNumber || '—' }}
+              </p>
             </div>
 
-            <!-- Addresses -->
-            <div v-if="addresses.length > 0" class="rounded-xl border bg-card p-5 space-y-3">
-              <h3 class="text-sm font-semibold flex items-center gap-2">
-                <Icon name="i-lucide-home" class="size-4 text-sky-500" />
-                Addresses
-              </h3>
-              <div class="space-y-2">
-                <div
-                  v-for="(addr, i) in addresses"
-                  :key="i"
-                  class="rounded-lg border bg-muted/20 px-4 py-3 text-sm flex items-start gap-3"
-                >
-                  <Icon name="i-lucide-navigation" class="size-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <span>{{ addr }}</span>
+            <div v-if="user.dealershipName" class="rounded-xl border bg-card p-4 space-y-2">
+              <div class="flex items-center gap-2">
+                <div class="rounded-lg p-2 bg-amber-500/10">
+                  <Icon name="i-lucide-building-2" class="size-4 text-amber-500" />
                 </div>
+                <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Dealership</span>
               </div>
+              <p class="text-sm font-medium pl-10">
+                {{ user.dealershipName }}
+              </p>
             </div>
 
-            <!-- Metadata -->
-            <div class="rounded-xl border bg-card p-5 space-y-3">
-              <h3 class="text-sm font-semibold flex items-center gap-2">
-                <Icon name="i-lucide-clock" class="size-4 text-gray-500" />
-                Activity
-              </h3>
-              <div class="space-y-2">
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-muted-foreground">Joined</span>
-                  <span class="font-medium">{{ formatDate(user.createdAt) }}</span>
+            <div v-if="user.assignedKam" class="rounded-xl border bg-card p-4 space-y-2">
+              <div class="flex items-center gap-2">
+                <div class="rounded-lg p-2 bg-orange-500/10">
+                  <Icon name="i-lucide-user-check" class="size-4 text-orange-500" />
                 </div>
-                <div class="flex items-center justify-between text-sm">
-                  <span class="text-muted-foreground">Last updated</span>
-                  <span class="font-medium">{{ formatDateTime(user.updatedAt) }}</span>
-                </div>
+                <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Assigned KAM</span>
               </div>
-              <!-- User ID -->
-              <div class="rounded-lg bg-muted/40 border border-dashed px-3 py-2 flex items-center justify-between mt-3">
-                <span class="text-xs text-muted-foreground">User ID</span>
-                <code class="text-[10px] text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded">
-                  {{ user._id || user.id || '—' }}
-                </code>
+              <p class="text-sm font-medium pl-10">
+                {{ user.assignedKam }}
+              </p>
+            </div>
+
+            <div v-if="user.entityType" class="rounded-xl border bg-card p-4 space-y-2">
+              <div class="flex items-center gap-2">
+                <div class="rounded-lg p-2 bg-pink-500/10">
+                  <Icon name="i-lucide-tag" class="size-4 text-pink-500" />
+                </div>
+                <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Entity Type</span>
+              </div>
+              <p class="text-sm font-medium pl-10">
+                {{ user.entityType }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Primary & Secondary Contact -->
+          <div v-if="user.primaryContactPerson || user.secondaryContactPerson" class="rounded-xl border bg-card p-5 space-y-4">
+            <h3 class="text-sm font-semibold flex items-center gap-2">
+              <Icon name="i-lucide-contact" class="size-4 text-indigo-500" />
+              Contact People
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div v-if="user.primaryContactPerson" class="rounded-lg bg-muted/30 border p-3 space-y-1">
+                <span class="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Primary</span>
+                <p class="text-sm font-medium">
+                  {{ user.primaryContactPerson }}
+                </p>
+                <p v-if="user.primaryContactNumber" class="text-xs text-muted-foreground font-mono">
+                  {{ user.primaryContactNumber }}
+                </p>
+              </div>
+              <div v-if="user.secondaryContactPerson" class="rounded-lg bg-muted/30 border p-3 space-y-1">
+                <span class="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Secondary</span>
+                <p class="text-sm font-medium">
+                  {{ user.secondaryContactPerson }}
+                </p>
+                <p v-if="user.secondaryContactNumber" class="text-xs text-muted-foreground font-mono">
+                  {{ user.secondaryContactNumber }}
+                </p>
               </div>
             </div>
+          </div>
+
+          <!-- Locations -->
+          <div v-if="locations.length > 0" class="rounded-xl border bg-card p-5 space-y-3">
+            <h3 class="text-sm font-semibold flex items-center gap-2">
+              <Icon name="i-lucide-map-pin" class="size-4 text-rose-500" />
+              Locations
+            </h3>
+            <div class="flex flex-wrap gap-2">
+              <Badge
+                v-for="loc in locations"
+                :key="loc"
+                variant="outline"
+                class="bg-rose-500/5 text-rose-600 border-rose-500/15 text-xs px-3 py-1"
+              >
+                <Icon name="i-lucide-map-pin" class="size-3 mr-1.5" />
+                {{ loc }}
+              </Badge>
+            </div>
+          </div>
+
+          <!-- Addresses -->
+          <div v-if="addresses.length > 0" class="rounded-xl border bg-card p-5 space-y-3">
+            <h3 class="text-sm font-semibold flex items-center gap-2">
+              <Icon name="i-lucide-home" class="size-4 text-sky-500" />
+              Addresses
+            </h3>
+            <div class="space-y-2">
+              <div
+                v-for="(addr, i) in addresses"
+                :key="i"
+                class="rounded-lg border bg-muted/20 px-4 py-3 text-sm flex items-start gap-3"
+              >
+                <Icon name="i-lucide-navigation" class="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <span>{{ addr }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Metadata -->
+          <div class="rounded-xl border bg-card p-5 space-y-3">
+            <h3 class="text-sm font-semibold flex items-center gap-2">
+              <Icon name="i-lucide-clock" class="size-4 text-gray-500" />
+              Activity
+            </h3>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted-foreground">Joined</span>
+                <span class="font-medium">{{ formatDate(user.createdAt) }}</span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted-foreground">Last updated</span>
+                <span class="font-medium">{{ formatDateTime(user.updatedAt) }}</span>
+              </div>
+            </div>
+            <!-- User ID -->
+            <div class="rounded-lg bg-muted/40 border border-dashed px-3 py-2 flex items-center justify-between mt-3">
+              <span class="text-xs text-muted-foreground">User ID</span>
+              <code class="text-[10px] text-muted-foreground font-mono bg-muted px-2 py-0.5 rounded">
+                {{ user._id || user.id || '—' }}
+              </code>
+            </div>
+          </div>
         </div>
       </div>
 

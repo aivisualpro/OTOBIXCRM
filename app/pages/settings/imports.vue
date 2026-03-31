@@ -3,35 +3,35 @@ import { toast } from 'vue-sonner'
 
 // ─── CSV Column Mapping ───
 const csvHeaderMap: Record<string, string> = {
-  'createdAt': 'createdAt',
-  'appointmentId': 'appointmentId',
-  'emailAddress': 'emailAddress',
-  'appointmentSource': 'appointmentSource',
-  'otherSource': 'otherSource',
-  'NCDUCDName': 'ncdUcdName',
-  'NCDRepresentativeName': 'repName',
-  'NCDRepresentativeContactNo': 'repContact',
-  'vehicleStatus': 'vehicleStatus',
-  'inspectionAddress': 'inspectionAddress',
-  'zipCode': 'zipCode',
-  'yearOfManufacture': 'yearOfManufacture',
-  'make': 'make',
-  'model': 'model',
-  'variant': 'variant',
-  'odometerReading': 'odometerReadingInKms',
-  'ownershipSerialNumber': 'ownershipSerialNumber',
-  'inspectionDateTime': 'inspectionDateTime',
-  'ownerName': 'ownerName',
-  'customerContactNumber': 'customerContactNumber',
-  'remarks': 'remarks',
-  'city': 'city',
-  'allocatedTo': 'allocatedTo',
-  'inspectionEngineerNumber': 'inspectionEngineerNumber',
-  'inspectionStatus': 'inspectionStatus',
-  'referenceName': 'referenceName',
-  'bankSource': 'bankSource',
-  'priority': 'priority',
-  'addedBy': 'addedBy',
+  createdAt: 'createdAt',
+  appointmentId: 'appointmentId',
+  emailAddress: 'emailAddress',
+  appointmentSource: 'appointmentSource',
+  otherSource: 'otherSource',
+  NCDUCDName: 'ncdUcdName',
+  NCDRepresentativeName: 'repName',
+  NCDRepresentativeContactNo: 'repContact',
+  vehicleStatus: 'vehicleStatus',
+  inspectionAddress: 'inspectionAddress',
+  zipCode: 'zipCode',
+  yearOfManufacture: 'yearOfManufacture',
+  make: 'make',
+  model: 'model',
+  variant: 'variant',
+  odometerReading: 'odometerReadingInKms',
+  ownershipSerialNumber: 'ownershipSerialNumber',
+  inspectionDateTime: 'inspectionDateTime',
+  ownerName: 'ownerName',
+  customerContactNumber: 'customerContactNumber',
+  remarks: 'remarks',
+  city: 'city',
+  allocatedTo: 'allocatedTo',
+  inspectionEngineerNumber: 'inspectionEngineerNumber',
+  inspectionStatus: 'inspectionStatus',
+  referenceName: 'referenceName',
+  bankSource: 'bankSource',
+  priority: 'priority',
+  addedBy: 'addedBy',
 }
 
 // All target DB fields
@@ -96,7 +96,8 @@ const isDragging = ref(false)
 // ─── CSV Parser (auto-detects tab or comma delimiter) ───
 function parseCSV(text: string): { headers: string[], rows: string[][] } {
   const lines = text.split(/\r?\n/).filter(l => l.trim())
-  if (lines.length < 2) return { headers: [], rows: [] }
+  if (lines.length < 2)
+    return { headers: [], rows: [] }
 
   // Auto-detect delimiter: tab or comma
   const firstLine = lines[0]!
@@ -190,13 +191,15 @@ function handleFile(file: File) {
 function onFileInput(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
-  if (file) handleFile(file)
+  if (file)
+    handleFile(file)
 }
 
-function onDrop(event: DragEvent) {
+function _onDrop(event: DragEvent) {
   isDragging.value = false
   const file = event.dataTransfer?.files?.[0]
-  if (file) handleFile(file)
+  if (file)
+    handleFile(file)
 }
 
 // ─── Mapped Rows Computed ───
@@ -277,13 +280,16 @@ function resetWizard() {
 }
 
 function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024)
+    return `${bytes} B`
+  if (bytes < 1024 * 1024)
+    return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 const progressPercent = computed(() => {
-  if (importTotal.value === 0) return 0
+  if (importTotal.value === 0)
+    return 0
   return Math.round((importProgress.value / importTotal.value) * 100)
 })
 </script>
@@ -303,8 +309,12 @@ const progressPercent = computed(() => {
               <Icon name="i-lucide-magnet" class="size-5 text-primary" />
             </div>
             <div class="min-w-0">
-              <h3 class="font-semibold text-sm">Leads</h3>
-              <p class="text-xs text-muted-foreground mt-0.5">Import from CSV</p>
+              <h3 class="font-semibold text-sm">
+                Leads
+              </h3>
+              <p class="text-xs text-muted-foreground mt-0.5">
+                Import from CSV
+              </p>
             </div>
             <Icon name="i-lucide-upload" class="size-4 text-muted-foreground ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
@@ -328,8 +338,12 @@ const progressPercent = computed(() => {
             <Icon name="i-lucide-file-check" class="size-5 text-primary" />
           </div>
           <div>
-            <p class="text-sm font-semibold">{{ fileName }}</p>
-            <p class="text-xs text-muted-foreground">{{ formatFileSize(fileSize) }} · {{ rawRows.length }} rows · {{ rawHeaders.length }} columns</p>
+            <p class="text-sm font-semibold">
+              {{ fileName }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              {{ formatFileSize(fileSize) }} · {{ rawRows.length }} rows · {{ rawHeaders.length }} columns
+            </p>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -348,17 +362,27 @@ const progressPercent = computed(() => {
       <div class="rounded-xl border bg-card overflow-hidden">
         <div class="px-5 py-3 border-b bg-muted/30 flex items-center gap-2">
           <Icon name="i-lucide-columns-3" class="size-4 text-primary" />
-          <h3 class="text-sm font-bold">Column Mapping</h3>
+          <h3 class="text-sm font-bold">
+            Column Mapping
+          </h3>
           <span class="text-xs text-muted-foreground ml-auto">Map your CSV columns to CRM fields</span>
         </div>
         <div class="max-h-[480px] overflow-y-auto">
           <table class="w-full">
             <thead class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
               <tr>
-                <th class="text-left text-xs font-semibold text-muted-foreground px-5 py-2.5 w-1/3">CSV Column</th>
-                <th class="text-center text-xs font-semibold text-muted-foreground px-3 py-2.5 w-16">→</th>
-                <th class="text-left text-xs font-semibold text-muted-foreground px-5 py-2.5 w-1/3">CRM Field</th>
-                <th class="text-left text-xs font-semibold text-muted-foreground px-5 py-2.5">Sample Data</th>
+                <th class="text-left text-xs font-semibold text-muted-foreground px-5 py-2.5 w-1/3">
+                  CSV Column
+                </th>
+                <th class="text-center text-xs font-semibold text-muted-foreground px-3 py-2.5 w-16">
+                  →
+                </th>
+                <th class="text-left text-xs font-semibold text-muted-foreground px-5 py-2.5 w-1/3">
+                  CRM Field
+                </th>
+                <th class="text-left text-xs font-semibold text-muted-foreground px-5 py-2.5">
+                  Sample Data
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -433,7 +457,9 @@ const progressPercent = computed(() => {
               <Icon name="i-lucide-table-2" class="size-5 text-primary" />
             </div>
             <div>
-              <p class="text-sm font-semibold">Data Preview</p>
+              <p class="text-sm font-semibold">
+                Data Preview
+              </p>
               <p class="text-xs text-muted-foreground">
                 Showing first {{ previewRows.length }} of {{ rawRows.length }} rows · {{ previewColumns.length }} mapped columns
               </p>
@@ -454,7 +480,9 @@ const progressPercent = computed(() => {
           <table class="w-full text-sm">
             <thead class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
               <tr>
-                <th class="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-2.5 whitespace-nowrap">#</th>
+                <th class="text-left text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-4 py-2.5 whitespace-nowrap">
+                  #
+                </th>
                 <th
                   v-for="col in previewColumns"
                   :key="col"
@@ -470,7 +498,9 @@ const progressPercent = computed(() => {
                 :key="i"
                 class="border-t hover:bg-accent/30 transition-colors"
               >
-                <td class="px-4 py-2.5 text-xs text-muted-foreground tabular-nums">{{ i + 1 }}</td>
+                <td class="px-4 py-2.5 text-xs text-muted-foreground tabular-nums">
+                  {{ i + 1 }}
+                </td>
                 <td
                   v-for="col in previewColumns"
                   :key="col"
@@ -511,7 +541,9 @@ const progressPercent = computed(() => {
         </div>
 
         <div>
-          <h3 class="text-xl font-bold">Importing Leads...</h3>
+          <h3 class="text-xl font-bold">
+            Importing Leads...
+          </h3>
           <p class="text-sm text-muted-foreground mt-1">
             Processing {{ importProgress }} of {{ importTotal }} rows
           </p>
@@ -525,7 +557,9 @@ const progressPercent = computed(() => {
               :style="{ width: `${progressPercent}%` }"
             />
           </div>
-          <p class="text-sm font-semibold text-primary tabular-nums">{{ progressPercent }}%</p>
+          <p class="text-sm font-semibold text-primary tabular-nums">
+            {{ progressPercent }}%
+          </p>
         </div>
 
         <!-- Batch info -->
@@ -569,22 +603,36 @@ const progressPercent = computed(() => {
         <!-- Stats -->
         <div class="grid grid-cols-3 gap-3">
           <div class="rounded-xl bg-primary/10 p-3">
-            <p class="text-2xl font-bold text-primary tabular-nums">{{ importedCount }}</p>
-            <p class="text-[11px] text-primary/70 font-medium mt-0.5">Imported</p>
+            <p class="text-2xl font-bold text-primary tabular-nums">
+              {{ importedCount }}
+            </p>
+            <p class="text-[11px] text-primary/70 font-medium mt-0.5">
+              Imported
+            </p>
           </div>
           <div class="rounded-xl bg-muted p-3">
-            <p class="text-2xl font-bold text-foreground tabular-nums">{{ importTotal }}</p>
-            <p class="text-[11px] text-muted-foreground font-medium mt-0.5">Total Rows</p>
+            <p class="text-2xl font-bold text-foreground tabular-nums">
+              {{ importTotal }}
+            </p>
+            <p class="text-[11px] text-muted-foreground font-medium mt-0.5">
+              Total Rows
+            </p>
           </div>
           <div class="rounded-xl bg-destructive/10 p-3">
-            <p class="text-2xl font-bold text-destructive tabular-nums">{{ importErrors.length }}</p>
-            <p class="text-[11px] text-destructive/70 font-medium mt-0.5">Errors</p>
+            <p class="text-2xl font-bold text-destructive tabular-nums">
+              {{ importErrors.length }}
+            </p>
+            <p class="text-[11px] text-destructive/70 font-medium mt-0.5">
+              Errors
+            </p>
           </div>
         </div>
 
         <!-- Errors detail -->
         <div v-if="importErrors.length > 0" class="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-left">
-          <p class="text-sm font-medium text-destructive mb-2">Error Details</p>
+          <p class="text-sm font-medium text-destructive mb-2">
+            Error Details
+          </p>
           <ul class="space-y-1">
             <li v-for="(err, i) in importErrors" :key="i" class="text-xs text-destructive flex items-start gap-1.5">
               <Icon name="i-lucide-x-circle" class="size-3.5 shrink-0 mt-0.5" />

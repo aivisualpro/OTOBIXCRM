@@ -190,9 +190,11 @@ const LEADS_TABS = [
 
 function localToggleLeadTab(tabId: string) {
   const ws = editingWorkspace.value
-  if (!ws) return
+  if (!ws)
+    return
 
-  if (!ws.leadTabs) ws.leadTabs = LEADS_TABS.map(t => t.id) // Default all
+  if (!ws.leadTabs)
+    ws.leadTabs = LEADS_TABS.map(t => t.id) // Default all
 
   const current = [...ws.leadTabs]
   const idx = current.indexOf(tabId)
@@ -220,9 +222,11 @@ const DASHBOARD_WIDGETS = [
 
 function localToggleDashboardWidget(widgetId: string) {
   const ws = editingWorkspace.value
-  if (!ws) return
+  if (!ws)
+    return
 
-  if (!ws.dashboardWidgets) ws.dashboardWidgets = DASHBOARD_WIDGETS.map(w => w.id) // Default all
+  if (!ws.dashboardWidgets)
+    ws.dashboardWidgets = DASHBOARD_WIDGETS.map(w => w.id) // Default all
 
   const current = [...ws.dashboardWidgets]
   const idx = current.indexOf(widgetId)
@@ -245,9 +249,11 @@ const SYSTEM_SETTINGS = [
 
 function localToggleSystemSetting(settingId: string) {
   const ws = editingWorkspace.value
-  if (!ws) return
+  if (!ws)
+    return
 
-  if (!ws.systemSettings) ws.systemSettings = SYSTEM_SETTINGS.map(s => s.id) // Default all
+  if (!ws.systemSettings)
+    ws.systemSettings = SYSTEM_SETTINGS.map(s => s.id) // Default all
 
   const current = [...ws.systemSettings]
   const idx = current.indexOf(settingId)
@@ -285,11 +291,13 @@ function toggleGroupAll(items: typeof allMenuItems) {
 
 // ─── Default Routes Mutators ───
 function safeGetDefaultRoute(ws: Workspace, itemId: string) {
-  if (!ws.defaultRoutes) ws.defaultRoutes = {}
+  if (!ws.defaultRoutes)
+    ws.defaultRoutes = {}
   return ws.defaultRoutes[itemId] || ''
 }
 function safeSetDefaultRoute(ws: Workspace, itemId: string, val: string) {
-  if (!ws.defaultRoutes) ws.defaultRoutes = {}
+  if (!ws.defaultRoutes)
+    ws.defaultRoutes = {}
   ws.defaultRoutes[itemId] = val
   isDirty.value = true
 }
@@ -307,10 +315,14 @@ async function saveMenuConfig() {
   isSavingMenu.value = true
   try {
     const updates: Partial<Workspace> = { menuIds: [...ws.menuIds] }
-    if (ws.leadTabs) updates.leadTabs = [...ws.leadTabs]
-    if (ws.dashboardWidgets) updates.dashboardWidgets = [...ws.dashboardWidgets]
-    if (ws.systemSettings) updates.systemSettings = [...ws.systemSettings]
-    if (ws.defaultRoutes) updates.defaultRoutes = { ...ws.defaultRoutes }
+    if (ws.leadTabs)
+      updates.leadTabs = [...ws.leadTabs]
+    if (ws.dashboardWidgets)
+      updates.dashboardWidgets = [...ws.dashboardWidgets]
+    if (ws.systemSettings)
+      updates.systemSettings = [...ws.systemSettings]
+    if (ws.defaultRoutes)
+      updates.defaultRoutes = { ...ws.defaultRoutes }
 
     await updateWorkspace(ws.workspaceId, updates)
     isDirty.value = false
@@ -418,7 +430,9 @@ async function saveMenuConfig() {
               <Icon :name="editingWorkspace.icon || 'i-lucide-briefcase'" class="size-6" />
             </div>
             <div>
-              <h2 class="text-xl font-bold tracking-tight">{{ editingWorkspace.name }}</h2>
+              <h2 class="text-xl font-bold tracking-tight">
+                {{ editingWorkspace.name }}
+              </h2>
             </div>
           </div>
 
@@ -477,7 +491,7 @@ async function saveMenuConfig() {
                   v-for="item in items"
                   :key="item.id"
                   class="group flex flex-col p-2.5 rounded-lg border transition-all"
-                  :style="editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon && editingWorkspace!.color ? { borderColor: editingWorkspace!.color + '4D', backgroundColor: editingWorkspace!.color + '0D', boxShadow: `0 0 0 1px ${editingWorkspace!.color}1A` } : {}"
+                  :style="editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon && editingWorkspace!.color ? { borderColor: `${editingWorkspace!.color}4D`, backgroundColor: `${editingWorkspace!.color}0D`, boxShadow: `0 0 0 1px ${editingWorkspace!.color}1A` } : {}"
                   :class="[
                     item.comingSoon ? 'opacity-50 cursor-not-allowed bg-muted/20' : '',
                     editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon
@@ -525,28 +539,27 @@ async function saveMenuConfig() {
                       @click="localToggleLeadTab(subTab.id)"
                     >
                       <div class="flex items-center gap-1.5 min-w-0">
-                        <button 
-                          v-if="(editingWorkspace!.leadTabs || LEADS_TABS.map(t=>t.id)).includes(subTab.id)"
+                        <button
+                          v-if="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id)"
                           title="Set as Default Route"
-                          :class="[
+                          class="transition-opacity p-0.5 mt-0.5" :class="[
                             safeGetDefaultRoute(editingWorkspace!, 'leads') === (subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`) ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100',
-                            'transition-opacity p-0.5 mt-0.5'
                           ]"
                           @click.stop="safeSetDefaultRoute(editingWorkspace!, 'leads', subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`)"
                         >
-                          <Icon 
-                            name="i-lucide-star" 
+                          <Icon
+                            name="i-lucide-star"
                             class="size-3 block transition-colors"
-                            :class="safeGetDefaultRoute(editingWorkspace!, 'leads') === (subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`) ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'" 
+                            :class="safeGetDefaultRoute(editingWorkspace!, 'leads') === (subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`) ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
                           />
                         </button>
-                        <span class="text-[11px] truncate" :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t=>t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
+                        <span class="text-[11px] truncate" :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
                       </div>
                       <Icon
-                        :name="(editingWorkspace!.leadTabs || LEADS_TABS.map(t=>t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                        :name="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
                         class="size-3.5"
-                        :style="(editingWorkspace!.leadTabs || LEADS_TABS.map(t=>t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t=>t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                        :style="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
                       />
                     </div>
                   </div>
@@ -556,7 +569,9 @@ async function saveMenuConfig() {
                     v-if="item.id === 'dashboard' && editingWorkspace!.menuIds.includes('dashboard')"
                     class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
                   >
-                    <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">Dashboard Widgets</p>
+                    <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">
+                      Dashboard Widgets
+                    </p>
                     <div
                       v-for="widget in DASHBOARD_WIDGETS"
                       :key="widget.id"
@@ -565,10 +580,10 @@ async function saveMenuConfig() {
                     >
                       <span class="text-[11px]">{{ widget.title }}</span>
                       <Icon
-                        :name="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w=>w.id)).includes(widget.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                        :name="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w => w.id)).includes(widget.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
                         class="size-3.5"
-                        :style="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w=>w.id)).includes(widget.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w=>w.id)).includes(widget.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                        :style="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w => w.id)).includes(widget.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w => w.id)).includes(widget.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
                       />
                     </div>
                   </div>
@@ -589,28 +604,27 @@ async function saveMenuConfig() {
                       @click="localToggleSystemSetting(setting.id)"
                     >
                       <div class="flex items-center gap-1.5 min-w-0">
-                        <button 
-                          v-if="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s=>s.id)).includes(setting.id)"
+                        <button
+                          v-if="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id)"
                           title="Set as Default Route"
-                          :class="[
+                          class="transition-opacity p-0.5 mt-0.5" :class="[
                             safeGetDefaultRoute(editingWorkspace!, 'settings') === `/settings/${setting.id}` ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100',
-                            'transition-opacity p-0.5 mt-0.5'
                           ]"
                           @click.stop="safeSetDefaultRoute(editingWorkspace!, 'settings', `/settings/${setting.id}`)"
                         >
-                          <Icon 
-                            name="i-lucide-star" 
+                          <Icon
+                            name="i-lucide-star"
                             class="size-3 block transition-colors"
-                            :class="safeGetDefaultRoute(editingWorkspace!, 'settings') === `/settings/${setting.id}` ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'" 
+                            :class="safeGetDefaultRoute(editingWorkspace!, 'settings') === `/settings/${setting.id}` ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
                           />
                         </button>
-                        <span class="text-[11px] truncate" :class="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s=>s.id)).includes(setting.id) ? '' : 'pl-4'">{{ setting.title }}</span>
+                        <span class="text-[11px] truncate" :class="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) ? '' : 'pl-4'">{{ setting.title }}</span>
                       </div>
                       <Icon
-                        :name="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s=>s.id)).includes(setting.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                        :name="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
                         class="size-3.5"
-                        :style="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s=>s.id)).includes(setting.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s=>s.id)).includes(setting.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                        :style="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
                       />
                     </div>
                   </div>
@@ -642,8 +656,6 @@ async function saveMenuConfig() {
                 autofocus
               />
             </div>
-
-
 
             <div class="space-y-2">
               <label class="text-sm font-medium">Icon</label>

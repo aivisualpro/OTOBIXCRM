@@ -1,5 +1,5 @@
-import { MongoClient, ObjectId } from 'mongodb'
 import bcrypt from 'bcryptjs'
+import { MongoClient, ObjectId } from 'mongodb'
 
 let _client: MongoClient | null = null
 
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
     if (!_client) {
       _client = new MongoClient(uri)
       await _client.connect()
-      console.info(`[API:users/update] Connected to MongoDB → DB: ${dbName}`)
+      console.warn(`[API:users/update] Connected to MongoDB → DB: ${dbName}`)
     }
 
     const db = _client.db(dbName)
@@ -69,7 +69,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: `User not found with id: ${userId}` })
     }
 
-    console.info(`[API:users/update] Updated user ${userId} in "${dbName}" — modified: ${result.modifiedCount}`)
+    console.warn(`[API:users/update] Updated user ${userId} in "${dbName}" — modified: ${result.modifiedCount}`)
 
     return {
       success: true,

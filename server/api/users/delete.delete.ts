@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     if (!_client) {
       _client = new MongoClient(uri)
       await _client.connect()
-      console.info(`[API:users/delete] Connected to MongoDB → DB: ${dbName}`)
+      console.warn(`[API:users/delete] Connected to MongoDB → DB: ${dbName}`)
     }
 
     const db = _client.db(dbName)
@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: `User not found with id "${userId}"` })
     }
 
-    console.info(`[API:users/delete] Deleted user ${userId} from "${dbName}"`)
+    console.warn(`[API:users/delete] Deleted user ${userId} from "${dbName}"`)
 
     return {
       success: true,
@@ -47,7 +47,8 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (err: any) {
-    if (err.statusCode) throw err
+    if (err.statusCode)
+      throw err
     _client = null
     console.error('[API:users/delete] Failed:', err.message)
     throw createError({ statusCode: 500, message: err.message || 'Failed to delete user' })

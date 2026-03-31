@@ -34,7 +34,7 @@ export function usePeopleApi() {
   const _isFetching = useState('people_isFetching', () => false)
   const _fetchError = useState<string | null>('people_fetchError', () => null)
 
-  const { apiBaseUrl } = useApiEnvironment()
+  const { apiBaseUrl: _apiBaseUrl } = useApiEnvironment()
   const authToken = useCookie('authToken')
 
   function _headers(): Record<string, string> {
@@ -126,7 +126,7 @@ export function usePeopleApi() {
       '/api/users/update',
       { method: 'PUT', body },
     )
-    
+
     // Patch local cache directly. Do NOT call refreshUsers() here because the 
     // external API's GET endpoint aggressively strips sensitive fields like passwords, 
     // causing the UI to falsely appear as if the save failed!
@@ -136,7 +136,7 @@ export function usePeopleApi() {
       // Normalise location locally just like we did for the API
       _allUsers.value[idx]!.location = body.location
     }
-    
+
     return response
   }
 

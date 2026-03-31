@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
 
     const ops = rows.map((row: any) => {
       const generatedId = row.appointmentId || `${yearPrefix}-${100000 + batchStartSeq + autoIdIndex++}`
-      
+
       const setFields: any = {
         appointmentId: generatedId,
         ownerName: row.ownerName || '',
@@ -81,7 +81,8 @@ export default defineEventHandler(async (event) => {
 
       if (row.createdAt) {
         setFields.createdAt = row.createdAt
-      } else {
+      }
+      else {
         updateDoc.$setOnInsert = { createdAt: now }
       }
 
@@ -92,8 +93,8 @@ export default defineEventHandler(async (event) => {
         updateOne: {
           filter: { appointmentId: generatedId },
           update: updateDoc,
-          upsert: true
-        }
+          upsert: true,
+        },
       }
     })
 
@@ -101,11 +102,11 @@ export default defineEventHandler(async (event) => {
 
     // Fire-and-forget sync to AppSheet
     // We sync them individually in the background to simplify tracking Add vs Edit
-    fullDocs.forEach(doc => {
+    fullDocs.forEach((doc) => {
       // If the bulkWrite upserted this specific appointmentId, it's an Add. Otherwise it's an Edit.
       // (Simplified approach: AppSheet might tolerate 'Edit' if configured, but to be robust 
       // we check if it was newly inserted. However, bulkWrite upsertedIds is an object mapped by index)
-      syncLeadToAppSheet('Edit', doc, db) 
+      syncLeadToAppSheet('Edit', doc, db)
       // Note: If AppSheet rejects 'Edit' for new records, you can switch to a combined workflow.
       // Assuming 'Edit' works as an upsert in AppSheet or they are already present.
     })
@@ -118,7 +119,8 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (err: any) {
-    if (err.statusCode) throw err
+    if (err.statusCode)
+      throw err
     resetLeadsDb()
     console.error('[API:leads] POST import failed:', err.message)
     throw createError({ statusCode: 500, message: err.message || 'Failed to import leads' })

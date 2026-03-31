@@ -15,14 +15,14 @@ const props = defineProps<{
 
 // Map categoryKey → default userRole for new user creation
 const CATEGORY_ROLE_MAP: Record<string, string> = {
-  dealer: 'Dealer',
-  customer: 'Customer',
+  'dealer': 'Dealer',
+  'customer': 'Customer',
   'inspection-engineer': 'Inspection Engineer',
-  admin: 'Admin',
-  retailer: 'Retailer',
+  'admin': 'Admin',
+  'retailer': 'Retailer',
   'sales-manager': 'Sales Manager',
-  telecaller: 'Telecaller',
-  qc: 'QC',
+  'telecaller': 'Telecaller',
+  'qc': 'QC',
 }
 const defaultRole = computed(() => CATEGORY_ROLE_MAP[props.categoryKey || ''] || 'Customer')
 
@@ -232,7 +232,7 @@ function resetForm() {
 async function handleCreateUser() {
   const f = form.value
   if (!f.userName.trim() || !f.email.trim() || (f.userRole !== 'Telecaller' && !f.phoneNumber.trim()) || !f.userRole) {
-    toast.error('Please fill all required fields (Name, Email, Role' + (f.userRole !== 'Telecaller' ? ', Phone' : '') + ')')
+    toast.error(`Please fill all required fields (Name, Email, Role${f.userRole !== 'Telecaller' ? ', Phone' : ''})`)
     return
   }
 

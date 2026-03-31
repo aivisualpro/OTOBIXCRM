@@ -1,7 +1,7 @@
-// POST /api/users/login — authenticate user directly against MongoDB
-import { MongoClient } from 'mongodb'
 import crypto from 'node:crypto' // standard node crypto
 import bcrypt from 'bcryptjs'
+// POST /api/users/login — authenticate user directly against MongoDB
+import { MongoClient } from 'mongodb'
 
 let _client: MongoClient | null = null
 
@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     if (!_client) {
       _client = new MongoClient(uri)
       await _client.connect()
-      console.info(`[API:login] Connected to MongoDB → DB: ${dbName}`)
+      console.warn(`[API:login] Connected to MongoDB → DB: ${dbName}`)
     }
 
     const db = _client.db(dbName)
@@ -38,8 +38,8 @@ export default defineEventHandler(async (event) => {
       $or: [
         { userName: { $regex: `^${incomingUserStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } },
         { email: { $regex: `^${incomingUserStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } },
-        { phoneNumber: incomingUserStr }
-      ]
+        { phoneNumber: incomingUserStr },
+      ],
     })
 
     if (!user) {
@@ -51,11 +51,11 @@ export default defineEventHandler(async (event) => {
     if (user.passwordHash && user.passwordHash.startsWith('$2')) {
       // Primary standard: check isolated hash
       isValidPassword = await bcrypt.compare(body.password, user.passwordHash)
-    } 
+    }
     else if (user.password && user.password.startsWith('$2')) {
       // Legacy migration: check if DB temporarily stored bcrypt inside .password directly
       isValidPassword = await bcrypt.compare(body.password, user.password)
-    } 
+    }
     else {
       // Secure literal-match fallback to migrate strictly clear-text older records seamlessly
       isValidPassword = (user.password === body.password)
@@ -79,8 +79,9 @@ export default defineEventHandler(async (event) => {
   }
   catch (err: any) {
     _client = null
-    if (err.statusCode) throw err
-    
+    if (err.statusCode)
+      throw err
+
     console.error('[API:login] MongoDB authentication failed:', err)
     throw createError({
       statusCode: 500,

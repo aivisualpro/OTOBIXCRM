@@ -61,7 +61,7 @@ const brandDist = computed(() => {
 })
 
 // ─── Data State Management ───
-const reload = async () => {
+async function reload() {
   currentPage.value = 1
   await fetchCarDropdowns({
     page: 1,
@@ -139,7 +139,7 @@ async function handleSubmit() {
     showDialog.value = false
   }
   catch (err: any) {
-    toast.error('Sync failed: ' + (err.message || 'Network error'))
+    toast.error(`Sync failed: ${err.message || 'Network error'}`)
   }
   finally { isSubmitting.value = false }
 }
@@ -154,14 +154,15 @@ function confirmDelete(item: any) {
 }
 
 async function handleDelete() {
-  if (!deleteTarget.value) return
+  if (!deleteTarget.value)
+    return
   isDeleting.value = true
   try {
     await deleteDropdown(deleteTarget.value._id)
     toast.success('Variance purged from database')
     showDeleteDialog.value = false
   }
-  catch (err) { toast.error('Delete failed') }
+  catch { toast.error('Delete failed') }
   finally { isDeleting.value = false }
 }
 
@@ -170,10 +171,11 @@ async function handleToggleStatus(item: any) {
     const prev = item.isActive !== false
     await toggleStatus(item._id)
     const target = carDropdowns.value.find(d => d._id === item._id)
-    if (target) target.isActive = !prev
+    if (target)
+      target.isActive = !prev
     toast.success('Status broadcasted')
   }
-  catch (err) { toast.error('Toggle failed') }
+  catch { toast.error('Toggle failed') }
 }
 </script>
 
@@ -203,7 +205,9 @@ async function handleToggleStatus(item: any) {
             <span class="text-[10px] font-black uppercase tracking-widest text-primary/70">Vehicle Variants</span>
             <Icon name="i-lucide-activity" class="size-4 text-primary animate-pulse" />
           </div>
-          <p class="text-3xl font-black tabular-nums tracking-tighter">{{ totalCount }}</p>
+          <p class="text-3xl font-black tabular-nums tracking-tighter">
+            {{ totalCount }}
+          </p>
           <div class="flex items-center gap-1.5 mt-2">
             <div class="h-1 flex-1 bg-muted rounded-full overflow-hidden">
               <div class="h-full bg-primary" :style="{ width: `${(carDropdowns.length / totalCount) * 100}%` }" />
@@ -243,8 +247,12 @@ async function handleToggleStatus(item: any) {
       <aside class="w-64 shrink-0 flex flex-col gap-4">
         <Card class="flex-1 overflow-hidden bg-white/5 dark:bg-black/5 shadow-xl border-border/50 backdrop-blur items-stretch flex flex-col">
           <div class="p-4 border-b flex items-center justify-between bg-muted/30">
-            <h3 class="text-xs font-extra-bold uppercase tracking-[0.2em] text-foreground/70">Master Brands</h3>
-            <Badge variant="secondary" class="h-5 text-[9px] font-bold">{{ metrics.totalMakes }}</Badge>
+            <h3 class="text-xs font-extra-bold uppercase tracking-[0.2em] text-foreground/70">
+              Master Brands
+            </h3>
+            <Badge variant="secondary" class="h-5 text-[9px] font-bold">
+              {{ metrics.totalMakes }}
+            </Badge>
           </div>
           <div class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
             <!-- Active Search Filter -->
@@ -281,7 +289,9 @@ async function handleToggleStatus(item: any) {
                   </div>
                   {{ make }}
                 </div>
-                <Badge :variant="selectedMake === make ? 'default' : 'outline'" class="h-4.5 px-1.5 text-[9px] font-black border-none">{{ count }}</Badge>
+                <Badge :variant="selectedMake === make ? 'default' : 'outline'" class="h-4.5 px-1.5 text-[9px] font-black border-none">
+                  {{ count }}
+                </Badge>
               </button>
             </nav>
           </div>
@@ -294,14 +304,20 @@ async function handleToggleStatus(item: any) {
           <div class="space-y-1">
             <h2 class="text-xl font-black tracking-tight text-foreground flex items-center gap-3">
               {{ selectedMake || 'Complete Collection' }}
-              <Badge variant="outline" class="text-[10px] font-bold opacity-50">{{ carDropdowns.length }} Indices</Badge>
+              <Badge variant="outline" class="text-[10px] font-bold opacity-50">
+                {{ carDropdowns.length }} Indices
+              </Badge>
             </h2>
-            <p class="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Global Aggregate Pipeline Active</p>
+            <p class="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+              Global Aggregate Pipeline Active
+            </p>
           </div>
           <div class="flex items-center gap-3">
             <div class="h-10 w-px bg-border/10" />
             <div class="text-right">
-              <p class="text-[9px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">Global Coverage</p>
+              <p class="text-[9px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">
+                Global Coverage
+              </p>
               <div class="flex items-center gap-2">
                 <span class="text-lg font-black tabular-nums tracking-tighter">{{ metrics.activeCount }}</span>
                 <span class="text-[10px] text-emerald-500 font-black">+14%</span>
@@ -314,24 +330,38 @@ async function handleToggleStatus(item: any) {
           <Table class="relative">
             <TableHeader class="sticky top-0 z-30 bg-background/90 backdrop-blur-2xl">
               <TableRow class="hover:bg-transparent border-b-2 border-primary/5">
-                <TableHead class="w-14 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest">ID</TableHead>
-                <TableHead class="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Structure</TableHead>
-                <TableHead class="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Variant Logic</TableHead>
-                <TableHead class="w-32 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest px-0">Status</TableHead>
+                <TableHead class="w-14 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                  ID
+                </TableHead>
+                <TableHead class="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                  Structure
+                </TableHead>
+                <TableHead class="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                  Variant Logic
+                </TableHead>
+                <TableHead class="w-32 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest px-0">
+                  Status
+                </TableHead>
                 <TableHead class="w-12 pr-6" />
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow v-for="(item, idx) in carDropdowns" :key="item._id" class="group transition-all hover:bg-muted/30 border-b border-border/20">
-                <TableCell class="text-center text-[10px] font-black text-muted-foreground/50 px-0 tabular-nums">#{{ idx + 1 + (currentPage - 1) * pageSize }}</TableCell>
+                <TableCell class="text-center text-[10px] font-black text-muted-foreground/50 px-0 tabular-nums">
+                  #{{ idx + 1 + (currentPage - 1) * pageSize }}
+                </TableCell>
                 <TableCell>
                   <div class="flex items-center gap-3 py-1">
                     <div class="size-9 rounded-xl flex items-center justify-center bg-gradient-to-tr from-muted/50 to-transparent border border-border/50 text-[11px] font-black tracking-tighter text-muted-foreground group-hover:text-primary transition-colors">
                       {{ item.make.substring(0, 2).toUpperCase() }}
                     </div>
                     <div>
-                      <p class="text-[10px] font-black text-primary/70 mb-0.5 uppercase tracking-wide">{{ item.make }}</p>
-                      <p class="text-[13px] font-black text-foreground tracking-tight group-hover:translate-x-1 transition-transform">{{ item.model }}</p>
+                      <p class="text-[10px] font-black text-primary/70 mb-0.5 uppercase tracking-wide">
+                        {{ item.make }}
+                      </p>
+                      <p class="text-[13px] font-black text-foreground tracking-tight group-hover:translate-x-1 transition-transform">
+                        {{ item.model }}
+                      </p>
                     </div>
                   </div>
                 </TableCell>
@@ -404,10 +434,14 @@ async function handleToggleStatus(item: any) {
     <Dialog v-model:open="showDialog">
       <DialogContent class="sm:max-w-md rounded-3xl border border-border/50 shadow-2xl backdrop-blur-3xl bg-background/80">
         <DialogHeader class="space-y-1">
-          <DialogTitle class="text-2xl font-black tracking-tight">{{ isEditing ? 'Edit Vehicle Essence' : 'Initialize New Intelligence' }}</DialogTitle>
-          <DialogDescription class="text-[10px] font-black text-muted-foreground tracking-widest uppercase">Mapping the global vehicle matrix</DialogDescription>
+          <DialogTitle class="text-2xl font-black tracking-tight">
+            {{ isEditing ? 'Edit Vehicle Essence' : 'Initialize New Intelligence' }}
+          </DialogTitle>
+          <DialogDescription class="text-[10px] font-black text-muted-foreground tracking-widest uppercase">
+            Mapping the global vehicle matrix
+          </DialogDescription>
         </DialogHeader>
-        
+
         <div class="space-y-6 py-6">
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
@@ -426,14 +460,18 @@ async function handleToggleStatus(item: any) {
           <div v-if="isEditing" class="flex items-center justify-between rounded-2xl border border-border/30 bg-muted/10 p-4 transition-all hover:bg-muted/20">
             <div class="space-y-0.5">
               <Label class="text-xs font-black uppercase">Active Status</Label>
-              <p class="text-[10px] font-bold text-muted-foreground">Broadcast availability to global nodes</p>
+              <p class="text-[10px] font-bold text-muted-foreground">
+                Broadcast availability to global nodes
+              </p>
             </div>
-            <Switch :checked="form.isActive" @update:checked="(v) => form.isActive = v" class="data-[state=checked]:bg-emerald-500" />
+            <Switch :checked="form.isActive" class="data-[state=checked]:bg-emerald-500" @update:checked="(v) => form.isActive = v" />
           </div>
         </div>
 
         <DialogFooter class="sm:justify-between gap-4 mt-2">
-          <Button variant="ghost" class="h-12 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-muted/50" @click="showDialog = false">Abort Sync</Button>
+          <Button variant="ghost" class="h-12 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-muted/50" @click="showDialog = false">
+            Abort Sync
+          </Button>
           <Button :disabled="isSubmitting" class="h-12 rounded-2xl px-10 text-[11px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all" @click="handleSubmit">
             <Icon v-if="isSubmitting" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
             {{ isEditing ? 'Sync Matrix' : 'Publish Index' }}
@@ -452,7 +490,9 @@ async function handleToggleStatus(item: any) {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel :disabled="isDeleting">Cancel</AlertDialogCancel>
+          <AlertDialogCancel :disabled="isDeleting">
+            Cancel
+          </AlertDialogCancel>
           <AlertDialogAction
             class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             :disabled="isDeleting"

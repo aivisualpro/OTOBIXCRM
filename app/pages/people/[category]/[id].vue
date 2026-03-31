@@ -12,7 +12,7 @@ const { setHeader } = usePageHeader()
 const {
   fetchAllUsers,
   updateUser,
-  deleteUser,
+  deleteUser: _deleteUser,
   getUserById,
 } = usePeopleApi()
 
@@ -26,14 +26,14 @@ const user = computed(() => getUserById(userId.value))
 
 // Map category → human-readable detail title & icon
 const CATEGORY_META: Record<string, { title: string, icon: string }> = {
-  dealer: { title: 'Dealer Details', icon: 'i-lucide-store' },
-  customer: { title: 'Customer Details', icon: 'i-lucide-user-round' },
+  'dealer': { title: 'Dealer Details', icon: 'i-lucide-store' },
+  'customer': { title: 'Customer Details', icon: 'i-lucide-user-round' },
   'inspection-engineer': { title: 'Inspection Engineer Details', icon: 'i-lucide-clipboard-check' },
-  admin: { title: 'Admin Details', icon: 'i-lucide-shield-check' },
-  retailer: { title: 'Retailer Details', icon: 'i-lucide-shopping-bag' },
+  'admin': { title: 'Admin Details', icon: 'i-lucide-shield-check' },
+  'retailer': { title: 'Retailer Details', icon: 'i-lucide-shopping-bag' },
   'sales-manager': { title: 'Sales Manager Details', icon: 'i-lucide-briefcase' },
-  telecaller: { title: 'Telecaller Details', icon: 'i-lucide-phone-call' },
-  qc: { title: 'QC Details', icon: 'i-lucide-badge-check' },
+  'telecaller': { title: 'Telecaller Details', icon: 'i-lucide-phone-call' },
+  'qc': { title: 'QC Details', icon: 'i-lucide-badge-check' },
 }
 
 // Set header immediately from category — no waiting for user data
@@ -89,14 +89,17 @@ const { allWorkspaces } = useWorkspace()
 const workspacePopoverOpen = ref(false)
 
 function toggleWorkspaceLink(wsId: string) {
-  if (!editForm.value.workspaces) editForm.value.workspaces = []
+  if (!editForm.value.workspaces)
+    editForm.value.workspaces = []
   const idx = editForm.value.workspaces.indexOf(wsId)
-  if (idx >= 0) editForm.value.workspaces.splice(idx, 1)
+  if (idx >= 0)
+    editForm.value.workspaces.splice(idx, 1)
   else editForm.value.workspaces.push(wsId)
 }
 
 function removeWorkspaceLink(wsId: string) {
-  if (!editForm.value.workspaces) return
+  if (!editForm.value.workspaces)
+    return
   editForm.value.workspaces = editForm.value.workspaces.filter((w: string) => w !== wsId)
 }
 
@@ -392,7 +395,7 @@ const addresses = computed(() => {
                 <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
                   <div class="flex items-center justify-between">
                     <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Password</span>
-                    <button v-if="user.password" type="button" @click="showPassword = !showPassword" class="text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded">
+                    <button v-if="user.password" type="button" class="text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded" @click="showPassword = !showPassword">
                       <Icon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-3.5" />
                     </button>
                   </div>
@@ -590,15 +593,15 @@ const addresses = computed(() => {
                 <Label for="edit-password">Password</Label>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <div class="relative flex-1">
-                    <Input 
-                      id="edit-password" 
-                      v-model="editForm.password" 
-                      :type="showPassword ? 'text' : 'password'" 
-                      placeholder="Leave blank to keep unchanged" 
-                      class="pr-10" 
+                    <Input
+                      id="edit-password"
+                      v-model="editForm.password"
+                      :type="showPassword ? 'text' : 'password'"
+                      placeholder="Leave blank to keep unchanged"
+                      class="pr-10"
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                       @click="showPassword = !showPassword"
                     >
@@ -618,7 +621,7 @@ const addresses = computed(() => {
                   <Label for="edit-phone">Phone Number</Label>
                   <Input id="edit-phone" v-model="editForm.phoneNumber" placeholder="+91 9876543210" />
                 </div>
-                <div :class="['space-y-1.5', editForm.userRole === 'Telecaller' ? 'md:col-span-2' : '']">
+                <div class="space-y-1.5" :class="[editForm.userRole === 'Telecaller' ? 'md:col-span-2' : '']">
                   <Label for="edit-role">Role</Label>
                   <Select v-model="editForm.userRole">
                     <SelectTrigger id="edit-role">

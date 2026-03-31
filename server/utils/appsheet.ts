@@ -57,7 +57,7 @@ function toAppSheetRow(doc: Record<string, any>): Record<string, any> {
   if (doc.inspectionDateTime) {
     try {
       const dt = new Date(doc.inspectionDateTime)
-      if (!isNaN(dt.getTime())) {
+      if (!Number.isNaN(dt.getTime())) {
         // Date: MM/DD/YYYY format (AppSheet standard)
         const month = String(dt.getMonth() + 1).padStart(2, '0')
         const day = String(dt.getDate()).padStart(2, '0')
@@ -91,7 +91,7 @@ function toAppSheetRow(doc: Record<string, any>): Record<string, any> {
 export function syncLeadToAppSheet(
   action: 'Add' | 'Edit' | 'Delete',
   doc: Record<string, any>,
-  db?: Db
+  db?: Db,
 ): void {
   // Run entirely in background — do not await
   ;(async () => {
@@ -105,7 +105,8 @@ export function syncLeadToAppSheet(
           if (user && user.email) {
             _doc.allocatedTo = user.email
           }
-        } catch (err: any) {
+        }
+        catch (err: any) {
           console.warn('[AppSheet] DB lookup failed for allocatedTo email:', err.message)
         }
       }
@@ -140,7 +141,7 @@ export function syncLeadToAppSheet(
         })
 
         const text = await res.text()
-        
+
         let isSuccess = res.ok
         let isNotFound = false
         let isDuplicate = false
@@ -150,7 +151,8 @@ export function syncLeadToAppSheet(
         if (text.toLowerCase().includes('not found') || text.includes('"StatusCode":"NotFound"')) {
           isSuccess = false
           isNotFound = true
-        } else if (text.toLowerCase().includes('already exists') || text.toLowerCase().includes('duplicate')) {
+        }
+        else if (text.toLowerCase().includes('already exists') || text.toLowerCase().includes('duplicate')) {
           isSuccess = false
           isDuplicate = true
         }
@@ -164,12 +166,12 @@ export function syncLeadToAppSheet(
       // ─── Smart Upsert logic ───
       // If we attempt an Edit but AppSheet rejects it because the row doesn't exist, seamlessly create it
       if (!result.isSuccess && result.isNotFound && action === 'Edit') {
-        console.info(`[AppSheet] Row not found. Falling back to ADD action for Appointment ID: ${_doc.appointmentId}`)
+        console.warn(`[AppSheet] Row not found. Falling back to ADD action for Appointment ID: ${_doc.appointmentId}`)
         result = await execute('Add')
       }
       // If we attempt to Add but it already exists, seamlessly edit the existing record
       else if (!result.isSuccess && result.isDuplicate && action === 'Add') {
-        console.info(`[AppSheet] Row already exists. Falling back to EDIT action for Appointment ID: ${_doc.appointmentId}`)
+        console.warn(`[AppSheet] Row already exists. Falling back to EDIT action for Appointment ID: ${_doc.appointmentId}`)
         result = await execute('Edit')
       }
 
@@ -177,7 +179,7 @@ export function syncLeadToAppSheet(
         console.warn(`[AppSheet] Final sync failed (${result.status}):`, result.text.slice(0, 300))
       }
       else {
-        console.info(`[AppSheet] Successfully synced → Appointment ID: ${_doc.appointmentId}`)
+        console.warn(`[AppSheet] Successfully synced → Appointment ID: ${_doc.appointmentId}`)
       }
     }
     catch (err: any) {

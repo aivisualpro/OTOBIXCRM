@@ -218,7 +218,7 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
     const approved = allD.filter(d => d.approvalStatus?.toLowerCase() === 'approved').length
     const pending = allD.filter(d => d.approvalStatus?.toLowerCase() === 'pending').length
     const rejected = allD.filter(d => d.approvalStatus?.toLowerCase() === 'rejected').length
-    
+
     // Recent 5 joined dealers
     const recent = [...allD].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()).slice(0, 5)
 

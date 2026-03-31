@@ -18,14 +18,14 @@ export default defineEventHandler(async (event) => {
     if (!_client) {
       _client = new MongoClient(uri)
       await _client.connect()
-      console.info(`[API:users] Connected to MongoDB → DB: ${dbName}`)
+      console.warn(`[API:users] Connected to MongoDB → DB: ${dbName}`)
     }
 
     const db = _client.db(dbName)
     const users = await db.collection('users').find({}).sort({ createdAt: -1 }).toArray()
 
     // Map `_id` to `id` for frontend consistency, keeping all fields including password
-    const mappedUsers = users.map(user => {
+    const mappedUsers = users.map((user) => {
       const u = { ...user, id: user._id.toString(), _id: user._id.toString() }
       return u
     })

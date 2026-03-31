@@ -6,6 +6,15 @@ const { statusCounts, fetchCounts, activeAdvancedFilterCount, serverSearch, tota
 // Fetch counts on mount (lightweight server call)
 onMounted(() => fetchCounts())
 
+const { activeWorkspace } = useWorkspace()
+
+const currentActiveId = computed(() => {
+  const path = route.path
+  if (path === '/leads' || path === '/leads/')
+    return 'leads'
+  return path.split('/').pop() || 'leads'
+})
+
 // For the search-results tab, use the live totalCount from the composable
 function getTabCount(itemId: string): number | undefined {
   if (itemId === 'search-results') {
@@ -32,19 +41,10 @@ const navItems = [
   { id: 'quality-rejected', title: 'Quality Rejected', icon: 'i-lucide-shield-x', color: 'text-rose-500', link: '/leads/quality-rejected' },
 ]
 
-const { activeWorkspace } = useWorkspace()
-
-const currentActiveId = computed(() => {
-  const path = route.path
-  if (path === '/leads' || path === '/leads/')
-    return 'leads'
-  return path.split('/').pop() || 'leads'
-})
-
 const filteredNavItems = computed(() => {
   const allowed = activeWorkspace.value?.leadTabs
   let items = [...navItems]
-  
+
   if (allowed && allowed.length > 0) {
     items = navItems.filter(item => allowed.includes(item.id))
   }
@@ -55,10 +55,10 @@ const filteredNavItems = computed(() => {
       title: 'Search Results',
       icon: 'i-lucide-list-filter',
       color: 'text-amber-500',
-      link: '/leads/search-results'
+      link: '/leads/search-results',
     })
   }
-  
+
   return items
 })
 </script>

@@ -1,6 +1,6 @@
+import bcrypt from 'bcryptjs'
 // POST /api/users/add — create a new user directly in MongoDB
 import { MongoClient } from 'mongodb'
-import bcrypt from 'bcryptjs'
 
 let _client: MongoClient | null = null
 
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     if (!_client) {
       _client = new MongoClient(uri)
       await _client.connect()
-      console.info(`[API:users/add] Connected to MongoDB → DB: ${dbName}`)
+      console.warn(`[API:users/add] Connected to MongoDB → DB: ${dbName}`)
     }
 
     const db = _client.db(dbName)
@@ -81,7 +81,7 @@ export default defineEventHandler(async (event) => {
 
     const result = await db.collection('users').insertOne(doc)
 
-    console.info(`[API:users/add] Created user "${body.userName}" in "${dbName}" → _id: ${result.insertedId}`)
+    console.warn(`[API:users/add] Created user "${body.userName}" in "${dbName}" → _id: ${result.insertedId}`)
 
     return {
       success: true,
@@ -90,7 +90,8 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (err: any) {
-    if (err.statusCode) throw err
+    if (err.statusCode)
+      throw err
     _client = null
     console.error('[API:users/add] MongoDB insert failed:', err.message)
     throw createError({

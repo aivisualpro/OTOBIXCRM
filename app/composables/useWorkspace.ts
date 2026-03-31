@@ -146,17 +146,19 @@ export function useWorkspace() {
     try {
       const user = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
       const role = String(user?.userType || user?.userRole || user?.role || '').toLowerCase()
-      
+
       // System Admins always get unobstructed access to all active workspaces natively
-      if (role === 'admin') return _workspaces.value
+      if (role === 'admin')
+        return _workspaces.value
 
       // Other users only see specifically assigned workspaces
       const assignedIds = Array.isArray(user?.workspaces) ? user.workspaces : []
       const filtered = _workspaces.value.filter(w => assignedIds.includes(w.workspaceId))
-      
+
       // Fallback securely preventing naked access if not assigned
       return filtered.length > 0 ? filtered : (_workspaces.value[0] ? [_workspaces.value[0]] : [])
-    } catch {
+    }
+    catch {
       return _workspaces.value
     }
   })

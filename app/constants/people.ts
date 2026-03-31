@@ -17,12 +17,12 @@ export interface PeopleRouteFilter {
 }
 
 export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
-  dealer: {
+  'dealer': {
     label: 'Dealer',
     filterFn: (user: any) => user.userRole === 'Dealer',
     showStatusCounts: true,
   },
-  customer: {
+  'customer': {
     label: 'Customer',
     filterFn: (user: any) => user.userRole === 'Customer',
     showStatusCounts: true,
@@ -32,12 +32,12 @@ export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
     filterFn: (user: any) => user.userRole === 'Inspection Engineer',
     showStatusCounts: true,
   },
-  admin: {
+  'admin': {
     label: 'Admin',
     filterFn: (user: any) => user.userRole === 'Admin' || user.userRole === 'Super Admin',
     showStatusCounts: true,
   },
-  retailer: {
+  'retailer': {
     label: 'Retailer',
     filterFn: (user: any) => user.userRole === 'Retailer',
     showStatusCounts: true,
@@ -47,12 +47,12 @@ export const peopleRouteFilters: Record<string, PeopleRouteFilter> = {
     filterFn: (user: any) => user.userRole === 'Sales Manager',
     showStatusCounts: true,
   },
-  telecaller: {
+  'telecaller': {
     label: 'Telecaller',
     filterFn: (user: any) => user.userRole === 'Telecaller',
     showStatusCounts: true,
   },
-  qc: {
+  'qc': {
     label: 'QC',
     filterFn: (user: any) => user.userRole === 'QC',
     showStatusCounts: true,

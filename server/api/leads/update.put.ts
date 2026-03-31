@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
     const result = await db.collection('telecallings').findOneAndUpdate(
       filter,
       { $set: updates },
-      { returnDocument: 'after' }
+      { returnDocument: 'after' },
     )
 
     if (!result) {
@@ -42,7 +42,8 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (err: any) {
-    if (err.statusCode) throw err
+    if (err.statusCode)
+      throw err
     resetLeadsDb()
     console.error('[API:leads] PUT update failed:', err.message)
     throw createError({ statusCode: 500, message: err.message || 'Failed to update lead' })

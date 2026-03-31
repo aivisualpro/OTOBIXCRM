@@ -25,7 +25,8 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (err: any) {
-    if (err.statusCode) throw err
+    if (err.statusCode)
+      throw err
     resetLeadsDb()
     console.error('[API:leads/sync] POST sync failed:', err.message)
     throw createError({ statusCode: 500, message: err.message || 'Failed to trigger sync' })

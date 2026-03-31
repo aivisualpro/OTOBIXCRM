@@ -24,7 +24,7 @@ const navItems = computed(() => {
       title: 'Search Results',
       icon: 'i-lucide-list-filter',
       color: 'text-amber-500',
-      link: '/leads/search-results'
+      link: '/leads/search-results',
     })
   }
   return items

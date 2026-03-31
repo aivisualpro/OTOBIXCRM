@@ -16,14 +16,14 @@ const user = computed(() => {
     const parsed = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
     const roleString = String(parsed?.userType || parsed?.userRole || parsed?.role || 'Member')
     const userId = parsed?.id || parsed?._id || ''
-    
+
     return {
       name: parsed?.userName || parsed?.name || 'User',
       role: roleString,
       avatar: parsed?.avatar || parsed?.profileImage || parsed?.image || '',
-      profileUrl: userId && roleString !== 'Member' 
+      profileUrl: userId && roleString !== 'Member'
         ? `/profile`
-        : '/'
+        : '/',
     }
   }
   catch {
@@ -32,8 +32,6 @@ const user = computed(() => {
 })
 
 const { sidebar } = useAppSettings()
-
-
 </script>
 
 <template>
@@ -53,8 +51,6 @@ const { sidebar } = useAppSettings()
         </SidebarGroupLabel>
         <component :is="resolveNavItemComponent(item)" v-for="(item, index) in nav.items" :key="index" :item="item" />
       </SidebarGroup>
-
-
 
       <!-- Bottom spacer -->
       <SidebarGroup class="mt-auto" />

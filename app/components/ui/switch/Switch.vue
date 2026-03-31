@@ -68,4 +68,3 @@ function toggle(event: MouseEvent) {
     />
   </button>
 </template>
-

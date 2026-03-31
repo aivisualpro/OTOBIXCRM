@@ -13,7 +13,7 @@ if (serverSearch.value || activeAdvancedFilterCount.value > 0) {
 }
 else if (allowed.length > 0 && !allowed.includes('leads')) {
   const fallback = ws?.defaultRoutes?.leads || `/leads/${allowed[0]}`
-  
+
   // Replace the history state instantly so 'back' button doesn't trap them
   navigateTo(fallback, { replace: true })
 }

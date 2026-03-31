@@ -14,8 +14,12 @@ export default defineEventHandler(async (event) => {
 
     // Security scope filtering for constrained roles
     const userCookieStr = getCookie(event, 'userData')
-    let currentUser: Record<string, any> | null = null
-    try { if (userCookieStr) currentUser = JSON.parse(userCookieStr) } catch (e) {}
+    let _currentUser: Record<string, any> | null = null
+    try {
+      if (userCookieStr)
+        _currentUser = JSON.parse(userCookieStr)
+    }
+    catch {}
 
     // (Telecallers now have unrestricted view access per user request)
 
@@ -35,9 +39,9 @@ export default defineEventHandler(async (event) => {
     const dateField = (query.dateField as string || 'inspectionDateTime').trim()
 
     if (startDate || endDate) {
-      let gteDate = startDate ? new Date(startDate) : null
+      const gteDate = startDate ? new Date(startDate) : null
       let lteDate: Date | null = null
-      
+
       if (endDate) {
         const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(endDate)
         const endStr = isDateOnly ? `${endDate}T23:59:59.999Z` : endDate
@@ -48,42 +52,50 @@ export default defineEventHandler(async (event) => {
       const buildDateExpr = (fieldKey: string) => {
         const fieldSelector = `$${fieldKey}`
         const dateParserObj = { $convert: { input: fieldSelector, to: 'date', onError: null, onNull: null } }
-        
-        let conditions = []
-        if (gteDate) conditions.push({ $gte: [ dateParserObj, gteDate ] })
-        if (lteDate) conditions.push({ $lte: [ dateParserObj, lteDate ] })
+
+        const conditions = []
+        if (gteDate)
+          conditions.push({ $gte: [dateParserObj, gteDate] })
+        if (lteDate)
+          conditions.push({ $lte: [dateParserObj, lteDate] })
         return { $and: conditions }
       }
 
       filter.$and = filter.$and || []
-      
+
       if (dateField === 'createdAt') {
         filter.$and.push({
           $expr: {
-            $or: [ buildDateExpr('createdAt'), buildDateExpr('timeStamp') ]
-          }
+            $or: [buildDateExpr('createdAt'), buildDateExpr('timeStamp')],
+          },
         })
-      } else {
+      }
+      else {
         filter.$and.push({
-          $expr: buildDateExpr(dateField)
+          $expr: buildDateExpr(dateField),
         })
       }
     }
 
     const filterMake = (query.make as string || '').trim()
-    if (filterMake) filter.make = filterMake
+    if (filterMake)
+      filter.make = filterMake
 
     const filterCity = (query.city as string || '').trim()
-    if (filterCity) filter.city = filterCity
+    if (filterCity)
+      filter.city = filterCity
 
     const filterPriority = (query.priority as string || '').trim()
-    if (filterPriority) filter.priority = filterPriority
+    if (filterPriority)
+      filter.priority = filterPriority
 
     const filterAllocatedTo = (query.allocatedTo as string || '').trim()
-    if (filterAllocatedTo) filter.allocatedTo = filterAllocatedTo
+    if (filterAllocatedTo)
+      filter.allocatedTo = filterAllocatedTo
 
     const filterCreatedBy = (query.createdBy as string || '').trim()
-    if (filterCreatedBy) filter.emailAddress = filterCreatedBy
+    if (filterCreatedBy)
+      filter.emailAddress = filterCreatedBy
 
     const filterAddedBy = (query.addedBy as string || '').trim()
     if (filterAddedBy) {
@@ -101,7 +113,7 @@ export default defineEventHandler(async (event) => {
           { make: { $regex: search, $options: 'i' } },
           { model: { $regex: search, $options: 'i' } },
           { city: { $regex: search, $options: 'i' } },
-        ]
+        ],
       })
     }
 
@@ -128,20 +140,20 @@ export default defineEventHandler(async (event) => {
           from: 'users',
           localField: 'emailAddress',
           foreignField: 'email',
-          as: 'creatorPopulated'
-        }
+          as: 'creatorPopulated',
+        },
       },
       {
         $addFields: {
           createdByFullName: {
             $ifNull: [
               { $arrayElemAt: ['$creatorPopulated.userName', 0] },
-              '$emailAddress' // fallback correctly naturally to strictly raw email if not fully found matching legacy behavior requested
-            ]
-          }
-        }
+              '$emailAddress', // fallback correctly naturally to strictly raw email if not fully found matching legacy behavior requested
+            ],
+          },
+        },
       },
-      { $unset: 'creatorPopulated' }
+      { $unset: 'creatorPopulated' },
     ]
 
     const [data, totalCount] = await Promise.all([
@@ -158,7 +170,8 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (err: any) {
-    if (err.statusCode) throw err
+    if (err.statusCode)
+      throw err
     resetLeadsDb()
     console.error('[API:leads] GET list failed:', err.message)
     throw createError({ statusCode: 500, message: err.message || 'Failed to fetch leads' })

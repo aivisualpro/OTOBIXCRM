@@ -15,9 +15,9 @@ export default defineEventHandler(async (event) => {
     const dateField = String(query.dateField || 'inspectionDateTime').trim()
 
     if (startDate || endDate) {
-      let gteDate = startDate ? new Date(startDate) : null
+      const gteDate = startDate ? new Date(startDate) : null
       let lteDate: Date | null = null
-      
+
       if (endDate) {
         const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(endDate)
         const endStr = isDateOnly ? `${endDate}T23:59:59.999Z` : endDate
@@ -28,42 +28,50 @@ export default defineEventHandler(async (event) => {
       const buildDateExpr = (fieldKey: string) => {
         const fieldSelector = `$${fieldKey}`
         const dateParserObj = { $convert: { input: fieldSelector, to: 'date', onError: null, onNull: null } }
-        
-        let conditions = []
-        if (gteDate) conditions.push({ $gte: [ dateParserObj, gteDate ] })
-        if (lteDate) conditions.push({ $lte: [ dateParserObj, lteDate ] })
+
+        const conditions = []
+        if (gteDate)
+          conditions.push({ $gte: [dateParserObj, gteDate] })
+        if (lteDate)
+          conditions.push({ $lte: [dateParserObj, lteDate] })
         return { $and: conditions }
       }
 
       filter.$and = filter.$and || []
-      
+
       if (dateField === 'createdAt') {
         filter.$and.push({
           $expr: {
-            $or: [ buildDateExpr('createdAt'), buildDateExpr('timeStamp') ]
-          }
+            $or: [buildDateExpr('createdAt'), buildDateExpr('timeStamp')],
+          },
         })
-      } else {
+      }
+      else {
         filter.$and.push({
-          $expr: buildDateExpr(dateField)
+          $expr: buildDateExpr(dateField),
         })
       }
     }
 
     const filterMake = String(query.make || '').trim()
-    if (filterMake) filter.make = filterMake
+    if (filterMake)
+      filter.make = filterMake
 
     const filterCity = String(query.city || '').trim()
-    if (filterCity) filter.city = filterCity
+    if (filterCity)
+      filter.city = filterCity
 
     const filterPriority = String(query.priority || '').trim()
-    if (filterPriority) filter.priority = filterPriority
+    if (filterPriority)
+      filter.priority = filterPriority
 
     const filterAllocatedTo = String(query.allocatedTo || '').trim()
-    if (filterAllocatedTo) filter.allocatedTo = filterAllocatedTo
+    if (filterAllocatedTo)
+      filter.allocatedTo = filterAllocatedTo
 
     const filterCreatedBy = String(query.createdBy || '').trim()
-    if (filterCreatedBy) filter.emailAddress = filterCreatedBy
+    if (filterCreatedBy)
+      filter.emailAddress = filterCreatedBy
 
     const filterAddedBy = String(query.addedBy || '').trim()
     if (filterAddedBy) {
@@ -81,7 +89,7 @@ export default defineEventHandler(async (event) => {
           { make: { $regex: search, $options: 'i' } },
           { model: { $regex: search, $options: 'i' } },
           { city: { $regex: search, $options: 'i' } },
-        ]
+        ],
       })
     }
 
@@ -111,7 +119,8 @@ export default defineEventHandler(async (event) => {
 
     // Helper: sum counts matching a compound filter (* = any)
     function countFor(inspStatus: string, appStatus: string): number {
-      if (inspStatus === '*' && appStatus === '*') return totalCount
+      if (inspStatus === '*' && appStatus === '*')
+        return totalCount
       let total = 0
       for (const [k, v] of Object.entries(map)) {
         const [isRaw, asRaw] = k.split('::')
@@ -140,7 +149,8 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (err: any) {
-    if (err.statusCode) throw err
+    if (err.statusCode)
+      throw err
     resetLeadsDb()
     console.error('[API:leads] GET counts failed:', err.message)
     throw createError({ statusCode: 500, message: err.message || 'Failed to fetch counts' })

@@ -6,8 +6,8 @@ interface CarDetailsResponse {
 }
 
 export function useCarDetails() {
-  const { apiBaseUrl } = useApiEnvironment()
-  const authToken = useCookie('authToken')
+  const { apiBaseUrl: _apiBaseUrl } = useApiEnvironment()
+  const _authToken = useCookie('authToken')
 
   const carDetails = ref<Record<string, any> | null>(null)
   const isLoading = ref(false)

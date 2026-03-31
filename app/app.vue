@@ -6,7 +6,7 @@ import 'vue-sonner/style.css'
 const colorMode = useColorMode()
 const color = computed(() => colorMode.value === 'dark' ? '#09090b' : '#ffffff')
 const { theme } = useAppSettings()
-const { currentEnv } = useApiEnvironment()
+const { currentEnv: _currentEnv } = useApiEnvironment()
 
 // ─── Smart Prefetch Engine ───
 // Eagerly load leads + people + car data in background after app boot
@@ -78,4 +78,3 @@ const dir = computed(() => textDirection.value === 'rtl' ? 'rtl' : 'ltr')
     </ClientOnly>
   </Body>
 </template>
-

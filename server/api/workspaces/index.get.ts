@@ -18,7 +18,7 @@ async function getDb(event: any) {
   if (!_client) {
     _client = new MongoClient(uri)
     await _client.connect()
-    console.info(`[API:workspaces] Connected to MongoDB → DB: ${dbName}`)
+    console.warn(`[API:workspaces] Connected to MongoDB → DB: ${dbName}`)
   }
 
   return _client.db(dbName)
@@ -102,7 +102,7 @@ export default defineEventHandler(async (event) => {
     if (workspaces.length === 0) {
       await collection.insertMany(DEFAULT_WORKSPACES)
       workspaces = await collection.find({}).sort({ sortOrder: 1 }).toArray()
-      console.info('[API:workspaces] Seeded default workspaces')
+      console.warn('[API:workspaces] Seeded default workspaces')
     }
 
     return { workspaces }

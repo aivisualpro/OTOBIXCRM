@@ -1,4 +1,5 @@
-import { MongoClient, type Db } from 'mongodb'
+import type { Db } from 'mongodb'
+import { MongoClient } from 'mongodb'
 
 const _clients: Record<string, MongoClient> = {}
 const _dbPromises: Record<string, Promise<Db>> = {}
@@ -24,12 +25,12 @@ export function getLeadsDb(event: any): Promise<Db> {
   if (!_dbPromises[dbName]) {
     _dbPromises[dbName] = (async () => {
       const client = new MongoClient(uri, {
-        maxPoolSize: 10,  // Restrict to keep Vercel/Nitro safe
-        minPoolSize: 1
+        maxPoolSize: 10, // Restrict to keep Vercel/Nitro safe
+        minPoolSize: 1,
       })
       await client.connect()
       _clients[dbName] = client
-      console.info(`[API:leads] Connected to MongoDB → DB: ${dbName} (${envCookie})`)
+      console.warn(`[API:leads] Connected to MongoDB → DB: ${dbName} (${envCookie})`)
       return client.db(dbName)
     })()
   }

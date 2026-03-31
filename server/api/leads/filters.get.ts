@@ -8,14 +8,14 @@ export default defineEventHandler(async (event) => {
     const [emails, addedBys, cities] = await Promise.all([
       col.distinct('emailAddress', { emailAddress: { $nin: [null, ''] } }),
       col.distinct('addedBy', { addedBy: { $nin: [null, ''] } }),
-      col.distinct('city', { city: { $nin: [null, ''] } })
+      col.distinct('city', { city: { $nin: [null, ''] } }),
     ])
 
     // Optional: Fetch matching full names from users collection strictly for the active distinct emails
     const userCol = db.collection('users')
     const activeUsers = await userCol.find(
       { email: { $in: emails } },
-      { projection: { email: 1, userName: 1, fullName: 1 } }
+      { projection: { email: 1, userName: 1, fullName: 1 } },
     ).toArray()
 
     const usersMap: Record<string, string> = {}
@@ -27,12 +27,13 @@ export default defineEventHandler(async (event) => {
       success: true,
       emails: emails.map((email: string) => ({
         email,
-        name: usersMap[email] || email
+        name: usersMap[email] || email,
       })).sort((a: any, b: any) => a.name.localeCompare(b.name)),
       addedBys: addedBys.sort(),
-      cities: cities.sort((a, b) => a.localeCompare(b))
+      cities: cities.sort((a, b) => a.localeCompare(b)),
     }
-  } catch (err: any) {
+  }
+  catch (err: any) {
     console.error('[API:leads:filters] Failed:', err.message)
     return { success: false, emails: [], addedBys: [], cities: [] }
   }

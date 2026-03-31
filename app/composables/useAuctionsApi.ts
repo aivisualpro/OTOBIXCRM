@@ -43,8 +43,8 @@ export function useAuctionsApi() {
   const _isFetching = useState('auctions_isFetching', () => false)
   const _fetchError = useState<string | null>('auctions_fetchError', () => null)
 
-  const { apiBaseUrl } = useApiEnvironment()
-  const authToken = useCookie('authToken')
+  const { apiBaseUrl: _apiBaseUrl } = useApiEnvironment()
+  const _authToken = useCookie('authToken')
 
   /** Fetch all cars from the API (runs only once, cached globally) */
   async function fetchAllCars(force = false) {

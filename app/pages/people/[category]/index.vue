@@ -6,8 +6,9 @@ const categoryKey = computed(() => route.params.category as string)
 const filter = computed(() => peopleRouteFilters[categoryKey.value])
 
 const activeColumns = computed(() => {
-  return peopleColumns.filter(col => {
-    if (col.key === 'phoneNumber' && categoryKey.value === 'telecaller') return false
+  return peopleColumns.filter((col) => {
+    if (col.key === 'phoneNumber' && categoryKey.value === 'telecaller')
+      return false
     return true
   })
 })

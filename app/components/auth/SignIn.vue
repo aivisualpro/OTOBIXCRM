@@ -7,7 +7,7 @@ const password = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-const { currentEnv, apiBaseUrl, envLabel, setEnvironment } = useApiEnvironment()
+const { currentEnv: _currentEnv, apiBaseUrl: _apiBaseUrl, envLabel: _envLabel, setEnvironment: _setEnvironment } = useApiEnvironment()
 
 async function onSubmit(event: Event) {
   event.preventDefault()
@@ -57,7 +57,7 @@ async function onSubmit(event: Event) {
     let redirectPath = '/'
     const roleString = response?.user?.userType || response?.user?.userRole || response?.user?.role
     const userId = response?.user?._id || response?.user?.id
-    
+
     if (roleString && userId) {
       redirectPath = `/profile`
     }

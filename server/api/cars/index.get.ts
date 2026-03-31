@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
     const mappedCars = cars.map(car => ({
       ...car,
       id: car._id.toString(),
-      _id: car._id.toString()
+      _id: car._id.toString(),
     }))
 
     return mappedCars

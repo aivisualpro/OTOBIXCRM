@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { CrudColumn, CrudFormField } from '~/composables/useCrud'
 import { toast } from 'vue-sonner'
-import { routeFilters } from '~/constants/leads'
 
 const props = defineProps<{
   title: string
@@ -27,7 +26,7 @@ setHeader({ title: props.title, description: props.description, icon: props.icon
 const {
   allLeads,
   totalCount,
-  statusCounts,
+  statusCounts: _statusCounts,
   countsTotal,
   hasMore: serverHasMore,
   isLoading,
@@ -100,7 +99,7 @@ watch(isFetched, (fetched) => {
 }, { immediate: true })
 
 // ─── Status Change + Inspector Assignment ───
-const { apiBaseUrl } = useApiEnvironment()
+const { apiBaseUrl: _apiBaseUrl } = useApiEnvironment()
 const authToken = useCookie('authToken')
 const { allUsers, fetchAllUsers } = usePeopleApi()
 
@@ -111,16 +110,19 @@ const inspectors = computed(() =>
 onMounted(() => fetchAllUsers())
 
 function getUserLabel(emailOrName: string) {
-  if (!emailOrName) return '—'
+  if (!emailOrName)
+    return '—'
   const val = String(emailOrName).trim().toLowerCase()
-  const found = allUsers.value.find((u: any) => 
-    String(u.email || '').toLowerCase() === val || 
-    String(u.userName || '').toLowerCase() === val || 
-    String(u.emailAddress || '').toLowerCase() === val
+  const found = allUsers.value.find((u: any) =>
+    String(u.email || '').toLowerCase() === val
+    || String(u.userName || '').toLowerCase() === val
+    || String(u.emailAddress || '').toLowerCase() === val,
   )
   if (found) {
-    if (found.fullName) return found.fullName.toUpperCase()
-    if (found.userName) return found.userName.toUpperCase()
+    if (found.fullName)
+      return found.fullName.toUpperCase()
+    if (found.userName)
+      return found.userName.toUpperCase()
   }
   return String(emailOrName).toUpperCase()
 }
@@ -161,7 +163,8 @@ async function updateLeadStatus(lead: any, field: string, newStatus: string) {
 }
 
 async function confirmAssignInspector() {
-  if (!assigningLead.value) return
+  if (!assigningLead.value)
+    return
   const lead = assigningLead.value
   const inspectorUser = allUsers.value.find((u: any) => u.email === selectedInspector.value)
   const inspectorPhone = inspectorUser?.phoneNumber || ''
@@ -177,15 +180,16 @@ async function confirmAssignInspector() {
 }
 
 async function confirmReschedule() {
-  if (!reschedulingLead.value) return
+  if (!reschedulingLead.value)
+    return
   if (!newInspectionDateTime.value) {
-     toast.error('Please select a new date and time')
-     return
+    toast.error('Please select a new date and time')
+    return
   }
   const lead = reschedulingLead.value
   await doStatusUpdate(lead, {
     inspectionStatus: lead._pendingStatus || 'Re-Scheduled',
-    inspectionDateTime: newInspectionDateTime.value
+    inspectionDateTime: newInspectionDateTime.value,
   })
   showRescheduleDialog.value = false
   reschedulingLead.value = null
@@ -193,15 +197,16 @@ async function confirmReschedule() {
 }
 
 async function confirmCancel() {
-  if (!cancellingLead.value) return
+  if (!cancellingLead.value)
+    return
   if (!cancelNotes.value.trim()) {
-     toast.error('Additional notes are required to cancel a lead')
-     return
+    toast.error('Additional notes are required to cancel a lead')
+    return
   }
   const lead = cancellingLead.value
   await doStatusUpdate(lead, {
     inspectionStatus: lead._pendingStatus || 'Cancelled',
-    additionalNotes: cancelNotes.value.trim()
+    additionalNotes: cancelNotes.value.trim(),
   })
   showCancelDialog.value = false
   cancellingLead.value = null
@@ -249,7 +254,8 @@ const editingItem = ref<any>(null)
 const isSyncing = ref(false)
 const isAdmin = computed(() => {
   const userCookie = useCookie<any>('userData')
-  if (!userCookie.value) return false
+  if (!userCookie.value)
+    return false
   const user = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
   const role = String(user?.userType || user?.userRole || user?.role || '').toLowerCase()
   return role === 'admin'
@@ -312,24 +318,32 @@ const localFilters = ref({
   allocatedTo: '',
   createdBy: '',
   addedBy: '',
-  inspectionStatus: ''
+  inspectionStatus: '',
 })
 
 const activeFilterCount = computed(() => {
   let count = 0
-  if (advancedFilters.value.startDate || advancedFilters.value.endDate) count++
-  if (advancedFilters.value.make) count++
-  if (advancedFilters.value.city) count++
-  if (advancedFilters.value.priority) count++
-  if (advancedFilters.value.allocatedTo) count++
-  if (advancedFilters.value.createdBy) count++
-  if (advancedFilters.value.addedBy) count++
-  if (advancedFilters.value.inspectionStatus) count++
+  if (advancedFilters.value.startDate || advancedFilters.value.endDate)
+    count++
+  if (advancedFilters.value.make)
+    count++
+  if (advancedFilters.value.city)
+    count++
+  if (advancedFilters.value.priority)
+    count++
+  if (advancedFilters.value.allocatedTo)
+    count++
+  if (advancedFilters.value.createdBy)
+    count++
+  if (advancedFilters.value.addedBy)
+    count++
+  if (advancedFilters.value.inspectionStatus)
+    count++
   return count
 })
 
 watch(advancedFilters, (newF) => {
-  localFilters.value = { 
+  localFilters.value = {
     startDate: newF.startDate || '',
     endDate: newF.endDate || '',
     dateField: newF.dateField || 'inspectionDateTime',
@@ -340,7 +354,7 @@ watch(advancedFilters, (newF) => {
     allocatedTo: newF.allocatedTo || '',
     createdBy: newF.createdBy || '',
     addedBy: newF.addedBy || '',
-    inspectionStatus: newF.inspectionStatus || ''
+    inspectionStatus: newF.inspectionStatus || '',
   }
 }, { deep: true, immediate: true })
 
@@ -364,36 +378,41 @@ function clearAdvancedFilters() {
 
 function setDatePreset(preset: string) {
   const dt = new Date()
-  const tzo = dt.getTimezoneOffset() * 60000;
-  
-  const toLocalISOString = (d: Date) => new Date(d.getTime() - tzo).toISOString().split('T')[0] || '';
+  const tzo = dt.getTimezoneOffset() * 60000
+
+  const toLocalISOString = (d: Date) => new Date(d.getTime() - tzo).toISOString().split('T')[0] || ''
 
   localFilters.value.datePreset = preset
 
   if (preset === 'Today') {
     localFilters.value.startDate = toLocalISOString(dt)
     localFilters.value.endDate = toLocalISOString(dt)
-  } else if (preset === 'Yesterday') {
+  }
+  else if (preset === 'Yesterday') {
     const yest = new Date(dt)
     yest.setDate(dt.getDate() - 1)
     localFilters.value.startDate = toLocalISOString(yest)
     localFilters.value.endDate = localFilters.value.startDate
-  } else if (preset === 'Tomorrow') {
+  }
+  else if (preset === 'Tomorrow') {
     const tmrw = new Date(dt)
     tmrw.setDate(dt.getDate() + 1)
     localFilters.value.startDate = toLocalISOString(tmrw)
     localFilters.value.endDate = localFilters.value.startDate
-  } else if (preset === 'This Month') {
+  }
+  else if (preset === 'This Month') {
     const firstDay = new Date(dt.getFullYear(), dt.getMonth(), 1)
     const lastDay = new Date(dt.getFullYear(), dt.getMonth() + 1, 0)
     localFilters.value.startDate = toLocalISOString(firstDay)
     localFilters.value.endDate = toLocalISOString(lastDay)
-  } else if (preset === 'This Year') {
+  }
+  else if (preset === 'This Year') {
     const firstDay = new Date(dt.getFullYear(), 0, 1)
     const lastDay = new Date(dt.getFullYear(), 11, 31)
     localFilters.value.startDate = toLocalISOString(firstDay)
     localFilters.value.endDate = toLocalISOString(lastDay)
-  } else if (preset === 'Last Year') {
+  }
+  else if (preset === 'Last Year') {
     const firstDay = new Date(dt.getFullYear() - 1, 0, 1)
     const lastDay = new Date(dt.getFullYear() - 1, 11, 31)
     localFilters.value.startDate = toLocalISOString(firstDay)
@@ -414,21 +433,23 @@ const filteredItems = computed(() => {
     // Numeric sort for numbers/IDs like '26-100013'
     const an = Number(String(av).replace(/\D/g, ''))
     const bn = Number(String(bv).replace(/\D/g, ''))
-    if (!isNaN(an) && !isNaN(bn) && an !== bn) {
+    if (!Number.isNaN(an) && !Number.isNaN(bn) && an !== bn) {
       return dir === 'asc' ? an - bn : bn - an
     }
     // String sort
     const as = String(av).toLowerCase()
     const bs = String(bv).toLowerCase()
-    if (as < bs) return dir === 'asc' ? -1 : 1
-    if (as > bs) return dir === 'asc' ? 1 : -1
+    if (as < bs)
+      return dir === 'asc' ? -1 : 1
+    if (as > bs)
+      return dir === 'asc' ? 1 : -1
     return 0
   })
 
   return result
 })
 
-const totalFiltered = computed(() => filteredItems.value.length)
+const _totalFiltered = computed(() => filteredItems.value.length)
 
 // ─── Search triggers server-side query & auto-navigates to Search Results tab ───
 watch(search, (q) => {
@@ -441,15 +462,18 @@ watch(search, (q) => {
     // The tab's * filters + serverSearch will produce a global search fetch via setFilters.
     if (router.currentRoute.value.path !== '/leads/search-results') {
       router.push('/leads/search-results')
-    } else {
+    }
+    else {
       // Already on search-results, just debounce-search within the tab
       searchLeads(q)
     }
-  } else {
+  }
+  else {
     // Search cleared — if on search-results and no advanced filters, go back to /leads
     if (router.currentRoute.value.path === '/leads/search-results' && activeFilterCount.value === 0) {
       router.push('/leads')
-    } else {
+    }
+    else {
       searchLeads(q)
     }
   }
@@ -507,16 +531,21 @@ function getFieldsForTab(tabId: string) {
     // Hide fields conditionally unified fully for both New and Edit states equivalently 
     if (f.hideOnCreate)
       return false
-      
+
     // Conditional logic based on Source
-    if (f.key === 'bankSource' && formData.value.appointmentSource !== 'Bank') return false
-    if (f.key === 'referenceName' && formData.value.appointmentSource !== 'Reference') return false
+    if (f.key === 'bankSource' && formData.value.appointmentSource !== 'Bank')
+      return false
+    if (f.key === 'referenceName' && formData.value.appointmentSource !== 'Reference')
+      return false
     // NCD/UCD-only fields
     const isNcdUcd = ['NCD', 'UCD'].includes(formData.value.appointmentSource)
-    if (f.key === 'repName' && !isNcdUcd) return false
-    if (f.key === 'repContact' && !isNcdUcd) return false
+    if (f.key === 'repName' && !isNcdUcd)
+      return false
+    if (f.key === 'repContact' && !isNcdUcd)
+      return false
     // Other-only fields
-    if (f.key === 'otherSource' && formData.value.appointmentSource !== 'Other') return false
+    if (f.key === 'otherSource' && formData.value.appointmentSource !== 'Other')
+      return false
 
     return true
   }).map((f) => {
@@ -593,10 +622,10 @@ async function openCreate() {
 function openEdit(item: any) {
   editingItem.value = item
   const cloned = { ...item }
-  props.formFields.forEach(f => {
+  props.formFields.forEach((f) => {
     if (f.type === 'datetime-local' && cloned[f.key]) {
       const dbDate = new Date(String(cloned[f.key]).trim())
-      if (!isNaN(dbDate.getTime())) {
+      if (!Number.isNaN(dbDate.getTime())) {
         const offset = dbDate.getTimezoneOffset()
         const localDt = new Date(dbDate.getTime() - (offset * 60000))
         cloned[f.key] = localDt.toISOString().slice(0, 16)
@@ -657,7 +686,8 @@ async function handleSave() {
       if (isTelecaller) {
         payload.emailAddress = currentUser?.email || ''
         payload.createdByFullName = currentUser?.userName || ''
-      } else {
+      }
+      else {
         payload.createdByFullName = currentUser?.userName || ''
       }
 
@@ -696,7 +726,7 @@ async function syncAppSheet(item: any) {
   try {
     isSyncing.value = true
     toast.info('Syncing to AppSheet...')
-    
+
     await $fetch('/api/leads/sync', {
       method: 'POST',
       body: { appointmentId: item.appointmentId },
@@ -778,11 +808,11 @@ function getInitials(name: string): string {
     <div class="relative">
       <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
       <Input v-model="search" placeholder="Search global leads..." class="pl-8 h-8 w-[220px] text-sm flex-1 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" />
-      <Button 
-        v-if="search" 
-        variant="ghost" 
-        size="icon" 
-        class="absolute right-0 top-0 h-full size-8 rounded-l-none text-muted-foreground hover:bg-transparent hover:text-foreground" 
+      <Button
+        v-if="search"
+        variant="ghost"
+        size="icon"
+        class="absolute right-0 top-0 h-full size-8 rounded-l-none text-muted-foreground hover:bg-transparent hover:text-foreground"
         @click="search = ''; router.replace({ query: {} })"
       >
         <Icon name="i-lucide-x" class="size-3.5" />
@@ -800,15 +830,19 @@ function getInitials(name: string): string {
           </Badge>
         </Button>
       </PopoverTrigger>
-      
+
       <PopoverContent class="w-[340px] p-0 shadow-lg border-muted" align="start">
         <div class="flex flex-col">
           <!-- Header -->
           <div class="px-4 py-3 border-b bg-muted/10 flex items-center justify-between">
-            <h4 class="font-medium text-sm text-foreground flex items-center gap-1.5"><Icon name="i-lucide-sliders-horizontal" class="size-4 text-primary" /> Advanced Filters</h4>
-            <Button v-if="activeFilterCount > 0" variant="ghost" size="sm" class="h-6 px-2 text-xs text-muted-foreground hover:text-destructive" @click="clearAdvancedFilters">Clear All</Button>
+            <h4 class="font-medium text-sm text-foreground flex items-center gap-1.5">
+              <Icon name="i-lucide-sliders-horizontal" class="size-4 text-primary" /> Advanced Filters
+            </h4>
+            <Button v-if="activeFilterCount > 0" variant="ghost" size="sm" class="h-6 px-2 text-xs text-muted-foreground hover:text-destructive" @click="clearAdvancedFilters">
+              Clear All
+            </Button>
           </div>
-          
+
           <!-- Content -->
           <div class="p-4 space-y-5 max-h-[400px] overflow-y-auto custom-scrollbar">
             <!-- Date Filters -->
@@ -822,11 +856,11 @@ function getInitials(name: string): string {
               <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1.5">
                   <Label class="text-[10px] uppercase text-muted-foreground">From</Label>
-                  <Input type="date" v-model="localFilters.startDate" @input="localFilters.datePreset = ''" class="h-8 text-xs bg-muted/30 focus:bg-background" />
+                  <Input v-model="localFilters.startDate" type="date" class="h-8 text-xs bg-muted/30 focus:bg-background" @input="localFilters.datePreset = ''" />
                 </div>
                 <div class="space-y-1.5">
                   <Label class="text-[10px] uppercase text-muted-foreground">To</Label>
-                  <Input type="date" v-model="localFilters.endDate" @input="localFilters.datePreset = ''" class="h-8 text-xs bg-muted/30 focus:bg-background" />
+                  <Input v-model="localFilters.endDate" type="date" class="h-8 text-xs bg-muted/30 focus:bg-background" @input="localFilters.datePreset = ''" />
                 </div>
               </div>
               <div class="space-y-1.5 mt-2">
@@ -853,10 +887,16 @@ function getInitials(name: string): string {
                   <div class="space-y-1.5">
                     <Label class="text-xs text-muted-foreground">Make</Label>
                     <Select v-model="localFilters.make">
-                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANY MAKE" /></SelectTrigger>
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase">
+                        <SelectValue placeholder="ANY MAKE" />
+                      </SelectTrigger>
                       <SelectContent class="uppercase">
-                        <SelectItem value=" ">ANY MAKE</SelectItem>
-                        <SelectItem v-for="make in carMakes" :key="make" :value="make">{{ make }}</SelectItem>
+                        <SelectItem value=" ">
+                          ANY MAKE
+                        </SelectItem>
+                        <SelectItem v-for="make in carMakes" :key="make" :value="make">
+                          {{ make }}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -864,12 +904,22 @@ function getInitials(name: string): string {
                   <div class="space-y-1.5">
                     <Label class="text-xs text-muted-foreground">Priority</Label>
                     <Select v-model="localFilters.priority">
-                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANY PRIORITY" /></SelectTrigger>
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase">
+                        <SelectValue placeholder="ANY PRIORITY" />
+                      </SelectTrigger>
                       <SelectContent class="uppercase">
-                        <SelectItem value=" ">ANY PRIORITY</SelectItem>
-                        <SelectItem value="High">HIGH</SelectItem>
-                        <SelectItem value="Medium">MEDIUM</SelectItem>
-                        <SelectItem value="Low">LOW</SelectItem>
+                        <SelectItem value=" ">
+                          ANY PRIORITY
+                        </SelectItem>
+                        <SelectItem value="High">
+                          HIGH
+                        </SelectItem>
+                        <SelectItem value="Medium">
+                          MEDIUM
+                        </SelectItem>
+                        <SelectItem value="Low">
+                          LOW
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -879,20 +929,32 @@ function getInitials(name: string): string {
                   <div class="space-y-1.5">
                     <Label class="text-xs text-muted-foreground">Status</Label>
                     <Select v-model="localFilters.inspectionStatus">
-                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANY STATUS" /></SelectTrigger>
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase">
+                        <SelectValue placeholder="ANY STATUS" />
+                      </SelectTrigger>
                       <SelectContent class="uppercase">
-                        <SelectItem value=" ">ANY STATUS</SelectItem>
-                        <SelectItem v-for="st in inspectionStatuses" :key="st" :value="st">{{ st }}</SelectItem>
+                        <SelectItem value=" ">
+                          ANY STATUS
+                        </SelectItem>
+                        <SelectItem v-for="st in inspectionStatuses" :key="st" :value="st">
+                          {{ st }}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div class="space-y-1.5">
                     <Label class="text-xs text-muted-foreground">City Location</Label>
                     <Select v-model="localFilters.city">
-                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANY CITY" /></SelectTrigger>
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase">
+                        <SelectValue placeholder="ANY CITY" />
+                      </SelectTrigger>
                       <SelectContent class="uppercase">
-                        <SelectItem value=" ">ANY CITY</SelectItem>
-                        <SelectItem v-for="c in cityOptions" :key="c.value" :value="c.value">{{ c.label }}</SelectItem>
+                        <SelectItem value=" ">
+                          ANY CITY
+                        </SelectItem>
+                        <SelectItem v-for="c in cityOptions" :key="c.value" :value="c.value">
+                          {{ c.label }}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -901,32 +963,50 @@ function getInitials(name: string): string {
                 <div class="space-y-1.5">
                   <Label class="text-xs text-muted-foreground">Assigned Inspector</Label>
                   <Select v-model="localFilters.allocatedTo">
-                    <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANYONE" /></SelectTrigger>
+                    <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase">
+                      <SelectValue placeholder="ANYONE" />
+                    </SelectTrigger>
                     <SelectContent class="uppercase">
-                      <SelectItem value=" ">ANYONE</SelectItem>
-                      <SelectItem v-for="insp in inspectors" :key="insp._id || insp.id" :value="insp.email">{{ getUserLabel(insp.email) }}</SelectItem>
+                      <SelectItem value=" ">
+                        ANYONE
+                      </SelectItem>
+                      <SelectItem v-for="insp in inspectors" :key="insp._id || insp.id" :value="insp.email">
+                        {{ getUserLabel(insp.email) }}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-3">
                   <div class="space-y-1.5">
                     <Label class="text-xs text-muted-foreground">Created By</Label>
                     <Select v-model="localFilters.createdBy">
-                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANYONE" /></SelectTrigger>
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase">
+                        <SelectValue placeholder="ANYONE" />
+                      </SelectTrigger>
                       <SelectContent class="uppercase">
-                        <SelectItem value=" ">ANYONE</SelectItem>
-                        <SelectItem v-for="u in dbCreatedByList" :key="u.email" :value="u.email">{{ u.name }}</SelectItem>
+                        <SelectItem value=" ">
+                          ANYONE
+                        </SelectItem>
+                        <SelectItem v-for="u in dbCreatedByList" :key="u.email" :value="u.email">
+                          {{ u.name }}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div class="space-y-1.5">
                     <Label class="text-xs text-muted-foreground">Added By</Label>
                     <Select v-model="localFilters.addedBy">
-                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase"><SelectValue placeholder="ANYONE" /></SelectTrigger>
+                      <SelectTrigger class="h-8 text-xs bg-muted/30 uppercase">
+                        <SelectValue placeholder="ANYONE" />
+                      </SelectTrigger>
                       <SelectContent class="uppercase">
-                        <SelectItem value=" ">ANYONE</SelectItem>
-                        <SelectItem v-for="u in dbAddedByList" :key="u" :value="u">{{ u }}</SelectItem>
+                        <SelectItem value=" ">
+                          ANYONE
+                        </SelectItem>
+                        <SelectItem v-for="u in dbAddedByList" :key="u" :value="u">
+                          {{ u }}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -937,18 +1017,24 @@ function getInitials(name: string): string {
 
           <!-- Footer -->
           <div class="px-4 py-3 border-t bg-muted/20 flex justify-between gap-2">
-            <Button variant="outline" size="sm" @click="showAdvancedFilters = false" class="h-8 text-xs">Cancel</Button>
+            <Button variant="outline" size="sm" class="h-8 text-xs" @click="showAdvancedFilters = false">
+              Cancel
+            </Button>
             <div class="flex gap-2">
-              <Button variant="secondary" size="sm" class="h-8 text-xs" @click="clearAdvancedFilters">Clear</Button>
-              <Button size="sm" class="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-sm" @click="applyAdvancedFilters">Apply {{ activeFilterCount > 0 ? `(${activeFilterCount})` : '' }}</Button>
+              <Button variant="secondary" size="sm" class="h-8 text-xs" @click="clearAdvancedFilters">
+                Clear
+              </Button>
+              <Button size="sm" class="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-sm" @click="applyAdvancedFilters">
+                Apply {{ activeFilterCount > 0 ? `(${activeFilterCount})` : '' }}
+              </Button>
             </div>
           </div>
         </div>
       </PopoverContent>
     </Popover>
-    
+
     <!-- Total Counter -->
-    <div class="hidden sm:flex items-center mx-2 mr-auto" v-if="countsTotal > 0">
+    <div v-if="countsTotal > 0" class="hidden sm:flex items-center mx-2 mr-auto">
       <Badge variant="outline" class="bg-muted/30 border-primary/20 text-muted-foreground uppercase text-[10px] tracking-wider font-mono h-[24px]">
         Total Records: <span class="text-primary font-semibold ml-1.5 text-xs tracking-normal">{{ formatNumber(countsTotal) }}</span>
       </Badge>
@@ -1112,7 +1198,7 @@ function getInitials(name: string): string {
                 <Button v-if="router.currentRoute.value.path === '/leads'" variant="ghost" size="icon" class="size-8" @click.stop="openEdit(item)">
                   <Icon name="i-lucide-pencil" class="size-3.5" />
                 </Button>
-                <Button v-if="isAdmin" variant="ghost" size="icon" class="size-8 text-blue-600 hover:text-blue-700" :disabled="isSyncing" @click.stop="syncAppSheet(item)" title="Force Sync to AppSheet">
+                <Button v-if="isAdmin" variant="ghost" size="icon" class="size-8 text-blue-600 hover:text-blue-700" :disabled="isSyncing" title="Force Sync to AppSheet" @click.stop="syncAppSheet(item)">
                   <Icon name="i-lucide-refresh-cw" class="size-3.5" :class="{ 'animate-spin': isSyncing }" />
                 </Button>
               </div>
@@ -1232,7 +1318,7 @@ function getInitials(name: string): string {
                     v-for="p in [
                       { label: 'High', value: 'High', icon: 'i-lucide-flame', color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/20', active: 'ring-2 ring-red-500/40 bg-red-500/5' },
                       { label: 'Medium', value: 'Medium', icon: 'i-lucide-activity', color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20', active: 'ring-2 ring-amber-500/40 bg-amber-500/5' },
-                      { label: 'Low', value: 'Low', icon: 'i-lucide-arrow-down-to-line', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', active: 'ring-2 ring-blue-500/40 bg-blue-500/5' }
+                      { label: 'Low', value: 'Low', icon: 'i-lucide-arrow-down-to-line', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', active: 'ring-2 ring-blue-500/40 bg-blue-500/5' },
                     ]"
                     :key="p.value"
                     type="button"
@@ -1242,13 +1328,19 @@ function getInitials(name: string): string {
                       : 'border-input bg-background hover:bg-muted/50 hover:border-border'"
                     @click="formData[field.key] = p.value"
                   >
-                    <div class="p-2.5 rounded-full mb-2 transition-colors duration-200"
-                      :class="formData[field.key] === p.value ? p.bg : 'bg-muted group-hover:bg-muted/80'">
-                      <Icon :name="p.icon" class="size-5 transition-colors"
-                        :class="formData[field.key] === p.value ? p.color : 'text-muted-foreground group-hover:text-foreground'" />
+                    <div
+                      class="p-2.5 rounded-full mb-2 transition-colors duration-200"
+                      :class="formData[field.key] === p.value ? p.bg : 'bg-muted group-hover:bg-muted/80'"
+                    >
+                      <Icon
+                        :name="p.icon" class="size-5 transition-colors"
+                        :class="formData[field.key] === p.value ? p.color : 'text-muted-foreground group-hover:text-foreground'"
+                      />
                     </div>
-                    <span class="text-xs font-semibold tracking-wide transition-colors"
-                      :class="formData[field.key] === p.value ? p.color : 'text-muted-foreground'">
+                    <span
+                      class="text-xs font-semibold tracking-wide transition-colors"
+                      :class="formData[field.key] === p.value ? p.color : 'text-muted-foreground'"
+                    >
                       {{ p.label }}
                     </span>
                   </button>
@@ -1296,21 +1388,7 @@ function getInitials(name: string): string {
                     @update:model-value="(v) => formData[field.key] = String(v).replace(/\D/g, '').slice(0, 10)"
                   />
                 </div>
-                <!-- Interactive Ownership Number Buttons -->
-                <div v-else-if="field.key === 'ownershipSerialNumber'" class="flex flex-wrap gap-2 pt-1">
-                  <button
-                    v-for="num in [1, 2, 3, 4, 5]"
-                    :key="num"
-                    type="button"
-                    class="h-10 w-12 rounded-lg border font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                    :class="Number(formData[field.key]) === num
-                      ? 'border-primary bg-primary text-primary-foreground shadow-sm scale-105'
-                      : 'border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground'"
-                    @click="formData[field.key] = num"
-                  >
-                    {{ num }}
-                  </button>
-                </div>
+
                 <!-- Textarea -->
                 <Textarea
                   v-else-if="field.type === 'textarea'"
@@ -1369,8 +1447,6 @@ function getInitials(name: string): string {
       </DialogContent>
     </Dialog>
 
-
-
     <!-- Assign Inspector Dialog -->
     <Dialog v-model:open="showAssignDialog">
       <DialogContent class="sm:max-w-[420px]">
@@ -1421,8 +1497,10 @@ function getInitials(name: string): string {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" @click="showAssignDialog = false">Cancel</Button>
-          <Button @click="confirmAssignInspector" :disabled="!selectedInspector || isUpdatingStatus" class="bg-blue-600 hover:bg-blue-700">
+          <Button variant="outline" @click="showAssignDialog = false">
+            Cancel
+          </Button>
+          <Button :disabled="!selectedInspector || isUpdatingStatus" class="bg-blue-600 hover:bg-blue-700" @click="confirmAssignInspector">
             <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
             Assign & Schedule
           </Button>
@@ -1445,19 +1523,25 @@ function getInitials(name: string): string {
 
         <div class="space-y-4 py-4">
           <div v-if="reschedulingLead" class="rounded-lg border bg-muted/30 p-3 space-y-1">
-            <p class="text-sm font-medium">{{ reschedulingLead.ownerName || 'Unknown' }}</p>
-            <p class="text-xs text-muted-foreground">{{ reschedulingLead.make }} {{ reschedulingLead.model }} — {{ reschedulingLead.carRegistrationNumber }}</p>
+            <p class="text-sm font-medium">
+              {{ reschedulingLead.ownerName || 'Unknown' }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              {{ reschedulingLead.make }} {{ reschedulingLead.model }} — {{ reschedulingLead.carRegistrationNumber }}
+            </p>
           </div>
 
           <div class="space-y-2">
             <Label for="reschedule-datetime">New Date & Time</Label>
-            <Input id="reschedule-datetime" type="datetime-local" v-model="newInspectionDateTime" />
+            <Input id="reschedule-datetime" v-model="newInspectionDateTime" type="datetime-local" />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" @click="showRescheduleDialog = false">Cancel</Button>
-          <Button @click="confirmReschedule" :disabled="!newInspectionDateTime || isUpdatingStatus" class="bg-purple-600 hover:bg-purple-700">
+          <Button variant="outline" @click="showRescheduleDialog = false">
+            Cancel
+          </Button>
+          <Button :disabled="!newInspectionDateTime || isUpdatingStatus" class="bg-purple-600 hover:bg-purple-700" @click="confirmReschedule">
             <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
             Confirm Reschedule
           </Button>
@@ -1480,24 +1564,30 @@ function getInitials(name: string): string {
 
         <div class="space-y-4 py-4">
           <div v-if="cancellingLead" class="rounded-lg border bg-muted/30 p-3 space-y-1">
-            <p class="text-sm font-medium">{{ cancellingLead.ownerName || 'Unknown' }}</p>
-            <p class="text-xs text-muted-foreground">{{ cancellingLead.make }} {{ cancellingLead.model }} — {{ cancellingLead.carRegistrationNumber }}</p>
+            <p class="text-sm font-medium">
+              {{ cancellingLead.ownerName || 'Unknown' }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              {{ cancellingLead.make }} {{ cancellingLead.model }} — {{ cancellingLead.carRegistrationNumber }}
+            </p>
           </div>
 
           <div class="space-y-2">
             <Label for="cancel-notes" class="flex gap-1">Reason <span class="text-destructive">*</span></Label>
-            <Textarea 
-              id="cancel-notes" 
-              placeholder="Provide a required reason for cancellation..." 
-              v-model="cancelNotes" 
-              rows="4" 
+            <Textarea
+              id="cancel-notes"
+              v-model="cancelNotes"
+              placeholder="Provide a required reason for cancellation..."
+              rows="4"
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" @click="showCancelDialog = false">Abort</Button>
-          <Button @click="confirmCancel" :disabled="!cancelNotes.trim() || isUpdatingStatus" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <Button variant="outline" @click="showCancelDialog = false">
+            Abort
+          </Button>
+          <Button :disabled="!cancelNotes.trim() || isUpdatingStatus" class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="confirmCancel">
             <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
             Confirm Cancellation
           </Button>

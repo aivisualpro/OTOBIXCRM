@@ -18,7 +18,8 @@ const isAdmin = computed(() => {
     const user = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
     const role = user?.userType || user?.userRole || user?.role || ''
     return typeof role === 'string' && role.toLowerCase() === 'admin'
-  } catch {
+  }
+  catch {
     return false
   }
 })

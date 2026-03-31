@@ -38,7 +38,7 @@ export function useCarDropdowns() {
         '/api/car-dropdowns/get-list',
         {
           method: 'GET',
-          params: { page, limit, search: search.trim() }
+          params: { page, limit, search: search.trim() },
         },
       )
 
