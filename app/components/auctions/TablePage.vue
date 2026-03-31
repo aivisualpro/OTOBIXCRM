@@ -105,6 +105,8 @@ onMounted(async () => {
       highlightedId.value = null
     }, 3500)
   }
+
+  window.addEventListener('keydown', handleGlobalKeydown)
 })
 
 onUnmounted(() => {
@@ -112,6 +114,7 @@ onUnmounted(() => {
     clearInterval(timerInterval)
     timerInterval = null
   }
+  window.removeEventListener('keydown', handleGlobalKeydown)
 })
 
 // ─── UI State ───
@@ -141,6 +144,26 @@ const PER_PAGE = 30
 const currentPage = ref(1)
 
 watch(search, () => { currentPage.value = 1 })
+
+function focusGlobalSearch() {
+  const el = document.getElementById('globalSearchInput') as HTMLInputElement | null
+  if (el) {
+    el.focus()
+    setTimeout(() => {
+      if (el.value) {
+        const len = el.value.length
+        el.setSelectionRange(len, len)
+      }
+    }, 10)
+  }
+}
+
+function handleGlobalKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault()
+    focusGlobalSearch()
+  }
+}
 
 const totalFiltered = computed(() => filteredItems.value.length)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalFiltered.value / PER_PAGE)))
@@ -238,7 +261,10 @@ const pageNumbers = computed(() => {
     <HeaderActions>
       <div class="relative">
         <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-        <Input v-model="search" placeholder="Search auctions..." class="pl-8 h-8 w-48 text-sm" />
+        <Input id="globalSearchInput" v-model="search" placeholder="Search auctions..." class="pl-8 pr-12 h-8 w-48 text-sm" />
+        <div v-if="!search" class="pointer-events-none absolute right-1.5 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex text-muted-foreground">
+          <span class="text-[9px]">⌘</span>K
+        </div>
       </div>
       <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
         {{ totalFiltered }} car{{ totalFiltered !== 1 ? 's' : '' }}

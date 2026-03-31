@@ -64,8 +64,33 @@ const dbCreatedByList = computed(() => dbFiltersData.value?.emails || [])
 const dbAddedByList = computed(() => dbFiltersData.value?.addedBys || [])
 const cityOptions = computed(() => (dbFiltersData.value?.cities || []).map((c: string) => ({ label: c, value: c })))
 
+function focusGlobalSearch() {
+  const el = document.getElementById('globalSearchInput') as HTMLInputElement | null
+  if (el) {
+    el.focus()
+    setTimeout(() => {
+      if (el.value) {
+        const len = el.value.length
+        el.setSelectionRange(len, len)
+      }
+    }, 10)
+  }
+}
+
+function handleGlobalKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault()
+    focusGlobalSearch()
+  }
+}
+
 // Ensure data is loaded with server-side status filters
 onMounted(async () => {
+  window.addEventListener('keydown', handleGlobalKeydown)
+
+  if (router.currentRoute.value.path === '/leads/search-results' && serverSearch.value) {
+    nextTick(() => { focusGlobalSearch() })
+  }
   if (props.filters) {
     setFilters(props.filters)
   }
@@ -87,7 +112,10 @@ watch(() => props.filters, (newFilters) => {
 // ─── Instant Reveal Animation ───
 const isRevealed = ref(false)
 const isMounted = ref(true)
-onBeforeUnmount(() => { isMounted.value = false })
+onBeforeUnmount(() => { 
+  isMounted.value = false 
+  window.removeEventListener('keydown', handleGlobalKeydown)
+})
 
 watch(isFetched, (fetched) => {
   if (fetched && isMounted.value) {
@@ -851,11 +879,13 @@ function getInitials(name: string): string {
 </script>
 
 <template>
-  <!-- Teleport toolbar into the main header -->
   <HeaderActions>
     <div class="relative">
       <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-      <Input v-model="search" placeholder="Search global leads..." class="pl-8 h-8 w-[220px] text-sm flex-1 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" />
+      <Input id="globalSearchInput" v-model="search" placeholder="Search global leads..." class="pl-8 h-8 w-[240px] text-sm flex-1 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 pr-10" />
+      <div v-if="!search" class="pointer-events-none absolute right-1.5 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex text-muted-foreground">
+        <span class="text-[9px]">⌘</span>K
+      </div>
       <Button
         v-if="search"
         variant="ghost"

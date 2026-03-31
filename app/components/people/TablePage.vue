@@ -78,6 +78,26 @@ const visibleCount = ref(BATCH_SIZE)
 
 watch(search, () => { visibleCount.value = BATCH_SIZE })
 
+function focusGlobalSearch() {
+  const el = document.getElementById('globalSearchInput') as HTMLInputElement | null
+  if (el) {
+    el.focus()
+    setTimeout(() => {
+      if (el.value) {
+        const len = el.value.length
+        el.setSelectionRange(len, len)
+      }
+    }, 10)
+  }
+}
+
+function handleGlobalKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault()
+    focusGlobalSearch()
+  }
+}
+
 const totalFiltered = computed(() => filteredItems.value.length)
 const hasMore = computed(() => visibleCount.value < totalFiltered.value)
 
@@ -104,10 +124,12 @@ onMounted(() => {
     },
     { rootMargin: '200px' },
   )
+  window.addEventListener('keydown', handleGlobalKeydown)
 })
 
 onBeforeUnmount(() => {
   observer?.disconnect()
+  window.removeEventListener('keydown', handleGlobalKeydown)
 })
 
 watch(scrollSentinel, (el) => {
@@ -331,7 +353,10 @@ function toggleSelectAllWorkspaces() {
       <Separator v-if="showStatusCounts && isFetched" orientation="vertical" class="h-5 hidden sm:block" />
       <div class="relative">
         <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-        <Input v-model="search" placeholder="Search people..." class="pl-8 h-8 w-48 text-sm" />
+        <Input id="globalSearchInput" v-model="search" placeholder="Search people..." class="pl-8 pr-12 h-8 w-48 text-sm" />
+        <div v-if="!search" class="pointer-events-none absolute right-1.5 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex text-muted-foreground">
+          <span class="text-[9px]">⌘</span>K
+        </div>
       </div>
       <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
         {{ totalFiltered }} record{{ totalFiltered !== 1 ? 's' : '' }}

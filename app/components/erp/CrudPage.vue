@@ -66,6 +66,29 @@ const paginatedItems = computed(() => {
 
 watch(search, () => { currentPage.value = 1 })
 
+function focusGlobalSearch() {
+  const el = document.getElementById('globalSearchInput') as HTMLInputElement | null
+  if (el) {
+    el.focus()
+    setTimeout(() => {
+      if (el.value) {
+        const len = el.value.length
+        el.setSelectionRange(len, len)
+      }
+    }, 10)
+  }
+}
+
+function handleGlobalKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault()
+    focusGlobalSearch()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', handleGlobalKeydown))
+onUnmounted(() => window.removeEventListener('keydown', handleGlobalKeydown))
+
 // CRUD Handlers
 function openCreate() {
   editingItem.value = null
@@ -218,7 +241,6 @@ const badgeClasses: Record<string, string> = {
   'Under Inspection': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Inspected': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
   'Under Review': 'bg-orange-500/10 text-orange-600 border-orange-500/20',
-  'Approved': 'bg-teal-500/10 text-teal-600 border-teal-500/20',
   'Quality Rejected': 'bg-rose-500/10 text-rose-600 border-rose-500/20',
 }
 
@@ -260,7 +282,10 @@ function getInitials(name: string): string {
     <div v-if="!headerActions" class="flex flex-wrap items-center justify-between gap-4">
       <div class="relative flex-1 max-w-sm">
         <Icon name="i-lucide-search" class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-        <Input v-model="search" placeholder="Search records..." class="pl-9" />
+        <Input id="globalSearchInput" v-model="search" placeholder="Search records..." class="pl-9 pr-12" />
+        <div v-if="!search" class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex text-muted-foreground">
+          <span class="text-[9px]">⌘</span>K
+        </div>
       </div>
       <div class="flex items-center gap-2">
         <p class="text-sm text-muted-foreground tabular-nums hidden sm:block">
@@ -283,7 +308,10 @@ function getInitials(name: string): string {
         <div class="flex items-center gap-2">
           <div class="relative">
             <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input v-model="search" placeholder="Search..." class="pl-8 h-8 w-48 text-sm" />
+            <Input id="globalSearchInput" v-model="search" placeholder="Search..." class="pl-8 pr-10 h-8 w-48 text-sm" />
+            <div v-if="!search" class="pointer-events-none absolute right-1.5 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex text-muted-foreground">
+              <span class="text-[9px]">⌘</span>K
+            </div>
           </div>
           <p class="text-xs text-muted-foreground tabular-nums hidden lg:block">
             {{ filteredItems.length }} record{{ filteredItems.length !== 1 ? 's' : '' }}
