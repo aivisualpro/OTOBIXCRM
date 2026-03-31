@@ -38,7 +38,25 @@ export const scheduledColumns = [
 
 /** Per-route column overrides — if a route key is here, use its columns instead of default */
 export const routeColumnsMap: Record<string, typeof leadsColumns> = {
-  scheduled: scheduledColumns,
+  'scheduled': scheduledColumns,
+  'search-results': [
+    { key: 'appointmentId', label: 'Appt. ID' },
+    { key: 'ownerName', label: 'Owner' },
+    { key: 'customerContactNumber', label: 'Contact' },
+    { key: 'make', label: 'Make' },
+    { key: 'model', label: 'Model' },
+    { key: 'variant', label: 'Variant' },
+    { key: 'yearOfManufacture', label: 'Year of Mfg' },
+    { key: 'odometerReadingInKms', label: 'Odometer (KM)', type: 'number' as const },
+    { key: 'allocatedTo', label: 'Allocated To' },
+    { key: 'inspectionStatus', label: 'Inspection', type: 'badge' as const },
+    { key: 'priority', label: 'Priority', type: 'badge' as const },
+    { key: 'inspectionDateTime', label: 'Inspection Date', type: 'date' as const },
+    { key: 'inspectionAddress', label: 'Address' },
+    { key: 'addedBy', label: 'Added By' },
+    { key: 'createdByFullName', label: 'Created By' },
+    { key: 'createdAt', label: 'Created At', type: 'date' as const },
+  ],
 }
 
 export const leadsFormFields = [
