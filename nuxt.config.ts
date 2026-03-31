@@ -6,6 +6,15 @@ export default defineNuxtConfig({
   spaLoadingTemplate: false,
   devServer: { loadingTemplate: () => '' },
 
+  app: {
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/png', href: '/icon-512x512.png' },
+        { rel: 'apple-touch-icon', href: '/icon-512x512.png' },
+      ],
+    },
+  },
+
   runtimeConfig: {
     mongodbUri: '',
     productionMongodbDbName: 'otobix_auction_app',
