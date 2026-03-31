@@ -1250,9 +1250,9 @@ function getInitials(name: string): string {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <!-- Clickable when in inspected tab wrapper -->
+                <!-- Clickable when in inspected tab wrapper OR search results with correct status -->
                 <Badge
-                  v-else-if="router.currentRoute.value.path === '/leads/inspected' && col.key === 'inspectionStatus' && item.inspectionStatus === 'Inspected'"
+                  v-else-if="['/leads/inspected', '/leads/search-results'].includes(router.currentRoute.value.path) && col.key === 'inspectionStatus' && item.inspectionStatus === 'Inspected' && item.approvalStatus === 'Pending'"
                   variant="outline"
                   class="cursor-pointer hover:ring-1 hover:ring-orange-500/50 transition-all uppercase"
                   :class="getBadgeClass(item[col.key])"
