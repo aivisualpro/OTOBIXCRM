@@ -9,6 +9,16 @@ export default defineEventHandler(async (event) => {
     const filter: Record<string, any> = {}
     const search = String(query.search || '').trim()
 
+    // Security scope parsing
+    const userCookieStr = getCookie(event, 'userData')
+    let _currentUser: Record<string, any> | null = null
+    try {
+      if (userCookieStr) _currentUser = JSON.parse(userCookieStr)
+    }
+    catch {}
+    const isAdmin = _currentUser?.userType?.toLowerCase() === 'admin' || _currentUser?.userRole?.toLowerCase() === 'admin' || _currentUser?.role?.toLowerCase() === 'admin'
+    const currentUserEmail = _currentUser?.email || ''
+
     // Date Filters dynamically
     const startDate = String(query.startDate || '').trim()
     const endDate = String(query.endDate || '').trim()
@@ -101,6 +111,7 @@ export default defineEventHandler(async (event) => {
           _id: {
             inspectionStatus: { $ifNull: ['$inspectionStatus', 'Pending'] },
             approvalStatus: { $ifNull: ['$approvalStatus', 'Pending'] },
+            qcBy: { $ifNull: ['$qcBy', ''] },
           },
           count: { $sum: 1 },
         },
@@ -110,10 +121,10 @@ export default defineEventHandler(async (event) => {
     const buckets = await col.aggregate(pipeline).toArray()
     const totalCount = await col.countDocuments(filter)
 
-    // Build a flat map: "inspectionStatus::approvalStatus" → count
+    // Build a flat map: "inspectionStatus::approvalStatus::qcBy" → count
     const map: Record<string, number> = {}
     for (const b of buckets) {
-      const key = `${b._id.inspectionStatus}::${b._id.approvalStatus}`
+      const key = `${b._id.inspectionStatus}::${b._id.approvalStatus}::${b._id.qcBy}`
       map[key] = b.count
     }
 
@@ -123,10 +134,14 @@ export default defineEventHandler(async (event) => {
         return totalCount
       let total = 0
       for (const [k, v] of Object.entries(map)) {
-        const [isRaw, asRaw] = k.split('::')
+        const [isRaw, asRaw, qcByRaw] = k.split('::')
         const is = String(isRaw || '').trim()
         const as_ = String(asRaw || '').trim()
         if ((inspStatus === '*' || is === inspStatus) && (appStatus === '*' || as_ === appStatus)) {
+          // Restrict "Under Review" count to only the current user's leads if not admin
+          if (appStatus === 'Under Review' && !isAdmin && currentUserEmail) {
+            if (qcByRaw !== currentUserEmail) continue
+          }
           total += v
         }
       }
@@ -136,15 +151,16 @@ export default defineEventHandler(async (event) => {
     return {
       totalCount,
       counts: {
-        'leads': countFor('Pending', 'Pending'),
-        'scheduled': countFor('Scheduled', 'Pending'),
-        're-scheduled': countFor('Re-Scheduled', 'Pending'),
-        'cancelled': countFor('Cancelled', 'Pending'),
+        'leads': countFor('Pending', '*'),
+        'scheduled': countFor('Scheduled', '*'),
+        're-scheduled': countFor('Re-Scheduled', '*'),
+        'running': countFor('Running', '*'),
+        'cancelled': countFor('Cancelled', '*'),
         're-inspection': countFor('Re-Inspected', '*'),
         'inspected': countFor('Inspected', 'Pending'),
-        'under-review': countFor('Inspected', 'Pending'),
+        'under-review': countFor('Inspected', 'Under Review'),
         'quality-approved': countFor('Inspected', 'Approved'),
-        'quality-rejected': countFor('Inspected', 'Rejected'),
+        'quality-rejected': countFor('Inspected', 'Quality Rejected'),
       },
     }
   }

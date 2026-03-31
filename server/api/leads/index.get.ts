@@ -21,7 +21,8 @@ export default defineEventHandler(async (event) => {
     }
     catch {}
 
-    // (Telecallers now have unrestricted view access per user request)
+    const isAdmin = _currentUser?.userType?.toLowerCase() === 'admin' || _currentUser?.userRole?.toLowerCase() === 'admin' || _currentUser?.role?.toLowerCase() === 'admin'
+    const currentUserEmail = _currentUser?.email || ''
 
     // Status filters (server-side filtering for paginated status tabs)
     const inspectionStatus = (query.inspectionStatus as string || '').trim()
@@ -31,6 +32,11 @@ export default defineEventHandler(async (event) => {
     }
     if (approvalStatus && approvalStatus !== '*') {
       filter.approvalStatus = { $regex: `^\\s*${approvalStatus}\\s*$`, $options: 'i' }
+      
+      // Strict isolation for "Under Review" records
+      if (approvalStatus.toLowerCase() === 'under review' && !isAdmin && currentUserEmail) {
+        filter.qcBy = currentUserEmail
+      }
     }
 
     // Advanced Filters

@@ -139,6 +139,30 @@ const showCancelDialog = ref(false)
 const cancellingLead = ref<any>(null)
 const cancelNotes = ref('')
 
+const showQcReviewDialog = ref(false)
+const qcReviewingLead = ref<any>(null)
+
+function openQcReviewDialog(lead: any) {
+  qcReviewingLead.value = lead
+  showQcReviewDialog.value = true
+}
+
+async function confirmQcReview() {
+  if (!qcReviewingLead.value) return
+  const lead = qcReviewingLead.value
+  
+  const userCookie = useCookie('userData')
+  const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
+  const qcByEmail = currentUser?.email || ''
+  
+  await doStatusUpdate(lead, {
+    approvalStatus: 'Under Review',
+    qcBy: qcByEmail
+  })
+  
+  showQcReviewDialog.value = false
+  qcReviewingLead.value = null
+}
 const isUpdatingStatus = ref(false)
 
 async function updateLeadStatus(lead: any, field: string, newStatus: string) {
@@ -788,7 +812,6 @@ const badgeClasses: Record<string, string> = {
   'High': 'bg-red-500/10 text-red-600 border-red-500/20',
   'Medium': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Low': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  'Approved': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
   'Rejected': 'bg-red-500/10 text-red-600 border-red-500/20',
   'Customer': 'bg-violet-500/10 text-violet-600 border-violet-500/20',
   'Admin': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
@@ -1175,6 +1198,17 @@ function getInitials(name: string): string {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <!-- Clickable when in inspected tab wrapper -->
+                <Badge
+                  v-else-if="router.currentRoute.value.path === '/leads/inspected' && col.key === 'inspectionStatus' && item.inspectionStatus === 'Inspected'"
+                  variant="outline"
+                  class="cursor-pointer hover:ring-1 hover:ring-orange-500/50 transition-all uppercase"
+                  :class="getBadgeClass(item[col.key])"
+                  @click.stop="openQcReviewDialog(item)"
+                  title="Click to take this lead under Quality Review"
+                >
+                  {{ item[col.key] || '—' }}
+                </Badge>
                 <Badge
                   v-else
                   variant="outline"
@@ -1615,6 +1649,48 @@ function getInitials(name: string): string {
           <Button :disabled="!cancelNotes.trim() || isUpdatingStatus" class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="confirmCancel">
             <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
             Confirm Cancellation
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Take to Quality Review Confirmation Dialog -->
+    <Dialog v-model:open="showQcReviewDialog">
+      <DialogContent class="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon name="i-lucide-activity" class="size-5 text-orange-500" />
+            Take Under Review
+          </DialogTitle>
+          <DialogDescription>
+            You are about to assign this inspection to yourself for quality review.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <div v-if="qcReviewingLead" class="rounded-lg border bg-muted/30 p-3 space-y-1">
+            <p class="text-sm font-medium">
+              {{ qcReviewingLead.ownerName || 'Unknown' }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              {{ qcReviewingLead.make }} {{ qcReviewingLead.model }} — {{ qcReviewingLead.carRegistrationNumber }}
+            </p>
+            <p class="text-sm font-medium text-muted-foreground mt-3 border-t pt-3 w-full">
+              Taking Responsibility as: 
+              <strong class="text-foreground text-orange-600">
+                {{ useCookie('userData').value ? (typeof useCookie('userData').value === 'string' ? JSON.parse(useCookie('userData').value as any).userName : (useCookie('userData').value as any).userName) : 'Unknown' }}
+              </strong>
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="showQcReviewDialog = false">
+            Cancel
+          </Button>
+          <Button :disabled="isUpdatingStatus" class="bg-orange-600 hover:bg-orange-700 text-white" @click="confirmQcReview">
+            <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
+            Confirm QC Review
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -186,13 +186,13 @@ export const routeFilters = {
   // /leads/scheduled
   'scheduled': {
     inspectionStatus: 'Scheduled',
-    approvalStatus: 'Pending',
+    approvalStatus: '*',
     label: 'Scheduled',
   },
   // /leads/re-scheduled
   're-scheduled': {
     inspectionStatus: 'Re-Scheduled',
-    approvalStatus: 'Pending',
+    approvalStatus: '*',
     label: 'Re-Scheduled',
   },
   // /leads/running
@@ -210,7 +210,7 @@ export const routeFilters = {
   // /leads/cancelled
   'cancelled': {
     inspectionStatus: 'Cancelled',
-    approvalStatus: 'Pending',
+    approvalStatus: '*',
     label: 'Cancelled',
   },
   // /leads/re-inspection
@@ -226,7 +226,7 @@ export const routeFilters = {
     label: 'Inspected',
   },
   // /leads/under-review
-  'under-review': { label: 'Under Review', inspectionStatus: 'Inspected', approvalStatus: 'Pending' },
+  'under-review': { label: 'Under Review', inspectionStatus: 'Inspected', approvalStatus: 'Under Review' },
   'quality-rejected': { label: 'Quality Rejected', inspectionStatus: 'Inspected', approvalStatus: 'Quality Rejected' },
   'search-results': { label: 'Search Results', inspectionStatus: '*', approvalStatus: '*' },
 }
