@@ -4,11 +4,84 @@ const router = useRouter()
 const carId = route.params.id as string
 
 const { setHeader } = usePageHeader()
-setHeader({ title: `Inspection: ${carId}`, description: 'Vehicle inspection details', icon: 'i-lucide-scan-eye' })
+setHeader({ title: `Quality Control: ${carId}`, description: 'Vehicle inspection details', icon: 'i-lucide-scan-eye' })
 
 const { carDetails: car, isLoading, error, fetchCarDetails } = useCarDetails()
 
 onMounted(() => fetchCarDetails(carId))
+
+
+import { toast } from 'vue-sonner'
+
+const editForm = ref<Record<string, any>>({})
+const isSaving = ref(false)
+
+watch(() => car.value, (newVal) => {
+  if (newVal) {
+    editForm.value = JSON.parse(JSON.stringify(newVal))
+  }
+}, { immediate: true })
+
+async function saveQC() {
+  isSaving.value = true
+  try {
+    const userCookie = useCookie('userData')
+    const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
+    
+    // the telecallingId or appointmentId is needed
+    // The get API merges them. We send updates using the appointmentId as telecallingId for the update API fallback in server
+    await $fetch('/api/leads/update', {
+      method: 'PUT',
+      body: {
+        telecallingId: editForm.value._id || editForm.value.appointmentId,
+        make: editForm.value.make,
+        model: editForm.value.model,
+        variant: editForm.value.variant,
+        fuelType: editForm.value.fuelType,
+        cubicCapacity: Number(editForm.value.cubicCapacity) || null,
+        registrationNumber: editForm.value.registrationNumber,
+        odometerReadingInKms: Number(editForm.value.odometerReadingInKms) || null,
+        ownerSerialNumber: Number(editForm.value.ownerSerialNumber) || null,
+        priceDiscovery: Number(editForm.value.priceDiscovery) || null,
+        ...editForm.value, // Send all mutated fields
+      }
+    })
+    toast.success('QC Report Saved Successfully')
+    
+    // Refetch to reset
+    await fetchCarDetails(carId)
+  } catch (err: any) {
+    toast.error(err?.data?.message || err?.message || 'Failed to save')
+  } finally {
+    isSaving.value = false
+  }
+}
+
+async function approveLead() {
+  editForm.value.approvalStatus = 'Approved'
+  await saveQC()
+  router.push('/leads/approved')
+}
+
+async function rejectLead() {
+  editForm.value.approvalStatus = 'Quality Rejected'
+  await saveQC()
+  router.push('/leads/rejected')
+}
+
+function removeImage(key: string, idx: number) {
+  if (Array.isArray(editForm.value[key])) {
+    editForm.value[key].splice(idx, 1)
+  }
+}
+
+function addImage(key: string) {
+  const url = prompt('Enter Image URL linking to Drive or Storage:', '')
+  if (url) {
+    if (!Array.isArray(editForm.value[key])) editForm.value[key] = []
+    editForm.value[key].push(url)
+  }
+}
 
 const activeTab = ref('document-details')
 
@@ -505,7 +578,7 @@ function sectionImages(keys: string[]) {
                     <Icon name="i-lucide-arrow-left" class="size-4" />
                   </Button>
                   <h1 class="text-2xl font-bold tracking-tight">
-                    {{ car.make }} {{ car.model }}
+                    <div class="flex gap-2"><Input v-model="editForm.make" class="h-8 font-bold" /><Input v-model="editForm.model" class="h-8 font-bold" /></div>
                   </h1>
                 </div>
                 <p class="text-muted-foreground text-sm ml-8">
@@ -528,25 +601,19 @@ function sectionImages(keys: string[]) {
                 <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
                   Registration
                 </p>
-                <p class="text-sm font-semibold">
-                  {{ car.registrationNumber }}
-                </p>
+                <Input v-model="editForm.registrationNumber" class="h-8 text-sm font-semibold"  />
               </div>
               <div class="rounded-lg border bg-card p-3 space-y-1">
                 <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
                   Odometer
                 </p>
-                <p class="text-sm font-semibold">
-                  {{ (car.odometerReadingInKms || 0).toLocaleString() }} km
-                </p>
+                <Input v-model="editForm.odometerReadingInKms" type="number" class="h-8 text-sm font-semibold"  />
               </div>
               <div class="rounded-lg border bg-card p-3 space-y-1">
                 <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
                   Owner
                 </p>
-                <p class="text-sm font-semibold">
-                  {{ car.ownerSerialNumber || '—' }}{{ car.ownerSerialNumber === 1 ? 'st' : car.ownerSerialNumber === 2 ? 'nd' : car.ownerSerialNumber === 3 ? 'rd' : 'th' }}
-                </p>
+                <Input v-model="editForm.ownerSerialNumber" type="number" class="h-8 text-sm font-semibold"  />
               </div>
               <div class="rounded-lg border bg-card p-3 space-y-1">
                 <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
@@ -568,9 +635,7 @@ function sectionImages(keys: string[]) {
                 <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
                   Price Discovery
                 </p>
-                <p class="text-sm font-semibold text-primary">
-                  ₹{{ (car.priceDiscovery || 0).toLocaleString() }}
-                </p>
+                <Input v-model="editForm.priceDiscovery" type="number" class="h-8 text-sm font-semibold text-primary"  />
               </div>
             </div>
           </div>
@@ -598,119 +663,62 @@ function sectionImages(keys: string[]) {
 
       <!-- Tab Content (scrollable) -->
       <div class="flex-1 min-h-0 overflow-auto p-6">
-        <!-- ═══════ DOCUMENT DETAILS TAB ═══════ -->
         <div v-if="activeTab === 'document-details'" class="space-y-6">
-          <!-- Registration Details -->
+          <!-- All Document Details -->
           <Card>
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-file-badge" class="size-4 text-primary" />
-                Registration Details
+                Document & Registration Details
               </CardTitle>
             </CardHeader>
             <Separator />
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                <div
-                  v-for="item in [
-                    { label: 'Registration Number', value: car.registrationNumber },
-                    { label: 'Registration Date', value: formatDate(car.registrationDate) },
-                    { label: 'Registration Type', value: car.registrationType },
-                    { label: 'Registration State', value: car.registrationState },
-                    { label: 'Registered RTO', value: car.registeredRto },
-                    { label: 'Registered Owner', value: car.registeredOwner },
-                    { label: 'Registered Address', value: car.registeredAddressAsPerRc },
-                    { label: 'RC Book', value: car.rcBookAvailability },
-                    { label: 'RC Condition', value: car.rcCondition },
-                    { label: 'RC Status', value: car.rcStatus },
-                    { label: 'Fitness Till', value: formatDate(car.fitnessTill) },
-                    { label: 'To Be Scrapped', value: car.toBeScrapped },
-                    { label: 'Seating Capacity', value: car.seatingCapacity },
-                    { label: 'Number of Cylinders', value: car.numberOfCylinders },
-                    { label: 'Emission Norms', value: car.norms },
-                    { label: 'Color', value: car.color },
-                  ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
-                >
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">
-                    {{ item.label }}
+                <div v-for="(val, key) in {
+                    registrationNumber: 'Registration Number',
+                    registrationDate: 'Registration Date',
+                    registrationType: 'Registration Type',
+                    registrationState: 'Registration State',
+                    registeredRto: 'Registered RTO',
+                    registeredOwner: 'Registered Owner',
+                    registeredAddressAsPerRc: 'Registered Address',
+                    rcBookAvailability: 'RC Book',
+                    rcCondition: 'RC Condition',
+                    rcStatus: 'RC Status',
+                    fitnessTill: 'Fitness Till',
+                    toBeScrapped: 'To Be Scrapped',
+                    seatingCapacity: 'Seating Capacity',
+                    numberOfCylinders: 'Number of Cylinders',
+                    norms: 'Emission Norms',
+                    color: 'Color',
+                    insurance: 'Insurance Type',
+                    insurancePolicyNumber: 'Policy Number',
+                    insuranceValidity: 'Insurance Validity',
+                    noClaimBonus: 'No Claim Bonus',
+                    mismatchInInsurance: 'Insurance Mismatch',
+                    insurer: 'Insurer',
+                    hypothecatedTo: 'Hypothecated To',
+                    hypothecationDetails: 'Hypothecation Details',
+                    engineNumber: 'Engine Number',
+                    chassisNumber: 'Chassis Number',
+                    fuelType: 'Fuel Type',
+                    cubicCapacity: 'Cubic Capacity',
+                    roadTaxValidity: 'Road Tax Validity',
+                    taxValidTill: 'Tax Valid Till',
+                    duplicateKey: 'Duplicate Key',
+                    rtoNoc: 'RTO NOC',
+                    rtoForm28: 'RTO Form 28',
+                    partyPeshi: 'Party Peshi',
+                    mismatchInRc: 'Mismatch in RC',
+                    additionalDetails: 'Additional Details',
+                    contactNumber: 'Contact Number',
+                    emailAddress: 'Email',
+                }" :key="key" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
+                  <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
+                    {{ val }}
                   </p>
-                  <p class="text-sm font-medium text-right">
-                    {{ item.value || '—' }}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <!-- Insurance -->
-          <Card>
-            <CardHeader class="pt-5 pb-3">
-              <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-shield-check" class="size-4 text-primary" />
-                Insurance Details
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent class="pt-4 pb-5">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                <div
-                  v-for="item in [
-                    { label: 'Insurance Type', value: car.insurance },
-                    { label: 'Policy Number', value: car.insurancePolicyNumber },
-                    { label: 'Validity', value: formatDate(car.insuranceValidity) },
-                    { label: 'No Claim Bonus', value: car.noClaimBonus },
-                    { label: 'Mismatch', value: car.mismatchInInsurance },
-                    { label: 'Insurer', value: car.insurer },
-                    { label: 'Hypothecated To', value: car.hypothecatedTo },
-                    { label: 'Hypothecation Details', value: car.hypothecationDetails },
-                  ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
-                >
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">
-                    {{ item.label }}
-                  </p>
-                  <p class="text-sm font-medium text-right">
-                    {{ item.value || '—' }}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <!-- Additional Info -->
-          <Card>
-            <CardHeader class="pt-5 pb-3">
-              <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-info" class="size-4 text-primary" />
-                Additional Info
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent class="pt-4 pb-5">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                <div
-                  v-for="item in [
-                    { label: 'Engine Number', value: car.engineNumber },
-                    { label: 'Chassis Number', value: car.chassisNumber },
-                    { label: 'Fuel Type', value: car.fuelType },
-                    { label: 'Cubic Capacity', value: car.cubicCapacity ? `${car.cubicCapacity}cc` : '—' },
-                    { label: 'Road Tax Validity', value: car.roadTaxValidity },
-                    { label: 'Tax Valid Till', value: formatDate(car.taxValidTill) },
-                    { label: 'Duplicate Key', value: car.duplicateKey },
-                    { label: 'RTO NOC', value: car.rtoNoc },
-                    { label: 'RTO Form 28', value: car.rtoForm28 },
-                    { label: 'Party Peshi', value: car.partyPeshi },
-                    { label: 'Mismatch in RC', value: car.mismatchInRc },
-                    { label: 'Additional Details', value: car.additionalDetails },
-                    { label: 'Contact Number', value: car.contactNumber },
-                    { label: 'Email', value: car.emailAddress },
-                  ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
-                >
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">
-                    {{ item.label }}
-                  </p>
-                  <p class="text-sm font-medium text-right">
-                    {{ item.value || '—' }}
-                  </p>
+                  <Input v-model="editForm[key]" class="h-8 text-sm font-medium w-2/3" />
                 </div>
               </div>
             </CardContent>
@@ -759,19 +767,8 @@ function sectionImages(keys: string[]) {
                         {{ getImages(car, `${part.key}Images`).length }}
                       </span>
                     </div>
-                    <div class="divide-y divide-border/50">
-                      <div
-                        v-for="(cond, ci) in splitConditions(car[part.key] || '')"
-                        :key="ci"
-                        class="flex items-center gap-2 px-3 py-1.5"
-                      >
-                        <Icon
-                          :name="conditionIcon(cond)"
-                          class="size-3.5 shrink-0"
-                          :class="conditionTextColor(cond)"
-                        />
-                        <span class="text-sm" :class="conditionTextColor(cond)">{{ cond }}</span>
-                      </div>
+                    <div class="p-2 border-t border-border/50">
+                      <Input v-model="editForm[part.key]" class="h-8 text-sm" placeholder="e.g. Okay, Scratched" />
                     </div>
                   </div>
                 </div>
@@ -793,13 +790,11 @@ function sectionImages(keys: string[]) {
                   </div>
                 </div>
               </div>
-              <div v-if="activeTab === 'front' && car.comments" class="mt-4 rounded-lg bg-muted/50 p-4">
+              <div v-if="activeTab === 'front'" class="mt-4 rounded-lg bg-muted/50 p-4">
                 <p class="text-xs font-medium text-muted-foreground mb-1">
                   Inspector Comments
                 </p>
-                <p class="text-sm">
-                  {{ car.comments }}
-                </p>
+                <Textarea v-model="editForm.comments" placeholder="Comments on exterior..." class="w-full text-sm min-h-[80px]" />
               </div>
             </CardContent>
           </Card>
@@ -833,19 +828,8 @@ function sectionImages(keys: string[]) {
                       {{ getImages(car, `${part.key}Images`).length }}
                     </span>
                   </div>
-                  <div class="divide-y divide-border/50">
-                    <div
-                      v-for="(cond, ci) in splitConditions(car[part.key] || '')"
-                      :key="ci"
-                      class="flex items-center gap-2 px-3 py-1.5"
-                    >
-                      <Icon
-                        :name="conditionIcon(cond)"
-                        class="size-3.5 shrink-0"
-                        :class="conditionTextColor(cond)"
-                      />
-                      <span class="text-sm" :class="conditionTextColor(cond)">{{ cond }}</span>
-                    </div>
+                  <div class="p-2 border-t border-border/50">
+                    <Input v-model="editForm[part.key]" class="h-8 text-sm" placeholder="e.g. Okay, Scratched" />
                   </div>
                 </div>
               </div>
@@ -951,19 +935,8 @@ function sectionImages(keys: string[]) {
                   <div class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2">
                     <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
                   </div>
-                  <div class="divide-y divide-border/50">
-                    <div
-                      v-for="(cond, ci) in splitConditions(car[part.key] || '')"
-                      :key="ci"
-                      class="flex items-center gap-2 px-3 py-1.5"
-                    >
-                      <Icon
-                        :name="conditionIcon(cond)"
-                        class="size-3.5 shrink-0"
-                        :class="conditionTextColor(cond)"
-                      />
-                      <span class="text-sm" :class="conditionTextColor(cond)">{{ cond }}</span>
-                    </div>
+                  <div class="p-2 border-t border-border/50">
+                    <Input v-model="editForm[part.key]" class="h-8 text-sm" placeholder="e.g. Okay, Scratched" />
                   </div>
                 </div>
               </div>
@@ -985,20 +958,20 @@ function sectionImages(keys: string[]) {
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
                 <div
                   v-for="item in [
-                    { label: 'Music System', value: car.musicSystem },
-                    { label: 'Stereo', value: car.stereo },
-                    { label: 'Inbuilt Speaker', value: car.inbuiltSpeaker },
-                    { label: 'External Speaker', value: car.externalSpeaker },
-                    { label: 'Steering Audio Control', value: car.steeringMountedAudioControl },
-                    { label: 'Power Windows', value: car.noOfPowerWindows },
-                    { label: 'Rear Wiper/Washer', value: car.rearWiperWasher },
-                    { label: 'Rear Defogger', value: car.rearDefogger },
-                    { label: 'Reverse Camera', value: car.reverseCamera },
-                    { label: 'Sunroof', value: car.sunroof },
-                    { label: 'Leather Seats', value: car.leatherSeats },
-                    { label: 'Fabric Seats', value: car.fabricSeats },
-                    { label: 'AC (Manual)', value: car.airConditioningManual },
-                    { label: 'AC (Climate)', value: car.airConditioningClimateControl },
+                    { label: 'Music System', value: editForm.musicSystem },
+                    { label: 'Stereo', value: editForm.stereo },
+                    { label: 'Inbuilt Speaker', value: editForm.inbuiltSpeaker },
+                    { label: 'External Speaker', value: editForm.externalSpeaker },
+                    { label: 'Steering Audio Control', value: editForm.steeringMountedAudioControl },
+                    { label: 'Power Windows', value: editForm.noOfPowerWindows },
+                    { label: 'Rear Wiper/Washer', value: editForm.rearWiperWasher },
+                    { label: 'Rear Defogger', value: editForm.rearDefogger },
+                    { label: 'Reverse Camera', value: editForm.reverseCamera },
+                    { label: 'Sunroof', value: editForm.sunroof },
+                    { label: 'Leather Seats', value: editForm.leatherSeats },
+                    { label: 'Fabric Seats', value: editForm.fabricSeats },
+                    { label: 'AC (Manual)', value: editForm.airConditioningManual },
+                    { label: 'AC (Climate)', value: editForm.airConditioningClimateControl },
                   ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
                 >
                   <p class="text-xs text-muted-foreground whitespace-nowrap">
@@ -1040,19 +1013,8 @@ function sectionImages(keys: string[]) {
                   <div class="px-3 py-2 bg-muted/40 border-b">
                     <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ item.label }}</span>
                   </div>
-                  <div class="divide-y divide-border/50">
-                    <div
-                      v-for="(cond, ci) in splitConditions(car[item.key] || '')"
-                      :key="ci"
-                      class="flex items-center gap-2 px-3 py-1.5"
-                    >
-                      <Icon
-                        :name="conditionIcon(cond)"
-                        class="size-3.5 shrink-0"
-                        :class="conditionTextColor(cond)"
-                      />
-                      <span class="text-sm" :class="conditionTextColor(cond)">{{ cond }}</span>
-                    </div>
+                  <div class="p-2 border-t border-border/50">
+                    <Input v-model="editForm[item.key]" class="h-8 text-sm" placeholder="e.g. Okay, Scratched" />
                   </div>
                 </div>
               </div>
@@ -1110,19 +1072,8 @@ function sectionImages(keys: string[]) {
                   <div class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2">
                     <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
                   </div>
-                  <div class="divide-y divide-border/50">
-                    <div
-                      v-for="(cond, ci) in splitConditions(car[part.key] || '')"
-                      :key="ci"
-                      class="flex items-center gap-2 px-3 py-1.5"
-                    >
-                      <Icon
-                        :name="conditionIcon(cond)"
-                        class="size-3.5 shrink-0"
-                        :class="conditionTextColor(cond)"
-                      />
-                      <span class="text-sm" :class="conditionTextColor(cond)">{{ cond }}</span>
-                    </div>
+                  <div class="p-2 border-t border-border/50">
+                    <Input v-model="editForm[part.key]" class="h-8 text-sm" placeholder="e.g. Okay, Scratched" />
                   </div>
                 </div>
               </div>
@@ -1239,24 +1190,24 @@ function sectionImages(keys: string[]) {
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
                 <div
                   v-for="item in [
-                    { label: 'Price Discovery', value: car.priceDiscovery ? `₹${car.priceDiscovery.toLocaleString()}` : '—' },
-                    { label: 'Price Discovery By', value: car.priceDiscoveryBy },
-                    { label: 'Customer Expected Price', value: car.customerExpectedPrice ? `₹${car.customerExpectedPrice.toLocaleString()}` : '—' },
-                    { label: 'Auction Status', value: car.auctionStatus },
+                    { label: 'Price Discovery', value: editForm.priceDiscovery ? `₹${car.priceDiscovery.toLocaleString()}` : '—' },
+                    { label: 'Price Discovery By', value: editForm.priceDiscoveryBy },
+                    { label: 'Customer Expected Price', value: editForm.customerExpectedPrice ? `₹${car.customerExpectedPrice.toLocaleString()}` : '—' },
+                    { label: 'Auction Status', value: editForm.auctionStatus },
                     { label: 'Auction Start', value: formatDate(car.auctionStartTime) },
                     { label: 'Auction End', value: formatDate(car.auctionEndTime) },
-                    { label: 'Auction Duration', value: car.auctionDuration ? `${car.auctionDuration} hours` : '—' },
-                    { label: 'Highest Bid', value: car.highestBid ? `₹${car.highestBid.toLocaleString()}` : '—' },
-                    { label: 'Highest Bidder', value: car.highestBidder },
-                    { label: 'One Click Price', value: car.oneClickPrice ? `₹${car.oneClickPrice.toLocaleString()}` : '—' },
-                    { label: 'Otobuy Offer', value: car.otobuyOffer ? `₹${car.otobuyOffer.toLocaleString()}` : '—' },
-                    { label: 'Sold At', value: car.soldAt ? `₹${car.soldAt.toLocaleString()}` : '—' },
-                    { label: 'Sold To', value: car.soldTo },
-                    { label: 'Fixed Margin', value: car.fixedMargin ? `${car.fixedMargin}%` : '—' },
-                    { label: 'Variable Margin', value: car.variableMargin ? `${car.variableMargin}%` : '—' },
-                    { label: 'Budget Car', value: car.budgetCar },
-                    { label: 'KM Range Level', value: car.kmRangeLevel },
-                    { label: 'Retail Associate', value: car.retailAssociate },
+                    { label: 'Auction Duration', value: editForm.auctionDuration ? `${car.auctionDuration} hours` : '—' },
+                    { label: 'Highest Bid', value: editForm.highestBid ? `₹${car.highestBid.toLocaleString()}` : '—' },
+                    { label: 'Highest Bidder', value: editForm.highestBidder },
+                    { label: 'One Click Price', value: editForm.oneClickPrice ? `₹${car.oneClickPrice.toLocaleString()}` : '—' },
+                    { label: 'Otobuy Offer', value: editForm.otobuyOffer ? `₹${car.otobuyOffer.toLocaleString()}` : '—' },
+                    { label: 'Sold At', value: editForm.soldAt ? `₹${car.soldAt.toLocaleString()}` : '—' },
+                    { label: 'Sold To', value: editForm.soldTo },
+                    { label: 'Fixed Margin', value: editForm.fixedMargin ? `${car.fixedMargin}%` : '—' },
+                    { label: 'Variable Margin', value: editForm.variableMargin ? `${car.variableMargin}%` : '—' },
+                    { label: 'Budget Car', value: editForm.budgetCar },
+                    { label: 'KM Range Level', value: editForm.kmRangeLevel },
+                    { label: 'Retail Associate', value: editForm.retailAssociate },
                   ]" :key="item.label" class="space-y-1"
                 >
                   <p class="text-xs text-muted-foreground">

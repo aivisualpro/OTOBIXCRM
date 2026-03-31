@@ -1184,7 +1184,7 @@ function getInitials(name: string): string {
             :key="item.id || item._id"
             class="group"
             :class="{ 'cursor-pointer hover:bg-muted/50': props.clickable || item.inspectionStatus === 'Inspected' }"
-            @click="(props.clickable || item.inspectionStatus === 'Inspected') && item.appointmentId ? router.push(`/inspection/${item.appointmentId}`) : undefined"
+            @click="(props.clickable || item.inspectionStatus === 'Inspected') && item.appointmentId ? (item.approvalStatus === 'Under Review' ? router.push(`/qc/${item.appointmentId}`) : router.push(`/inspection/${item.appointmentId}`)) : undefined"
           >
             <TableCell v-for="col in columns" :key="col.key">
               <!-- Avatar -->

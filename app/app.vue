@@ -34,10 +34,10 @@ useHead({
     { name: 'msapplication-TileColor', content: '#E31E24' },
   ],
   link: [
-    { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-    { rel: 'icon', type: 'image/png', sizes: '192x192', href: '/icon-192x192.png' },
-    { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
-    { rel: 'manifest', href: '/manifest.json' },
+    { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg?v=2' },
+    { rel: 'icon', type: 'image/png', sizes: '192x192', href: '/icon-192x192.png?v=2' },
+    { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png?v=2' },
+    { rel: 'manifest', href: '/manifest.json?v=2' },
   ],
   htmlAttrs: {
     lang: 'en',
