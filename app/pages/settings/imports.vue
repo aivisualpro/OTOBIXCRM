@@ -32,6 +32,7 @@ const csvHeaderMap: Record<string, string> = {
   bankSource: 'bankSource',
   priority: 'priority',
   addedBy: 'addedBy',
+  approvalStatus: 'approvalStatus',
 }
 
 // All target DB fields

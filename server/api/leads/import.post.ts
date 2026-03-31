@@ -40,54 +40,73 @@ export default defineEventHandler(async (event) => {
     const ops = rows.map((row: any) => {
       const generatedId = row.appointmentId || `${yearPrefix}-${100000 + batchStartSeq + autoIdIndex++}`
 
-      const setFields: any = {
-        appointmentId: generatedId,
-        ownerName: row.ownerName || '',
-        customerContactNumber: row.customerContactNumber || '',
-        carRegistrationNumber: row.carRegistrationNumber || '',
-        emailAddress: row.emailAddress || '',
-        make: row.make || '',
-        model: row.model || '',
-        variant: row.variant || '',
-        yearOfRegistration: row.yearOfRegistration || '',
-        yearOfManufacture: row.yearOfManufacture || '',
-        odometerReadingInKms: Number(row.odometerReadingInKms) || 0,
-        ownershipSerialNumber: Number(row.ownershipSerialNumber) || 1,
-        vehicleStatus: row.vehicleStatus || '',
-        city: row.city || '',
-        zipCode: row.zipCode || '',
-        inspectionAddress: row.inspectionAddress || '',
-        inspectionDateTime: row.inspectionDateTime || '',
-        inspectionStatus: row.inspectionStatus || 'Pending',
-        approvalStatus: row.approvalStatus || 'Pending',
-        priority: row.priority || 'Medium',
-        appointmentSource: row.appointmentSource || '',
-        allocatedTo: row.allocatedTo || '',
-        repName: row.repName || '',
-        repContact: row.repContact || '',
-        bankSource: row.bankSource || '',
-        referenceName: row.referenceName || '',
-        otherSource: row.otherSource || '',
-        ncdUcdName: row.ncdUcdName || '',
-        remarks: row.remarks || '',
-        additionalNotes: row.additionalNotes || '',
-        addedBy: row.addedBy || 'CSV Import',
-        inspectionEngineerNumber: row.inspectionEngineerNumber || '',
-        isActive: true,
-        updatedAt: now,
+      const updateDoc: any = {
+        $set: {
+          appointmentId: generatedId,
+          updatedAt: now,
+        },
+        $setOnInsert: {
+          isActive: true,
+        },
       }
 
-      const updateDoc: any = { $set: setFields }
-
+      // Automatically handle createdAt exactly once
       if (row.createdAt) {
-        setFields.createdAt = row.createdAt
+        updateDoc.$set.createdAt = row.createdAt
       }
       else {
-        updateDoc.$setOnInsert = { createdAt: now }
+        updateDoc.$setOnInsert.createdAt = now
       }
 
-      // Keep track of the full document for AppSheet syncing
-      fullDocs.push({ ...setFields, createdAt: row.createdAt || now })
+
+      const existingDBFields = [
+        'ownerName',
+        'customerContactNumber',
+        'carRegistrationNumber',
+        'emailAddress',
+        'make',
+        'model',
+        'variant',
+        'yearOfRegistration',
+        'yearOfManufacture',
+        'odometerReadingInKms',
+        'ownershipSerialNumber',
+        'vehicleStatus',
+        'city',
+        'zipCode',
+        'inspectionAddress',
+        'inspectionDateTime',
+        'inspectionStatus',
+        'approvalStatus',
+        'priority',
+        'appointmentSource',
+        'allocatedTo',
+        'repName',
+        'repContact',
+        'bankSource',
+        'referenceName',
+        'otherSource',
+        'ncdUcdName',
+        'remarks',
+        'additionalNotes',
+        'addedBy',
+        'inspectionEngineerNumber',
+      ]
+
+      for (const field of existingDBFields) {
+        if (field in row) {
+          if (field === 'odometerReadingInKms' || field === 'ownershipSerialNumber') {
+            updateDoc.$set[field] = Number(row[field]) || 0
+          }
+          else {
+            updateDoc.$set[field] = row[field] || ''
+          }
+        }
+      }
+
+      // Keep track of the full combined document for AppSheet syncing
+      const combinedDoc = { ...updateDoc.$setOnInsert, ...updateDoc.$set }
+      fullDocs.push(combinedDoc)
 
       return {
         updateOne: {

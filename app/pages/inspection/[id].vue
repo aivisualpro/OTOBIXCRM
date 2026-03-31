@@ -162,7 +162,7 @@ const exteriorSections = [
   {
     title: 'Rear',
     icon: 'i-lucide-arrow-down',
-    imageKeys: ['rearMain', 'rearBumperImages', 'lhsTailLampImages', 'rhsTailLampImages', 'spareTyreImages', 'bootFloorImages'],
+    imageKeys: ['rearMain', 'rearWithBootDoorOpen', 'rearBumperImages', 'lhsTailLampImages', 'rhsTailLampImages', 'spareTyreImages', 'bootFloorImages'],
     parts: [
       { key: 'rearBumper', label: 'Rear Bumper' },
       { key: 'lhsTailLamp', label: 'LHS Tail Lamp' },
@@ -240,6 +240,7 @@ const _exteriorImageKeys = [
   'lhsRearTyreImages',
   'lhsQuarterPanelImages',
   'rearMain',
+  'rearWithBootDoorOpen',
   'rearBumperImages',
   'lhsTailLampImages',
   'rhsTailLampImages',
@@ -558,6 +559,7 @@ function sectionImages(keys: string[]) {
                     { label: 'Registration State', value: car.registrationState },
                     { label: 'Registered RTO', value: car.registeredRto },
                     { label: 'Registered Owner', value: car.registeredOwner },
+                    { label: 'Registered Address', value: car.registeredAddressAsPerRc },
                     { label: 'RC Book', value: car.rcBookAvailability },
                     { label: 'RC Condition', value: car.rcCondition },
                     { label: 'RC Status', value: car.rcStatus },
@@ -635,8 +637,10 @@ function sectionImages(keys: string[]) {
                     { label: 'Tax Valid Till', value: formatDate(car.taxValidTill) },
                     { label: 'Duplicate Key', value: car.duplicateKey },
                     { label: 'RTO NOC', value: car.rtoNoc },
+                    { label: 'RTO Form 28', value: car.rtoForm28 },
                     { label: 'Party Peshi', value: car.partyPeshi },
                     { label: 'Mismatch in RC', value: car.mismatchInRc },
+                    { label: 'Additional Details', value: car.additionalDetails },
                     { label: 'Contact Number', value: car.contactNumber },
                     { label: 'Email', value: car.emailAddress },
                   ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"

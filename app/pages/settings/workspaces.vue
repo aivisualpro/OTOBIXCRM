@@ -184,7 +184,7 @@ const LEADS_TABS = [
   { id: 're-inspection', title: 'Re-Inspection' },
   { id: 'inspected', title: 'Inspected' },
   { id: 'under-review', title: 'Under Review' },
-  { id: 'quality-approved', title: 'Quality Approved' },
+  { id: 'quality-approved', title: 'Approved' },
   { id: 'quality-rejected', title: 'Quality Rejected' },
 ]
 

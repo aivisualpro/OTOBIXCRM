@@ -118,7 +118,7 @@ export const leadsFormFields = [
     options: [
       { label: 'Pending', value: 'Pending' },
       { label: 'Under Review', value: 'Under Review' },
-      { label: 'Quality Approved', value: 'Quality Approved' },
+      { label: 'Approved', value: 'Approved' },
       { label: 'Quality Rejected', value: 'Quality Rejected' },
     ],
   },
@@ -205,7 +205,7 @@ export const routeFilters = {
   'quality-approved': {
     inspectionStatus: 'Inspected',
     approvalStatus: 'Approved',
-    label: 'Quality Approved',
+    label: 'Approved',
   },
   // /leads/cancelled
   'cancelled': {

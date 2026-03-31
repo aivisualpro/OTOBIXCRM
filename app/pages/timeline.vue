@@ -21,7 +21,7 @@ const statusPipeline = [
 const approvalPipeline = [
   { key: 'Pending', label: 'Approval Pending', color: '#94a3b8', bg: 'bg-slate-400' },
   { key: 'Under Review', label: 'Under Review', color: '#8b5cf6', bg: 'bg-violet-500' },
-  { key: 'Quality Approved', label: 'Approved', color: '#10b981', bg: 'bg-emerald-500' },
+  { key: 'Approved', label: 'Approved', color: '#10b981', bg: 'bg-emerald-500' },
   { key: 'Quality Rejected', label: 'Rejected', color: '#ef4444', bg: 'bg-red-500' },
 ]
 
@@ -90,7 +90,7 @@ const ganttRows = computed<GanttRow[]>(() => {
       // Only show inspected + approved leads
       if (lead.inspectionStatus !== 'Inspected')
         return false
-      if (lead.approvalStatus !== 'Quality Approved')
+      if (lead.approvalStatus !== 'Approved')
         return false
       // Search filter
       if (searchQuery.value) {

@@ -13,7 +13,7 @@ const props = defineProps<{
   clickable?: boolean
 }>()
 const inspectionStatuses = ['Pending', 'Scheduled', 'Re-Scheduled', 'Cancelled']
-const approvalStatuses = ['Pending', 'Under Review', 'Quality Approved', 'Quality Rejected']
+const approvalStatuses = ['Pending', 'Under Review', 'Approved', 'Quality Rejected']
 
 const router = useRouter()
 
@@ -783,7 +783,7 @@ const badgeClasses: Record<string, string> = {
   'Cancelled': 'bg-red-500/10 text-red-600 border-red-500/20',
   'Inspected': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
   'Under Review': 'bg-orange-500/10 text-orange-600 border-orange-500/20',
-  'Quality Approved': 'bg-teal-500/10 text-teal-600 border-teal-500/20',
+  'Approved': 'bg-teal-500/10 text-teal-600 border-teal-500/20',
   'Quality Rejected': 'bg-rose-500/10 text-rose-600 border-rose-500/20',
   'High': 'bg-red-500/10 text-red-600 border-red-500/20',
   'Medium': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
