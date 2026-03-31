@@ -110,7 +110,7 @@ const filteredNavItems = computed(() => {
   padding: 10px 12px;
   font-size: 13px;
   font-weight: 500;
-  color: hsl(var(--muted-foreground));
+  color: var(--muted-foreground);
   white-space: nowrap;
   border-bottom: 2px solid transparent;
   transition: all 0.15s ease;
@@ -120,14 +120,14 @@ const filteredNavItems = computed(() => {
 }
 
 .leads-tab:hover {
-  color: hsl(var(--primary));
-  background: color-mix(in srgb, hsl(var(--primary)) 5%, hsl(var(--accent) / 0.5));
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 5%, color-mix(in srgb, var(--accent) 50%, transparent));
 }
 
 .leads-tab.is-active {
-  color: hsl(var(--primary));
-  border-bottom-color: hsl(var(--primary));
-  background: color-mix(in srgb, hsl(var(--primary)) 8%, transparent);
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
 /* Persistent Search Results Loading Animation */
@@ -142,9 +142,9 @@ const filteredNavItems = computed(() => {
   right: 0;
   height: 2px;
   background: linear-gradient(90deg,
-     color-mix(in srgb, hsl(var(--primary)) 0%, transparent) 0%,
-     hsl(var(--primary)) 50%,
-     color-mix(in srgb, hsl(var(--primary)) 0%, transparent) 100%
+     color-mix(in srgb, var(--primary) 0%, transparent) 0%,
+     var(--primary) 50%,
+     color-mix(in srgb, var(--primary) 0%, transparent) 100%
   );
   background-size: 200% 100%;
   animation: search-loading-shimmer 1.5s infinite linear;
@@ -158,7 +158,7 @@ const filteredNavItems = computed(() => {
 
 /* Animated pulsing border for tabs with matching search results */
 .leads-tab.has-matches {
-  color: hsl(var(--primary));
+  color: var(--primary);
   animation: tab-pulse-theme 2s ease-in-out infinite;
 }
 
@@ -170,9 +170,9 @@ const filteredNavItems = computed(() => {
   right: 0;
   height: 2px;
   background: linear-gradient(90deg,
-    color-mix(in srgb, hsl(var(--primary)) 20%, transparent),
-    hsl(var(--primary)),
-    color-mix(in srgb, hsl(var(--primary)) 20%, transparent)
+    color-mix(in srgb, var(--primary) 20%, transparent),
+    var(--primary),
+    color-mix(in srgb, var(--primary) 20%, transparent)
   );
   background-size: 200% 100%;
   animation: tab-border-shimmer 2s ease-in-out infinite;
@@ -181,10 +181,10 @@ const filteredNavItems = computed(() => {
 
 @keyframes tab-pulse-theme {
   0%, 100% {
-    background: color-mix(in srgb, hsl(var(--primary)) 4%, transparent);
+    background: color-mix(in srgb, var(--primary) 4%, transparent);
   }
   50% {
-    background: color-mix(in srgb, hsl(var(--primary)) 12%, transparent);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
   }
 }
 
@@ -200,8 +200,8 @@ const filteredNavItems = computed(() => {
   line-height: 1;
   padding: 3px 6px;
   border-radius: 999px;
-  background: hsl(var(--muted));
-  color: hsl(var(--muted-foreground));
+  background: var(--muted);
+  color: var(--muted-foreground);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
   min-width: 18px;
@@ -209,22 +209,22 @@ const filteredNavItems = computed(() => {
 }
 
 .leads-tab-count.is-active {
-  background: color-mix(in srgb, hsl(var(--primary)) 15%, transparent);
-  color: hsl(var(--primary));
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  color: var(--primary);
 }
 
 .leads-tab-count.is-matching {
-  background: color-mix(in srgb, hsl(var(--primary)) 20%, transparent);
-  color: hsl(var(--primary));
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+  color: var(--primary);
   animation: count-pulse-theme 2s ease-in-out infinite;
 }
 
 @keyframes count-pulse-theme {
   0%, 100% {
-    background: color-mix(in srgb, hsl(var(--primary)) 15%, transparent);
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
   }
   50% {
-    background: color-mix(in srgb, hsl(var(--primary)) 30%, transparent);
+    background: color-mix(in srgb, var(--primary) 30%, transparent);
   }
 }
 </style>
