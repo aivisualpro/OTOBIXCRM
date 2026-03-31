@@ -12,6 +12,8 @@ onMounted(() => fetchCarDetails(carId))
 
 const activeTab = ref('document-details')
 
+const activeExteriorSection = computed(() => exteriorSections.find(s => s.title.toLowerCase().startsWith(activeTab.value)))
+
 const tabs = [
   { id: 'document-details', label: 'Document Details', icon: 'i-lucide-file-text' },
   { id: 'front', label: 'Front', icon: 'i-lucide-arrow-up' },
@@ -596,8 +598,8 @@ function sectionImages(keys: string[]) {
 
       <!-- Tab Content (scrollable) -->
       <div class="flex-1 min-h-0 overflow-auto p-6">
-        <!-- ═══════ OVERVIEW TAB ═══════ -->
-        <div v-if="activeTab === 'overview'" class="space-y-6">
+        <!-- ═══════ DOCUMENT DETAILS TAB ═══════ -->
+        <div v-if="activeTab === 'document-details'" class="space-y-6">
           <!-- Registration Details -->
           <Card>
             <CardHeader class="pt-5 pb-3">
@@ -715,34 +717,34 @@ function sectionImages(keys: string[]) {
           </Card>
         </div>
 
-        <!-- ═══════ EXTERIOR TAB ═══════ -->
-        <div v-else-if="activeTab === 'exterior'" class="space-y-6">
+        <!-- ═══════ EXTERIOR TABS (FRONT/LEFT/REAR/RIGHT) ═══════ -->
+        <div v-else-if="['front', 'left', 'rear', 'right'].includes(activeTab)" class="space-y-6">
           <!-- Condition Grid -->
           <Card>
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-scan-eye" class="size-4 text-primary" />
-                Exterior Condition
+                <Icon :name="activeExteriorSection?.icon || 'i-lucide-scan-eye'" class="size-4 text-primary" />
+                {{ activeExteriorSection?.title || 'Exterior' }} Condition
               </CardTitle>
               <p class="text-xs text-muted-foreground mt-1">
-                Condition of each exterior component as inspected
+                Condition of exterior components as inspected
               </p>
             </CardHeader>
             <Separator />
             <CardContent class="pt-4 pb-5">
-              <div v-for="section in exteriorSections" :key="section.title" class="mb-6 last:mb-0">
+              <div v-if="activeExteriorSection" :key="activeExteriorSection.title" class="mb-0">
                 <!-- Section heading -->
                 <div class="flex items-center gap-2 mb-3">
-                  <Icon :name="section.icon" class="size-4 text-primary" />
+                  <Icon :name="activeExteriorSection.icon" class="size-4 text-primary" />
                   <h3 class="text-sm font-semibold">
-                    {{ section.title }}
+                    {{ activeExteriorSection.title }}
                   </h3>
                   <Separator class="flex-1" />
                 </div>
                 <!-- Parts grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                   <div
-                    v-for="part in section.parts"
+                    v-for="part in activeExteriorSection.parts"
                     :key="part.key"
                     class="rounded-lg border overflow-hidden"
                   >
@@ -774,13 +776,13 @@ function sectionImages(keys: string[]) {
                   </div>
                 </div>
                 <!-- Section photos -->
-                <div v-if="sectionImages(section.imageKeys).length" class="mt-3">
+                <div v-if="activeExteriorSection.imageKeys.length && sectionImages(activeExteriorSection.imageKeys).length" class="mt-4">
                   <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                     <div
-                      v-for="(img, idx) in sectionImages(section.imageKeys)"
+                      v-for="(img, idx) in sectionImages(activeExteriorSection.imageKeys)"
                       :key="idx"
                       class="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border hover:border-primary/50 transition-colors"
-                      @click="openLightbox(sectionImages(section.imageKeys), idx)"
+                      @click="openLightbox(sectionImages(activeExteriorSection.imageKeys), idx)"
                     >
                       <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
                       <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -791,7 +793,7 @@ function sectionImages(keys: string[]) {
                   </div>
                 </div>
               </div>
-              <div v-if="car.comments" class="mt-4 rounded-lg bg-muted/50 p-4">
+              <div v-if="activeTab === 'front' && car.comments" class="mt-4 rounded-lg bg-muted/50 p-4">
                 <p class="text-xs font-medium text-muted-foreground mb-1">
                   Inspector Comments
                 </p>
@@ -803,14 +805,13 @@ function sectionImages(keys: string[]) {
           </Card>
         </div>
 
-        <!-- ═══════ ENGINE TAB ═══════ -->
-        <div v-else-if="activeTab === 'engine'" class="space-y-6">
-          <!-- Mechanical Condition -->
+        <!-- ═══════ ENGINE BAY TAB ═══════ -->
+        <div v-else-if="activeTab === 'engine-bay'" class="space-y-6">
           <Card>
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-cog" class="size-4 text-primary" />
-                Engine & Mechanical
+                Engine Bay Components
               </CardTitle>
             </CardHeader>
             <Separator />
@@ -854,11 +855,8 @@ function sectionImages(keys: string[]) {
                 <div class="flex items-center gap-2 mb-3">
                   <Icon name="i-lucide-image" class="size-4 text-primary" />
                   <h3 class="text-sm font-semibold">
-                    Engine Photos
+                    Engine Bay Photos
                   </h3>
-                  <Badge variant="secondary" class="text-xs">
-                    {{ sectionImages(engineImageKeys).length }}
-                  </Badge>
                   <Separator class="flex-1" />
                 </div>
                 <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
@@ -874,36 +872,6 @@ function sectionImages(keys: string[]) {
                       {{ img.label }}
                     </Badge>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <!-- Test Drive -->
-          <Card>
-            <CardHeader class="pt-5 pb-3">
-              <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-gauge" class="size-4 text-primary" />
-                Test Drive & Performance
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent class="pt-4 pb-5">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-0">
-                <div
-                  v-for="item in [
-                    { label: 'Odometer Reading', value: `${(car.odometerReadingInKms || 0).toLocaleString()} km` },
-                    { label: 'Fuel Level', value: car.fuelLevel },
-                    { label: 'ABS', value: car.abs },
-                    { label: 'Electricals', value: car.electricals },
-                  ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
-                >
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">
-                    {{ item.label }}
-                  </p>
-                  <p class="text-sm font-medium text-right">
-                    {{ item.value || '—' }}
-                  </p>
                 </div>
               </div>
             </CardContent>
@@ -961,6 +929,46 @@ function sectionImages(keys: string[]) {
                     </template>
                   </div>
                 </template>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <!-- ═══════ ELECTRICALS TAB ═══════ -->
+        <div v-else-if="activeTab === 'electricals'" class="space-y-6">
+          <Card>
+            <CardHeader class="pt-5 pb-3">
+              <CardTitle class="text-base flex items-center gap-2">
+                <Icon name="i-lucide-zap" class="size-4 text-primary" />
+                Electrical Components
+              </CardTitle>
+            </CardHeader>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div
+                  v-for="part in electricalParts"
+                  :key="part.key"
+                  class="rounded-lg border overflow-hidden"
+                >
+                  <div class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
+                  </div>
+                  <div class="divide-y divide-border/50">
+                    <div
+                      v-for="(cond, ci) in splitConditions(car[part.key] || '')"
+                      :key="ci"
+                      class="flex items-center gap-2 px-3 py-1.5"
+                    >
+                      <Icon
+                        :name="conditionIcon(cond)"
+                        class="size-3.5 shrink-0"
+                        :class="conditionTextColor(cond)"
+                      />
+                      <span class="text-sm" :class="conditionTextColor(cond)">{{ cond }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1054,61 +1062,17 @@ function sectionImages(keys: string[]) {
             </CardContent>
           </Card>
 
-          <!-- Power Windows -->
-          <Card v-if="car.noOfPowerWindows">
-            <CardHeader class="pt-5 pb-3">
-              <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-move-vertical" class="size-4 text-primary" />
-                Power Windows
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent class="pt-4 pb-5">
-              <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div
-                  v-for="item in [
-                    { label: 'RHS Front', value: car.powerWindowConditionRhsFront },
-                    { label: 'LHS Front', value: car.powerWindowConditionLhsFront },
-                    { label: 'RHS Rear', value: car.powerWindowConditionRhsRear },
-                    { label: 'LHS Rear', value: car.powerWindowConditionLhsRear },
-                  ]" :key="item.label" class="rounded-lg border overflow-hidden"
-                >
-                  <div class="px-3 py-2 bg-muted/40 border-b">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ item.label }}</span>
-                  </div>
-                  <div class="divide-y divide-border/50">
-                    <div
-                      v-for="(cond, ci) in splitConditions(item.value || '')"
-                      :key="ci"
-                      class="flex items-center gap-2 px-3 py-1.5"
-                    >
-                      <Icon
-                        :name="conditionIcon(cond)"
-                        class="size-3.5 shrink-0"
-                        :class="conditionTextColor(cond)"
-                      />
-                      <span class="text-sm" :class="conditionTextColor(cond)">{{ cond }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <!-- Interior Photos inline -->
           <Card>
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-image" class="size-4 text-primary" />
+                <Icon name="i-lucide-camera" class="size-4 text-primary" />
                 Interior Photos
-                <Badge variant="secondary" class="ml-auto text-xs">
-                  {{ sectionImages(interiorImageKeys).length }} photos
-                </Badge>
               </CardTitle>
             </CardHeader>
             <Separator />
             <CardContent class="pt-4 pb-5">
-              <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+              <div v-if="sectionImages(interiorImageKeys).length" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                 <div
                   v-for="(img, idx) in sectionImages(interiorImageKeys)"
                   :key="idx"
@@ -1122,9 +1086,62 @@ function sectionImages(keys: string[]) {
                   </Badge>
                 </div>
               </div>
-              <p v-if="sectionImages(interiorImageKeys).length === 0" class="text-center text-muted-foreground text-sm py-8">
+              <p v-else class="text-center text-muted-foreground text-sm py-8">
                 No interior photos available
               </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <!-- ═══════ STEERING, SUSPENSION, BRAKES TAB ═══════ -->
+        <div v-else-if="activeTab === 'steering-suspension-brakes'" class="space-y-6">
+          <Card>
+            <CardHeader class="pt-5 pb-3">
+              <CardTitle class="text-base flex items-center gap-2">
+                <Icon name="i-lucide-disc" class="size-4 text-primary" />
+                Steering, Suspension & Brakes
+              </CardTitle>
+            </CardHeader>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div
+                  v-for="part in steeringSuspensionBrakesParts"
+                  :key="part.key"
+                  class="rounded-lg border overflow-hidden"
+                >
+                  <div class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
+                  </div>
+                  <div class="divide-y divide-border/50">
+                    <div
+                      v-for="(cond, ci) in splitConditions(car[part.key] || '')"
+                      :key="ci"
+                      class="flex items-center gap-2 px-3 py-1.5"
+                    >
+                      <Icon
+                        :name="conditionIcon(cond)"
+                        class="size-3.5 shrink-0"
+                        :class="conditionTextColor(cond)"
+                      />
+                      <span class="text-sm" :class="conditionTextColor(cond)">{{ cond }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Test Drive Summary -->
+              <div class="mt-6 pt-4 border-t">
+                <h3 class="text-sm font-semibold mb-3">Test Drive Details</h3>
+                <div class="flex items-center gap-4 py-1.5">
+                  <p class="text-xs text-muted-foreground w-1/4">Odometer Reading Before Test Drive</p>
+                  <p class="text-sm font-medium">{{ (car.odometerReadingBeforeTestDrive || car.odometerReadingInKms || 0).toLocaleString() }} km</p>
+                </div>
+                <div v-if="car.odometerReadingAfterTestDriveInKms" class="flex items-center gap-4 py-1.5">
+                  <p class="text-xs text-muted-foreground w-1/4">Odometer Reading After Test Drive</p>
+                  <p class="text-sm font-medium">{{ car.odometerReadingAfterTestDriveInKms.toLocaleString() }} km</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
