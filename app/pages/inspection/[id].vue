@@ -10,15 +10,18 @@ const { carDetails: car, isLoading, error, fetchCarDetails } = useCarDetails()
 
 onMounted(() => fetchCarDetails(carId))
 
-const activeTab = ref('overview')
+const activeTab = ref('document-details')
 
 const tabs = [
-  { id: 'overview', label: 'Overview', icon: 'i-lucide-car' },
-  { id: 'exterior', label: 'Exterior', icon: 'i-lucide-scan-eye' },
-  { id: 'engine', label: 'Engine', icon: 'i-lucide-cog' },
+  { id: 'document-details', label: 'Document Details', icon: 'i-lucide-file-text' },
+  { id: 'front', label: 'Front', icon: 'i-lucide-arrow-up' },
+  { id: 'left', label: 'Left', icon: 'i-lucide-arrow-left' },
+  { id: 'rear', label: 'Rear', icon: 'i-lucide-arrow-down' },
+  { id: 'right', label: 'Right', icon: 'i-lucide-arrow-right' },
+  { id: 'engine-bay', label: 'Engine Bay', icon: 'i-lucide-cog' },
+  { id: 'electricals', label: 'Electricals', icon: 'i-lucide-zap' },
   { id: 'interior', label: 'Interior', icon: 'i-lucide-armchair' },
-  { id: 'documents', label: 'Documents', icon: 'i-lucide-file-text' },
-  { id: 'auction', label: 'Auction', icon: 'i-lucide-gavel' },
+  { id: 'steering-suspension-brakes', label: 'Steering, Suspension, Brakes', icon: 'i-lucide-disc' },
 ]
 
 // ─── Helpers ───
@@ -205,7 +208,6 @@ const engineParts = [
   { key: 'firewall', label: 'Firewall' },
   { key: 'cowlTop', label: 'Cowl Top' },
   { key: 'engine', label: 'Engine' },
-  { key: 'battery', label: 'Battery' },
   { key: 'coolant', label: 'Coolant' },
   { key: 'engineOilLevelDipstick', label: 'Engine Oil Dipstick' },
   { key: 'engineOil', label: 'Engine Oil' },
@@ -214,9 +216,40 @@ const engineParts = [
   { key: 'exhaustSmoke', label: 'Exhaust Smoke' },
   { key: 'clutch', label: 'Clutch' },
   { key: 'gearShift', label: 'Gear Shift' },
+]
+
+const electricalParts = [
+  { key: 'battery', label: 'Battery' },
+  { key: 'electricals', label: 'Electricals Condition' },
+  { key: 'rearWiperWasher', label: 'Rear Wiper/Washer' },
+  { key: 'rearDefogger', label: 'Rear Defogger' },
+  { key: 'musicSystem', label: 'Music System' },
+  { key: 'stereo', label: 'Stereo' },
+  { key: 'inbuiltSpeaker', label: 'Inbuilt Speaker' },
+  { key: 'externalSpeaker', label: 'External Speaker' },
+  { key: 'steeringMountedAudioControl', label: 'Steering Audio Control' },
+  { key: 'noOfPowerWindows', label: 'Power Windows' },
+  { key: 'powerWindowConditionRhsFront', label: 'RHS Front Window' },
+  { key: 'powerWindowConditionLhsFront', label: 'LHS Front Window' },
+  { key: 'powerWindowConditionRhsRear', label: 'RHS Rear Window' },
+  { key: 'powerWindowConditionLhsRear', label: 'LHS Rear Window' },
+  { key: 'reverseCamera', label: 'Reverse Camera' },
+]
+
+const interiorParts = [
+  { key: 'commentOnInterior', label: 'Interior Comments' },
+  { key: 'sunroof', label: 'Sunroof' },
+  { key: 'leatherSeats', label: 'Leather Seats' },
+  { key: 'fabricSeats', label: 'Fabric Seats' },
+  { key: 'airConditioningManual', label: 'AC (Manual)' },
+  { key: 'airConditioningClimateControl', label: 'AC (Climate Control)' },
+]
+
+const steeringSuspensionBrakesParts = [
   { key: 'steering', label: 'Steering' },
   { key: 'brakes', label: 'Brakes' },
   { key: 'suspension', label: 'Suspension' },
+  { key: 'abs', label: 'ABS' },
 ]
 
 const _exteriorImageKeys = [
@@ -277,6 +310,31 @@ function getVideos(obj: Record<string, any> | null, key: string): string[] {
   if (typeof val === 'string' && val.startsWith('http'))
     return [val]
   return []
+}
+
+function getEmbedUrl(url: string): { type: 'iframe' | 'video', src: string } {
+  if (!url) return { type: 'video', src: '' }
+  try {
+    if (url.includes('drive.google.com')) {
+      let id = ''
+      if (url.includes('uc?id=')) {
+        id = new URL(url).searchParams.get('id') || ''
+      }
+      else if (url.includes('open?id=')) {
+        id = new URL(url).searchParams.get('id') || ''
+      }
+      else {
+        const m = url.match(/\/file\/d\/([^/]+)/)
+        if (m) id = m[1] || ''
+      }
+      if (id) {
+        return { type: 'iframe', src: `https://drive.google.com/file/d/${id}/preview` }
+      }
+    }
+  } catch (e) {
+    // Return default below
+  }
+  return { type: 'video', src: url }
 }
 
 const interiorImageKeys = [
@@ -851,7 +909,7 @@ function sectionImages(keys: string[]) {
             </CardContent>
           </Card>
 
-          <Card v-if="car && engineVideoKeys.some(v => getVideos(car, v.key).length > 0)">
+          <Card v-if="car">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-video" class="size-4 text-primary" />
@@ -862,21 +920,45 @@ function sectionImages(keys: string[]) {
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <template v-for="vk in engineVideoKeys" :key="vk.key">
-                  <div v-for="(videoUrl, vIdx) in getVideos(car, vk.key)" :key="`${vk.key}-${vIdx}`" class="space-y-2">
+                  <div class="space-y-2">
                     <p class="text-sm font-medium flex items-center gap-2">
                       <Icon name="i-lucide-play-circle" class="size-4 text-primary" />
                       {{ vk.label }}
                     </p>
-                    <div class="rounded-lg overflow-hidden border bg-black">
-                      <video
-                        :src="videoUrl"
-                        controls
-                        preload="metadata"
-                        class="w-full max-h-64 object-contain"
-                      >
-                        Your browser does not support the video tag.
-                      </video>
-                    </div>
+                    <template v-if="getVideos(car, vk.key).length">
+                      <div v-for="(videoUrl, vIdx) in getVideos(car, vk.key)" :key="`${vk.key}-${vIdx}`" class="rounded-lg overflow-hidden border bg-black relative" style="padding-top: 56.25%;">
+                        <template v-if="getEmbedUrl(videoUrl).type === 'iframe'">
+                          <iframe
+                            :src="getEmbedUrl(videoUrl).src"
+                            allow="autoplay"
+                            allowfullscreen
+                            class="absolute inset-0 w-full h-full border-0"
+                          ></iframe>
+                        </template>
+                        <template v-else>
+                          <video
+                            :src="getEmbedUrl(videoUrl).src"
+                            controls
+                            playsinline
+                            crossorigin="anonymous"
+                            preload="auto"
+                            class="absolute inset-0 w-full h-full object-contain"
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        </template>
+                      </div>
+                    </template>
+                    <template v-else>
+                      <div class="rounded-lg border border-dashed border-border flex flex-col items-center justify-center bg-muted/20 hover:bg-muted/40 transition-colors relative" style="padding-top: 56.25%;">
+                        <div class="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                          <div class="size-16 rounded-full bg-muted/60 flex items-center justify-center">
+                            <Icon name="i-lucide-video-off" class="size-7 text-muted-foreground/50" />
+                          </div>
+                          <p class="text-sm font-medium text-muted-foreground/80">Video Not Available</p>
+                        </div>
+                      </div>
+                    </template>
                   </div>
                 </template>
               </div>
