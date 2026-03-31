@@ -482,15 +482,37 @@ const filteredItems = computed(() => {
   // Sort
   const key = sortKey.value
   const dir = sortDir.value
+  const colDef = props.columns.find((c: any) => c.key === key)
+  const isDateType = colDef?.type === 'date' || key.toLowerCase().includes('date') || key === 'createdAt' || key === 'timeStamp'
+
   result = [...result].sort((a, b) => {
-    const av = a[key] ?? ''
-    const bv = b[key] ?? ''
+    let av = a[key]
+    let bv = b[key]
+
+    // Fallback for createdAt in older legacy records
+    if (key === 'createdAt') {
+      av = av || a.timeStamp
+      bv = bv || b.timeStamp
+    }
+
+    if (isDateType) {
+      const ad = av ? new Date(av).getTime() : 0
+      const bd = bv ? new Date(bv).getTime() : 0
+      if (!Number.isNaN(ad) && !Number.isNaN(bd) && ad !== bd) {
+        return dir === 'asc' ? ad - bd : bd - ad
+      }
+    }
+
+    av = av ?? ''
+    bv = bv ?? ''
+    
     // Numeric sort for numbers/IDs like '26-100013'
     const an = Number(String(av).replace(/\D/g, ''))
     const bn = Number(String(bv).replace(/\D/g, ''))
-    if (!Number.isNaN(an) && !Number.isNaN(bn) && an !== bn) {
+    if (!Number.isNaN(an) && !Number.isNaN(bn) && an !== bn && an !== 0 && bn !== 0) {
       return dir === 'asc' ? an - bn : bn - an
     }
+    
     // String sort
     const as = String(av).toLowerCase()
     const bs = String(bv).toLowerCase()
