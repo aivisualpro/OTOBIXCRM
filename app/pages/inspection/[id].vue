@@ -24,6 +24,7 @@ const tabs = [
   { id: 'electricals', label: 'Electricals', icon: 'i-lucide-zap' },
   { id: 'interior', label: 'Interior', icon: 'i-lucide-armchair' },
   { id: 'steering-suspension-brakes', label: 'Steering, Suspension, Brakes', icon: 'i-lucide-disc' },
+  { id: 'qc-logs', label: 'QC Audit Logs', icon: 'i-lucide-history' },
 ]
 
 // ─── Helpers ───
@@ -1137,6 +1138,60 @@ function sectionImages(keys: string[]) {
                 <div v-if="car.odometerReadingAfterTestDriveInKms" class="flex items-center gap-4 py-1.5">
                   <p class="text-xs text-muted-foreground w-1/4">Odometer Reading After Test Drive</p>
                   <p class="text-sm font-medium">{{ car.odometerReadingAfterTestDriveInKms.toLocaleString() }} km</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <!-- ═══════ QC AUDIT LOGS TAB ═══════ -->
+        <div v-else-if="activeTab === 'qc-logs'" class="space-y-6">
+          <Card>
+            <CardHeader class="pt-5 pb-3">
+              <CardTitle class="text-base flex items-center gap-2">
+                <Icon name="i-lucide-history" class="size-4 text-primary" />
+                Modification History Log
+              </CardTitle>
+            </CardHeader>
+            <Separator />
+            <CardContent class="pt-4 pb-5">
+              <div v-if="!car?.qcLogs || car.qcLogs.length === 0" class="flex flex-col items-center justify-center py-12 px-4 text-center rounded-lg border border-dashed border-border bg-muted/20">
+                <div class="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                  <Icon name="i-lucide-file-clock" class="size-6 text-muted-foreground" />
+                </div>
+                <h3 class="font-medium text-lg">No modifications tracked</h3>
+                <p class="text-sm text-muted-foreground mt-1 max-w-sm">
+                  QC changes made to this vehicle's model will appear here showing before and after comparisons.
+                </p>
+              </div>
+              <div v-else class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
+                <div v-for="(log, idx) in [...car.qcLogs].reverse()" :key="idx" class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                  <div class="flex items-center justify-center w-10 h-10 rounded-full border border-primary/30 bg-background shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                    <Icon name="i-lucide-user-cog" class="size-4 text-primary" />
+                  </div>
+                  <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="flex items-center gap-2">
+                        <Badge variant="outline" class="font-medium bg-primary/5 border-primary/20 text-primary">{{ log.changedBy }}</Badge>
+                      </div>
+                      <time class="text-xs text-muted-foreground font-mono">{{ new Date(log.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</time>
+                    </div>
+                    <div class="space-y-3 mt-3">
+                      <div v-for="(change, cIdx) in log.changes" :key="cIdx" class="text-sm border-l-2 border-border pl-3 py-1">
+                        <div class="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-1">{{ change.field }}</div>
+                        <div class="flex flex-col xl:flex-row xl:items-center gap-2 xl:gap-4">
+                          <div class="flex-1 bg-red-500/10 text-red-700 dark:text-red-400 rounded p-1.5 line-clamp-3 text-xs opacity-80" :title="String(change.oldValue)">
+                            <span class="line-through">{{ change.oldValue || '—' }}</span>
+                          </div>
+                          <Icon name="i-lucide-arrow-right" class="size-3 text-muted-foreground hidden xl:block shrink-0" />
+                          <Icon name="i-lucide-arrow-down" class="size-3 text-muted-foreground xl:hidden shrink-0 ml-1.5" />
+                          <div class="flex-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded p-1.5 line-clamp-3 text-xs font-medium" :title="String(change.newValue)">
+                            {{ change.newValue || '—' }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>

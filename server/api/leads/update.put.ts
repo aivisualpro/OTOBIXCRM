@@ -22,9 +22,51 @@ export default defineEventHandler(async (event) => {
       ? { _id: new ObjectId(telecallingId) }
       : { appointmentId: telecallingId }
 
+    // Fetch before updating to compute diffs
+    const oldDoc = await db.collection('telecallings').findOne(filter)
+    if (!oldDoc) {
+      throw createError({ statusCode: 404, message: 'Lead not found' })
+    }
+
+    // Identify changes
+    const changes: any[] = []
+    const changedBy = updates.changedBy || 'System'
+    delete updates.changedBy
+
+    for (const key of Object.keys(updates)) {
+      if (key === 'updatedAt' || key === 'id' || key === '_id') continue
+      
+      const oldVal = oldDoc[key]
+      const newVal = updates[key]
+      
+      const oldStr = JSON.stringify(oldVal) ?? '""'
+      const newStr = JSON.stringify(newVal) ?? '""'
+      
+      if (oldStr !== newStr) {
+        changes.push({
+          field: key,
+          oldValue: oldVal,
+          newValue: newVal
+        })
+      }
+    }
+
+    const updateQuery: Record<string, any> = { $set: updates }
+    
+    // Add to activity log dynamically
+    if (changes.length > 0) {
+      updateQuery.$push = {
+        qcLogs: {
+          timestamp: updates.updatedAt,
+          changedBy,
+          changes
+        }
+      }
+    }
+
     const result = await db.collection('telecallings').findOneAndUpdate(
       filter,
-      { $set: updates },
+      updateQuery,
       { returnDocument: 'after' },
     )
 
