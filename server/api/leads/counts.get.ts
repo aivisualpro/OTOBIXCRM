@@ -13,7 +13,8 @@ export default defineEventHandler(async (event) => {
     const userCookieStr = getCookie(event, 'userData')
     let _currentUser: Record<string, any> | null = null
     try {
-      if (userCookieStr) _currentUser = JSON.parse(userCookieStr)
+      if (userCookieStr)
+        _currentUser = JSON.parse(userCookieStr)
     }
     catch {}
     const isAdmin = _currentUser?.userType?.toLowerCase() === 'admin' || _currentUser?.userRole?.toLowerCase() === 'admin' || _currentUser?.role?.toLowerCase() === 'admin'
@@ -140,7 +141,8 @@ export default defineEventHandler(async (event) => {
         if ((inspStatus === '*' || is === inspStatus) && (appStatus === '*' || as_ === appStatus)) {
           // Restrict "Under Review" count to only the current user's leads if not admin
           if (appStatus === 'Under Review' && !isAdmin && currentUserEmail) {
-            if (qcByRaw !== currentUserEmail) continue
+            if (qcByRaw !== currentUserEmail)
+              continue
           }
           total += v
         }

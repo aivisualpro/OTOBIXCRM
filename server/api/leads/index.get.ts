@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
     }
     if (approvalStatus && approvalStatus !== '*') {
       filter.approvalStatus = { $regex: `^\\s*${approvalStatus}\\s*$`, $options: 'i' }
-      
+
       // Strict isolation for "Under Review" records
       if (approvalStatus.toLowerCase() === 'under review' && !isAdmin && currentUserEmail) {
         filter.qcBy = currentUserEmail

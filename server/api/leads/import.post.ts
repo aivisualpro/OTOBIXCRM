@@ -58,7 +58,6 @@ export default defineEventHandler(async (event) => {
         updateDoc.$setOnInsert.createdAt = now
       }
 
-
       const existingDBFields = [
         'ownerName',
         'customerContactNumber',

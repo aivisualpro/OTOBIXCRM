@@ -1,7 +1,8 @@
+/* eslint-disable */
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { MongoClient } from 'mongodb'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const envFile = fs.readFileSync(path.resolve(__dirname, '.env'), 'utf-8')
@@ -15,12 +16,13 @@ const envConfig = envFile.split('\n').reduce((acc, line) => {
   return acc
 }, {})
 
-const uri = envConfig.NUXT_MONGODB_URI;
-if (!uri) throw new Error('No MongoDB URI found in .env');
+const uri = envConfig.NUXT_MONGODB_URI
+if (!uri)
+  throw new Error('No MongoDB URI found in .env')
 
 const dbs = [
   envConfig.DEVELOPMENT_MONGODB_DB_NAME || 'otobix_auction_app_development',
-  envConfig.PRODUCTION_MONGODB_DB_NAME || 'otobix_auction_app'
+  envConfig.PRODUCTION_MONGODB_DB_NAME || 'otobix_auction_app',
 ]
 
 async function updateDb(dbName) {
@@ -33,13 +35,15 @@ async function updateDb(dbName) {
     // Using exactly "Approved" as requested
     const result = await db.collection('telecallings').updateMany(
       {},
-      { $set: { approvalStatus: "Approved" } }
+      { $set: { approvalStatus: 'Approved' } },
     )
     console.log(`Matched ${result.matchedCount} documents.`)
     console.log(`Updated ${result.modifiedCount} documents to "Approved".`)
-  } catch (err) {
+  }
+  catch (err) {
     console.error(`Error updating DB: ${dbName}`, err)
-  } finally {
+  }
+  finally {
     await client.close()
   }
 }

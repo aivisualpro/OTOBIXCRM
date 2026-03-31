@@ -316,7 +316,8 @@ function getVideos(obj: Record<string, any> | null, key: string): string[] {
 }
 
 function getEmbedUrl(url: string): { type: 'iframe' | 'video', src: string } {
-  if (!url) return { type: 'video', src: '' }
+  if (!url)
+    return { type: 'video', src: '' }
   try {
     if (url.includes('drive.google.com')) {
       let id = ''
@@ -328,13 +329,15 @@ function getEmbedUrl(url: string): { type: 'iframe' | 'video', src: string } {
       }
       else {
         const m = url.match(/\/file\/d\/([^/]+)/)
-        if (m) id = m[1] || ''
+        if (m)
+          id = m[1] || ''
       }
       if (id) {
         return { type: 'iframe', src: `https://drive.google.com/file/d/${id}/preview` }
       }
     }
-  } catch (e) {
+  }
+  catch (e) {
     // Return default below
   }
   return { type: 'video', src: url }
@@ -902,7 +905,7 @@ function sectionImages(keys: string[]) {
                             allow="autoplay"
                             allowfullscreen
                             class="absolute inset-0 w-full h-full border-0"
-                          ></iframe>
+                          />
                         </template>
                         <template v-else>
                           <video
@@ -921,7 +924,7 @@ function sectionImages(keys: string[]) {
                     <template v-else>
                       <div class="rounded-lg border border-dashed border-border flex flex-col items-center justify-center bg-muted/20 hover:bg-muted/40 transition-colors relative" style="padding-top: 56.25%;">
                         <div class="absolute inset-0 flex items-center justify-center">
-                          <img src="/video-not-available.png" alt="Video Not Available" class="h-full w-full object-cover opacity-80" />
+                          <img src="/video-not-available.png" alt="Video Not Available" class="h-full w-full object-cover opacity-80">
                         </div>
                       </div>
                     </template>
@@ -1127,17 +1130,27 @@ function sectionImages(keys: string[]) {
                   </div>
                 </div>
               </div>
-              
+
               <!-- Test Drive Summary -->
               <div class="mt-6 pt-4 border-t">
-                <h3 class="text-sm font-semibold mb-3">Test Drive Details</h3>
+                <h3 class="text-sm font-semibold mb-3">
+                  Test Drive Details
+                </h3>
                 <div class="flex items-center gap-4 py-1.5">
-                  <p class="text-xs text-muted-foreground w-1/4">Odometer Reading Before Test Drive</p>
-                  <p class="text-sm font-medium">{{ (car.odometerReadingBeforeTestDrive || car.odometerReadingInKms || 0).toLocaleString() }} km</p>
+                  <p class="text-xs text-muted-foreground w-1/4">
+                    Odometer Reading Before Test Drive
+                  </p>
+                  <p class="text-sm font-medium">
+                    {{ (car.odometerReadingBeforeTestDrive || car.odometerReadingInKms || 0).toLocaleString() }} km
+                  </p>
                 </div>
                 <div v-if="car.odometerReadingAfterTestDriveInKms" class="flex items-center gap-4 py-1.5">
-                  <p class="text-xs text-muted-foreground w-1/4">Odometer Reading After Test Drive</p>
-                  <p class="text-sm font-medium">{{ car.odometerReadingAfterTestDriveInKms.toLocaleString() }} km</p>
+                  <p class="text-xs text-muted-foreground w-1/4">
+                    Odometer Reading After Test Drive
+                  </p>
+                  <p class="text-sm font-medium">
+                    {{ car.odometerReadingAfterTestDriveInKms.toLocaleString() }} km
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -1159,7 +1172,9 @@ function sectionImages(keys: string[]) {
                 <div class="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
                   <Icon name="i-lucide-file-clock" class="size-6 text-muted-foreground" />
                 </div>
-                <h3 class="font-medium text-lg">No modifications tracked</h3>
+                <h3 class="font-medium text-lg">
+                  No modifications tracked
+                </h3>
                 <p class="text-sm text-muted-foreground mt-1 max-w-sm">
                   QC changes made to this vehicle's model will appear here showing before and after comparisons.
                 </p>
@@ -1172,13 +1187,17 @@ function sectionImages(keys: string[]) {
                   <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
                     <div class="flex items-center justify-between mb-2">
                       <div class="flex items-center gap-2">
-                        <Badge variant="outline" class="font-medium bg-primary/5 border-primary/20 text-primary">{{ log.changedBy }}</Badge>
+                        <Badge variant="outline" class="font-medium bg-primary/5 border-primary/20 text-primary">
+                          {{ log.changedBy }}
+                        </Badge>
                       </div>
                       <time class="text-xs text-muted-foreground font-mono">{{ new Date(log.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</time>
                     </div>
                     <div class="space-y-3 mt-3">
                       <div v-for="(change, cIdx) in log.changes" :key="cIdx" class="text-sm border-l-2 border-border pl-3 py-1">
-                        <div class="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-1">{{ change.field }}</div>
+                        <div class="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                          {{ change.field }}
+                        </div>
                         <div class="flex flex-col xl:flex-row xl:items-center gap-2 xl:gap-4">
                           <div class="flex-1 bg-red-500/10 text-red-700 dark:text-red-400 rounded p-1.5 line-clamp-3 text-xs opacity-80" :title="String(change.oldValue)">
                             <span class="line-through">{{ change.oldValue || '—' }}</span>

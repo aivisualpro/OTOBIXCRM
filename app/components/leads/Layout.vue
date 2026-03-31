@@ -73,12 +73,13 @@ const filteredNavItems = computed(() => {
           :key="item.id"
           :to="item.link"
           class="leads-tab"
-          :class="{
-            'is-active': currentActiveId === item.id,
-            'has-matches': hasSearchMatches(item.id),
-          }"
+          :class="[
+            currentActiveId === item.id ? 'is-active' : '',
+            hasSearchMatches(item.id) ? 'has-matches' : '',
+            item.id === 'search-results' ? 'is-search-tab' : '',
+          ]"
         >
-          <Icon :name="item.icon" class="size-3.5 shrink-0" :class="currentActiveId === item.id ? item.color : hasSearchMatches(item.id) ? 'text-amber-500' : ''" />
+          <Icon :name="item.icon" class="size-3.5 shrink-0 transition-colors" />
           <span>{{ item.title }}</span>
           <span
             v-if="getTabCount(item.id)"
@@ -119,19 +120,46 @@ const filteredNavItems = computed(() => {
 }
 
 .leads-tab:hover {
-  color: hsl(var(--foreground));
-  background: hsl(var(--accent) / 0.5);
+  color: hsl(var(--primary));
+  background: color-mix(in srgb, hsl(var(--primary)) 5%, hsl(var(--accent) / 0.5));
 }
 
 .leads-tab.is-active {
-  color: hsl(var(--foreground));
+  color: hsl(var(--primary));
   border-bottom-color: hsl(var(--primary));
+  background: color-mix(in srgb, hsl(var(--primary)) 8%, transparent);
+}
+
+/* Persistent Search Results Loading Animation */
+.leads-tab.is-search-tab {
+  overflow: hidden;
+}
+.leads-tab.is-search-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+     color-mix(in srgb, hsl(var(--primary)) 0%, transparent) 0%,
+     hsl(var(--primary)) 50%,
+     color-mix(in srgb, hsl(var(--primary)) 0%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: search-loading-shimmer 1.5s infinite linear;
+  border-radius: 1px;
+}
+
+@keyframes search-loading-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* Animated pulsing border for tabs with matching search results */
 .leads-tab.has-matches {
-  color: hsl(var(--foreground));
-  animation: tab-pulse 2s ease-in-out infinite;
+  color: hsl(var(--primary));
+  animation: tab-pulse-theme 2s ease-in-out infinite;
 }
 
 .leads-tab.has-matches::after {
@@ -141,28 +169,28 @@ const filteredNavItems = computed(() => {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, hsl(38 92% 50%), hsl(45 93% 58%), hsl(38 92% 50%));
+  background: linear-gradient(90deg,
+    color-mix(in srgb, hsl(var(--primary)) 20%, transparent),
+    hsl(var(--primary)),
+    color-mix(in srgb, hsl(var(--primary)) 20%, transparent)
+  );
   background-size: 200% 100%;
   animation: tab-border-shimmer 2s ease-in-out infinite;
   border-radius: 1px;
 }
 
-@keyframes tab-pulse {
+@keyframes tab-pulse-theme {
   0%, 100% {
-    background: hsl(38 92% 50% / 0.06);
+    background: color-mix(in srgb, hsl(var(--primary)) 4%, transparent);
   }
   50% {
-    background: hsl(38 92% 50% / 0.14);
+    background: color-mix(in srgb, hsl(var(--primary)) 12%, transparent);
   }
 }
 
 @keyframes tab-border-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* Counter badges — always visible, never clipped */
@@ -181,22 +209,22 @@ const filteredNavItems = computed(() => {
 }
 
 .leads-tab-count.is-active {
-  background: hsl(var(--primary) / 0.15);
+  background: color-mix(in srgb, hsl(var(--primary)) 15%, transparent);
   color: hsl(var(--primary));
 }
 
 .leads-tab-count.is-matching {
-  background: hsl(38 92% 50% / 0.2);
-  color: hsl(38 92% 50%);
-  animation: count-pulse 2s ease-in-out infinite;
+  background: color-mix(in srgb, hsl(var(--primary)) 20%, transparent);
+  color: hsl(var(--primary));
+  animation: count-pulse-theme 2s ease-in-out infinite;
 }
 
-@keyframes count-pulse {
+@keyframes count-pulse-theme {
   0%, 100% {
-    background: hsl(38 92% 50% / 0.15);
+    background: color-mix(in srgb, hsl(var(--primary)) 15%, transparent);
   }
   50% {
-    background: hsl(38 92% 50% / 0.3);
+    background: color-mix(in srgb, hsl(var(--primary)) 30%, transparent);
   }
 }
 </style>

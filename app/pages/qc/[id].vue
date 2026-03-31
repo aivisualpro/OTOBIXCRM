@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { toast } from 'vue-sonner'
+
 const route = useRoute()
 const router = useRouter()
 const carId = route.params.id as string
@@ -9,9 +11,6 @@ setHeader({ title: `Quality Control: ${carId}`, description: 'Vehicle inspection
 const { carDetails: car, isLoading, error, fetchCarDetails } = useCarDetails()
 
 onMounted(() => fetchCarDetails(carId))
-
-
-import { toast } from 'vue-sonner'
 
 const editForm = ref<Record<string, any>>({})
 const isSaving = ref(false)
@@ -27,7 +26,7 @@ async function saveQC() {
   try {
     const userCookie = useCookie('userData')
     const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
-    
+
     // the telecallingId or appointmentId is needed
     // The get API merges them. We send updates using the appointmentId as telecallingId for the update API fallback in server
     await $fetch('/api/leads/update', {
@@ -44,15 +43,17 @@ async function saveQC() {
         ownerSerialNumber: Number(editForm.value.ownerSerialNumber) || null,
         priceDiscovery: Number(editForm.value.priceDiscovery) || null,
         ...editForm.value, // Send all mutated fields
-      }
+      },
     })
     toast.success('QC Report Saved Successfully')
-    
+
     // Refetch to reset
     await fetchCarDetails(carId)
-  } catch (err: any) {
+  }
+  catch (err: any) {
     toast.error(err?.data?.message || err?.message || 'Failed to save')
-  } finally {
+  }
+  finally {
     isSaving.value = false
   }
 }
@@ -78,7 +79,8 @@ function removeImage(key: string, idx: number) {
 function addImage(key: string) {
   const url = prompt('Enter Image URL linking to Drive or Storage:', '')
   if (url) {
-    if (!Array.isArray(editForm.value[key])) editForm.value[key] = []
+    if (!Array.isArray(editForm.value[key]))
+      editForm.value[key] = []
     editForm.value[key].push(url)
   }
 }
@@ -117,61 +119,6 @@ function _conditionColor(val: string) {
     return 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'
   return 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20'
 }
-
-function conditionIcon(val: string): string {
-  const v = val.toLowerCase().trim()
-  if (v === 'okay' || v === 'working' || v === 'effective')
-    return 'i-lucide-check-circle'
-  if (v === 'repainted')
-    return 'i-lucide-paintbrush'
-  if (v === 'repaired')
-    return 'i-lucide-wrench'
-  if (v === 'scratched')
-    return 'i-lucide-slash'
-  if (v === 'dented')
-    return 'i-lucide-circle-dot'
-  if (v === 'damaged')
-    return 'i-lucide-alert-triangle'
-  if (v === 'rusted')
-    return 'i-lucide-flame'
-  if (v === 'broken')
-    return 'i-lucide-x-circle'
-  if (v === 'changed')
-    return 'i-lucide-refresh-cw'
-  if (v === 'not working')
-    return 'i-lucide-x-octagon'
-  if (v.includes('tyre life'))
-    return 'i-lucide-disc'
-  if (v === 'faded')
-    return 'i-lucide-sun'
-  if (v === 'not applicable')
-    return 'i-lucide-minus-circle'
-  return 'i-lucide-info'
-}
-
-function conditionTextColor(val: string): string {
-  const v = val.toLowerCase().trim()
-  if (v === 'okay' || v === 'working' || v === 'effective')
-    return 'text-emerald-500'
-  if (v === 'repainted' || v === 'repaired' || v === 'changed')
-    return 'text-orange-500'
-  if (v === 'scratched' || v === 'faded')
-    return 'text-amber-500'
-  if (v === 'dented' || v === 'damaged' || v === 'broken' || v === 'rusted' || v === 'not working')
-    return 'text-red-500'
-  if (v.includes('tyre life'))
-    return 'text-blue-500'
-  if (v === 'not applicable')
-    return 'text-zinc-400'
-  return 'text-blue-500'
-}
-
-function splitConditions(val: string): string[] {
-  if (!val || val === '—')
-    return ['—']
-  return val.split(',').map(s => s.trim()).filter(Boolean)
-}
-
 function formatDate(d: string) {
   if (!d)
     return '—'
@@ -389,7 +336,8 @@ function getVideos(obj: Record<string, any> | null, key: string): string[] {
 }
 
 function getEmbedUrl(url: string): { type: 'iframe' | 'video', src: string } {
-  if (!url) return { type: 'video', src: '' }
+  if (!url)
+    return { type: 'video', src: '' }
   try {
     if (url.includes('drive.google.com')) {
       let id = ''
@@ -401,13 +349,15 @@ function getEmbedUrl(url: string): { type: 'iframe' | 'video', src: string } {
       }
       else {
         const m = url.match(/\/file\/d\/([^/]+)/)
-        if (m) id = m[1] || ''
+        if (m)
+          id = m[1] || ''
       }
       if (id) {
         return { type: 'iframe', src: `https://drive.google.com/file/d/${id}/preview` }
       }
     }
-  } catch (e) {
+  }
+  catch (e) {
     // Return default below
   }
   return { type: 'video', src: url }
@@ -579,7 +529,9 @@ function sectionImages(keys: string[]) {
                     <Icon name="i-lucide-arrow-left" class="size-4" />
                   </Button>
                   <h1 class="text-2xl font-bold tracking-tight">
-                    <div class="flex gap-2"><Input v-model="editForm.make" class="h-8 font-bold" /><Input v-model="editForm.model" class="h-8 font-bold" /></div>
+                    <div class="flex gap-2">
+                      <Input v-model="editForm.make" class="h-8 font-bold" /><Input v-model="editForm.model" class="h-8 font-bold" />
+                    </div>
                   </h1>
                 </div>
                 <p class="text-muted-foreground text-sm ml-8">
@@ -602,19 +554,19 @@ function sectionImages(keys: string[]) {
                 <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
                   Registration
                 </p>
-                <Input v-model="editForm.registrationNumber" class="h-8 text-sm font-semibold"  />
+                <Input v-model="editForm.registrationNumber" class="h-8 text-sm font-semibold" />
               </div>
               <div class="rounded-lg border bg-card p-3 space-y-1">
                 <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
                   Odometer
                 </p>
-                <Input v-model="editForm.odometerReadingInKms" type="number" class="h-8 text-sm font-semibold"  />
+                <Input v-model="editForm.odometerReadingInKms" type="number" class="h-8 text-sm font-semibold" />
               </div>
               <div class="rounded-lg border bg-card p-3 space-y-1">
                 <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
                   Owner
                 </p>
-                <Input v-model="editForm.ownerSerialNumber" type="number" class="h-8 text-sm font-semibold"  />
+                <Input v-model="editForm.ownerSerialNumber" type="number" class="h-8 text-sm font-semibold" />
               </div>
               <div class="rounded-lg border bg-card p-3 space-y-1">
                 <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
@@ -636,7 +588,7 @@ function sectionImages(keys: string[]) {
                 <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
                   Price Discovery
                 </p>
-                <Input v-model="editForm.priceDiscovery" type="number" class="h-8 text-sm font-semibold text-primary"  />
+                <Input v-model="editForm.priceDiscovery" type="number" class="h-8 text-sm font-semibold text-primary" />
               </div>
             </div>
           </div>
@@ -676,7 +628,8 @@ function sectionImages(keys: string[]) {
             <Separator />
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                <div v-for="(val, key) in {
+                <div
+                  v-for="(val, key) in {
                     registrationNumber: 'Registration Number',
                     registrationDate: 'Registration Date',
                     registrationType: 'Registration Type',
@@ -715,7 +668,8 @@ function sectionImages(keys: string[]) {
                     additionalDetails: 'Additional Details',
                     contactNumber: 'Contact Number',
                     emailAddress: 'Email',
-                }" :key="key" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
+                  }" :key="key" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
+                >
                   <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                     {{ val }}
                   </p>
@@ -774,13 +728,13 @@ function sectionImages(keys: string[]) {
                   </div>
                 </div>
                 <!-- Section photos -->
-                <div v-if="activeExteriorSection.imageKeys.length && sectionImages(activeExteriorSection.imageKeys).length" class="mt-4">
+                <div v-if="activeExteriorSection?.imageKeys?.length && sectionImages(activeExteriorSection.imageKeys).length" class="mt-4">
                   <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
                     <div
                       v-for="(img, idx) in sectionImages(activeExteriorSection.imageKeys)"
                       :key="idx"
                       class="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border hover:border-primary/50 transition-colors"
-                      @click="openLightbox(sectionImages(activeExteriorSection.imageKeys), idx)"
+                      @click="openLightbox(sectionImages(activeExteriorSection.imageKeys || []), idx)"
                     >
                       <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
                       <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -886,7 +840,7 @@ function sectionImages(keys: string[]) {
                             allow="autoplay"
                             allowfullscreen
                             class="absolute inset-0 w-full h-full border-0"
-                          ></iframe>
+                          />
                         </template>
                         <template v-else>
                           <video
@@ -905,7 +859,7 @@ function sectionImages(keys: string[]) {
                     <template v-else>
                       <div class="rounded-lg border border-dashed border-border flex flex-col items-center justify-center bg-muted/20 hover:bg-muted/40 transition-colors relative" style="padding-top: 56.25%;">
                         <div class="absolute inset-0 flex items-center justify-center">
-                          <img src="/video-not-available.png" alt="Video Not Available" class="h-full w-full object-cover opacity-80" />
+                          <img src="/video-not-available.png" alt="Video Not Available" class="h-full w-full object-cover opacity-80">
                         </div>
                       </div>
                     </template>
@@ -1079,17 +1033,27 @@ function sectionImages(keys: string[]) {
                   </div>
                 </div>
               </div>
-              
+
               <!-- Test Drive Summary -->
               <div class="mt-6 pt-4 border-t">
-                <h3 class="text-sm font-semibold mb-3">Test Drive Details</h3>
+                <h3 class="text-sm font-semibold mb-3">
+                  Test Drive Details
+                </h3>
                 <div class="flex items-center gap-4 py-1.5">
-                  <p class="text-xs text-muted-foreground w-1/4">Odometer Reading Before Test Drive</p>
-                  <p class="text-sm font-medium">{{ (car.odometerReadingBeforeTestDrive || car.odometerReadingInKms || 0).toLocaleString() }} km</p>
+                  <p class="text-xs text-muted-foreground w-1/4">
+                    Odometer Reading Before Test Drive
+                  </p>
+                  <p class="text-sm font-medium">
+                    {{ (car.odometerReadingBeforeTestDrive || car.odometerReadingInKms || 0).toLocaleString() }} km
+                  </p>
                 </div>
                 <div v-if="car.odometerReadingAfterTestDriveInKms" class="flex items-center gap-4 py-1.5">
-                  <p class="text-xs text-muted-foreground w-1/4">Odometer Reading After Test Drive</p>
-                  <p class="text-sm font-medium">{{ car.odometerReadingAfterTestDriveInKms.toLocaleString() }} km</p>
+                  <p class="text-xs text-muted-foreground w-1/4">
+                    Odometer Reading After Test Drive
+                  </p>
+                  <p class="text-sm font-medium">
+                    {{ car.odometerReadingAfterTestDriveInKms.toLocaleString() }} km
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -1111,7 +1075,9 @@ function sectionImages(keys: string[]) {
                 <div class="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
                   <Icon name="i-lucide-file-clock" class="size-6 text-muted-foreground" />
                 </div>
-                <h3 class="font-medium text-lg">No modifications tracked</h3>
+                <h3 class="font-medium text-lg">
+                  No modifications tracked
+                </h3>
                 <p class="text-sm text-muted-foreground mt-1 max-w-sm">
                   QC changes made to this vehicle's model will appear here showing before and after comparisons.
                 </p>
@@ -1124,13 +1090,17 @@ function sectionImages(keys: string[]) {
                   <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
                     <div class="flex items-center justify-between mb-2">
                       <div class="flex items-center gap-2">
-                        <Badge variant="outline" class="font-medium bg-primary/5 border-primary/20 text-primary">{{ log.changedBy }}</Badge>
+                        <Badge variant="outline" class="font-medium bg-primary/5 border-primary/20 text-primary">
+                          {{ log.changedBy }}
+                        </Badge>
                       </div>
                       <time class="text-xs text-muted-foreground font-mono">{{ new Date(log.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</time>
                     </div>
                     <div class="space-y-3 mt-3">
                       <div v-for="(change, cIdx) in log.changes" :key="cIdx" class="text-sm border-l-2 border-border pl-3 py-1">
-                        <div class="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-1">{{ change.field }}</div>
+                        <div class="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                          {{ change.field }}
+                        </div>
                         <div class="flex flex-col xl:flex-row xl:items-center gap-2 xl:gap-4">
                           <div class="flex-1 bg-red-500/10 text-red-700 dark:text-red-400 rounded p-1.5 line-clamp-3 text-xs opacity-80" :title="String(change.oldValue)">
                             <span class="line-through">{{ change.oldValue || '—' }}</span>

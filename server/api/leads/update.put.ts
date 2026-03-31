@@ -34,33 +34,34 @@ export default defineEventHandler(async (event) => {
     delete updates.changedBy
 
     for (const key of Object.keys(updates)) {
-      if (key === 'updatedAt' || key === 'id' || key === '_id') continue
-      
+      if (key === 'updatedAt' || key === 'id' || key === '_id')
+        continue
+
       const oldVal = oldDoc[key]
       const newVal = updates[key]
-      
+
       const oldStr = JSON.stringify(oldVal) ?? '""'
       const newStr = JSON.stringify(newVal) ?? '""'
-      
+
       if (oldStr !== newStr) {
         changes.push({
           field: key,
           oldValue: oldVal,
-          newValue: newVal
+          newValue: newVal,
         })
       }
     }
 
     const updateQuery: Record<string, any> = { $set: updates }
-    
+
     // Add to activity log dynamically
     if (changes.length > 0) {
       updateQuery.$push = {
         qcLogs: {
           timestamp: updates.updatedAt,
           changedBy,
-          changes
-        }
+          changes,
+        },
       }
     }
 

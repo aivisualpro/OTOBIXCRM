@@ -112,8 +112,8 @@ watch(() => props.filters, (newFilters) => {
 // ─── Instant Reveal Animation ───
 const isRevealed = ref(false)
 const isMounted = ref(true)
-onBeforeUnmount(() => { 
-  isMounted.value = false 
+onBeforeUnmount(() => {
+  isMounted.value = false
   window.removeEventListener('keydown', handleGlobalKeydown)
 })
 
@@ -176,18 +176,19 @@ function openQcReviewDialog(lead: any) {
 }
 
 async function confirmQcReview() {
-  if (!qcReviewingLead.value) return
+  if (!qcReviewingLead.value)
+    return
   const lead = qcReviewingLead.value
-  
+
   const userCookie = useCookie('userData')
   const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
   const qcByEmail = currentUser?.email || ''
-  
+
   await doStatusUpdate(lead, {
     approvalStatus: 'Under Review',
-    qcBy: qcByEmail
+    qcBy: qcByEmail,
   })
-  
+
   showQcReviewDialog.value = false
   qcReviewingLead.value = null
 }
@@ -505,14 +506,14 @@ const filteredItems = computed(() => {
 
     av = av ?? ''
     bv = bv ?? ''
-    
+
     // Numeric sort for numbers/IDs like '26-100013'
     const an = Number(String(av).replace(/\D/g, ''))
     const bn = Number(String(bv).replace(/\D/g, ''))
     if (!Number.isNaN(an) && !Number.isNaN(bn) && an !== bn && an !== 0 && bn !== 0) {
       return dir === 'asc' ? an - bn : bn - an
     }
-    
+
     // String sort
     const as = String(av).toLowerCase()
     const bs = String(bv).toLowerCase()
@@ -1256,8 +1257,8 @@ function getInitials(name: string): string {
                   variant="outline"
                   class="cursor-pointer hover:ring-1 hover:ring-orange-500/50 transition-all uppercase"
                   :class="getBadgeClass(item[col.key])"
-                  @click.stop="openQcReviewDialog(item)"
                   title="Click to take this lead under Quality Review"
+                  @click.stop="openQcReviewDialog(item)"
                 >
                   {{ item[col.key] || '—' }}
                 </Badge>
@@ -1728,7 +1729,7 @@ function getInitials(name: string): string {
               {{ qcReviewingLead.make }} {{ qcReviewingLead.model }} — {{ qcReviewingLead.carRegistrationNumber }}
             </p>
             <p class="text-sm font-medium text-muted-foreground mt-3 border-t pt-3 w-full">
-              Taking Responsibility as: 
+              Taking Responsibility as:
               <strong class="text-foreground text-orange-600">
                 {{ useCookie('userData').value ? (typeof useCookie('userData').value === 'string' ? JSON.parse(useCookie('userData').value as any).userName : (useCookie('userData').value as any).userName) : 'Unknown' }}
               </strong>
