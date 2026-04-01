@@ -81,15 +81,18 @@ const selectedLabels = computed(() => {
               :key="opt.value"
               :value="opt.value"
               @select="toggleOption(String(opt.value))"
+              class="w-full flex"
             >
-              <Icon
-                name="i-lucide-check"
-                :class="cn(
-                  'mr-2 size-4',
-                  selectedValues.includes(String(opt.value)) || isSelected(String(opt.value)) ? 'opacity-100 text-primary' : 'opacity-0'
-                )"
-              />
-              {{ opt.label }}
+              <slot name="option" :option="opt" :selected="selectedValues.includes(String(opt.value)) || isSelected(String(opt.value))">
+                <Icon
+                  name="i-lucide-check"
+                  :class="cn(
+                    'mr-2 size-4',
+                    selectedValues.includes(String(opt.value)) || isSelected(String(opt.value)) ? 'opacity-100 text-primary' : 'opacity-0'
+                  )"
+                />
+                {{ opt.label }}
+              </slot>
             </CommandItem>
           </CommandGroup>
         </CommandList>

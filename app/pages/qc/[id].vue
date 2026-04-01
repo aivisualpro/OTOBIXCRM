@@ -222,6 +222,7 @@ const exteriorSections = [
       { new: 'lhsQuarterPanelWithRearDoorOpenImages', old: 'lhsQuarterPanelImages' }
     ],
     parts: [
+      { key: 'lhsFullViewImages', oldKey: 'lhsFront45Degree', imageKey: 'lhsFullViewImages', oldImageKey: 'lhsFront45Degree', label: 'LHS Full View', isImageOnly: true },
       { key: 'lhsFenderDropdownList', oldKey: 'lhsFender', imageKey: 'lhsFenderImages', oldImageKey: 'lhsFenderImages', label: 'LHS Fender' },
       { key: 'lhsFrontWheelDropdownList', oldKey: 'lhsFrontAlloy', imageKey: 'lhsFrontWheelImages', oldImageKey: 'lhsFrontAlloyImages', label: 'LHS Front Wheel' },
       { key: 'lhsFrontTyreDropdownList', oldKey: 'lhsFrontTyre', imageKey: 'lhsFrontTyreImages', oldImageKey: 'lhsFrontTyreImages', label: 'LHS Front Tyre' },
@@ -754,16 +755,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
         <div v-else-if="['front', 'left', 'rear', 'right'].includes(activeTab)" class="space-y-6">
           <!-- Condition Grid -->
           <Card>
-            <CardContent class="pt-5 pb-5">
+            <CardContent class="p-0 sm:p-0">
               <div v-if="activeExteriorSection" :key="activeExteriorSection.title" class="mb-0">
-                <!-- Section heading -->
-                <div class="flex items-center gap-2 mb-3">
-                  <Icon :name="activeExteriorSection.icon" class="size-4 text-primary" />
-                  <h3 class="text-sm font-semibold">
-                    {{ activeExteriorSection.title }}
-                  </h3>
-                  <Separator class="flex-1" />
-                </div>
                 <!-- Parts grid -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 xl:gap-6">
                   <div
@@ -773,7 +766,18 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                   >
                     <!-- Left Side: Controls & Condition -->
                     <div class="flex flex-col w-[200px] xl:w-[240px] shrink-0 border-r border-border/50 bg-muted/10 relative">
-                      <template v-if="getOptions(part.label).length">
+                      <template v-if="(part as any).isImageOnly">
+                        <div class="h-full w-full flex flex-col bg-white/50 dark:bg-black/20">
+                          <div class="px-3 py-2 border-b border-border/50 flex items-center justify-center bg-muted/30 h-10 shrink-0">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground truncate">{{ part.label }}</span>
+                          </div>
+                          <div class="p-4 flex-1 flex flex-col items-center justify-center text-center gap-2 opacity-60">
+                            <Icon name="i-lucide-camera" class="size-5 text-muted-foreground" />
+                            <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-widest leading-tight">Images Only<br/>Section</span>
+                          </div>
+                        </div>
+                      </template>
+                      <template v-else-if="getOptions(part.label).length">
                         <MultiSelect 
                           v-model="editForm[part.key]" 
                           :options="getOptions(part.label)" 
@@ -804,6 +808,24 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                                   <Icon name="i-lucide-list-plus" class="size-4" /> Click to add conds..
                                 </div>
                               </div>
+                            </div>
+                          </template>
+                          
+                          <template #option="{ option, selected }">
+                            <Icon 
+                              name="i-lucide-check" 
+                              class="size-4 shrink-0 transition-opacity mr-2" 
+                              :class="selected ? 'opacity-100 text-foreground' : 'opacity-0'" 
+                            />
+                            <div 
+                              class="flex-1 flex items-center gap-1.5 px-2 py-1 rounded shadow-sm w-full transition-all duration-200" 
+                              :class="[
+                                getConditionStyle(option.label).bg,
+                                selected ? '!border-foreground ring-1 ring-foreground ring-offset-1 ring-offset-background font-black scale-[1.02] z-10' : 'opacity-85 hover:opacity-100'
+                              ]"
+                            >
+                              <Icon :name="getConditionStyle(option.label).icon" class="size-4 shrink-0" />
+                              <span class="text-[13px] leading-tight" :class="selected ? 'font-black' : 'font-bold'">{{ option.label }}</span>
                             </div>
                           </template>
                         </MultiSelect>
