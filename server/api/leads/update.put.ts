@@ -82,6 +82,17 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: 'Lead not found' })
     }
 
+    // Keep the core 'cars' collection in lock-step with these updates
+    const actualDoc = result.value || result
+    const apptId = actualDoc.appointmentId || oldDoc.appointmentId
+    if (apptId) {
+      await db.collection('cars').updateOne(
+        { appointmentId: apptId },
+        { $set: { ...updates, appointmentId: apptId } },
+        { upsert: true }
+      )
+    }
+
     // Sync to AppSheet in background (uses Appointment ID as key)
     syncLeadToAppSheet('Edit', result, db)
 

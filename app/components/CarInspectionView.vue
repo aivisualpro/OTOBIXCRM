@@ -13,17 +13,61 @@ const { setHeader } = usePageHeader()
 setHeader({ 
   title: props.readonly ? `Inspection: ${carId}` : `Quality Control: ${carId}`, 
   description: 'Vehicle inspection details', 
-  icon: 'i-lucide-scan-eye' 
+  icon: 'i-lucide-scan-eye',
+  showBackButton: true
 })
 
 const { carDetails: car, isLoading, error, fetchCarDetails } = useCarDetails()
 const { fetchDropdowns, getOptions } = useDropdowns()
+const { fetchCarDropdowns, makes, getModels, getVariants } = useCarDropdowns()
+const { allUsers, fetchAllUsers } = usePeopleApi()
+
+const allocatedToName = computed(() => {
+  const emailOrName = car.value?.allocatedTo
+  if (!emailOrName) return ''
+  const val = String(emailOrName).trim().toLowerCase()
+  const found = allUsers.value.find((u: any) =>
+    String(u.email || '').toLowerCase() === val
+    || String(u.userName || '').toLowerCase() === val
+    || String(u.emailAddress || '').toLowerCase() === val
+  )
+  if (found) {
+    if (found.fullName) return found.fullName
+    if (found.userName) return found.userName
+  }
+  return emailOrName
+})
+
+const editForm = ref<Record<string, any>>({})
+
+const makeOptions = computed(() => {
+  if (makes.value.length === 0 && editForm.value.make) return [{ label: editForm.value.make, value: editForm.value.make }]
+  return makes.value.map(m => ({ label: m, value: m }))
+})
+
+const modelOptions = computed(() => {
+  const selectedMake = editForm.value.make
+  const models = selectedMake ? getModels(selectedMake) : []
+  if (models.length === 0 && editForm.value.model) return [{ label: editForm.value.model, value: editForm.value.model }]
+  return models.map(m => ({ label: m, value: m }))
+})
+
+const variantOptions = computed(() => {
+  const selectedMake = editForm.value.make
+  const selectedModel = editForm.value.model
+  const variants = (selectedMake && selectedModel) ? getVariants(selectedMake, selectedModel) : []
+  if (variants.length === 0 && editForm.value.variant) return [{ label: editForm.value.variant, value: editForm.value.variant }]
+  return variants.map(v => ({ label: v, value: v }))
+})
 
 onMounted(() => {
-  if (!props.readonly) fetchDropdowns()
+  if (!props.readonly) {
+    fetchDropdowns()
+    fetchCarDropdowns()
+  }
   fetchCarDetails(carId)
+  fetchAllUsers()
 })
-const editForm = ref<Record<string, any>>({})
 const isSaving = ref(false)
 
 
@@ -419,6 +463,10 @@ watch(() => car.value, (newVal) => {
         }
       })
     })
+    // Extract year from yearMonthOfManufacture for editing
+    if (clone.yearMonthOfManufacture && !clone.yearOfManufacture) {
+      try { clone.yearOfManufacture = new Date(clone.yearMonthOfManufacture).getFullYear() } catch {}
+    }
     editForm.value = clone
   }
 }, { immediate: true })
@@ -702,114 +750,9 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
     <!-- Content -->
     <template v-else-if="car">
-      <!-- Hero Section -->
-      <div class="shrink-0 border-b bg-gradient-to-r from-primary/5 via-background to-primary/5">
-        <div class="p-6 flex flex-col lg:flex-row gap-6">
-          <!-- Main Image -->
-          <div class="shrink-0 w-full lg:w-80 h-48 rounded-xl overflow-hidden bg-muted relative group cursor-pointer" @click="getImages(car, 'frontMain').length && openLightboxUrls(getImages(car, 'frontMain'), 0, `${car.make} ${car.model}`)">
-            <img
-              v-if="getImages(car, 'frontMain').length"
-              :src="getImages(car, 'frontMain')[0]"
-              :alt="`${car.make} ${car.model}`"
-              class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            >
-            <div v-else class="w-full h-full flex items-center justify-center">
-              <Icon name="i-lucide-car" class="size-16 text-muted-foreground/30" />
-            </div>
-            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div class="absolute bottom-3 left-3 right-3">
-              <Badge variant="outline" class="bg-black/50 text-white border-white/20 backdrop-blur-sm">
-                <Icon name="i-lucide-hash" class="size-3 mr-1" />
-                {{ car.appointmentId }}
-              </Badge>
-            </div>
-          </div>
-
-          <!-- Info -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-start justify-between gap-4 mb-3">
-              <div>
-                <div class="flex items-center gap-2 mb-1">
-                  <Button variant="ghost" size="icon" class="size-8 -ml-2" @click="router.back()">
-                    <Icon name="i-lucide-arrow-left" class="size-4" />
-                  </Button>
-                  <h1 class="text-2xl font-bold tracking-tight">
-                    <template v-if="props.readonly">
-                      {{ car.make }} {{ car.model }}
-                    </template>
-                    <div v-else class="flex gap-2">
-                      <Input v-model="editForm.make" class="h-8 font-bold" /><Input v-model="editForm.model" class="h-8 font-bold" />
-                    </div>
-                  </h1>
-                </div>
-                <p class="text-muted-foreground text-sm ml-8">
-                  {{ car.variant }} · {{ car.fuelType }} · {{ car.cubicCapacity }}cc
-                </p>
-              </div>
-              <div class="flex gap-2 shrink-0">
-                <Badge :class="car.approvalStatus === 'APPROVED' ? 'bg-emerald-500/15 text-emerald-600 border-emerald-500/20' : 'bg-amber-500/15 text-amber-600 border-amber-500/20'" variant="outline">
-                  {{ car.approvalStatus || 'Pending' }}
-                </Badge>
-                <Badge :class="car.status === 'INSPECTED' ? 'bg-blue-500/15 text-blue-600 border-blue-500/20' : 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'" variant="outline">
-                  {{ car.status || '—' }}
-                </Badge>
-              </div>
-            </div>
-
-            <!-- Key Stats Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 ml-8">
-              <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                  Registration
-                </p>
-                <p v-if="props.readonly" class="text-sm font-semibold">{{ car.registrationNumber || '—' }}</p>
-                <Input v-else v-model="editForm.registrationNumber" class="h-8 text-sm font-semibold" />
-              </div>
-              <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                  Odometer
-                </p>
-                <p v-if="props.readonly" class="text-sm font-semibold">{{ (car.odometerReadingInKms || 0).toLocaleString() }} km</p>
-                <Input v-else v-model="editForm.odometerReadingInKms" type="number" class="h-8 text-sm font-semibold" />
-              </div>
-              <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                  Owner
-                </p>
-                <p v-if="props.readonly" class="text-sm font-semibold">{{ car.ownerSerialNumber || '—' }}</p>
-                <Input v-else v-model="editForm.ownerSerialNumber" type="number" class="h-8 text-sm font-semibold" />
-              </div>
-              <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                  MFG Year
-                </p>
-                <p class="text-sm font-semibold">
-                  {{ car.yearMonthOfManufacture ? new Date(car.yearMonthOfManufacture).getFullYear() : '—' }}
-                </p>
-              </div>
-              <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                  City
-                </p>
-                <p class="text-sm font-semibold">
-                  {{ car.city || '—' }}
-                </p>
-              </div>
-              <div class="rounded-lg border bg-card p-3 space-y-1">
-                <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                  Price Discovery
-                </p>
-                <p v-if="props.readonly" class="text-sm font-semibold text-primary">₹{{ (car.priceDiscovery || 0).toLocaleString() }}</p>
-                <Input v-else v-model="editForm.priceDiscovery" type="number" class="h-8 text-sm font-semibold text-primary" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab Bar -->
-      <div class="shrink-0 border-b bg-background/80 backdrop-blur-sm">
-        <div class="flex gap-1 px-6 overflow-x-auto no-scrollbar">
+      <!-- Tab Bar (Moved to top) -->
+      <div class="shrink-0 border-b bg-background/80 backdrop-blur-sm relative z-10 w-full overflow-hidden">
+        <div class="flex gap-1 px-4 lg:px-6 overflow-x-auto no-scrollbar">
           <button
             v-for="tab in tabs"
             :key="tab.id"
@@ -827,8 +770,211 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
       </div>
 
       <!-- Tab Content (scrollable) -->
-      <div class="flex-1 min-h-0 overflow-auto p-6">
-        <div v-if="activeTab === 'document-details'" class="space-y-6">
+      <div class="flex-1 min-h-0 overflow-auto bg-muted/10 p-4 lg:p-6">
+        
+        <div v-if="activeTab === 'document-details'" class="animate-in fade-in duration-300 space-y-6">
+          <!-- Hero Section — Card Architecture -->
+          <div class="rounded-xl border border-border/80 bg-card shadow-sm overflow-hidden flex flex-col lg:flex-row">
+            
+            <!-- FAR LEFT: Vertical Status Strip -->
+            <div class="hidden lg:flex flex-col w-12 shrink-0">
+              <!-- Inspection Status Block -->
+              <div class="flex-1 flex items-center justify-center text-white" :class="car.inspectionStatus === 'Inspected' ? 'bg-[#4285F4]' : 'bg-slate-400 dark:bg-slate-600'">
+                <span class="transform -rotate-180" style="writing-mode: vertical-rl; text-orientation: mixed;">
+                  <span class="flex items-center gap-2 text-[11px] font-black tracking-[0.2em] uppercase whitespace-nowrap">
+                    <Icon :name="car.inspectionStatus === 'Inspected' ? 'i-lucide-scan-eye' : 'i-lucide-clock'" class="size-3.5 rounded-full bg-white/20 p-0.5" />
+                    {{ car.inspectionStatus || 'Pending' }}
+                  </span>
+                </span>
+              </div>
+              <!-- Approval Status Block -->
+              <div class="flex-1 flex items-center justify-center text-white" :class="(car.approvalStatus || '').toLowerCase().includes('approved') ? 'bg-emerald-500' : (car.approvalStatus || '').toLowerCase().includes('reject') ? 'bg-red-500' : 'bg-[#FBBC05] text-amber-950'">
+                <span class="transform -rotate-180" style="writing-mode: vertical-rl; text-orientation: mixed;">
+                  <span class="flex items-center gap-2 text-[11px] font-black tracking-[0.2em] uppercase whitespace-nowrap">
+                    <Icon :name="(car.approvalStatus || '').toLowerCase().includes('approved') ? 'i-lucide-check-circle' : (car.approvalStatus || '').toLowerCase().includes('reject') ? 'i-lucide-x-circle' : 'i-lucide-clock'" class="size-3.5 rounded-full bg-black/10 p-0.5" />
+                    {{ car.approvalStatus || 'Under Review' }}
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <!-- LEFT: Image Area -->
+            <div class="relative w-full lg:w-[320px] shrink-0 h-64 lg:h-auto overflow-hidden bg-muted group cursor-pointer" @click="getImages(car, 'frontMain').length && openLightboxUrls(getImages(car, 'frontMain'), 0, `${car.make} ${car.model}`)">
+              <img
+                v-if="getImages(car, 'frontMain').length"
+                :src="getImages(car, 'frontMain')[0]"
+                :alt="`${car.make} ${car.model}`"
+                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              >
+              <div v-else class="w-full h-full flex items-center justify-center">
+                <Icon name="i-lucide-car" class="size-20 text-muted-foreground/30" />
+              </div>
+              <!-- Top Left Badge -->
+              <div class="absolute top-5 left-5">
+                <Badge class="bg-black/60 hover:bg-black/60 text-white/90 border-transparent backdrop-blur-md rounded-full px-4 py-1.5 font-mono text-sm tracking-widest shadow-none">
+                  # {{ car.appointmentId }}
+                </Badge>
+              </div>
+            </div>
+
+            <!-- MIDDLE: Data Grid -->
+            <div class="flex-1 min-w-0 p-5 lg:p-6 lg:px-8 flex flex-col gap-6 lg:border-r border-border/60">
+              <!-- Breadcrumbs / Top Info -->
+              <!-- Stats Grid Layout -->
+              <div class="flex flex-col gap-3 mt-auto w-full">
+                <!-- Row 1: Make, Model, Variant -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <!-- Make -->
+                  <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <p class="text-xs text-muted-foreground mb-2 font-medium">Make</p>
+                    <div class="mt-auto relative z-10 w-full pr-8">
+                      <div v-if="props.readonly" class="text-lg font-black text-foreground truncate" :title="car.make">{{ car.make || '—' }}</div>
+                      <SearchableSelect v-else v-model="editForm.make" :options="makeOptions" placeholder="Make" class-name="h-8 text-sm font-bold shadow-none w-full border-b border-t-0 border-x-0 rounded-none px-0" />
+                    </div>
+                  </div>
+
+                  <!-- Model -->
+                  <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <p class="text-xs text-muted-foreground mb-2 font-medium">Model</p>
+                    <div class="mt-auto relative z-10 w-full pr-8">
+                      <div v-if="props.readonly" class="text-lg font-black text-foreground truncate" :title="car.model">{{ car.model || '—' }}</div>
+                      <SearchableSelect v-else v-model="editForm.model" :options="modelOptions" placeholder="Model" class-name="h-8 text-sm font-bold shadow-none w-full border-b border-t-0 border-x-0 rounded-none px-0" />
+                    </div>
+                  </div>
+
+                  <!-- Variant -->
+                  <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <p class="text-xs text-muted-foreground mb-2 font-medium">Variant</p>
+                    <div class="mt-auto relative z-10 w-full">
+                      <div v-if="props.readonly" class="text-lg font-black text-foreground truncate" :title="car.variant">{{ car.variant || '—' }}</div>
+                      <SearchableSelect v-else v-model="editForm.variant" :options="variantOptions" placeholder="Variant" class-name="h-8 w-full text-sm font-black shadow-none border-b border-t-0 border-x-0 rounded-none px-0" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Row 2: Engine, Odometer, MFG Year -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <!-- Engine -->
+                  <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <p class="text-xs text-muted-foreground mb-1.5 font-medium">Engine</p>
+                    <div class="flex items-center gap-2 mt-auto mr-12">
+                      <div class="flex-1 bg-muted/80 rounded-lg py-1.5 px-3 border border-border/60 shadow-inner">
+                        <p class="font-bold text-foreground text-sm tracking-tight truncate">{{ car.fuelType || '—' }} — {{ car.cubicCapacity || '—' }}<span class="text-[10px] opacity-70 ml-0.5">cc</span></p>
+                      </div>
+                    </div>
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 mt-1 size-12 rounded-full border-[3px] border-[#FBBC05]/10 flex items-center justify-center bg-background shadow-sm">
+                      <Icon name="i-lucide-fuel" class="size-5 text-[#FBBC05]" />
+                    </div>
+                  </div>
+                  
+                  <!-- Odometer -->
+                  <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <p class="text-xs text-muted-foreground mb-1.5 font-medium">Odometer</p>
+                    <div class="flex items-center gap-2 mt-auto mr-12">
+                      <div class="flex-1 bg-muted/80 rounded-lg py-1.5 px-3 border border-border/60 shadow-inner">
+                        <p v-if="props.readonly" class="font-extrabold text-foreground text-sm tracking-tight">{{ (car.odometerReadingInKms || 0).toLocaleString('en-IN') }} km</p>
+                        <Input v-else v-model="editForm.odometerReadingInKms" type="number" class="h-6 text-sm font-extrabold bg-transparent border-none p-0 focus-visible:ring-0 shadow-none text-foreground" />
+                      </div>
+                    </div>
+                    <!-- Decorative circle icon -->
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 mt-1 size-12 rounded-full border-[3px] border-[#4285F4]/10 flex items-center justify-center bg-background shadow-sm">
+                      <Icon name="i-lucide-gauge" class="size-5 text-[#4285F4]" />
+                    </div>
+                  </div>
+
+                  <!-- MFG Year -->
+                  <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <p class="text-xs text-muted-foreground mb-1 font-medium">MFG Year</p>
+                    <div v-if="props.readonly" class="text-2xl font-black text-foreground mt-auto">
+                      {{ car.yearMonthOfManufacture ? new Date(car.yearMonthOfManufacture).getFullYear() : '—' }}
+                    </div>
+                    <Input v-else v-model="editForm.yearOfManufacture" type="number" class="h-8 mt-auto text-2xl font-black border-none bg-transparent p-0 focus-visible:ring-0 shadow-none w-24 text-foreground" placeholder="e.g. 2019" />
+                    <!-- Decorative circle icon -->
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 mt-1 size-12 rounded-full border-[3px] border-slate-200 dark:border-slate-800 flex items-center justify-center bg-background shadow-sm">
+                      <Icon name="i-lucide-calendar" class="size-5 text-slate-400" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bottom Row: Ownership & City -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <!-- Ownership -->
+                  <div class="md:col-span-2 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between">
+                    <p class="text-xs text-muted-foreground mb-2.5 font-medium">Ownership</p>
+                    <div class="flex gap-1.5 h-9">
+                      <!-- If readonly -->
+                      <template v-if="props.readonly">
+                        <div class="bg-blue-600 text-white rounded-md px-4 flex items-center justify-center gap-2 font-bold text-sm shadow-md ring-1 ring-blue-600">
+                          {{ Number(car.ownerSerialNumber || 1) }}{{ Number(car.ownerSerialNumber || 1) === 1 ? 'st' : Number(car.ownerSerialNumber || 1) === 2 ? 'nd' : Number(car.ownerSerialNumber || 1) === 3 ? 'rd' : 'th' }}
+                        </div>
+                        <div class="flex gap-1.5 opacity-50">
+                          <div v-for="n in 5" :key="n" v-show="n !== Number(car.ownerSerialNumber || 1)" class="w-12 rounded-md border border-border/60 bg-muted/50 flex items-center justify-center text-xs font-semibold text-muted-foreground">{{ n }}{{ n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th' }}</div>
+                        </div>
+                      </template>
+                      <!-- If editable -->
+                      <template v-else>
+                        <button
+                          v-for="n in 5"
+                          :key="n"
+                          type="button"
+                          class="flex-1 rounded-md text-sm font-bold transition-all duration-200 border flex items-center justify-center gap-2"
+                          :class="Number(editForm.ownerSerialNumber) === n 
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-600/50 scale-[1.02]' 
+                            : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted'"
+                          @click="editForm.ownerSerialNumber = n"
+                        >
+                          {{ n }}{{ n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th' }}
+                        </button>
+                      </template>
+                    </div>
+                  </div>
+                  
+                  <!-- City -->
+                  <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <p class="text-xs text-muted-foreground mb-1 font-medium">City</p>
+                    <h3 class="text-xl font-black text-foreground tracking-tight mt-auto relative z-10">{{ car.city || '—' }}</h3>
+                    <!-- Map pin -->
+                    <Icon name="i-lucide-map-pin" class="absolute top-4 right-4 size-5 text-muted-foreground/30" />
+                    <!-- City skyline graphic placeholder -->
+                    <div class="absolute -bottom-2 -right-2 opacity-10">
+                      <Icon name="i-lucide-building-2" class="size-16" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Pricing / Offer Action -->
+            <div class="w-full lg:w-[280px] bg-card p-6 lg:p-8 flex flex-col justify-center">
+              <p class="text-sm text-muted-foreground mb-1 font-medium">Price Discovery</p>
+              <div class="text-3xl font-black text-foreground tracking-tight mb-8">
+                <span v-if="props.readonly">₹ {{ (car.priceDiscovery || 0).toLocaleString('en-IN') }}</span>
+                <Input v-else v-model="editForm.priceDiscovery" type="number" class="h-12 text-2xl font-black bg-muted/50 mt-2 shadow-inner border-border/60" />
+              </div>
+              
+              <!-- Assigned Inspector -->
+              <div v-if="car.allocatedTo" class="mb-2 w-full">
+                <p class="text-[10px] text-muted-foreground mb-2 font-bold uppercase tracking-wider">Assigned Inspector</p>
+                <div class="flex items-center gap-3 p-3 rounded-lg border border-border/80 bg-background/50 shadow-sm overflow-hidden">
+                  <Avatar class="size-8 shrink-0">
+                    <AvatarFallback class="text-xs font-bold bg-primary/10 text-primary">{{ (allocatedToName || 'UA').substring(0, 2).toUpperCase() }}</AvatarFallback>
+                  </Avatar>
+                  <div class="flex flex-col min-w-0">
+                    <span class="text-sm font-semibold text-foreground truncate" :title="allocatedToName">{{ allocatedToName }}</span>
+                    <span class="text-[10px] text-muted-foreground truncate" :title="car.allocatedTo">{{ car.allocatedTo }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div v-if="!props.readonly" class="mt-6 flex flex-col gap-3">
+                 <Separator />
+                 <p class="text-[10px] text-muted-foreground text-center font-medium uppercase tracking-widest flex items-center justify-center gap-1.5">
+                    <Icon name="i-lucide-check-circle-2" class="size-3 text-emerald-500" /> Auto-saving enabled
+                 </p>
+              </div>
+            </div>
+          </div>
+
           <!-- All Document Details -->
           <Card>
             <CardHeader class="pt-5 pb-3">

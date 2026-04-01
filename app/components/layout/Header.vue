@@ -32,12 +32,21 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
       <div class="h-5 w-px bg-border/60 mx-1" />
       <div class="flex items-center gap-3 min-w-0">
         <ClientOnly>
-          <div
-            v-if="headerState.icon"
-            class="size-8 rounded-xl flex items-center justify-center shrink-0 border border-primary/10 shadow-sm transition-all"
-            :style="{ background: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 12%, transparent), color-mix(in oklch, var(--primary) 3%, transparent))' }"
-          >
-            <Icon :name="headerState.icon" class="size-4 text-primary" />
+          <div class="flex items-center gap-2">
+            <Button v-if="headerState.showBackButton" variant="ghost" size="icon" class="size-8 text-muted-foreground hover:text-foreground shrink-0 lg:hidden" @click="$router.back()">
+              <Icon name="i-lucide-arrow-left" class="size-4" />
+            </Button>
+            <Button v-if="headerState.showBackButton" variant="ghost" size="icon" class="size-8 text-muted-foreground hover:text-foreground shrink-0 hidden lg:flex border border-border/50 bg-background hover:bg-muted" @click="$router.back()">
+              <Icon name="i-lucide-arrow-left" class="size-4" />
+            </Button>
+            
+            <div
+              v-if="headerState.icon"
+              class="size-8 rounded-xl flex items-center justify-center shrink-0 border border-primary/10 shadow-sm transition-all"
+              :style="{ background: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 12%, transparent), color-mix(in oklch, var(--primary) 3%, transparent))' }"
+            >
+              <Icon :name="headerState.icon" class="size-4 text-primary" />
+            </div>
           </div>
         </ClientOnly>
         <div class="min-w-0 flex items-center">

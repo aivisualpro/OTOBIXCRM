@@ -139,21 +139,31 @@ const inspectors = computed(() =>
 onMounted(() => fetchAllUsers())
 
 function getUserLabel(emailOrName: string) {
-  if (!emailOrName)
-    return '—'
+  if (!emailOrName) return '—'
   const val = String(emailOrName).trim().toLowerCase()
   const found = allUsers.value.find((u: any) =>
     String(u.email || '').toLowerCase() === val
     || String(u.userName || '').toLowerCase() === val
-    || String(u.emailAddress || '').toLowerCase() === val,
+    || String(u.emailAddress || '').toLowerCase() === val
   )
+  
+  let resolvedName = ''
   if (found) {
-    if (found.fullName)
-      return found.fullName.toUpperCase()
-    if (found.userName)
-      return found.userName.toUpperCase()
+    resolvedName = found.fullName || found.userName || found.name || ''
   }
-  return String(emailOrName).toUpperCase()
+  
+  if (!resolvedName && val.includes('@')) {
+    // Graceful fallback: 'sanat.das@otobix.in' -> 'Sanat Das'
+    resolvedName = val.split('@')[0]?.replace(/[\._]/g, ' ') || ''
+  }
+  
+  if (!resolvedName) resolvedName = emailOrName
+
+  // Format to standard Title Case (e.g. Sanat Das)
+  return resolvedName
+    .split(' ')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ')
 }
 
 const showAssignDialog = ref(false)
@@ -1241,7 +1251,7 @@ function getInitials(name: string): string {
                 </span>
               </div>
             </TableHead>
-            <TableHead class="w-[80px] text-right">
+            <TableHead v-if="router.currentRoute.value.path !== '/leads/under-review'" class="w-[80px] text-right">
               Actions
             </TableHead>
           </TableRow>
@@ -1344,13 +1354,13 @@ function getInitials(name: string): string {
                 </Badge>
               </div>
               <!-- User Identifiers -->
-              <span v-else-if="['createdBy', 'createdByFullName', 'addedBy', 'allocatedTo'].includes(col.key)" class="text-sm font-medium">
+              <span v-else-if="['createdBy', 'createdByFullName', 'addedBy', 'allocatedTo', 'qcBy'].includes(col.key)" class="text-sm font-medium">
                 {{ getUserLabel(item[col.key]) }}
               </span>
               <!-- Default text -->
               <span v-else class="text-sm">{{ item[col.key] ?? '—' }}</span>
             </TableCell>
-            <TableCell class="text-right">
+            <TableCell v-if="router.currentRoute.value.path !== '/leads/under-review'" class="text-right">
               <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button v-if="router.currentRoute.value.path === '/leads'" variant="ghost" size="icon" class="size-8" @click.stop="openEdit(item)">
                   <Icon name="i-lucide-pencil" class="size-3.5" />
@@ -1362,7 +1372,7 @@ function getInitials(name: string): string {
             </TableCell>
           </TableRow>
           <TableRow v-if="filteredItems.length === 0 && !isLoading">
-            <TableCell :colspan="columns.length + 1" class="h-32 text-center">
+            <TableCell :colspan="router.currentRoute.value.path !== '/leads/under-review' ? columns.length + 1 : columns.length" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-inbox" class="size-8" />
                 <p>No leads found</p>
@@ -1504,18 +1514,18 @@ function getInitials(name: string): string {
                 </div>
 
                 <!-- Interactive Ownership Number Buttons -->
-                <div v-else-if="field.key === 'ownershipSerialNumber'" class="flex flex-wrap gap-2 pt-1">
+                <div v-else-if="field.key === 'ownershipSerialNumber'" class="flex gap-1.5 h-9 pt-1 w-full max-w-sm">
                   <button
-                    v-for="num in [1, 2, 3, 4, 5]"
-                    :key="num"
+                    v-for="n in 5"
+                    :key="n"
                     type="button"
-                    class="h-10 w-12 rounded-lg border font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                    :class="Number(formData[field.key]) === num
-                      ? 'border-primary bg-primary text-primary-foreground shadow-sm scale-105'
-                      : 'border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground'"
-                    @click="formData[field.key] = num"
+                    class="flex-1 rounded-md text-sm font-bold transition-all duration-200 border flex items-center justify-center gap-1"
+                    :class="Number(formData[field.key]) === n 
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-600/50 scale-[1.02]' 
+                      : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted'"
+                    @click="formData[field.key] = n"
                   >
-                    {{ num }}
+                    {{ n }}{{ n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th' }}
                   </button>
                 </div>
 

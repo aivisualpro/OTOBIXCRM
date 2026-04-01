@@ -36,7 +36,6 @@ export const scheduledColumns = [
   { key: 'createdAt', label: 'Created At', type: 'date' as const },
 ]
 
-/** Per-route column overrides — if a route key is here, use its columns instead of default */
 export const routeColumnsMap: Record<string, typeof leadsColumns> = {
   'scheduled': scheduledColumns,
   'search-results': [
@@ -56,6 +55,24 @@ export const routeColumnsMap: Record<string, typeof leadsColumns> = {
     { key: 'addedBy', label: 'Added By' },
     { key: 'createdByFullName', label: 'Created By' },
     { key: 'createdAt', label: 'Created At', type: 'date' as const },
+  ],
+  'under-review': [
+    { key: 'appointmentId', label: 'Appt. ID' },
+    { key: 'inspectionDateTime', label: 'Inspection Date', type: 'date' as const },
+    { key: 'inspectionAddress', label: 'Address' },
+    { key: 'addedBy', label: 'Added By' },
+    { key: 'createdByFullName', label: 'Created By' },
+    { key: 'allocatedTo', label: 'Inspected By' },
+    { key: 'qcBy', label: 'Reviewing By' },
+    { key: 'make', label: 'Make' },
+    { key: 'model', label: 'Model' },
+    { key: 'variant', label: 'Variant' },
+    { key: 'ownerName', label: 'Owner' },
+    { key: 'customerContactNumber', label: 'Contact' },
+    { key: 'yearOfManufacture', label: 'Year of Mfg' },
+    { key: 'yearOfRegistration', label: 'Year of Reg' },
+    { key: 'priority', label: 'Priority', type: 'badge' as const },
+    { key: 'inspectionStatus', label: 'Inspection', type: 'badge' as const },
   ],
 }
 
