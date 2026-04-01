@@ -124,6 +124,7 @@ export const leadsFormFields = [
       { label: 'Pending', value: 'Pending' },
       { label: 'Scheduled', value: 'Scheduled' },
       { label: 'Re-Schedule', value: 'Re-Scheduled' },
+      { label: 'Re-Inspection', value: 'Re-Inspection' },
       { label: 'Cancelled', value: 'Cancelled' },
     ],
   },
@@ -233,7 +234,7 @@ export const routeFilters = {
   },
   // /leads/re-inspection
   're-inspection': {
-    inspectionStatus: 'Re-Inspected',
+    inspectionStatus: 'Re-Inspection',
     approvalStatus: '*',
     label: 'Re-Inspection',
   },

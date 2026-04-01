@@ -158,7 +158,7 @@ export default defineEventHandler(async (event) => {
         're-scheduled': countFor('Re-Scheduled', '*'),
         'running': countFor('Running', '*'),
         'cancelled': countFor('Cancelled', '*'),
-        're-inspection': countFor('Re-Inspected', '*'),
+        're-inspection': countFor('Re-Inspection', '*'),
         'inspected': countFor('Inspected', 'Pending'),
         'under-review': countFor('Inspected', 'Under Review'),
         'quality-approved': countFor('Inspected', 'Approved'),

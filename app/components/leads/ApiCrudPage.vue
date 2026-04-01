@@ -12,7 +12,7 @@ const props = defineProps<{
   filters?: Record<string, string>
   clickable?: boolean
 }>()
-const inspectionStatuses = ['Pending', 'Scheduled', 'Re-Scheduled', 'Cancelled']
+const inspectionStatuses = ['Pending', 'Scheduled', 'Re-Scheduled', 'Re-Inspection', 'Cancelled']
 const approvalStatuses = ['Pending', 'Under Review', 'Approved', 'Quality Rejected']
 
 const router = useRouter()
@@ -203,7 +203,7 @@ async function confirmReInspection() {
   const lead = inspectedActionLead.value
   
   await doStatusUpdate(lead, {
-    inspectionStatus: 'Re-Inspected',
+    inspectionStatus: 'Re-Inspection',
     reAllocatedTo: reAllocatedTo.value,
     reInspectionDateTime: reInspectionDateTime.value,
   })
@@ -359,7 +359,7 @@ const isAdmin = computed(() => {
   return role === 'admin'
 })
 // Status is editable inline when the lead's current inspectionStatus is one of these
-const EDITABLE_INSPECTION_STATUSES = ['pending', 'scheduled', 're-scheduled']
+const EDITABLE_INSPECTION_STATUSES = ['pending', 'scheduled', 're-scheduled', 're-inspection']
 function isInspectionStatusEditable(item: Record<string, any>): boolean {
   const current = String(item?.inspectionStatus || '').trim().toLowerCase()
   return EDITABLE_INSPECTION_STATUSES.includes(current)
@@ -898,6 +898,7 @@ const badgeClasses: Record<string, string> = {
   'Pending': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Scheduled': 'bg-blue-500/10 text-blue-600 border-blue-500/20',
   'Re-Scheduled': 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
+  'Re-Inspection': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Under Inspection': 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   'Cancelled': 'bg-red-500/10 text-red-600 border-red-500/20',
   'Inspected': 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
@@ -1297,7 +1298,7 @@ function getInitials(name: string): string {
                 </DropdownMenu>
                 <!-- Clickable when in inspected tab wrapper OR search results with correct status -->
                 <Badge
-                  v-else-if="['/leads/inspected', '/leads/search-results'].includes(router.currentRoute.value.path) && col.key === 'inspectionStatus' && item.inspectionStatus === 'Inspected' && item.approvalStatus === 'Pending'"
+                  v-else-if="col.key === 'inspectionStatus' && item.inspectionStatus === 'Inspected' && ['/leads/inspected', '/leads/under-review', '/leads/quality-approved', '/leads/quality-rejected', '/leads/search-results'].includes(router.currentRoute.value.path)"
                   variant="outline"
                   class="cursor-pointer hover:ring-1 hover:ring-orange-500/50 transition-all uppercase"
                   :class="getBadgeClass(item[col.key])"
