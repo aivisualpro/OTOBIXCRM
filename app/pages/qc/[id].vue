@@ -717,17 +717,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
         <div v-else-if="['front', 'left', 'rear', 'right'].includes(activeTab)" class="space-y-6">
           <!-- Condition Grid -->
           <Card>
-            <CardHeader class="pt-5 pb-3">
-              <CardTitle class="text-base flex items-center gap-2">
-                <Icon :name="activeExteriorSection?.icon || 'i-lucide-scan-eye'" class="size-4 text-primary" />
-                {{ activeExteriorSection?.title || 'Exterior' }} Condition
-              </CardTitle>
-              <p class="text-xs text-muted-foreground mt-1">
-                Condition of exterior components as inspected
-              </p>
-            </CardHeader>
-            <Separator />
-            <CardContent class="pt-4 pb-5">
+            <CardContent class="pt-5 pb-5">
               <div v-if="activeExteriorSection" :key="activeExteriorSection.title" class="mb-0">
                 <!-- Section heading -->
                 <div class="flex items-center gap-2 mb-3">
@@ -760,33 +750,16 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                     </div>
                     <!-- Part Images Inline -->
                     <div v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length" class="p-2 border-t border-border/50 bg-muted/10">
-                      <div class="flex flex-wrap gap-1.5">
+                      <div class="grid grid-cols-3 gap-2">
                         <div
                           v-for="(imgUrl, idx) in getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey)"
                           :key="idx"
-                          class="relative size-10 rounded-md overflow-hidden border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
+                          class="relative aspect-square w-full rounded-md overflow-hidden border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
                           @click="openLightboxUrls(getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey), idx, part.label)"
                         >
                           <img :src="imgUrl" :alt="part.label" class="w-full h-full object-cover" loading="lazy">
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- Section photos -->
-                <div v-if="activeExteriorSection?.imageKeys?.length && sectionImages(activeExteriorSection.imageKeys).length" class="mt-4">
-                  <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
-                    <div
-                      v-for="(img, idx) in sectionImages(activeExteriorSection.imageKeys)"
-                      :key="idx"
-                      class="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border hover:border-primary/50 transition-colors"
-                      @click="openLightbox(sectionImages(activeExteriorSection.imageKeys || []), idx)"
-                    >
-                      <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
-                      <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <Badge variant="secondary" class="absolute bottom-1 left-1 text-[9px] max-w-[calc(100%-8px)] truncate">
-                        {{ img.label }}
-                      </Badge>
                     </div>
                   </div>
                 </div>
