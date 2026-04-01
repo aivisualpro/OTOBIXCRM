@@ -170,6 +170,50 @@ const cancelNotes = ref('')
 const showQcReviewDialog = ref(false)
 const qcReviewingLead = ref<any>(null)
 
+const showInspectedActionDialog = ref(false)
+const inspectedActionLead = ref<any>(null)
+
+const showReInspectionDialog = ref(false)
+const reAllocatedTo = ref('')
+const reInspectionDateTime = ref('')
+
+function openInspectedActionDialog(lead: any) {
+  inspectedActionLead.value = lead
+  showInspectedActionDialog.value = true
+}
+
+function proceedUnderReview() {
+  showInspectedActionDialog.value = false
+  qcReviewingLead.value = inspectedActionLead.value
+  showQcReviewDialog.value = true
+}
+
+function proceedReInspection() {
+  showInspectedActionDialog.value = false
+  reAllocatedTo.value = inspectedActionLead.value?.allocatedTo || ''
+  reInspectionDateTime.value = ''
+  showReInspectionDialog.value = true
+}
+
+async function confirmReInspection() {
+  if (!inspectedActionLead.value || !reAllocatedTo.value || !reInspectionDateTime.value) {
+    toast.error('Please fill in all re-inspection details')
+    return
+  }
+  const lead = inspectedActionLead.value
+  
+  await doStatusUpdate(lead, {
+    inspectionStatus: 'Re-Inspected',
+    reAllocatedTo: reAllocatedTo.value,
+    reInspectionDateTime: reInspectionDateTime.value,
+  })
+  
+  showReInspectionDialog.value = false
+  inspectedActionLead.value = null
+  reAllocatedTo.value = ''
+  reInspectionDateTime.value = ''
+}
+
 function openQcReviewDialog(lead: any) {
   qcReviewingLead.value = lead
   showQcReviewDialog.value = true
@@ -1257,8 +1301,8 @@ function getInitials(name: string): string {
                   variant="outline"
                   class="cursor-pointer hover:ring-1 hover:ring-orange-500/50 transition-all uppercase"
                   :class="getBadgeClass(item[col.key])"
-                  title="Click to take this lead under Quality Review"
-                  @click.stop="openQcReviewDialog(item)"
+                  title="Click to take this lead under Quality Review or Send For Re-Inspection"
+                  @click.stop="openInspectedActionDialog(item)"
                 >
                   {{ item[col.key] || '—' }}
                 </Badge>
@@ -1744,6 +1788,95 @@ function getInitials(name: string): string {
           <Button :disabled="isUpdatingStatus" class="bg-orange-600 hover:bg-orange-700 text-white" @click="confirmQcReview">
             <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
             Confirm QC Review
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Inspected Action Choice Dialog -->
+    <Dialog v-model:open="showInspectedActionDialog">
+      <DialogContent class="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon name="i-lucide-check-circle" class="size-5 text-emerald-500" />
+            Inspected Lead Actions
+          </DialogTitle>
+          <DialogDescription>
+            Choose how you would like to proceed with this inspected lead.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="flex flex-col gap-3 py-4">
+          <Button class="justify-start gap-3 h-12 text-base font-medium" variant="outline" @click="proceedUnderReview">
+            <Icon name="i-lucide-activity" class="size-5 text-orange-500" />
+            Take Under Review
+          </Button>
+          <Button class="justify-start gap-3 h-12 text-base font-medium" variant="outline" @click="proceedReInspection">
+            <Icon name="i-lucide-rotate-ccw" class="size-5 text-blue-500" />
+            Send for Re-Inspection
+          </Button>
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" @click="showInspectedActionDialog = false">Cancel</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Re-Inspection Details Dialog -->
+    <Dialog v-model:open="showReInspectionDialog">
+      <DialogContent class="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon name="i-lucide-rotate-ccw" class="size-5 text-blue-500" />
+            Schedule Re-Inspection
+          </DialogTitle>
+          <DialogDescription>
+            Assign an inspector and select a new date and time for re-inspection.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <div v-if="inspectedActionLead" class="rounded-lg border bg-muted/30 p-3 space-y-1">
+            <p class="text-sm font-medium">
+              {{ inspectedActionLead.ownerName || 'Unknown' }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              {{ inspectedActionLead.make }} {{ inspectedActionLead.model }} — {{ inspectedActionLead.carRegistrationNumber }}
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <Label>Re-Allocate To</Label>
+            <Select v-model="reAllocatedTo">
+              <SelectTrigger>
+                <SelectValue placeholder="Select an inspector" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="insp in inspectors" :key="insp._id || insp.id" :value="insp.email">
+                  <div class="flex items-center gap-2">
+                    <Avatar class="size-5">
+                      <AvatarFallback class="text-[9px]">
+                        {{ insp.userName?.slice(0, 2)?.toUpperCase() }}
+                      </AvatarFallback>
+                    </Avatar>
+                    {{ insp.userName }}
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="space-y-2">
+            <Label>Re-Inspection Date & Time</Label>
+            <Input v-model="reInspectionDateTime" type="datetime-local" />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="showReInspectionDialog = false">Cancel</Button>
+          <Button :disabled="!reAllocatedTo || !reInspectionDateTime || isUpdatingStatus" class="bg-blue-600 hover:bg-blue-700 text-white" @click="confirmReInspection">
+            <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
+            Confirm Re-Inspection
           </Button>
         </DialogFooter>
       </DialogContent>

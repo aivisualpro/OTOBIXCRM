@@ -62,6 +62,11 @@ export default defineEventHandler(async (event) => {
           changedBy,
           changes,
         },
+        logs: {
+          timestamp: updates.updatedAt,
+          changedBy,
+          changes,
+        },
       }
     }
 
