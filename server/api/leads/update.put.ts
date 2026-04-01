@@ -15,6 +15,8 @@ export default defineEventHandler(async (event) => {
 
     delete updates._id
     delete updates.id
+    delete updates.qcLogs
+    delete updates.logs
 
     updates.updatedAt = new Date().toISOString()
 

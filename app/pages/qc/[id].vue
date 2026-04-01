@@ -20,8 +20,8 @@ const isSaving = ref(false)
 
 
 
-async function saveQC() {
-  isSaving.value = true
+async function saveQC(silent = false) {
+  if (!silent) isSaving.value = true
   try {
     const userCookie = useCookie('userData')
     const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
@@ -31,7 +31,7 @@ async function saveQC() {
     await $fetch('/api/leads/update', {
       method: 'PUT',
       body: {
-        telecallingId: editForm.value._id || editForm.value.appointmentId,
+        telecallingId: editForm.value.appointmentId || editForm.value._id,
         make: editForm.value.make,
         model: editForm.value.model,
         variant: editForm.value.variant,
@@ -44,16 +44,18 @@ async function saveQC() {
         ...editForm.value, // Send all mutated fields
       },
     })
-    toast.success('QC Report Saved Successfully')
-
-    // Refetch to reset
-    await fetchCarDetails(carId)
+    
+    if (!silent) {
+      toast.success('QC Report Saved Successfully')
+      // Refetch to reset
+      await fetchCarDetails(carId)
+    }
   }
   catch (err: any) {
-    toast.error(err?.data?.message || err?.message || 'Failed to save')
+    if (!silent) toast.error(err?.data?.message || err?.message || 'Failed to save')
   }
   finally {
-    isSaving.value = false
+    if (!silent) isSaving.value = false
   }
 }
 
@@ -90,32 +92,155 @@ async function rejectLead() {
   router.push('/leads/rejected')
 }
 
-function removeImage(key: string, idx: number, oldKey?: string) {
-  if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
-    editForm.value[key].splice(idx, 1)
-  } else if (oldKey && Array.isArray(editForm.value[oldKey])) {
-    editForm.value[oldKey].splice(idx, 1)
+const UPLOAD_BASE = 'https://ob-dealerapp-kong.onrender.com/api/otobix/car'
+const KONG_TOKEN = 'QmFwR0RjLjJmMzkyMjJw98UNpMGFqpgGJV6BXgQ1ye12d100f5c'
+
+function extractPublicId(url: string) {
+  try {
+    const parts = url.split('/upload/')
+    if (parts.length < 2) return null
+    let afterUpload = parts[1]!.replace(/^v\d+\//, '')
+    const hashIndex = afterUpload.indexOf('#')
+    if (hashIndex !== -1) afterUpload = afterUpload.substring(0, hashIndex)
+    const queryIndex = afterUpload.indexOf('?')
+    if (queryIndex !== -1) afterUpload = afterUpload.substring(0, queryIndex)
+    const lastDot = afterUpload.lastIndexOf('.')
+    if (lastDot !== -1) afterUpload = afterUpload.substring(0, lastDot)
+    return afterUpload
+  } catch (e) {
+    return null
   }
 }
 
-function addImage(key: string) {
-  const url = prompt('Enter Image URL linking to Drive or Storage:', '')
-  if (url) {
-    if (!Array.isArray(editForm.value[key]))
-      editForm.value[key] = []
-    editForm.value[key].push(url)
+async function deleteCloudinaryFile(url: string) {
+  const publicId = extractPublicId(url)
+  if (!publicId) return
+  const isVideo = url.match(/\.(mp4|webm|ogg)$/i)
+  const endpoint = isVideo ? `${UPLOAD_BASE}/delete-video-from-cloudinary` : `${UPLOAD_BASE}/delete-image-from-cloudinary`
+  
+  try {
+    await $fetch(endpoint, {
+      method: 'DELETE',
+      body: { publicId },
+      headers: { Authorization: `Bearer ${KONG_TOKEN}`, 'token': KONG_TOKEN }
+    })
+  } catch (e) {
+    console.error('Delete failed:', e)
   }
 }
 
-function replaceImage(key: string, idx: number, oldKey?: string) {
-  const url = prompt('Enter new Image URL to replace the current one:', '')
-  if (url) {
-    if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
-      editForm.value[key][idx] = url
-    } else if (oldKey && Array.isArray(editForm.value[oldKey])) {
-      editForm.value[oldKey][idx] = url
+async function uploadCloudinaryFile(files: File[]) {
+  if (files.length === 0) return []
+  
+  const isVideo = files[0]!.type.startsWith('video/')
+  const endpoint = isVideo ? `${UPLOAD_BASE}/upload-car-video-to-cloudinary` : `${UPLOAD_BASE}/upload-car-images-to-cloudinary`
+  
+  const formData = new FormData()
+  formData.append('appointmentId', String(car.value?.appointmentId || ''))
+  
+  if (isVideo) {
+    formData.append('video', files[0]!)
+  } else {
+    for (const file of files) {
+      if (!file.type.startsWith('video/')) {
+        formData.append('imagesList', file)
+      }
     }
   }
+  
+  try {
+    const res: any = await $fetch(endpoint, {
+      method: 'POST',
+      body: formData,
+      headers: { Authorization: `Bearer ${KONG_TOKEN}`, 'token': KONG_TOKEN }
+    })
+    
+    // Parse defensive multi-format responses
+    if (res?.cloudinaryUrls && Array.isArray(res.cloudinaryUrls)) return res.cloudinaryUrls
+    if (res?.cloudinaryUrl) return [res.cloudinaryUrl]
+    if (res?.cloudinaryVideoUrl) return [res.cloudinaryVideoUrl]
+    if (Array.isArray(res)) return res
+    if (res?.data && Array.isArray(res.data)) return res.data
+    if (res?.data?.url) return [res.data.url]
+    if (res?.data?.videoUrl) return [res.data.videoUrl]
+    if (res?.data?.imagesList) return res.data.imagesList
+    if (res?.images && Array.isArray(res.images)) return res.images
+    if (res?.urls && Array.isArray(res.urls)) return res.urls
+    if (res?.url) return [res.url]
+    if (res?.videoUrl) return [res.videoUrl]
+    if (res?.imagesList) return res.imagesList
+    if (typeof res === 'string') return [res]
+    return []
+  } catch (e) {
+    console.error('Upload failed:', e)
+    return []
+  }
+}
+
+async function removeImage(key: string, idx: number, oldKey?: string) {
+  let urlToDelete = null
+  if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
+    urlToDelete = editForm.value[key][idx]
+    editForm.value[key].splice(idx, 1)
+  } else if (oldKey && Array.isArray(editForm.value[oldKey])) {
+    urlToDelete = editForm.value[oldKey][idx]
+    editForm.value[oldKey].splice(idx, 1)
+  }
+  
+  if (urlToDelete) {
+    await deleteCloudinaryFile(urlToDelete)
+  }
+  await saveQC(true)
+}
+
+async function addImage(key: string) {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.multiple = true
+  input.accept = 'image/*,video/*'
+  input.onchange = async (e: any) => {
+    const files = Array.from(e.target.files) as File[]
+    const urls = await uploadCloudinaryFile(files)
+    if (urls.length > 0) {
+      if (!Array.isArray(editForm.value[key])) editForm.value[key] = []
+      editForm.value[key].push(...urls)
+      await saveQC(true)
+    }
+  }
+  input.click()
+}
+
+async function replaceImage(key: string, idx: number, oldKey?: string) {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*,video/*'
+  input.onchange = async (e: any) => {
+    const file = e.target.files[0]
+    if (!file) return
+    
+    let urlToDelete = null
+    if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
+      urlToDelete = editForm.value[key][idx]
+    } else if (oldKey && Array.isArray(editForm.value[oldKey])) {
+      urlToDelete = editForm.value[oldKey][idx]
+    }
+    
+    const urls = await uploadCloudinaryFile([file])
+    if (urls.length > 0) {
+      const newUrl = urls[0]
+      if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
+        editForm.value[key][idx] = newUrl
+      } else if (oldKey && Array.isArray(editForm.value[oldKey])) {
+        editForm.value[oldKey][idx] = newUrl
+      }
+      
+      if (urlToDelete) {
+        await deleteCloudinaryFile(urlToDelete)
+      }
+      await saveQC(true)
+    }
+  }
+  input.click()
 }
 
 const activeTab = ref('document-details')
@@ -166,7 +291,7 @@ function getImages(obj: Record<string, any> | null, key: string, fallbackKey?: s
   if (!val)
     return []
   if (Array.isArray(val))
-    return val.filter((u: string) => u && typeof u === 'string')
+    return val.filter((u: string) => u && typeof u === 'string').map(u => u.startsWith('http') ? u : `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.value?.appointmentId}/${u}`)
   if (typeof val === 'string' && val.startsWith('http'))
     return [val]
   return []
@@ -236,6 +361,7 @@ const exteriorSections = [
       { key: 'lhsRearWheelDropdownList', oldKey: 'lhsRearAlloy', imageKey: 'lhsRearWheelImages', oldImageKey: 'lhsRearAlloyImages', label: 'LHS Rear Wheel' },
       { key: 'lhsRearTyreDropdownList', oldKey: 'lhsRearTyre', imageKey: 'lhsRearTyreImages', oldImageKey: 'lhsRearTyreImages', label: 'LHS Rear Tyre' },
       { key: 'lhsQuarterPanelDropdownList', oldKey: 'lhsQuarterPanel', imageKey: 'lhsQuarterPanelImages', oldImageKey: 'lhsQuarterPanelImages', label: 'LHS Quarter Panel' },
+      { key: 'lhsQuarterPanelWithRearDoorOpenImages', oldKey: 'lhsQuarterPanelImages', imageKey: 'lhsQuarterPanelWithRearDoorOpenImages', oldImageKey: 'lhsQuarterPanelImages', label: 'LHS Qtr Panel W/ Boot Open', isImageOnly: true },
     ],
   },
   {
@@ -754,7 +880,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
         <!-- ═══════ EXTERIOR TABS (FRONT/LEFT/REAR/RIGHT) ═══════ -->
         <div v-else-if="['front', 'left', 'rear', 'right'].includes(activeTab)" class="space-y-6">
           <!-- Condition Grid -->
-          <Card>
+          <Card class="!p-0 !py-0 overflow-hidden" style="padding: 0px !important;">
             <CardContent class="p-0 sm:p-0">
               <div v-if="activeExteriorSection" :key="activeExteriorSection.title" class="mb-0">
                 <!-- Parts grid -->

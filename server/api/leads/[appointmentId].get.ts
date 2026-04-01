@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
     const carRecord = await colCars.findOne({ appointmentId })
     const teleRecord = await colTelecallings.findOne({ appointmentId })
 
-    // Merge them if necessary to provide full API parity, prioritizing the cars details since it matches the rich UI.
-    const record = { ...(teleRecord || {}), ...(carRecord || {}) }
+    // Merge them if necessary to provide full API parity, prioritizing the CRM (telecalling) edits since it's the active workspace store.
+    const record = { ...(carRecord || {}), ...(teleRecord || {}) }
 
     if (!record || Object.keys(record).length === 0) {
       throw createError({ statusCode: 404, message: 'Inspection details not found for this appointment ID' })
