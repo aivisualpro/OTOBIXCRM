@@ -227,11 +227,11 @@ const exteriorSections = [
       { key: 'lhsFrontWheelDropdownList', oldKey: 'lhsFrontAlloy', imageKey: 'lhsFrontWheelImages', oldImageKey: 'lhsFrontAlloyImages', label: 'LHS Front Wheel' },
       { key: 'lhsFrontTyreDropdownList', oldKey: 'lhsFrontTyre', imageKey: 'lhsFrontTyreImages', oldImageKey: 'lhsFrontTyreImages', label: 'LHS Front Tyre' },
       { key: 'lhsOrvmDropdownList', oldKey: 'lhsOrvm', imageKey: 'lhsOrvmImages', oldImageKey: 'lhsOrvmImages', label: 'LHS ORVM' },
-      { key: 'lhsAPillarDropdownList', oldKey: 'lhsAPillar', imageKey: 'lhsAPillarImages', oldImageKey: 'lhsAPillarImages', label: 'LHS A-Pillar' },
+      { key: 'lhsAPillarDropdownList', oldKey: 'lhsAPillar', imageKey: 'lhsAPillarImages', oldImageKey: 'lhsAPillarImages', label: 'LHS A-Pillar', dropdownName: 'LHS A Pillar' },
       { key: 'lhsFrontDoorDropdownList', oldKey: 'lhsFrontDoor', imageKey: 'lhsFrontDoorImages', oldImageKey: 'lhsFrontDoorImages', label: 'LHS Front Door' },
-      { key: 'lhsBPillarDropdownList', oldKey: 'lhsBPillar', imageKey: 'lhsBPillarImages', oldImageKey: 'lhsBPillarImages', label: 'LHS B-Pillar' },
+      { key: 'lhsBPillarDropdownList', oldKey: 'lhsBPillar', imageKey: 'lhsBPillarImages', oldImageKey: 'lhsBPillarImages', label: 'LHS B-Pillar', dropdownName: 'LHS B Pillar' },
       { key: 'lhsRearDoorDropdownList', oldKey: 'lhsRearDoor', imageKey: 'lhsRearDoorImages', oldImageKey: 'lhsRearDoorImages', label: 'LHS Rear Door' },
-      { key: 'lhsCPillarDropdownList', oldKey: 'lhsCPillar', imageKey: 'lhsCPillarImages', oldImageKey: 'lhsCPillarImages', label: 'LHS C-Pillar' },
+      { key: 'lhsCPillarDropdownList', oldKey: 'lhsCPillar', imageKey: 'lhsCPillarImages', oldImageKey: 'lhsCPillarImages', label: 'LHS C-Pillar', dropdownName: 'LHS C Pillar' },
       { key: 'lhsRunningBorderDropdownList', oldKey: 'lhsRunningBorder', imageKey: 'lhsRunningBorderImages', oldImageKey: 'lhsRunningBorderImages', label: 'LHS Running Border' },
       { key: 'lhsRearWheelDropdownList', oldKey: 'lhsRearAlloy', imageKey: 'lhsRearWheelImages', oldImageKey: 'lhsRearAlloyImages', label: 'LHS Rear Wheel' },
       { key: 'lhsRearTyreDropdownList', oldKey: 'lhsRearTyre', imageKey: 'lhsRearTyreImages', oldImageKey: 'lhsRearTyreImages', label: 'LHS Rear Tyre' },
@@ -259,9 +259,9 @@ const exteriorSections = [
     parts: [
       { key: 'rhsFender', label: 'Fender' },
       { key: 'rhsOrvm', label: 'ORVM' },
-      { key: 'rhsAPillar', label: 'A-Pillar' },
-      { key: 'rhsBPillar', label: 'B-Pillar' },
-      { key: 'rhsCPillar', label: 'C-Pillar' },
+      { key: 'rhsAPillar', label: 'A-Pillar', dropdownName: 'RHS A Pillar' },
+      { key: 'rhsBPillar', label: 'B-Pillar', dropdownName: 'RHS B Pillar' },
+      { key: 'rhsCPillar', label: 'C-Pillar', dropdownName: 'RHS C Pillar' },
       { key: 'rhsFrontAlloy', label: 'Front Alloy' },
       { key: 'rhsFrontTyre', label: 'Front Tyre' },
       { key: 'rhsRearAlloy', label: 'Rear Alloy' },
@@ -777,10 +777,10 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                           </div>
                         </div>
                       </template>
-                      <template v-else-if="getOptions(part.label).length">
+                      <template v-else-if="getOptions((part as any).dropdownName || part.label).length">
                         <MultiSelect 
                           v-model="editForm[part.key]" 
-                          :options="getOptions(part.label)" 
+                          :options="getOptions((part as any).dropdownName || part.label)" 
                           class="h-full border-none shadow-none bg-transparent"
                         >
                           <template #trigger>
