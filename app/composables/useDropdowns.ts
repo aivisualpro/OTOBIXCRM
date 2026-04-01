@@ -38,7 +38,8 @@ export function useDropdowns() {
   }
 
   function getOptions(dropdownName: string, labelKey?: string, valueKey?: string) {
-    const dropdown = dropdowns.value.find(d => d.dropdownName === dropdownName)
+    const safeName = (dropdownName || '').toString().toLowerCase().trim()
+    const dropdown = dropdowns.value.find(d => (d.dropdownName || '').toString().toLowerCase().trim() === safeName)
     if (!dropdown || !dropdown.isActive)
       return []
 

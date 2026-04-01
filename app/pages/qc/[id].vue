@@ -9,9 +9,12 @@ const { setHeader } = usePageHeader()
 setHeader({ title: `Quality Control: ${carId}`, description: 'Vehicle inspection details', icon: 'i-lucide-scan-eye' })
 
 const { carDetails: car, isLoading, error, fetchCarDetails } = useCarDetails()
+const { fetchDropdowns, getOptions } = useDropdowns()
 
-onMounted(() => fetchCarDetails(carId))
-
+onMounted(() => {
+  fetchDropdowns()
+  fetchCarDetails(carId)
+})
 const editForm = ref<Record<string, any>>({})
 const isSaving = ref(false)
 
@@ -54,6 +57,27 @@ async function saveQC() {
   }
 }
 
+function getConditionStyle(val: string) {
+  const lower = val.toLowerCase().trim()
+  const successKeys = ['ok', 'good', 'normal', 'safe', 'satisfactory', 'clean', 'clear']
+  const errorKeys = ['major', 'tear', 'missing', 'broken', 'damage', 'dent', 'rust', 'cracked']
+  const warningKeys = ['scratch', 'minor', 'fade', 'worn', 'repaint', 'chipped']
+  const infoKeys = ['repair', 'replace', 'changed', 'service', 'dry']
+
+  if (successKeys.some(k => lower.includes(k))) return { bg: 'bg-green-500/15 border-green-500/30 text-green-700 dark:text-green-400', icon: 'i-lucide-check-circle' }
+  if (errorKeys.some(k => lower.includes(k))) return { bg: 'bg-red-500/15 border-red-500/30 text-red-700 dark:text-red-400', icon: 'i-lucide-alert-triangle' }
+  if (warningKeys.some(k => lower.includes(k))) return { bg: 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400', icon: 'i-lucide-info' }
+  if (infoKeys.some(k => lower.includes(k))) return { bg: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-700 dark:text-indigo-400', icon: 'i-lucide-wrench' }
+  return { bg: 'bg-slate-500/15 border-slate-500/30 text-slate-700 dark:text-slate-400', icon: 'i-lucide-tag' }
+}
+
+function getValuesArray(val: string | string[] | undefined | null) {
+  let v: string[] = []
+  if (Array.isArray(val)) v = val
+  else if (typeof val === 'string' && val) v = [val]
+  return v.flatMap(s => typeof s === 'string' ? s.split(',') : String(s)).map(s => s.trim()).filter(Boolean)
+}
+
 async function approveLead() {
   editForm.value.approvalStatus = 'Approved'
   await saveQC()
@@ -66,9 +90,11 @@ async function rejectLead() {
   router.push('/leads/rejected')
 }
 
-function removeImage(key: string, idx: number) {
-  if (Array.isArray(editForm.value[key])) {
+function removeImage(key: string, idx: number, oldKey?: string) {
+  if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
     editForm.value[key].splice(idx, 1)
+  } else if (oldKey && Array.isArray(editForm.value[oldKey])) {
+    editForm.value[oldKey].splice(idx, 1)
   }
 }
 
@@ -78,6 +104,17 @@ function addImage(key: string) {
     if (!Array.isArray(editForm.value[key]))
       editForm.value[key] = []
     editForm.value[key].push(url)
+  }
+}
+
+function replaceImage(key: string, idx: number, oldKey?: string) {
+  const url = prompt('Enter new Image URL to replace the current one:', '')
+  if (url) {
+    if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
+      editForm.value[key][idx] = url
+    } else if (oldKey && Array.isArray(editForm.value[oldKey])) {
+      editForm.value[oldKey][idx] = url
+    }
   }
 }
 
@@ -728,37 +765,118 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                   <Separator class="flex-1" />
                 </div>
                 <!-- Parts grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 xl:gap-6">
                   <div
                     v-for="part in activeExteriorSection.parts"
                     :key="part.key"
-                    class="rounded-lg border overflow-hidden"
+                    class="rounded-xl border bg-card shadow-sm flex flex-row overflow-hidden min-h-[160px] h-[160px]"
                   >
-                    <div
-                      class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2"
-                      :class="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
-                      @click="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length && openLightboxUrls(getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey), 0, part.label)"
-                    >
-                      <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
-                      <span v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length" class="flex items-center gap-1 text-[10px] text-primary">
-                        <Icon name="i-lucide-camera" class="size-3" />
-                        {{ getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length }}
-                      </span>
-                    </div>
-                    <div class="p-2 border-t border-border/50">
-                      <Input v-model="editForm[part.key]" class="h-8 text-sm" placeholder="e.g. Okay, Scratched" />
-                    </div>
-                    <!-- Part Images Inline -->
-                    <div v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length" class="p-2 border-t border-border/50 bg-muted/10">
-                      <div class="grid grid-cols-3 gap-2">
-                        <div
-                          v-for="(imgUrl, idx) in getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey)"
-                          :key="idx"
-                          class="relative aspect-square w-full rounded-md overflow-hidden border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
-                          @click="openLightboxUrls(getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey), idx, part.label)"
+                    <!-- Left Side: Controls & Condition -->
+                    <div class="flex flex-col w-[200px] xl:w-[240px] shrink-0 border-r border-border/50 bg-muted/10 relative">
+                      <template v-if="getOptions(part.label).length">
+                        <MultiSelect 
+                          v-model="editForm[part.key]" 
+                          :options="getOptions(part.label)" 
+                          class="h-full border-none shadow-none bg-transparent"
                         >
-                          <img :src="imgUrl" :alt="part.label" class="w-full h-full object-cover" loading="lazy">
+                          <template #trigger>
+                            <div class="cursor-pointer h-full w-full flex flex-col hover:bg-muted/20 transition-colors group">
+                              <!-- Header Label -->
+                              <div class="px-3 py-2 border-b border-border/50 flex items-center justify-between bg-muted/30 h-10 shrink-0">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex-1 truncate group-hover:text-primary transition-colors">{{ part.label }}</span>
+                                <Icon name="i-lucide-chevron-down" class="size-3.5 text-muted-foreground/50 shrink-0 group-hover:text-primary transition-colors" />
+                              </div>
+                              
+                              <!-- Selected Badges Render -->
+                              <div class="p-3 flex-1 flex flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white/50 dark:bg-black/20">
+                                <div v-if="getValuesArray(editForm[part.key]).length" class="flex flex-wrap gap-2">
+                                  <div 
+                                    v-for="val in getValuesArray(editForm[part.key])" 
+                                    :key="val"
+                                    class="border px-2 py-1.5 rounded flex items-center gap-1.5 shadow-sm w-full"
+                                    :class="getConditionStyle(val).bg"
+                                  >
+                                    <Icon :name="getConditionStyle(val).icon" class="size-4 shrink-0" />
+                                    <span class="text-[13px] font-bold leading-tight">{{ val }}</span>
+                                  </div>
+                                </div>
+                                <div v-else class="text-[12px] text-muted-foreground font-medium flex items-center justify-center gap-1.5 opacity-50 my-auto pb-4">
+                                  <Icon name="i-lucide-list-plus" class="size-4" /> Click to add conds..
+                                </div>
+                              </div>
+                            </div>
+                          </template>
+                        </MultiSelect>
+                      </template>
+                      <template v-else>
+                        <!-- Native input fallback -->
+                        <div class="px-3 py-2 border-b border-border/50 flex items-center bg-muted/30 h-10 shrink-0">
+                          <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground w-full truncate">{{ part.label }}</span>
                         </div>
+                        <div class="p-3 flex-1 flex flex-col justify-center bg-white/50 dark:bg-black/20">
+                          <Input v-model="editForm[part.key]" class="shadow-sm border-border text-sm focus-visible:ring-1 bg-white dark:bg-zinc-900" placeholder="e.g. Scratched, Rust" />
+                        </div>
+                      </template>
+                    </div>
+
+                    <!-- Right Side: Horizontal Image Strip -->
+                    <div class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
+                      <!-- Photo Gallery -->
+                      <div v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length" class="flex-1 h-full w-full">
+                        <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch">
+                          <div
+                            v-for="(imgUrl, idx) in getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey)"
+                            :key="idx"
+                            class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer group/item transition-all duration-300 border-r border-border/20 last:border-r-0"
+                            @click="openLightboxUrls(getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey), idx, part.label)"
+                          >
+                            <img :src="imgUrl" :alt="part.label" class="w-full h-full object-cover select-none" loading="lazy">
+                            
+                            <!-- Overlay Actions -->
+                            <div class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                              <Button 
+                                variant="secondary" 
+                                size="icon" 
+                                class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" 
+                                @click.stop="replaceImage((part as any).imageKey || `${part.key}Images`, idx, (part as any).oldImageKey)"
+                              >
+                                <Icon name="i-lucide-refresh-cw" class="size-3.5" />
+                              </Button>
+                              <Button 
+                                variant="destructive" 
+                                size="icon" 
+                                class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" 
+                                @click.stop="removeImage((part as any).imageKey || `${part.key}Images`, idx, (part as any).oldImageKey)"
+                              >
+                                <Icon name="i-lucide-trash" class="size-3.5 text-white" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <!-- Add Photo Endcap -->
+                          <div 
+                            class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer bg-muted/30 border-r border-border/20 last:border-r-0 flex flex-col items-center justify-center hover:bg-muted/50 transition-colors group/add" 
+                            @click.stop="addImage((part as any).imageKey || `${part.key}Images`)"
+                          >
+                            <div class="size-10 rounded-full bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center mb-2 group-hover/add:scale-110 transition-transform">
+                              <Icon name="i-lucide-plus" class="size-5 text-primary" />
+                            </div>
+                            <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Add Photo</span>
+                          </div>
+                        </div>
+                        
+                        <!-- Swipe Indicator hint -->
+                        <div v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length > 1" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md text-[8px] text-white font-medium tracking-wider pointer-events-none">
+                           SWIPE
+                        </div>
+                      </div>
+                      
+                      <!-- Empty State -->
+                      <div class="flex h-full w-full flex-col items-center justify-center bg-transparent gap-3 relative cursor-pointer hover:bg-muted/10 transition-colors" @click.stop="addImage((part as any).imageKey || `${part.key}Images`)">
+                         <div class="size-12 rounded-full bg-muted/30 flex items-center justify-center">
+                           <Icon name="i-lucide-image-plus" class="size-5 text-muted-foreground/50" />
+                         </div>
+                         <span class="text-[11px] text-muted-foreground/60 font-bold tracking-widest uppercase">Click to add Photo</span>
                       </div>
                     </div>
                   </div>

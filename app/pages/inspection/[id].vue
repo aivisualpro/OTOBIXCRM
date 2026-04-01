@@ -839,15 +839,15 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       </div>
                     </div>
                     <!-- Part Images Inline -->
-                    <div v-if="getImages(car, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length" class="p-2 border-t border-border/50 bg-muted/10">
-                      <div class="grid grid-cols-3 gap-2">
+                    <div v-if="getImages(car, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length" class="p-3 border-t border-border/50 bg-muted/10">
+                      <div class="flex flex-col gap-3">
                         <div
                           v-for="(imgUrl, idx) in getImages(car, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey)"
                           :key="idx"
-                          class="relative aspect-square w-full rounded-md overflow-hidden border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
+                          class="group relative aspect-square w-full rounded-md overflow-hidden border border-foreground/30 hover:border-primary shadow-sm cursor-pointer transition-all duration-300"
                           @click="openLightboxUrls(getImages(car, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey), idx, part.label)"
                         >
-                          <img :src="imgUrl" :alt="part.label" class="w-full h-full object-cover" loading="lazy">
+                          <img :src="imgUrl" :alt="part.label" class="w-full h-full object-cover select-none" loading="lazy">
                         </div>
                       </div>
                     </div>
