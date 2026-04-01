@@ -125,8 +125,11 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function getImages(obj: Record<string, any> | null, key: string): string[] {
-  const val = obj?.[key]
+function getImages(obj: Record<string, any> | null, key: string, fallbackKey?: string): string[] {
+  let val = obj?.[key]
+  // If new key is empty, try fallback (old) key
+  if ((!val || (Array.isArray(val) && val.length === 0)) && fallbackKey)
+    val = obj?.[fallbackKey]
   if (!val)
     return []
   if (Array.isArray(val))
@@ -168,21 +171,37 @@ const exteriorSections = [
   {
     title: 'Left (LHS)',
     icon: 'i-lucide-arrow-left',
-    imageKeys: ['lhsFront45Degree', 'lhsFenderImages', 'lhsOrvmImages', 'lhsFrontAlloyImages', 'lhsFrontTyreImages', 'lhsFrontDoorImages', 'lhsRearDoorImages', 'lhsRunningBorderImages', 'lhsRearTyreImages', 'lhsQuarterPanelImages'],
+    imageKeys: [
+      'lhsFullViewImages',
+      'lhsFenderImages',
+      'lhsFrontWheelImages',
+      'lhsFrontTyreImages',
+      'lhsOrvmImages',
+      'lhsAPillarImages',
+      'lhsFrontDoorImages',
+      'lhsBPillarImages',
+      'lhsRearDoorImages',
+      'lhsCPillarImages',
+      'lhsRunningBorderImages',
+      'lhsRearWheelImages',
+      'lhsRearTyreImages',
+      'lhsQuarterPanelImages',
+      'lhsQuarterPanelWithRearDoorOpenImages',
+    ],
     parts: [
-      { key: 'lhsFender', label: 'Fender' },
-      { key: 'lhsOrvm', label: 'ORVM' },
-      { key: 'lhsAPillar', label: 'A-Pillar' },
-      { key: 'lhsBPillar', label: 'B-Pillar' },
-      { key: 'lhsCPillar', label: 'C-Pillar' },
-      { key: 'lhsFrontAlloy', label: 'Front Alloy' },
-      { key: 'lhsFrontTyre', label: 'Front Tyre' },
-      { key: 'lhsRearAlloy', label: 'Rear Alloy' },
-      { key: 'lhsRearTyre', label: 'Rear Tyre' },
-      { key: 'lhsFrontDoor', label: 'Front Door' },
-      { key: 'lhsRearDoor', label: 'Rear Door' },
-      { key: 'lhsRunningBorder', label: 'Running Border' },
-      { key: 'lhsQuarterPanel', label: 'Quarter Panel' },
+      { key: 'lhsFenderDropdownList', imageKey: 'lhsFenderImages', label: 'LHS Fender' },
+      { key: 'lhsFrontWheelDropdownList', imageKey: 'lhsFrontWheelImages', label: 'LHS Front Wheel' },
+      { key: 'lhsFrontTyreDropdownList', imageKey: 'lhsFrontTyreImages', label: 'LHS Front Tyre' },
+      { key: 'lhsOrvmDropdownList', imageKey: 'lhsOrvmImages', label: 'LHS ORVM' },
+      { key: 'lhsAPillarDropdownList', imageKey: 'lhsAPillarImages', label: 'LHS A-Pillar' },
+      { key: 'lhsFrontDoorDropdownList', imageKey: 'lhsFrontDoorImages', label: 'LHS Front Door' },
+      { key: 'lhsBPillarDropdownList', imageKey: 'lhsBPillarImages', label: 'LHS B-Pillar' },
+      { key: 'lhsRearDoorDropdownList', imageKey: 'lhsRearDoorImages', label: 'LHS Rear Door' },
+      { key: 'lhsCPillarDropdownList', imageKey: 'lhsCPillarImages', label: 'LHS C-Pillar' },
+      { key: 'lhsRunningBorderDropdownList', imageKey: 'lhsRunningBorderImages', label: 'LHS Running Border' },
+      { key: 'lhsRearWheelDropdownList', imageKey: 'lhsRearWheelImages', label: 'LHS Rear Wheel' },
+      { key: 'lhsRearTyreDropdownList', imageKey: 'lhsRearTyreImages', label: 'LHS Rear Tyre' },
+      { key: 'lhsQuarterPanelDropdownList', imageKey: 'lhsQuarterPanelImages', label: 'LHS Quarter Panel' },
     ],
   },
   {
@@ -447,11 +466,12 @@ onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown))
 
 // Collect all images for a section
 function sectionImages(keys: string[]) {
-  if (!car.value)
+  const obj = editForm.value || car.value
+  if (!obj)
     return []
   const imgs: { url: string, label: string }[] = []
   for (const key of keys) {
-    const urls = getImages(car.value, key)
+    const urls = getImages(obj, key)
     for (const url of urls) {
       imgs.push({ url, label: humanize(key) })
     }
@@ -713,13 +733,13 @@ function sectionImages(keys: string[]) {
                   >
                     <div
                       class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2"
-                      :class="getImages(car, `${part.key}Images`).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
-                      @click="getImages(car, `${part.key}Images`).length && openLightboxUrls(getImages(car, `${part.key}Images`), 0, part.label)"
+                      :class="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
+                      @click="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length && openLightboxUrls(getImages(editForm, (part as any).imageKey || `${part.key}Images`), 0, part.label)"
                     >
                       <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
-                      <span v-if="getImages(car, `${part.key}Images`).length" class="flex items-center gap-1 text-[10px] text-primary">
+                      <span v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length" class="flex items-center gap-1 text-[10px] text-primary">
                         <Icon name="i-lucide-camera" class="size-3" />
-                        {{ getImages(car, `${part.key}Images`).length }}
+                        {{ getImages(editForm, (part as any).imageKey || `${part.key}Images`).length }}
                       </span>
                     </div>
                     <div class="p-2 border-t border-border/50">
@@ -774,13 +794,13 @@ function sectionImages(keys: string[]) {
                 >
                   <div
                     class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2"
-                    :class="getImages(car, `${part.key}Images`).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
-                    @click="getImages(car, `${part.key}Images`).length && openLightboxUrls(getImages(car, `${part.key}Images`), 0, part.label)"
+                    :class="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
+                    @click="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length && openLightboxUrls(getImages(editForm, (part as any).imageKey || `${part.key}Images`), 0, part.label)"
                   >
                     <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
-                    <span v-if="getImages(car, `${part.key}Images`).length" class="flex items-center gap-1 text-[10px] text-primary">
+                    <span v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length" class="flex items-center gap-1 text-[10px] text-primary">
                       <Icon name="i-lucide-camera" class="size-3" />
-                      {{ getImages(car, `${part.key}Images`).length }}
+                      {{ getImages(editForm, (part as any).imageKey || `${part.key}Images`).length }}
                     </span>
                   </div>
                   <div class="p-2 border-t border-border/50">

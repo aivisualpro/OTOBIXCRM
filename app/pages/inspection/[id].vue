@@ -12,6 +12,53 @@ onMounted(() => fetchCarDetails(carId))
 
 const activeTab = ref('document-details')
 
+watch(() => car.value, (newVal) => {
+  if (newVal) {
+    const leftFallbacks = [
+      { new: 'lhsFullViewImages', old: 'lhsFront45Degree' },
+      { new: 'lhsFenderDropdownList', old: 'lhsFender' },
+      { new: 'lhsFenderImages', old: 'lhsFenderImages' },
+      { new: 'lhsFrontWheelDropdownList', old: 'lhsFrontAlloy' },
+      { new: 'lhsFrontWheelImages', old: 'lhsFrontAlloyImages' },
+      { new: 'lhsFrontTyreDropdownList', old: 'lhsFrontTyre' },
+      { new: 'lhsFrontTyreImages', old: 'lhsFrontTyreImages' },
+      { new: 'lhsOrvmDropdownList', old: 'lhsOrvm' },
+      { new: 'lhsOrvmImages', old: 'lhsOrvmImages' },
+      { new: 'lhsAPillarDropdownList', old: 'lhsAPillar' },
+      { new: 'lhsAPillarImages', old: 'lhsAPillarImages' },
+      { new: 'lhsBPillarDropdownList', old: 'lhsBPillar' },
+      { new: 'lhsBPillarImages', old: 'lhsBPillarImages' },
+      { new: 'lhsCPillarDropdownList', old: 'lhsCPillar' },
+      { new: 'lhsCPillarImages', old: 'lhsCPillarImages' },
+      { new: 'lhsFrontDoorDropdownList', old: 'lhsFrontDoor' },
+      { new: 'lhsFrontDoorImages', old: 'lhsFrontDoorImages' },
+      { new: 'lhsRearDoorDropdownList', old: 'lhsRearDoor' },
+      { new: 'lhsRearDoorImages', old: 'lhsRearDoorImages' },
+      { new: 'lhsRunningBorderDropdownList', old: 'lhsRunningBorder' },
+      { new: 'lhsRunningBorderImages', old: 'lhsRunningBorderImages' },
+      { new: 'lhsRearWheelDropdownList', old: 'lhsRearAlloy' },
+      { new: 'lhsRearWheelImages', old: 'lhsRearAlloyImages' },
+      { new: 'lhsRearTyreDropdownList', old: 'lhsRearTyre' },
+      { new: 'lhsRearTyreImages', old: 'lhsRearTyreImages' },
+      { new: 'lhsQuarterPanelDropdownList', old: 'lhsQuarterPanel' },
+      { new: 'lhsQuarterPanelImages', old: 'lhsQuarterPanelImages' },
+      { new: 'lhsQuarterPanelWithRearDoorOpenImages', old: 'lhsQuarterPanelImages' },
+    ]
+    leftFallbacks.forEach((f) => {
+      if (f.new.includes('Images')) {
+        if (!newVal[f.new] || (Array.isArray(newVal[f.new]) && newVal[f.new].length === 0)) {
+          if (newVal[f.old] && newVal[f.old].length > 0)
+            newVal[f.new] = newVal[f.old]
+        }
+      }
+      else {
+        if (!newVal[f.new])
+          newVal[f.new] = newVal[f.old]
+      }
+    })
+  }
+}, { immediate: true })
+
 const activeExteriorSection = computed(() => exteriorSections.find(s => s.title.toLowerCase().startsWith(activeTab.value)))
 
 const tabs = [
@@ -93,10 +140,14 @@ function conditionTextColor(val: string): string {
   return 'text-blue-500'
 }
 
-function splitConditions(val: string): string[] {
+function splitConditions(val: any): string[] {
   if (!val || val === '—')
     return ['—']
-  return val.split(',').map(s => s.trim()).filter(Boolean)
+  if (Array.isArray(val))
+    return val.filter(Boolean).length ? val.filter(Boolean) : ['—']
+  if (typeof val === 'string')
+    return val.split(',').map(s => s.trim()).filter(Boolean)
+  return ['—']
 }
 
 function formatDate(d: string) {
@@ -105,8 +156,10 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function getImages(obj: Record<string, any> | null, key: string): string[] {
-  const val = obj?.[key]
+function getImages(obj: Record<string, any> | null, key: string, fallbackKey?: string): string[] {
+  let val = obj?.[key]
+  if ((!val || (Array.isArray(val) && val.length === 0)) && fallbackKey)
+    val = obj?.[fallbackKey]
   if (!val)
     return []
   if (Array.isArray(val))
@@ -148,21 +201,37 @@ const exteriorSections = [
   {
     title: 'Left (LHS)',
     icon: 'i-lucide-arrow-left',
-    imageKeys: ['lhsFront45Degree', 'lhsFenderImages', 'lhsOrvmImages', 'lhsFrontAlloyImages', 'lhsFrontTyreImages', 'lhsFrontDoorImages', 'lhsRearDoorImages', 'lhsRunningBorderImages', 'lhsRearTyreImages', 'lhsQuarterPanelImages'],
+    imageKeys: [
+      'lhsFullViewImages',
+      'lhsFenderImages',
+      'lhsFrontWheelImages',
+      'lhsFrontTyreImages',
+      'lhsOrvmImages',
+      'lhsAPillarImages',
+      'lhsFrontDoorImages',
+      'lhsBPillarImages',
+      'lhsRearDoorImages',
+      'lhsCPillarImages',
+      'lhsRunningBorderImages',
+      'lhsRearWheelImages',
+      'lhsRearTyreImages',
+      'lhsQuarterPanelImages',
+      'lhsQuarterPanelWithRearDoorOpenImages',
+    ],
     parts: [
-      { key: 'lhsFender', label: 'Fender' },
-      { key: 'lhsOrvm', label: 'ORVM' },
-      { key: 'lhsAPillar', label: 'A-Pillar' },
-      { key: 'lhsBPillar', label: 'B-Pillar' },
-      { key: 'lhsCPillar', label: 'C-Pillar' },
-      { key: 'lhsFrontAlloy', label: 'Front Alloy' },
-      { key: 'lhsFrontTyre', label: 'Front Tyre' },
-      { key: 'lhsRearAlloy', label: 'Rear Alloy' },
-      { key: 'lhsRearTyre', label: 'Rear Tyre' },
-      { key: 'lhsFrontDoor', label: 'Front Door' },
-      { key: 'lhsRearDoor', label: 'Rear Door' },
-      { key: 'lhsRunningBorder', label: 'Running Border' },
-      { key: 'lhsQuarterPanel', label: 'Quarter Panel' },
+      { key: 'lhsFenderDropdownList', imageKey: 'lhsFenderImages', label: 'LHS Fender' },
+      { key: 'lhsFrontWheelDropdownList', imageKey: 'lhsFrontWheelImages', label: 'LHS Front Wheel' },
+      { key: 'lhsFrontTyreDropdownList', imageKey: 'lhsFrontTyreImages', label: 'LHS Front Tyre' },
+      { key: 'lhsOrvmDropdownList', imageKey: 'lhsOrvmImages', label: 'LHS ORVM' },
+      { key: 'lhsAPillarDropdownList', imageKey: 'lhsAPillarImages', label: 'LHS A-Pillar' },
+      { key: 'lhsFrontDoorDropdownList', imageKey: 'lhsFrontDoorImages', label: 'LHS Front Door' },
+      { key: 'lhsBPillarDropdownList', imageKey: 'lhsBPillarImages', label: 'LHS B-Pillar' },
+      { key: 'lhsRearDoorDropdownList', imageKey: 'lhsRearDoorImages', label: 'LHS Rear Door' },
+      { key: 'lhsCPillarDropdownList', imageKey: 'lhsCPillarImages', label: 'LHS C-Pillar' },
+      { key: 'lhsRunningBorderDropdownList', imageKey: 'lhsRunningBorderImages', label: 'LHS Running Border' },
+      { key: 'lhsRearWheelDropdownList', imageKey: 'lhsRearWheelImages', label: 'LHS Rear Wheel' },
+      { key: 'lhsRearTyreDropdownList', imageKey: 'lhsRearTyreImages', label: 'LHS Rear Tyre' },
+      { key: 'lhsQuarterPanelDropdownList', imageKey: 'lhsQuarterPanelImages', label: 'LHS Quarter Panel' },
     ],
   },
   {
@@ -754,18 +823,18 @@ function sectionImages(keys: string[]) {
                   >
                     <div
                       class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2"
-                      :class="getImages(car, `${part.key}Images`).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
-                      @click="getImages(car, `${part.key}Images`).length && openLightboxUrls(getImages(car, `${part.key}Images`), 0, part.label)"
+                      :class="getImages(car, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
+                      @click="getImages(car, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length && openLightboxUrls(getImages(car, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey), 0, part.label)"
                     >
                       <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
-                      <span v-if="getImages(car, `${part.key}Images`).length" class="flex items-center gap-1 text-[10px] text-primary">
+                      <span v-if="getImages(car, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length" class="flex items-center gap-1 text-[10px] text-primary">
                         <Icon name="i-lucide-camera" class="size-3" />
-                        {{ getImages(car, `${part.key}Images`).length }}
+                        {{ getImages(car, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length }}
                       </span>
                     </div>
                     <div class="divide-y divide-border/50">
                       <div
-                        v-for="(cond, ci) in splitConditions(car[part.key] || '')"
+                        v-for="(cond, ci) in splitConditions(car[part.key] || car[(part as any).oldKey] || '')"
                         :key="ci"
                         class="flex items-center gap-2 px-3 py-1.5"
                       >
@@ -828,13 +897,13 @@ function sectionImages(keys: string[]) {
                 >
                   <div
                     class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2"
-                    :class="getImages(car, `${part.key}Images`).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
-                    @click="getImages(car, `${part.key}Images`).length && openLightboxUrls(getImages(car, `${part.key}Images`), 0, part.label)"
+                    :class="getImages(car, (part as any).imageKey || `${part.key}Images`).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
+                    @click="getImages(car, (part as any).imageKey || `${part.key}Images`).length && openLightboxUrls(getImages(car, (part as any).imageKey || `${part.key}Images`), 0, part.label)"
                   >
                     <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
-                    <span v-if="getImages(car, `${part.key}Images`).length" class="flex items-center gap-1 text-[10px] text-primary">
+                    <span v-if="getImages(car, (part as any).imageKey || `${part.key}Images`).length" class="flex items-center gap-1 text-[10px] text-primary">
                       <Icon name="i-lucide-camera" class="size-3" />
-                      {{ getImages(car, `${part.key}Images`).length }}
+                      {{ getImages(car, (part as any).imageKey || `${part.key}Images`).length }}
                     </span>
                   </div>
                   <div class="divide-y divide-border/50">
