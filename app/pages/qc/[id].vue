@@ -15,11 +15,7 @@ onMounted(() => fetchCarDetails(carId))
 const editForm = ref<Record<string, any>>({})
 const isSaving = ref(false)
 
-watch(() => car.value, (newVal) => {
-  if (newVal) {
-    editForm.value = JSON.parse(JSON.stringify(newVal))
-  }
-}, { immediate: true })
+
 
 async function saveQC() {
   isSaving.value = true
@@ -172,36 +168,36 @@ const exteriorSections = [
     title: 'Left (LHS)',
     icon: 'i-lucide-arrow-left',
     imageKeys: [
-      'lhsFullViewImages',
-      'lhsFenderImages',
-      'lhsFrontWheelImages',
-      'lhsFrontTyreImages',
-      'lhsOrvmImages',
-      'lhsAPillarImages',
-      'lhsFrontDoorImages',
-      'lhsBPillarImages',
-      'lhsRearDoorImages',
-      'lhsCPillarImages',
-      'lhsRunningBorderImages',
-      'lhsRearWheelImages',
-      'lhsRearTyreImages',
-      'lhsQuarterPanelImages',
-      'lhsQuarterPanelWithRearDoorOpenImages',
+      { new: 'lhsFullViewImages', old: 'lhsFront45Degree' },
+      { new: 'lhsFenderImages', old: 'lhsFenderImages' },
+      { new: 'lhsFrontWheelImages', old: 'lhsFrontAlloyImages' },
+      { new: 'lhsFrontTyreImages', old: 'lhsFrontTyreImages' },
+      { new: 'lhsOrvmImages', old: 'lhsOrvmImages' },
+      { new: 'lhsAPillarImages', old: 'lhsAPillarImages' },
+      { new: 'lhsFrontDoorImages', old: 'lhsFrontDoorImages' },
+      { new: 'lhsBPillarImages', old: 'lhsBPillarImages' },
+      { new: 'lhsRearDoorImages', old: 'lhsRearDoorImages' },
+      { new: 'lhsCPillarImages', old: 'lhsCPillarImages' },
+      { new: 'lhsRunningBorderImages', old: 'lhsRunningBorderImages' },
+      { new: 'lhsRearWheelImages', old: 'lhsRearAlloyImages' },
+      { new: 'lhsRearTyreImages', old: 'lhsRearTyreImages' },
+      { new: 'lhsQuarterPanelImages', old: 'lhsQuarterPanelImages' },
+      { new: 'lhsQuarterPanelWithRearDoorOpenImages', old: 'lhsQuarterPanelImages' }
     ],
     parts: [
-      { key: 'lhsFenderDropdownList', imageKey: 'lhsFenderImages', label: 'LHS Fender' },
-      { key: 'lhsFrontWheelDropdownList', imageKey: 'lhsFrontWheelImages', label: 'LHS Front Wheel' },
-      { key: 'lhsFrontTyreDropdownList', imageKey: 'lhsFrontTyreImages', label: 'LHS Front Tyre' },
-      { key: 'lhsOrvmDropdownList', imageKey: 'lhsOrvmImages', label: 'LHS ORVM' },
-      { key: 'lhsAPillarDropdownList', imageKey: 'lhsAPillarImages', label: 'LHS A-Pillar' },
-      { key: 'lhsFrontDoorDropdownList', imageKey: 'lhsFrontDoorImages', label: 'LHS Front Door' },
-      { key: 'lhsBPillarDropdownList', imageKey: 'lhsBPillarImages', label: 'LHS B-Pillar' },
-      { key: 'lhsRearDoorDropdownList', imageKey: 'lhsRearDoorImages', label: 'LHS Rear Door' },
-      { key: 'lhsCPillarDropdownList', imageKey: 'lhsCPillarImages', label: 'LHS C-Pillar' },
-      { key: 'lhsRunningBorderDropdownList', imageKey: 'lhsRunningBorderImages', label: 'LHS Running Border' },
-      { key: 'lhsRearWheelDropdownList', imageKey: 'lhsRearWheelImages', label: 'LHS Rear Wheel' },
-      { key: 'lhsRearTyreDropdownList', imageKey: 'lhsRearTyreImages', label: 'LHS Rear Tyre' },
-      { key: 'lhsQuarterPanelDropdownList', imageKey: 'lhsQuarterPanelImages', label: 'LHS Quarter Panel' },
+      { key: 'lhsFenderDropdownList', oldKey: 'lhsFender', imageKey: 'lhsFenderImages', oldImageKey: 'lhsFenderImages', label: 'LHS Fender' },
+      { key: 'lhsFrontWheelDropdownList', oldKey: 'lhsFrontAlloy', imageKey: 'lhsFrontWheelImages', oldImageKey: 'lhsFrontAlloyImages', label: 'LHS Front Wheel' },
+      { key: 'lhsFrontTyreDropdownList', oldKey: 'lhsFrontTyre', imageKey: 'lhsFrontTyreImages', oldImageKey: 'lhsFrontTyreImages', label: 'LHS Front Tyre' },
+      { key: 'lhsOrvmDropdownList', oldKey: 'lhsOrvm', imageKey: 'lhsOrvmImages', oldImageKey: 'lhsOrvmImages', label: 'LHS ORVM' },
+      { key: 'lhsAPillarDropdownList', oldKey: 'lhsAPillar', imageKey: 'lhsAPillarImages', oldImageKey: 'lhsAPillarImages', label: 'LHS A-Pillar' },
+      { key: 'lhsFrontDoorDropdownList', oldKey: 'lhsFrontDoor', imageKey: 'lhsFrontDoorImages', oldImageKey: 'lhsFrontDoorImages', label: 'LHS Front Door' },
+      { key: 'lhsBPillarDropdownList', oldKey: 'lhsBPillar', imageKey: 'lhsBPillarImages', oldImageKey: 'lhsBPillarImages', label: 'LHS B-Pillar' },
+      { key: 'lhsRearDoorDropdownList', oldKey: 'lhsRearDoor', imageKey: 'lhsRearDoorImages', oldImageKey: 'lhsRearDoorImages', label: 'LHS Rear Door' },
+      { key: 'lhsCPillarDropdownList', oldKey: 'lhsCPillar', imageKey: 'lhsCPillarImages', oldImageKey: 'lhsCPillarImages', label: 'LHS C-Pillar' },
+      { key: 'lhsRunningBorderDropdownList', oldKey: 'lhsRunningBorder', imageKey: 'lhsRunningBorderImages', oldImageKey: 'lhsRunningBorderImages', label: 'LHS Running Border' },
+      { key: 'lhsRearWheelDropdownList', oldKey: 'lhsRearAlloy', imageKey: 'lhsRearWheelImages', oldImageKey: 'lhsRearAlloyImages', label: 'LHS Rear Wheel' },
+      { key: 'lhsRearTyreDropdownList', oldKey: 'lhsRearTyre', imageKey: 'lhsRearTyreImages', oldImageKey: 'lhsRearTyreImages', label: 'LHS Rear Tyre' },
+      { key: 'lhsQuarterPanelDropdownList', oldKey: 'lhsQuarterPanel', imageKey: 'lhsQuarterPanelImages', oldImageKey: 'lhsQuarterPanelImages', label: 'LHS Quarter Panel' },
     ],
   },
   {
@@ -239,6 +235,21 @@ const exteriorSections = [
     ],
   },
 ]
+
+watch(() => car.value, (newVal) => {
+  if (newVal) {
+    const clone = JSON.parse(JSON.stringify(newVal))
+    // Automatically map old keys to new keys based on exteriorSections config
+    exteriorSections.forEach(section => {
+      section.parts.forEach((part: any) => {
+        if (part.oldKey && !clone[part.key] && clone[part.oldKey]) {
+          clone[part.key] = clone[part.oldKey]
+        }
+      })
+    })
+    editForm.value = clone
+  }
+}, { immediate: true })
 
 const engineParts = [
   { key: 'upperCrossMember', label: 'Upper Cross Member' },
@@ -464,16 +475,18 @@ function onLightboxKeydown(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onLightboxKeydown))
 onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown))
 
-// Collect all images for a section
-function sectionImages(keys: string[]) {
-  const obj = editForm.value || car.value
+// Collect all images for a section — supports both string keys and { new, old } fallback objects
+function sectionImages(keys: (string | { new: string, old: string })[]) {
+  const obj = editForm.value && Object.keys(editForm.value).length ? editForm.value : car.value
   if (!obj)
     return []
   const imgs: { url: string, label: string }[] = []
-  for (const key of keys) {
-    const urls = getImages(obj, key)
+  for (const entry of keys) {
+    const newKey = typeof entry === 'string' ? entry : entry.new
+    const oldKey = typeof entry === 'string' ? undefined : entry.old
+    const urls = getImages(obj, newKey, oldKey)
     for (const url of urls) {
-      imgs.push({ url, label: humanize(key) })
+      imgs.push({ url, label: humanize(newKey) })
     }
   }
   return imgs
@@ -733,17 +746,30 @@ function sectionImages(keys: string[]) {
                   >
                     <div
                       class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2"
-                      :class="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
-                      @click="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length && openLightboxUrls(getImages(editForm, (part as any).imageKey || `${part.key}Images`), 0, part.label)"
+                      :class="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
+                      @click="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length && openLightboxUrls(getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey), 0, part.label)"
                     >
                       <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
-                      <span v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length" class="flex items-center gap-1 text-[10px] text-primary">
+                      <span v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length" class="flex items-center gap-1 text-[10px] text-primary">
                         <Icon name="i-lucide-camera" class="size-3" />
-                        {{ getImages(editForm, (part as any).imageKey || `${part.key}Images`).length }}
+                        {{ getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length }}
                       </span>
                     </div>
                     <div class="p-2 border-t border-border/50">
                       <Input v-model="editForm[part.key]" class="h-8 text-sm" placeholder="e.g. Okay, Scratched" />
+                    </div>
+                    <!-- Part Images Inline -->
+                    <div v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length" class="p-2 border-t border-border/50 bg-muted/10">
+                      <div class="flex flex-wrap gap-1.5">
+                        <div
+                          v-for="(imgUrl, idx) in getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey)"
+                          :key="idx"
+                          class="relative size-10 rounded-md overflow-hidden border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
+                          @click="openLightboxUrls(getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey), idx, part.label)"
+                        >
+                          <img :src="imgUrl" :alt="part.label" class="w-full h-full object-cover" loading="lazy">
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
