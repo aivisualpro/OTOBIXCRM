@@ -491,8 +491,15 @@ const exteriorSections = [
       { key: 'lhsRunningBorderDropdownList', oldKey: 'lhsRunningBorder', imageKey: 'lhsRunningBorderImages', oldImageKey: 'lhsRunningBorderImages', label: 'LHS Running Border' },
       { key: 'lhsRearWheelDropdownList', oldKey: 'lhsRearAlloy', imageKey: 'lhsRearWheelImages', oldImageKey: 'lhsRearAlloyImages', label: 'LHS Rear Wheel' },
       { key: 'lhsRearTyreDropdownList', oldKey: 'lhsRearTyre', imageKey: 'lhsRearTyreImages', oldImageKey: 'lhsRearTyreImages', label: 'LHS Rear Tyre' },
-      { key: 'lhsQuarterPanelDropdownList', oldKey: 'lhsQuarterPanel', imageKey: 'lhsQuarterPanelImages', oldImageKey: 'lhsQuarterPanelImages', label: 'LHS Quarter Panel' },
-      { key: 'lhsQuarterPanelWithRearDoorOpenImages', oldKey: 'lhsQuarterPanelImages', imageKey: 'lhsQuarterPanelWithRearDoorOpenImages', oldImageKey: 'lhsQuarterPanelImages', label: 'LHS Qtr Panel W/ Boot Open', isImageOnly: true },
+      { 
+        key: 'lhsQuarterPanelDropdownList', 
+        oldKey: 'lhsQuarterPanel', 
+        label: 'LHS Quarter Panel',
+        imageGroups: [
+          { key: 'lhsQuarterPanelImages', oldKey: 'lhsQuarterPanelImages', label: 'LHS Quarter Panel Image' },
+          { key: 'lhsQuarterPanelWithRearDoorOpenImages', oldKey: 'lhsQuarterPanelImages', label: 'LHS Qtr Panel W/ Boot Open' }
+        ]
+      },
     ],
   },
   {
@@ -500,14 +507,18 @@ const exteriorSections = [
     icon: 'i-lucide-arrow-down',
     imageKeys: [
       { new: 'rearMainImages', old: 'rearMain' },
-      'rearWithBootDoorOpen',
       { new: 'rearBumperLhs45DegreeImages', old: 'rearBumperImages' },
       { new: 'rearBumperRhs45DegreeImages', old: 'rearBumperImages' },
       { new: 'rearBumperImages', old: 'rearBumperImages' },
-      'lhsTailLampImages',
-      'rhsTailLampImages',
-      'spareTyreImages',
-      'bootFloorImages'
+      { new: 'lhsTailLampImages', old: 'lhsTailLampImages' },
+      { new: 'lhsRearFogLampImages', old: undefined },
+      { new: 'rhsTailLampImages', old: 'rhsTailLampImages' },
+      { new: 'rhsRearFogLampImages', old: undefined },
+      { new: 'rearWindshieldImages', old: 'rearWindshieldImages' },
+      { new: 'bootDoorOpenImages', old: 'rearWithBootDoorOpen' },
+      { new: 'spareWheelImages', old: undefined },
+      { new: 'spareTyreImages', old: 'spareTyreImages' },
+      { new: 'bootFloorImages', old: 'bootFloorImages' }
     ],
     parts: [
       { key: 'rearMainImages', oldKey: 'rearMain', imageKey: 'rearMainImages', oldImageKey: 'rearMain', label: 'Rear Main', isImageOnly: true },
@@ -521,12 +532,15 @@ const exteriorSections = [
           { key: 'rearBumperImages', oldKey: 'rearBumperImages', label: 'Rear Bumper Image' }
         ]
       },
-      { key: 'lhsTailLamp', label: 'LHS Tail Lamp' },
-      { key: 'rhsTailLamp', label: 'RHS Tail Lamp' },
-      { key: 'rearWindshield', label: 'Rear Windshield' },
-      { key: 'bootDoor', label: 'Boot Door' },
-      { key: 'spareTyre', label: 'Spare Tyre' },
-      { key: 'bootFloor', label: 'Boot Floor' },
+      { key: 'lhsTailLampDropdownList', oldKey: 'lhsTailLamp', imageKey: 'lhsTailLampImages', oldImageKey: 'lhsTailLampImages', label: 'LHS Tail Lamp' },
+      { key: 'lhsRearFogLampDropdownList', oldKey: undefined, imageKey: 'lhsRearFogLampImages', oldImageKey: undefined, label: 'LHS Rear Fog Lamp' },
+      { key: 'rhsTailLampDropdownList', oldKey: 'rhsTailLamp', imageKey: 'rhsTailLampImages', oldImageKey: 'rhsTailLampImages', label: 'RHS Tail Lamp' },
+      { key: 'rhsRearFogLampDropdownList', oldKey: undefined, imageKey: 'rhsRearFogLampImages', oldImageKey: undefined, label: 'RHS Rear Fog Lamp' },
+      { key: 'rearWindshieldDropdownList', oldKey: 'rearWindshield', imageKey: 'rearWindshieldImages', oldImageKey: 'rearWindshieldImages', label: 'Rear Windshield' },
+      { key: 'bootDoorDropdownList', oldKey: 'bootDoor', imageKey: 'bootDoorOpenImages', oldImageKey: 'rearWithBootDoorOpen', label: 'Boot Door' },
+      { key: 'spareWheelDropdownList', oldKey: undefined, imageKey: 'spareWheelImages', oldImageKey: undefined, label: 'Spare Wheel' },
+      { key: 'spareTyreDropdownList', oldKey: 'spareTyre', imageKey: 'spareTyreImages', oldImageKey: 'spareTyreImages', label: 'Spare Tyre' },
+      { key: 'bootFloorDropdownList', oldKey: 'bootFloor', imageKey: 'bootFloorImages', oldImageKey: 'bootFloorImages', label: 'Boot Floor' },
     ],
   },
   {
