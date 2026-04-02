@@ -114,6 +114,15 @@ async function saveQC(silent = false) {
       toast.success('QC Report Saved Successfully')
       // Refetch to reset
       await fetchCarDetails(carId)
+    } else {
+      // Update the baseline so the diff doesn't re-send already-saved fields
+      if (car.value && Object.keys(changedFields).length > 0) {
+        _skipAutoSave = true
+        for (const k of Object.keys(changedFields)) {
+          car.value[k] = JSON.parse(JSON.stringify(changedFields[k]))
+        }
+        nextTick(() => { _skipAutoSave = false })
+      }
     }
   }
   catch (err: any) {
@@ -467,6 +476,7 @@ const exteriorSections = [
 
 watch(() => car.value, (newVal) => {
   if (newVal) {
+    _skipAutoSave = true // Guard: don't trigger auto-save when resetting editForm from fetched data
     const clone = JSON.parse(JSON.stringify(newVal))
     // Automatically map old keys to new keys based on exteriorSections config
     exteriorSections.forEach(section => {
@@ -481,8 +491,22 @@ watch(() => car.value, (newVal) => {
       try { clone.yearOfManufacture = new Date(clone.yearMonthOfManufacture).getFullYear() } catch {}
     }
     editForm.value = clone
+    nextTick(() => { _skipAutoSave = false })
   }
 }, { immediate: true })
+
+// ─── Auto-save: debounced deep watch on editForm ───
+let _skipAutoSave = false
+let _autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(editForm, () => {
+  if (_skipAutoSave || props.readonly) return
+  // Debounce: wait 1.5s after last change before saving
+  if (_autoSaveTimer) clearTimeout(_autoSaveTimer)
+  _autoSaveTimer = setTimeout(() => {
+    saveQC(true)
+  }, 1500)
+}, { deep: true })
 
 const engineParts = [
   { key: 'upperCrossMember', label: 'Upper Cross Member' },
