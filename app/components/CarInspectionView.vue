@@ -700,16 +700,73 @@ const interiorImageKeys = [
 ]
 
 const documentImageKeys = [
-  'rcTaxToken',
-  'insuranceCopy',
-  'bothKeys',
-  'form26GdCopyIfRcIsLost',
+  'rcTokenImages',
+  'insuranceImages',
+  'duplicateKeyImages',
   'chassisEmbossmentImages',
   'vinPlateImages',
   'pucImages',
-  'rtoNocImages',
-  'rtoForm28Images',
   'roadTaxImages',
+]
+
+// ─── Document Details field mapping (spreadsheet-driven) ───
+const documentDetailFields = [
+  // Core Identity
+  { label: 'Registration Number', key: 'registrationNumber', oldKey: 'registrationNumber', type: 'single' },
+  { label: 'To Be Scrapped', key: 'toBeScrapped', oldKey: 'toBeScrapped', type: 'dropdown', dropdownName: 'To Be Scrapped' },
+  { label: 'Chassis Details', key: 'chassisDetails', oldKey: undefined, type: 'single' },
+  { label: 'Chassis Embossment Image', key: 'chassisEmbossmentImages', oldKey: undefined, type: 'multiple' },
+  { label: 'Vin Plate Details', key: 'vinPlateDetails', oldKey: undefined, type: 'single' },
+  { label: 'Vin Plate Image', key: 'vinPlateImages', oldKey: undefined, type: 'multiple' },
+  { label: 'RC Book Availability', key: 'rcBookAvailabilityDropdownList', oldKey: 'rcBookAvailability', type: 'single' },
+  { label: 'RC Condition', key: 'rcCondition', oldKey: 'rcCondition', type: 'single' },
+  { label: 'RC Token Image', key: 'rcTokenImages', oldKey: 'rcTaxToken', type: 'multiple' },
+  { label: 'Mismatch in RC', key: 'mismatchInRcDropdownList', oldKey: 'mismatchInRc', type: 'single' },
+  { label: 'Registration Date', key: 'registrationDate', oldKey: 'registrationDate', type: 'single' },
+  { label: 'Fitness Validity', key: 'fitnessValidity', oldKey: 'fitnessTill', type: 'single' },
+  { label: 'Engine Number', key: 'engineNumber', oldKey: 'engineNumber', type: 'single' },
+  { label: 'Chassis Number', key: 'chassisNumber', oldKey: 'chassisNumber', type: 'single' },
+  { label: 'Make', key: 'make', oldKey: 'make', type: 'single' },
+  { label: 'Model', key: 'model', oldKey: 'model', type: 'single' },
+  { label: 'Variant', key: 'variant', oldKey: 'variant', type: 'single' },
+  // Vehicle Specs
+  { label: 'Fuel Type', key: 'fuelType', oldKey: 'fuelType', type: 'single' },
+  { label: 'Seating Capacity', key: 'seatingCapacity', oldKey: undefined, type: 'single' },
+  { label: 'Color', key: 'color', oldKey: undefined, type: 'single' },
+  { label: 'Cubic Capacity', key: 'cubicCapacity', oldKey: 'cubicCapacity', type: 'single' },
+  { label: 'Norms', key: 'norms', oldKey: undefined, type: 'single' },
+  // Registration
+  { label: 'Registration State', key: 'registrationState', oldKey: 'registrationState', type: 'single' },
+  { label: 'Registered RTO', key: 'registeredRto', oldKey: 'registeredRto', type: 'single' },
+  { label: 'Ownership Serial No', key: 'ownerSerialNumber', oldKey: 'ownerSerialNumber', type: 'single' },
+  { label: 'Registered Owner', key: 'registeredOwner', oldKey: 'registeredOwner', type: 'single' },
+  { label: 'Registered Address as per RC', key: 'registeredAddressAsPerRc', oldKey: 'registeredAddressAsPerRc', type: 'single' },
+  // Tax & Validity
+  { label: 'Road Tax Validity', key: 'roadTaxValidity', oldKey: 'roadTaxValidity', type: 'single' },
+  { label: 'Tax Valid Till', key: 'taxValidTill', oldKey: 'taxValidTill', type: 'single' },
+  { label: 'Road Tax Image', key: 'roadTaxImages', oldKey: undefined, type: 'multiple' },
+  // Hypothecation
+  { label: 'Hypothecation Details', key: 'hypothecationDetails', oldKey: 'hypothecationDetails', type: 'single' },
+  { label: 'Hypothecated To', key: 'hypothecatedTo', oldKey: undefined, type: 'single' },
+  // Insurance
+  { label: 'Insurance Type', key: 'insuranceDropdownList', oldKey: 'insurance', type: 'single' },
+  { label: 'Insurance Validity', key: 'insuranceValidity', oldKey: 'insuranceValidity', type: 'single' },
+  { label: 'Insured By', key: 'insurer', oldKey: undefined, type: 'single' },
+  { label: 'Policy Number', key: 'policyNumber', oldKey: 'insurancePolicyNumber', type: 'single' },
+  { label: 'Insurance Image', key: 'insuranceImages', oldKey: 'insuranceCopy', type: 'multiple' },
+  // PUC
+  { label: 'PUC Validity', key: 'pucValidity', oldKey: undefined, type: 'single' },
+  { label: 'PUC Number', key: 'pucNumber', oldKey: undefined, type: 'single' },
+  { label: 'PUC Image', key: 'pucImages', oldKey: undefined, type: 'multiple' },
+  // Status & Compliance
+  { label: 'RC Status', key: 'rcStatus', oldKey: undefined, type: 'single' },
+  { label: 'Blacklist Status', key: 'blacklistStatus', oldKey: undefined, type: 'single' },
+  { label: 'RTO NOC Details', key: 'rtoNoc', oldKey: 'rtoNoc', type: 'single' },
+  { label: 'RTO Form 28 (2 Copies)', key: 'rtoForm28', oldKey: 'rtoForm28', type: 'single' },
+  { label: 'Party Peshi', key: 'partyPeshi', oldKey: 'partyPeshi', type: 'single' },
+  { label: 'Duplicate Key', key: 'duplicateKey', oldKey: 'duplicateKey', type: 'single' },
+  { label: 'Duplicate Key Images', key: 'duplicateKeyImages', oldKey: 'bothKeys', type: 'multiple' },
+  { label: 'Additional Details', key: 'additionalDetailsDropdownList', oldKey: 'additionalDetails', type: 'single' },
 ]
 
 // Lightbox / Gallery
@@ -827,15 +884,15 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
     <template v-else-if="car">
       <!-- Tab Bar (Moved to top) -->
       <div class="shrink-0 border-b bg-background/80 backdrop-blur-sm relative z-10 w-full overflow-hidden">
-        <div class="flex gap-1 px-4 lg:px-6 overflow-x-auto no-scrollbar">
+        <div class="flex gap-2 px-4 lg:px-6 py-2 overflow-x-auto no-scrollbar items-center">
           <button
             v-for="tab in tabs"
             :key="tab.id"
             type="button"
-            class="flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap -mb-px"
+            class="flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-md transition-all whitespace-nowrap"
             :class="activeTab === tab.id
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'"
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground'"
             @click="setTab(tab.id)"
           >
             <Icon :name="tab.icon" class="size-4" />
@@ -1050,8 +1107,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
             </div>
           </div>
 
-          <!-- All Document Details -->
-          <Card>
+          <!-- All Document Details (spreadsheet-driven new→old field mapping) -->
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-file-badge" class="size-4 text-primary" />
@@ -1061,54 +1118,91 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
             <Separator />
             <CardContent class="pt-4 pb-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                <div
-                  v-for="(val, key) in {
-                    registrationNumber: 'Registration Number',
-                    registrationDate: 'Registration Date',
-                    registrationType: 'Registration Type',
-                    registrationState: 'Registration State',
-                    registeredRto: 'Registered RTO',
-                    registeredOwner: 'Registered Owner',
-                    registeredAddressAsPerRc: 'Registered Address',
-                    rcBookAvailability: 'RC Book',
-                    rcCondition: 'RC Condition',
-                    rcStatus: 'RC Status',
-                    fitnessTill: 'Fitness Till',
-                    toBeScrapped: 'To Be Scrapped',
-                    seatingCapacity: 'Seating Capacity',
-                    numberOfCylinders: 'Number of Cylinders',
-                    norms: 'Emission Norms',
-                    color: 'Color',
-                    insurance: 'Insurance Type',
-                    insurancePolicyNumber: 'Policy Number',
-                    insuranceValidity: 'Insurance Validity',
-                    noClaimBonus: 'No Claim Bonus',
-                    mismatchInInsurance: 'Insurance Mismatch',
-                    insurer: 'Insurer',
-                    hypothecatedTo: 'Hypothecated To',
-                    hypothecationDetails: 'Hypothecation Details',
-                    engineNumber: 'Engine Number',
-                    chassisNumber: 'Chassis Number',
-                    fuelType: 'Fuel Type',
-                    cubicCapacity: 'Cubic Capacity',
-                    roadTaxValidity: 'Road Tax Validity',
-                    taxValidTill: 'Tax Valid Till',
-                    duplicateKey: 'Duplicate Key',
-                    rtoNoc: 'RTO NOC',
-                    rtoForm28: 'RTO Form 28',
-                    partyPeshi: 'Party Peshi',
-                    mismatchInRc: 'Mismatch in RC',
-                    additionalDetails: 'Additional Details',
-                    contactNumber: 'Contact Number',
-                    emailAddress: 'Email',
-                  }" :key="key" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
-                >
-                  <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
-                    {{ val }}
-                  </p>
-                  <p v-if="props.readonly" class="text-sm font-medium text-right w-2/3">{{ editForm[key] || '—' }}</p>
-                  <Input v-else v-model="editForm[key]" class="h-8 text-sm font-medium w-2/3" />
-                </div>
+                <template v-for="field in documentDetailFields" :key="field.key">
+                  <!-- IMAGE (multiple) field — same card style as exterior tabs -->
+                  <div v-if="field.type === 'multiple'" class="sm:col-span-2 lg:col-span-3">
+                    <div class="rounded-xl border bg-card shadow-sm flex flex-row overflow-hidden min-h-[160px] h-[160px]">
+                      <!-- Left: Label -->
+                      <div class="flex flex-col w-[200px] xl:w-[240px] shrink-0 border-r border-border/50 bg-muted/10">
+                        <div class="h-full w-full flex flex-col bg-white/50 dark:bg-black/20">
+                          <div class="px-3 py-2 border-b border-border/50 flex items-center justify-center bg-muted/30 h-10 shrink-0">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground truncate">{{ field.label }}</span>
+                          </div>
+                          <div class="p-4 flex-1 flex flex-col items-center justify-center text-center gap-2 opacity-60">
+                            <Icon name="i-lucide-camera" class="size-5 text-muted-foreground" />
+                            <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-widest leading-tight">Images<br/>Section</span>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Right: Image Strip -->
+                      <div class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
+                        <div v-if="getImages(editForm, field.key, field.oldKey).length" class="flex-1 h-full w-full">
+                          <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch">
+                            <div
+                              v-for="(imgUrl, idx) in getImages(editForm, field.key, field.oldKey)"
+                              :key="idx"
+                              class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer group/item transition-all duration-300 border-r border-border/20 last:border-r-0"
+                              @click="openLightboxUrls(getImages(editForm, field.key, field.oldKey), idx, field.label)"
+                            >
+                              <img :src="imgUrl" :alt="field.label" class="w-full h-full object-cover select-none" loading="lazy">
+                              <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(field.key, idx, field.oldKey)">
+                                  <Icon name="i-lucide-refresh-cw" class="size-3.5" />
+                                </Button>
+                                <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage(field.key, idx, field.oldKey)">
+                                  <Icon name="i-lucide-trash" class="size-3.5 text-white" />
+                                </Button>
+                              </div>
+                            </div>
+                            <!-- Add Photo Endcap -->
+                            <div
+                              v-if="!props.readonly"
+                              class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer bg-muted/30 border-r border-border/20 last:border-r-0 flex flex-col items-center justify-center hover:bg-muted/50 transition-colors group/add"
+                              @click.stop="addImage(field.key)"
+                            >
+                              <div class="size-10 rounded-full bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center mb-2 group-hover/add:scale-110 transition-transform">
+                                <Icon name="i-lucide-plus" class="size-5 text-primary" />
+                              </div>
+                              <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Add Photo</span>
+                            </div>
+                          </div>
+                          <div v-if="getImages(editForm, field.key, field.oldKey).length > 1" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md text-[8px] text-white font-medium tracking-wider pointer-events-none">
+                            SWIPE
+                          </div>
+                        </div>
+                        <!-- Empty State -->
+                        <div v-else-if="!props.readonly" class="flex h-full w-full flex-col items-center justify-center bg-transparent gap-3 relative cursor-pointer hover:bg-muted/10 transition-colors" @click.stop="addImage(field.key)">
+                          <div class="size-12 rounded-full bg-muted/30 flex items-center justify-center">
+                            <Icon name="i-lucide-image-plus" class="size-5 text-muted-foreground/50" />
+                          </div>
+                          <span class="text-[11px] text-muted-foreground/60 font-bold tracking-widest uppercase">Click to add Photo</span>
+                        </div>
+                        <div v-else class="flex h-full w-full flex-col items-center justify-center bg-transparent gap-3 relative">
+                          <div class="size-12 rounded-full bg-muted/30 flex items-center justify-center">
+                            <Icon name="i-lucide-image-off" class="size-5 text-muted-foreground/50" />
+                          </div>
+                          <span class="text-[11px] text-muted-foreground/60 font-bold tracking-widest uppercase">No Photos</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- DROPDOWN field -->
+                  <div v-else-if="field.type === 'dropdown'" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
+                    <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
+                      {{ field.label }}
+                    </p>
+                    <p v-if="props.readonly" class="text-sm font-medium text-right w-2/3">{{ editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '') || '—' }}</p>
+                    <SearchableSelect v-else v-model="editForm[field.key]" :options="getOptions(field.dropdownName || '')" class-name="w-2/3 h-8 shadow-sm text-sm" />
+                  </div>
+                  <!-- SINGLE (text) field -->
+                  <div v-else class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
+                    <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
+                      {{ field.label }}
+                    </p>
+                    <p v-if="props.readonly" class="text-sm font-medium text-right w-2/3">{{ editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '') || '—' }}</p>
+                    <Input v-else v-model="editForm[field.key]" class="h-8 text-sm font-medium w-2/3" />
+                  </div>
+                </template>
               </div>
             </CardContent>
           </Card>
@@ -1312,7 +1406,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
         <!-- ═══════ ENGINE BAY TAB ═══════ -->
         <div v-else-if="activeTab === 'engine-bay'" class="space-y-6">
-          <Card>
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-cog" class="size-4 text-primary" />
@@ -1428,7 +1522,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
         <!-- ═══════ ELECTRICALS TAB ═══════ -->
         <div v-else-if="activeTab === 'electricals'" class="space-y-6">
-          <Card>
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-zap" class="size-4 text-primary" />
@@ -1458,7 +1552,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
         <!-- ═══════ INTERIOR TAB ═══════ -->
         <div v-else-if="activeTab === 'interior'" class="space-y-6">
-          <Card>
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-armchair" class="size-4 text-primary" />
@@ -1498,7 +1592,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
           </Card>
 
           <!-- Airbags -->
-          <Card>
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-shield" class="size-4 text-primary" />
@@ -1535,7 +1629,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
           </Card>
 
           <!-- Interior Photos inline -->
-          <Card>
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-camera" class="size-4 text-primary" />
@@ -1568,7 +1662,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
         <!-- ═══════ STEERING, SUSPENSION, BRAKES TAB ═══════ -->
         <!-- ═══════ STEERING, SUSPENSION, BRAKES TAB ═══════ -->
         <div v-else-if="activeTab === 'steering-suspension-brakes'" class="space-y-6">
-          <Card>
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-disc" class="size-4 text-primary" />
@@ -1621,7 +1715,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
         <!-- ═══════ QC AUDIT LOGS TAB ═══════ -->
         <div v-else-if="activeTab === 'qc-logs'" class="space-y-6">
-          <Card>
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-history" class="size-4 text-primary" />
@@ -1681,7 +1775,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
         <!-- ═══════ DOCUMENTS TAB ═══════ -->
         <div v-else-if="activeTab === 'documents'" class="space-y-6">
-          <Card>
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-file-text" class="size-4 text-primary" />
@@ -1714,7 +1808,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
           </Card>
 
           <!-- Document Text Info -->
-          <Card>
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-scan-text" class="size-4 text-primary" />
@@ -1763,7 +1857,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
         <!-- ═══════ AUCTION TAB ═══════ -->
         <div v-else-if="activeTab === 'auction'" class="space-y-6">
-          <Card>
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-gavel" class="size-4 text-primary" />
@@ -1807,7 +1901,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
           </Card>
 
           <!-- Approval -->
-          <Card>
+          <Card class="!py-0 !gap-0 overflow-hidden">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-check-circle" class="size-4 text-primary" />
