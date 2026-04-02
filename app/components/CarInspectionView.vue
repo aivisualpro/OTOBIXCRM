@@ -446,7 +446,7 @@ const exteriorSections = [
         oldKey: 'frontBumper', 
         label: 'Front Bumper',
         imageGroups: [
-          { key: 'frontBumperImages', oldKey: 'frontBumperImages', label: 'Main' },
+          { key: 'frontBumperImages', oldKey: 'frontBumperImages', label: 'Front Bumper Image' },
           { key: 'frontBumperLhs45DegreeImages', oldKey: 'frontBumperImages', label: 'LHS 45' },
           { key: 'frontBumperRhs45DegreeImages', oldKey: 'frontBumperImages', label: 'RHS 45' }
         ]
