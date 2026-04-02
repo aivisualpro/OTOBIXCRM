@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { cn } from '~/lib/utils'
+import { cn, getConditionStyle } from '~/lib/utils'
 
 const props = defineProps<{
   options: { label: string, value: string }[]
@@ -38,7 +38,11 @@ function handleSelect(val: string) {
         :disabled="disabled"
         :class="cn('w-full justify-between font-normal h-9 px-3', !modelValue && 'text-muted-foreground', className)"
       >
-        <span class="truncate">{{ selectedLabel || placeholder || 'Select option...' }}</span>
+        <span v-if="!selectedLabel" class="truncate opacity-70">{{ placeholder || 'Select option...' }}</span>
+        <div v-else class="flex items-center gap-1.5 px-2 py-0.5 rounded shadow-sm border truncate" :class="getConditionStyle(selectedLabel).bg">
+          <Icon :name="getConditionStyle(selectedLabel).icon" class="size-3.5 shrink-0" />
+          <span class="text-[12px] font-bold leading-tight">{{ selectedLabel }}</span>
+        </div>
         <Icon name="i-lucide-chevrons-up-down" class="ml-2 size-4 shrink-0 opacity-50" />
       </Button>
     </PopoverTrigger>
@@ -54,14 +58,16 @@ function handleSelect(val: string) {
               :value="opt.value"
               @select="handleSelect(String(opt.value))"
             >
-              <Icon
-                name="i-lucide-check"
-                :class="cn(
-                  'mr-2 size-4',
-                  String(modelValue) === String(opt.value) ? 'opacity-100' : 'opacity-0',
-                )"
-              />
-              {{ opt.label }}
+              <div 
+                class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded shadow-sm w-full transition-all duration-200" 
+                :class="[
+                  getConditionStyle(opt.label).bg,
+                  String(modelValue) === String(opt.value) ? '!border-foreground ring-1 ring-foreground ring-offset-1 ring-offset-background font-black scale-[1.02] z-10' : 'opacity-85 hover:opacity-100'
+                ]"
+              >
+                <Icon :name="getConditionStyle(opt.label).icon" class="size-4 shrink-0" />
+                <span class="text-[13px]" :class="String(modelValue) === String(opt.value) ? 'font-black' : 'font-bold'">{{ opt.label }}</span>
+              </div>
             </CommandItem>
           </CommandGroup>
         </CommandList>
