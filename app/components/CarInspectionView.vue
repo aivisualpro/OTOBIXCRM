@@ -429,9 +429,15 @@ const exteriorSections = [
     ],
     parts: [
       { key: 'frontMainImages', oldKey: 'frontMain', imageKey: 'frontMainImages', oldImageKey: 'frontMain', label: 'Front Main', isImageOnly: true },
-      { key: 'bonnetDropdownList', oldKey: 'bonnet', imageKey: 'bonnetOpenImages', oldImageKey: 'bonnetImages', label: 'Bonnet' },
-      { key: 'bonnetOpenImages', oldKey: 'bonnetImages', imageKey: 'bonnetOpenImages', oldImageKey: 'bonnetImages', label: 'Bonnet Open', isImageOnly: true },
-      { key: 'bonnetClosedImages', oldKey: 'bonnetImages', imageKey: 'bonnetClosedImages', oldImageKey: 'bonnetImages', label: 'Bonnet Closed', isImageOnly: true },
+      { 
+        key: 'bonnetDropdownList', 
+        oldKey: 'bonnet', 
+        label: 'Bonnet',
+        imageGroups: [
+          { key: 'bonnetOpenImages', oldKey: 'bonnetImages', label: 'Bonnet Open' },
+          { key: 'bonnetClosedImages', oldKey: 'bonnetImages', label: 'Bonnet Closed' }
+        ]
+      },
       { key: 'frontWindshieldDropdownList', oldKey: 'frontWindshield', imageKey: 'frontWindshieldImages', oldImageKey: 'frontWindshieldImages', label: 'Front Windshield' },
       { key: 'frontWindshieldImages', oldKey: 'frontWindshieldImages', imageKey: 'frontWindshieldImages', oldImageKey: 'frontWindshieldImages', label: 'Front Windshield Image', isImageOnly: true },
       { key: 'frontWiperAndWasherDropdownList', oldKey: undefined, imageKey: 'frontWiperAndWasherImages', oldImageKey: undefined, label: 'Front Wiper & Washer' },
@@ -749,7 +755,6 @@ const documentDetailFields = [
   // Registration
   { label: 'Registration State', key: 'registrationState', oldKey: 'registrationState', type: 'single' },
   { label: 'Registered RTO', key: 'registeredRto', oldKey: 'registeredRto', type: 'single' },
-  { label: 'Ownership Serial No', key: 'ownerSerialNumber', oldKey: 'ownerSerialNumber', type: 'single' },
   { label: 'Registered Owner', key: 'registeredOwner', oldKey: 'registeredOwner', type: 'single' },
   { label: 'Registered Address as per RC', key: 'registeredAddressAsPerRc', oldKey: 'registeredAddressAsPerRc', type: 'single' },
   // Tax & Validity
@@ -1350,69 +1355,45 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
                     <!-- Right Side: Horizontal Image Strip -->
                     <div class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
-                      <!-- Photo Gallery -->
-                      <div v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length" class="flex-1 h-full w-full">
-                        <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch">
+                      <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch">
+                        <template v-for="group in ((part as any).imageGroups || [{ key: (part as any).imageKey || `${part.key}Images`, oldKey: (part as any).oldImageKey, label: part.label }])" :key="group.key">
+                          <!-- Filled Images for this group -->
                           <div
-                            v-for="(imgUrl, idx) in getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey)"
-                            :key="idx"
-                            class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer group/item transition-all duration-300 border-r border-border/20 last:border-r-0"
-                            @click="openLightboxUrls(getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey), idx, part.label)"
+                            v-for="(imgUrl, idx) in getImages(editForm, group.key, group.oldKey)"
+                            :key="group.key + '-' + idx"
+                            class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer group/item transition-all duration-300 border-r border-border/20"
+                            @click="openLightboxUrls(getImages(editForm, group.key, group.oldKey), idx, group.label)"
                           >
-                            <img :src="imgUrl" :alt="part.label" class="w-full h-full object-cover select-none" loading="lazy">
-                            
-                            <!-- Overlay Actions (QC only) -->
+                            <img :src="imgUrl" :alt="group.label" class="w-full h-full object-cover select-none" loading="lazy">
+                            <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 pt-6 pointer-events-none">
+                              <p class="text-[9px] text-white/90 font-medium uppercase tracking-wider truncate">{{ group.label }}</p>
+                            </div>
+                            <!-- Overlay Actions -->
                             <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                              <Button 
-                                variant="secondary" 
-                                size="icon" 
-                                class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" 
-                                @click.stop="replaceImage((part as any).imageKey || `${part.key}Images`, idx, (part as any).oldImageKey)"
-                              >
+                              <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(group.key, idx, group.oldKey)">
                                 <Icon name="i-lucide-refresh-cw" class="size-3.5" />
                               </Button>
-                              <Button 
-                                variant="destructive" 
-                                size="icon" 
-                                class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" 
-                                @click.stop="removeImage((part as any).imageKey || `${part.key}Images`, idx, (part as any).oldImageKey)"
-                              >
+                              <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage(group.key, idx, group.oldKey)">
                                 <Icon name="i-lucide-trash" class="size-3.5 text-white" />
                               </Button>
                             </div>
                           </div>
-                          
-                          <!-- Add Photo Endcap (QC only) -->
+                          <!-- Add Photo Endcap for this group -->
                           <div 
                             v-if="!props.readonly"
-                            class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer bg-muted/30 border-r border-border/20 last:border-r-0 flex flex-col items-center justify-center hover:bg-muted/50 transition-colors group/add" 
-                            @click.stop="addImage((part as any).imageKey || `${part.key}Images`)"
+                            class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer bg-muted/30 border-r border-border/20 flex flex-col items-center justify-center hover:bg-muted/50 transition-colors group/add" 
+                            @click.stop="addImage(group.key)"
                           >
                             <div class="size-10 rounded-full bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center mb-2 group-hover/add:scale-110 transition-transform">
                               <Icon name="i-lucide-plus" class="size-5 text-primary" />
                             </div>
-                            <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Add Photo</span>
+                            <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-center px-4 leading-tight">Add {{ group.label }}</span>
                           </div>
-                        </div>
-                        
-                        <!-- Swipe Indicator hint -->
-                        <div v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`, (part as any).oldImageKey).length > 1" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md text-[8px] text-white font-medium tracking-wider pointer-events-none">
-                           SWIPE
-                        </div>
+                        </template>
                       </div>
-                      
-                      <!-- Empty State -->
-                      <div v-if="!props.readonly" class="flex h-full w-full flex-col items-center justify-center bg-transparent gap-3 relative cursor-pointer hover:bg-muted/10 transition-colors" @click.stop="addImage((part as any).imageKey || `${part.key}Images`)">
-                         <div class="size-12 rounded-full bg-muted/30 flex items-center justify-center">
-                           <Icon name="i-lucide-image-plus" class="size-5 text-muted-foreground/50" />
-                         </div>
-                         <span class="text-[11px] text-muted-foreground/60 font-bold tracking-widest uppercase">Click to add Photo</span>
-                      </div>
-                      <div v-else class="flex h-full w-full flex-col items-center justify-center bg-transparent gap-3 relative">
-                         <div class="size-12 rounded-full bg-muted/30 flex items-center justify-center">
-                           <Icon name="i-lucide-image-off" class="size-5 text-muted-foreground/50" />
-                         </div>
-                         <span class="text-[11px] text-muted-foreground/60 font-bold tracking-widest uppercase">No Photos</span>
+                      <!-- Swipe Indicator hint -->
+                      <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md text-[8px] text-white font-medium tracking-wider pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                         SWIPE
                       </div>
                     </div>
                   </div>
