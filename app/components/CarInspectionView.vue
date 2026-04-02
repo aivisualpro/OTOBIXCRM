@@ -356,7 +356,7 @@ function setTab(tabId: string) {
   router.push(`${basePath}/${carId}/${tabId}`)
 }
 
-const activeExteriorSection = computed(() => exteriorSections.find(s => s.title.toLowerCase().startsWith(activeTab.value)))
+const activeExteriorSection = computed(() => exteriorSections.find(s => s.title.toLowerCase().replace(/[^a-z]+/g, '').startsWith(activeTab.value.toLowerCase().replace(/[^a-z]+/g, ''))))
 
 // ─── Helpers ───
 function _conditionColor(val: string) {
@@ -408,6 +408,33 @@ function humanize(key: string) {
 }
 
 // ─── Section data builders ───
+const engineParts = [
+  { key: 'engineDropdownList', oldKey: 'engine', label: 'Engine', dropdownName: 'Engine' },
+  { key: 'commentsOnEngineDropdownList', oldKey: 'commentsOnEngine', label: 'Comment on Engine', dropdownName: 'Comment on Engine' },
+  { key: 'engineOilLevelDipstickDropdownList', oldKey: 'engineOilLevelDipstick', label: 'Engine Oil Level Dipstick', dropdownName: 'Engine Oil Level Dipstick' },
+  { key: 'engineOilDropdownList', oldKey: 'engineOil', label: 'Engine Oil', dropdownName: 'Engine Oil' },
+  { key: 'commentsOnEngineOilDropdownList', oldKey: 'commentsOnEngineOil', label: 'Comment on Engine Oil', dropdownName: 'Comment on Engine Oil' },
+  { key: 'enginePermisableBlowByDropdownList', oldKey: 'enginePermisableBlowBy', label: 'Engine Permisable Blowby', dropdownName: 'Engine Permisable Blowby' },
+  { key: 'coolantDropdownList', oldKey: 'coolant', label: 'Coolant', dropdownName: 'Coolant' },
+  { key: 'cowlTopDropdownList', oldKey: 'cowlTop', imageKey: 'cowlTopImages', oldImageKey: 'new', label: 'Cowl Top', dropdownName: 'Cowl Top' },
+  { key: 'firewallDropdownList', oldKey: 'firewall', imageKey: 'firewallImages', oldImageKey: 'new', label: 'Firewall', dropdownName: 'Firewall' },
+  { key: 'abs', label: 'ABS' },
+  { key: 'lhsApronDropdownList', oldKey: 'lhsApron', imageKey: 'lhsApronImages', oldImageKey: 'apronLhsRhs', label: 'LHS Apron', dropdownName: 'LHS Apron' },
+  { key: 'rhsApronDropdownList', oldKey: 'rhsApron', imageKey: 'rhsApronImages', oldImageKey: 'apronLhsRhs', label: 'RHS Apron', dropdownName: 'RHS Apron' },
+  { key: 'batteryDropdownList', oldKey: 'battery', imageKey: 'batteryImages', oldImageKey: 'batteryImages', label: 'Battery', dropdownName: 'Battery' },
+  { key: 'upperCrossMemberDropdownList', oldKey: 'upperCrossMember', label: 'Upper Cross Member', dropdownName: 'Upper Cross Member' },
+  { key: 'lhsSideMemberDropdownList', oldKey: 'new', label: 'LHS Side Member', dropdownName: 'LHS Side Member' },
+  { key: 'rhsSideMemberDropdownList', oldKey: 'new', label: 'RHS Side Member', dropdownName: 'RHS Side Member' },
+  { key: 'engineMountDropdownList', oldKey: 'engineMount', label: 'Engine Mount', dropdownName: 'Engine Mount' },
+  { key: 'headlightSupportDropdownList', oldKey: 'headlightSupport', label: 'Headlamp Support', dropdownName: 'Headlamp Support' },
+  { key: 'radiatorSupportDropdownList', oldKey: 'radiatorSupport', label: 'Radiator Support', dropdownName: 'Radiator Support' },
+  { key: 'commentsOnRadiatorDropdownList', oldKey: 'commentsOnRadiator', label: 'Comment on Radiator', dropdownName: 'Comment on Radiator' },
+  { key: 'lowerCrossMemberDropdownList', oldKey: 'lowerCrossMember', label: 'Lower Cross Member', dropdownName: 'Lower Cross Member' },
+  { key: 'exhaustSmokeDropdownList', oldKey: 'exhaustSmoke', label: 'Exhaust Smoke', dropdownName: 'Exhaust Smoke' },
+  { key: 'commentsOnTowingDropdownList', oldKey: 'commentsOnTowing', label: 'Comment on Towing', dropdownName: 'Comment on Towing' },
+  { key: 'commentsOnOthersDropdownList', oldKey: 'commentsOnOthers', label: 'Comment on Others', dropdownName: 'Comment on Others' },
+]
+
 const exteriorSections = [
   {
     title: 'Front',
@@ -596,6 +623,14 @@ const exteriorSections = [
       { key: 'rhsFenderDropdownList', oldKey: 'rhsFender', imageKey: 'rhsFenderImages', oldImageKey: 'rhsFenderImages', label: 'RHS Fender' },
     ],
   },
+  {
+    title: 'Engine Bay',
+    icon: 'i-lucide-cog',
+    imageKeys: [
+      { new: 'engineBayImages', old: 'engineBay' },
+    ],
+    parts: engineParts,
+  },
 ]
 
 watch(() => car.value, (newVal) => {
@@ -631,26 +666,6 @@ watch(editForm, () => {
     saveQC(true)
   }, 1500)
 }, { deep: true })
-
-const engineParts = [
-  { key: 'upperCrossMember', label: 'Upper Cross Member' },
-  { key: 'radiatorSupport', label: 'Radiator Support' },
-  { key: 'headlightSupport', label: 'Headlight Support' },
-  { key: 'lowerCrossMember', label: 'Lower Cross Member' },
-  { key: 'lhsApron', label: 'LHS Apron' },
-  { key: 'rhsApron', label: 'RHS Apron' },
-  { key: 'firewall', label: 'Firewall' },
-  { key: 'cowlTop', label: 'Cowl Top' },
-  { key: 'engine', label: 'Engine' },
-  { key: 'coolant', label: 'Coolant' },
-  { key: 'engineOilLevelDipstick', label: 'Engine Oil Dipstick' },
-  { key: 'engineOil', label: 'Engine Oil' },
-  { key: 'engineMount', label: 'Engine Mount' },
-  { key: 'enginePermisableBlowBy', label: 'Blow-by' },
-  { key: 'exhaustSmoke', label: 'Exhaust Smoke' },
-  { key: 'clutch', label: 'Clutch' },
-  { key: 'gearShift', label: 'Gear Shift' },
-]
 
 const electricalParts = [
   { key: 'battery', label: 'Battery' },
@@ -724,15 +739,12 @@ const _exteriorImageKeys = [
 ]
 
 const engineImageKeys = [
-  'engineBay',
-  'apronLhsRhs',
-  'batteryImages',
-  'additionalImages',
+  { new: 'engineBayImages', old: 'engineBay' },
 ]
 
 const engineVideoKeys = [
-  { key: 'engineSound', label: 'Engine Sound' },
-  { key: 'exhaustSmokeImages', label: 'Exhaust Smoke' },
+  { key: 'engineVideo', oldKey: 'engineSound', label: 'Engine Sound Video' },
+  { key: 'exhaustSmokeVideo', oldKey: 'exhaustSmokeImages', label: 'Exhaust Smoke Video' },
 ]
 
 function getVideos(obj: Record<string, any> | null, key: string): string[] {
@@ -1305,8 +1317,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
           </Card>
         </div>
 
-        <!-- ═══════ EXTERIOR TABS (FRONT/LEFT/REAR/RIGHT) ═══════ -->
-        <div v-else-if="['front', 'left', 'rear', 'right'].includes(activeTab)" class="space-y-6">
+        <!-- ═══════ EXTERIOR TABS AND ENGINE BAY ═══════ -->
+        <div v-else-if="['front', 'left', 'rear', 'right', 'engine-bay'].includes(activeTab)" class="space-y-6">
           <!-- Condition Grid -->
           <Card class="!p-0 !py-0 overflow-hidden" style="padding: 0px !important;">
             <CardContent class="p-0 sm:p-0">
@@ -1466,73 +1478,36 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <!-- ═══════ ENGINE BAY TAB ═══════ -->
-        <div v-else-if="activeTab === 'engine-bay'" class="space-y-6">
-          <Card class="!py-0 !gap-0 overflow-hidden">
-            <CardHeader class="pt-5 pb-3">
-              <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-cog" class="size-4 text-primary" />
-                Engine Bay Components
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent class="pt-4 pb-5">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                <div
-                  v-for="part in engineParts"
-                  :key="part.key"
-                  class="rounded-lg border overflow-hidden"
-                >
-                  <div
-                    class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2"
-                    :class="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length ? 'cursor-pointer hover:bg-muted/70 transition-colors' : ''"
-                    @click="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length && openLightboxUrls(getImages(editForm, (part as any).imageKey || `${part.key}Images`), 0, part.label)"
-                  >
-                    <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
-                    <span v-if="getImages(editForm, (part as any).imageKey || `${part.key}Images`).length" class="flex items-center gap-1 text-[10px] text-primary">
-                      <Icon name="i-lucide-camera" class="size-3" />
-                      {{ getImages(editForm, (part as any).imageKey || `${part.key}Images`).length }}
-                    </span>
-                  </div>
-                  <div class="p-2 border-t border-border/50">
-                    <p v-if="props.readonly" class="text-sm font-medium px-1">{{ editForm[part.key] || '—' }}</p>
-                    <Input v-else v-model="editForm[part.key]" class="h-8 text-sm" placeholder="e.g. Okay, Scratched" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Engine Photos inline -->
-              <div v-if="sectionImages(engineImageKeys).length" class="mt-4">
-                <div class="flex items-center gap-2 mb-3">
-                  <Icon name="i-lucide-image" class="size-4 text-primary" />
-                  <h3 class="text-sm font-semibold">
-                    Engine Bay Photos
+              <div v-if="activeExteriorSection && sectionImages(activeExteriorSection.imageKeys as any).length" class="mt-8 mb-4">
+                <div class="flex items-center gap-2 mb-4 px-2">
+                  <Icon name="i-lucide-images" class="size-5 text-primary" />
+                  <h3 class="text-base font-semibold tracking-tight">
+                    {{ activeExteriorSection.title }} Overall Photos
                   </h3>
-                  <Separator class="flex-1" />
+                  <Separator class="flex-1 ml-2" />
                 </div>
-                <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                   <div
-                    v-for="(img, idx) in sectionImages(engineImageKeys)"
+                    v-for="(img, idx) in sectionImages(activeExteriorSection.imageKeys as any)"
                     :key="idx"
-                    class="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border hover:border-primary/50 transition-colors"
-                    @click="openLightbox(sectionImages(engineImageKeys), idx)"
+                    class="group relative aspect-square rounded-xl overflow-hidden bg-muted cursor-pointer border hover:border-primary/50 transition-all duration-300 shadow-sm hover:shadow-md"
+                    @click="openLightbox(sectionImages(activeExteriorSection!.imageKeys as any), idx)"
                   >
-                    <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <Badge variant="secondary" class="absolute bottom-1 left-1 text-[9px] max-w-[calc(100%-8px)] truncate">
-                      {{ img.label }}
-                    </Badge>
+                    <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+                    <div class="absolute bottom-2 left-2 right-2 flex items-end">
+                      <p class="text-[10px] font-bold text-white/90 uppercase tracking-wider truncate drop-shadow-md">
+                        {{ img.label }}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card v-if="car">
+          <!-- ENGINE VIDEOS (Only shown on Engine Bay tab) -->
+          <Card v-if="activeTab === 'engine-bay' && car">
             <CardHeader class="pt-5 pb-3">
               <CardTitle class="text-base flex items-center gap-2">
                 <Icon name="i-lucide-video" class="size-4 text-primary" />
@@ -1548,8 +1523,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       <Icon name="i-lucide-play-circle" class="size-4 text-primary" />
                       {{ vk.label }}
                     </p>
-                    <template v-if="getVideos(car, vk.key).length">
-                      <div v-for="(videoUrl, vIdx) in getVideos(car, vk.key)" :key="`${vk.key}-${vIdx}`" class="rounded-lg overflow-hidden border bg-black relative" style="padding-top: 56.25%;">
+                    <template v-if="getVideos(editForm, vk.key).length || (vk.oldKey && getVideos(editForm, vk.oldKey).length)">
+                      <div v-for="(videoUrl, vIdx) in (getVideos(editForm, vk.key).length ? getVideos(editForm, vk.key) : getVideos(editForm, vk.oldKey!))" :key="`${vk.key}-${vIdx}`" class="rounded-lg overflow-hidden border bg-black relative" style="padding-top: 56.25%;">
                         <template v-if="getEmbedUrl(videoUrl).type === 'iframe'">
                           <iframe
                             :src="getEmbedUrl(videoUrl).src"
