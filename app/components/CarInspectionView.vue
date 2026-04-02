@@ -428,44 +428,45 @@ const engineParts = [
 ]
 
 const electricalParts = [
-  { key: 'commentsOnClusterMeterDropdownList', oldKey: 'new', imageKey: 'meterConsoleWithEngineOnImages', oldImageKey: 'meterConsoleWithEngineOn', label: 'Cluster Meter', dropdownName: 'Comment on Cluster Meter' },
+  { key: 'clusterMeterGroup', imageKey: 'meterConsoleWithEngineOnImages', oldImageKey: 'meterConsoleWithEngineOn', label: 'Cluster Meter', isVerticalSplit: true, splitParts: [
+    { key: 'commentsOnClusterMeterDropdownList', label: 'Cluster Meter', dropdownName: 'Comments on Cluster Meter' },
+    { key: 'odometerReadingBeforeTestDrive', label: 'Odometer Reading', dropdownName: 'Odometer Reading', inputType: 'number' }
+  ] },
   { key: 'split_e1', hasNoImages: true, splitParts: [
-    { key: 'odometerReadingBeforeTestDrive', oldKey: 'odometerReadingInKms', label: 'Odometer Reading', dropdownName: 'Odometer Reading' },
-    { key: 'fuelLevel', oldKey: 'fuelLevel', label: 'Fuel Level', dropdownName: 'Fuel Level' }
+    { key: 'fuelLevel', oldKey: 'fuelLevel', label: 'Fuel Level', dropdownName: 'Fuel Level' },
+    { key: 'irvm', oldKey: 'new', label: 'IRVM', dropdownName: 'IRVM' }
   ] },
   { key: 'split_e2', hasNoImages: true, splitParts: [
-    { key: 'irvm', oldKey: 'new', label: 'IRVM', dropdownName: 'IRVM' },
-    { key: 'dashboardDropdownList', oldKey: 'new', label: 'Dashboard', dropdownName: 'Dashboard' }
+    { key: 'dashboardDropdownList', oldKey: 'new', label: 'Dashboard', dropdownName: 'Dashboard' },
+    { key: 'infotainmentSystemDropdownList', oldKey: 'stereo', label: 'Infotainment System', dropdownName: 'Infotainment System' }
   ] },
   { key: 'split_e3', hasNoImages: true, splitParts: [
-    { key: 'infotainmentSystemDropdownList', oldKey: 'stereo', label: 'Infotainment System', dropdownName: 'Infotainment System' },
-    { key: 'inbuiltSpeaker', oldKey: 'inbuiltSpeaker', label: 'Inbuilt Speaker', dropdownName: 'Inbuilt Speaker' }
+    { key: 'inbuiltSpeaker', oldKey: 'inbuiltSpeaker', label: 'Inbuilt Speaker', dropdownName: 'Inbuilt Speaker' },
+    { key: 'externalSpeaker', oldKey: 'externalSpeaker', label: 'External Speaker', dropdownName: 'External Speaker' }
   ] },
   { key: 'split_e4', hasNoImages: true, splitParts: [
-    { key: 'externalSpeaker', oldKey: 'externalSpeaker', label: 'External Speaker', dropdownName: 'External Speaker' },
-    { key: 'steeringMountedMediaControls', oldKey: 'steeringMountedAudioControl', label: 'Steering Audio Controls', dropdownName: 'Steering Mounted Audio Controls' }
+    { key: 'steeringMountedMediaControls', oldKey: 'steeringMountedAudioControl', label: 'Steering Audio Controls', dropdownName: 'Steering Mounted Media Controls' },
+    { key: 'steeringMountedSystemControls', oldKey: 'steeringMountedAudioControl', label: 'Steering System Controls', dropdownName: 'Steering Mounted System Controls' }
   ] },
+
   { key: 'split_e5', hasNoImages: true, splitParts: [
-    { key: 'steeringMountedSystemControls', oldKey: 'steeringMountedAudioControl', label: 'Steering System Controls', dropdownName: 'Steering Mounted System Controls' },
-    { key: 'noOfPowerWindows', oldKey: 'noOfPowerWindows', label: 'Power Windows', dropdownName: 'Number of Power Windows' }
+    { key: 'acTypeDropdownList', oldKey: 'airConditioningManual', label: 'AC Type', dropdownName: 'A/C Type' },
+    { key: 'acCoolingDropdownList', oldKey: 'airConditioningClimateControl', label: 'AC Cooling', dropdownName: 'A/C Cooling' }
   ] },
-  { key: 'split_e6', hasNoImages: true, splitParts: [
-    { key: 'acTypeDropdownList', oldKey: 'airConditioningManual', label: 'AC Type', dropdownName: 'AC Type' },
-    { key: 'acCoolingDropdownList', oldKey: 'airConditioningClimateControl', label: 'AC Cooling', dropdownName: 'AC Cooling' }
-  ] },
-  { key: 'commentsOnAc', oldKey: 'commentsOnAc', imageKey: 'acImages', oldImageKey: 'new', label: 'AC', dropdownName: 'Comment on AC' },
-  { key: 'rearWiperWasherDropdownList', oldKey: 'rearWiperWasher', imageKey: 'rearWiperAndWasherImages', oldImageKey: 'new', label: 'Rear Wiper & Washer', dropdownName: 'Rear Wiper & Washer' },
+  { key: 'commentsOnAc', oldKey: 'commentsOnAc', imageKey: 'acImages', oldImageKey: 'new', label: 'Comment on AC', dropdownName: 'Comments On A/C' },
+  { key: 'rearWiperWasherDropdownList', oldKey: 'rearWiperWasher', imageKey: 'rearWiperAndWasherImages', oldImageKey: 'new', label: 'Rear Wiper & Washer', dropdownName: 'frontWiperAndWasher' },
   { key: 'reverseCameraDropdownList', oldKey: 'reverseCamera', imageKey: 'reverseCameraImages', oldImageKey: 'new', label: 'Reverse Camera', dropdownName: 'Reverse Camera' },
   { key: 'sunroofDropdownList', oldKey: 'sunroof', imageKey: 'sunroofImages', oldImageKey: 'sunroofImages', label: 'Sunroof', dropdownName: 'Sunroof' },
   { key: 'split_e7', hasNoImages: true, splitParts: [
     { key: 'rearDefoggerDropdownList', oldKey: 'rearDefogger', label: 'Rear Defogger', dropdownName: 'Rear Defogger' },
-    { key: 'rhsFrontDoorFeaturesDropdownList', oldKey: 'powerWindowConditionRhsFront', label: 'Driver Door Features', dropdownName: 'Driver Door Features' }
+    { key: 'rhsFrontDoorFeaturesDropdownList', oldKey: 'powerWindowConditionRhsFront', label: 'Driver Door Features', dropdownName: 'LHS Front Door Features' }
   ] },
   { key: 'split_e8', hasNoImages: true, splitParts: [
-    { key: 'lhsFrontDoorFeaturesDropdownList', oldKey: 'powerWindowConditionLhsFront', label: 'Co-Driver Door Features', dropdownName: 'Co-Driver Door features' },
+    { key: 'lhsFrontDoorFeaturesDropdownList', oldKey: 'powerWindowConditionLhsFront', label: 'Co-Driver Door Features', dropdownName: 'RHS Front Door Features' },
     { key: 'rhsRearDoorFeaturesDropdownList', oldKey: 'powerWindowConditionRhsRear', label: 'RHS Rear Door Features', dropdownName: 'RHS Rear Door Features' }
   ] },
   { key: 'split_e9', hasNoImages: true, splitParts: [
+    { key: 'noOfPowerWindows', oldKey: 'noOfPowerWindows', label: 'Power Windows', dropdownName: 'Number of Power Windows' },
     { key: 'lhsRearDoorFeaturesDropdownList', oldKey: 'powerWindowConditionLhsRear', label: 'LHS Rear Door Features', dropdownName: 'LHS Rear Door Features' }
   ] },
 ]
@@ -1422,13 +1423,14 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                     </template>
                     <template v-else>
                       <!-- Left Side: Controls & Condition -->
-                      <div class="flex flex-row flex-1 overflow-hidden h-full">
+                      <div class="flex flex-1 overflow-hidden h-full" :class="(part as any).isVerticalSplit ? 'flex-col' : 'flex-row'">
                         <template v-for="(renderPart, rIdx) in ((part as any).splitParts || [part])" :key="renderPart.key">
                           <div 
-                            class="flex flex-col shrink-0 bg-muted/10 relative h-full"
+                            class="flex flex-col shrink-0 bg-muted/10 relative"
                             :class="[
-                              ((part as any).splitParts) ? 'w-1/2' : (renderPart as any).hasNoImages ? 'w-full' : 'w-[200px] xl:w-[240px]',
-                              rIdx === 0 && (part as any).splitParts ? 'border-r border-border/50' : '',
+                              (part as any).isVerticalSplit ? 'h-1/2 w-[200px] xl:w-[240px]' : (part as any).splitParts ? 'h-full w-1/2' : (renderPart as any).hasNoImages ? 'h-full w-full' : 'h-full w-[200px] xl:w-[240px]',
+                              rIdx === 0 && (part as any).splitParts && !(part as any).isVerticalSplit ? 'border-r border-border/50' : '',
+                              rIdx === 0 && (part as any).isVerticalSplit ? 'border-b border-border/50' : '',
                               !((part as any).splitParts) && !(renderPart as any).hasNoImages ? 'border-r border-border/50' : ''
                             ]"
                           >
@@ -1527,7 +1529,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                         </div>
                         <div class="p-3 flex-1 flex flex-col justify-center bg-white/50 dark:bg-black/20">
                           <p v-if="props.readonly" class="text-sm font-medium">{{ editForm[renderPart.key] || '—' }}</p>
-                          <Input v-else v-model="editForm[renderPart.key]" class="shadow-sm border-border text-sm focus-visible:ring-1 bg-white dark:bg-zinc-900" placeholder="e.g. Scratched, Rust" />
+                          <Input v-else v-model="editForm[renderPart.key]" :type="(renderPart as any).inputType || 'text'" class="shadow-sm border-border text-sm focus-visible:ring-1 bg-white dark:bg-zinc-900" placeholder="e.g. Scratched, Rust" />
                         </div>
                       </template>
                           </div>
@@ -1535,7 +1537,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       </div>
                       
                       <!-- Right Side: Horizontal Image Strip -->
-                    <div v-if="!(part as any).hasNoImages && !(part as any).splitParts" class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
+                    <div v-if="!(part as any).hasNoImages" class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
                       <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch">
                         <template v-for="group in ((part as any).imageGroups || [{ key: (part as any).imageKey || `${part.key}Images`, oldKey: (part as any).oldImageKey, label: part.label }])" :key="group.key">
                           <!-- Filled Images for this group -->
