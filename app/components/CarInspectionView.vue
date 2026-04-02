@@ -1398,13 +1398,6 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                   </div>
                 </div>
               </div>
-              <div v-if="activeTab === 'front'" class="mt-4 rounded-lg bg-muted/50 p-4">
-                <p class="text-xs font-medium text-muted-foreground mb-1">
-                  Inspector Comments
-                </p>
-                <p v-if="props.readonly" class="text-sm">{{ editForm.comments || '—' }}</p>
-                <Textarea v-else v-model="editForm.comments" placeholder="Comments on exterior..." class="w-full text-sm min-h-[80px]" />
-              </div>
             </CardContent>
           </Card>
         </div>
