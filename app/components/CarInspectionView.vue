@@ -409,7 +409,8 @@ function humanize(key: string) {
 
 // ─── Section data builders ───
 const engineParts = [
-  { key: 'engineDropdownList', oldKey: 'engine', label: 'Engine', dropdownName: 'Engine', hasNoImages: true },
+  { key: 'engineDropdownList', oldKey: 'engine', imageKey: 'engineBayImages', oldImageKey: 'engineBay', label: 'Engine', dropdownName: 'Engine' },
+  { key: 'engineVideosBox', label: 'Engine Videos', isVideoBox: true, hasNoImages: true },
   { key: 'commentsOnEngineDropdownList', oldKey: 'commentsOnEngine', label: 'Comment on Engine', dropdownName: 'Comment on Engine', hasNoImages: true },
   { key: 'engineOilLevelDipstickDropdownList', oldKey: 'engineOilLevelDipstick', label: 'Engine Oil Level Dipstick', dropdownName: 'Engine Oil Level Dipstick', hasNoImages: true },
   { key: 'engineOilDropdownList', oldKey: 'engineOil', label: 'Engine Oil', dropdownName: 'Engine Oil', hasNoImages: true },
@@ -627,7 +628,6 @@ const exteriorSections = [
     title: 'Engine Bay',
     icon: 'i-lucide-cog',
     imageKeys: [
-      { new: 'engineBayImages', old: 'engineBay' },
     ],
     parts: engineParts,
   },
@@ -1329,13 +1329,58 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                     v-for="part in activeExteriorSection.parts"
                     :key="part.key"
                     class="rounded-xl border bg-card shadow-sm flex flex-row overflow-hidden"
-                    :class="(part as any).hasNoImages ? 'min-h-[100px]' : 'min-h-[160px] h-[160px]'"
+                    :class="[(part as any).hasNoImages && !(part as any).isVideoBox ? 'min-h-[100px]' : 'min-h-[160px] h-[160px]']"
                   >
-                    <!-- Left Side: Controls & Condition -->
-                    <div 
-                      class="flex flex-col shrink-0 border-r border-border/50 bg-muted/10 relative"
-                      :class="(part as any).hasNoImages ? 'w-full border-r-0' : 'w-[200px] xl:w-[240px]'"
-                    >
+                    <template v-if="(part as any).isVideoBox">
+                      <div class="w-full h-full flex flex-col p-3 bg-muted/5 relative overflow-hidden">
+                        <div class="grid grid-cols-2 gap-3 flex-1 h-full w-full">
+                          <template v-for="vk in engineVideoKeys" :key="vk.key">
+                            <div class="flex flex-col gap-1.5 h-full relative">
+                              <div class="flex items-center gap-1.5 px-2 py-1 bg-black/50 rounded absolute top-2 left-2 z-10 pointer-events-none backdrop-blur-sm">
+                                <Icon name="i-lucide-video" class="size-3 text-white/80" />
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-white/90">{{ vk.label }}</span>
+                              </div>
+                              <template v-if="getVideos(editForm, vk.key).length || (vk.oldKey && getVideos(editForm, vk.oldKey).length)">
+                                <div v-for="(videoUrl, vIdx) in (getVideos(editForm, vk.key).length ? getVideos(editForm, vk.key) : getVideos(editForm, vk.oldKey!))" :key="`${vk.key}-${vIdx}`" class="rounded-lg overflow-hidden border bg-black relative h-full flex-1">
+                                  <template v-if="getEmbedUrl(videoUrl).type === 'iframe'">
+                                    <iframe
+                                      :src="getEmbedUrl(videoUrl).src"
+                                      allow="autoplay"
+                                      allowfullscreen
+                                      class="absolute inset-0 w-full h-full border-0 object-cover"
+                                    />
+                                  </template>
+                                  <template v-else>
+                                    <video
+                                      :src="getEmbedUrl(videoUrl).src"
+                                      controls
+                                      playsinline
+                                      crossorigin="anonymous"
+                                      preload="auto"
+                                      class="absolute inset-0 w-full h-full object-cover"
+                                    >
+                                      Your browser does not support the video tag.
+                                    </video>
+                                  </template>
+                                </div>
+                              </template>
+                              <template v-else>
+                                <div class="rounded-lg border border-dashed border-border flex flex-col items-center justify-center bg-muted/20 hover:bg-muted/40 transition-colors relative h-full flex-1 min-h-[80px]">
+                                  <Icon name="i-lucide-video-off" class="size-6 text-muted-foreground/30 mb-1" />
+                                  <span class="text-[9px] font-bold uppercase text-muted-foreground/50">No {{ vk.label }}</span>
+                                </div>
+                              </template>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </template>
+                    <template v-else>
+                      <!-- Left Side: Controls & Condition -->
+                      <div 
+                        class="flex flex-col shrink-0 border-r border-border/50 bg-muted/10 relative"
+                        :class="(part as any).hasNoImages ? 'w-full border-r-0' : 'w-[200px] xl:w-[240px]'"
+                      >
                       <template v-if="(part as any).isImageOnly">
                         <div class="h-full w-full flex flex-col bg-white/50 dark:bg-black/20">
                           <div class="px-3 py-2 border-b border-border/50 flex items-center justify-center bg-muted/30 h-10 shrink-0">
@@ -1479,10 +1524,10 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                          SWIPE
                       </div>
                     </div>
-                  </div>
-
+                  </template>
                 </div>
               </div>
+            </div>
               <div v-if="activeExteriorSection && sectionImages(activeExteriorSection.imageKeys as any).length" class="mt-8 mb-4">
                 <div class="flex items-center gap-2 mb-4 px-2">
                   <Icon name="i-lucide-images" class="size-5 text-primary" />
@@ -1507,60 +1552,6 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <!-- ENGINE VIDEOS (Only shown on Engine Bay tab) -->
-          <Card v-if="activeTab === 'engine-bay' && car">
-            <CardHeader class="pt-5 pb-3">
-              <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-video" class="size-4 text-primary" />
-                Engine Videos
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent class="pt-4 pb-5">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <template v-for="vk in engineVideoKeys" :key="vk.key">
-                  <div class="space-y-2">
-                    <p class="text-sm font-medium flex items-center gap-2">
-                      <Icon name="i-lucide-play-circle" class="size-4 text-primary" />
-                      {{ vk.label }}
-                    </p>
-                    <template v-if="getVideos(editForm, vk.key).length || (vk.oldKey && getVideos(editForm, vk.oldKey).length)">
-                      <div v-for="(videoUrl, vIdx) in (getVideos(editForm, vk.key).length ? getVideos(editForm, vk.key) : getVideos(editForm, vk.oldKey!))" :key="`${vk.key}-${vIdx}`" class="rounded-lg overflow-hidden border bg-black relative" style="padding-top: 56.25%;">
-                        <template v-if="getEmbedUrl(videoUrl).type === 'iframe'">
-                          <iframe
-                            :src="getEmbedUrl(videoUrl).src"
-                            allow="autoplay"
-                            allowfullscreen
-                            class="absolute inset-0 w-full h-full border-0"
-                          />
-                        </template>
-                        <template v-else>
-                          <video
-                            :src="getEmbedUrl(videoUrl).src"
-                            controls
-                            playsinline
-                            crossorigin="anonymous"
-                            preload="auto"
-                            class="absolute inset-0 w-full h-full object-contain"
-                          >
-                            Your browser does not support the video tag.
-                          </video>
-                        </template>
-                      </div>
-                    </template>
-                    <template v-else>
-                      <div class="rounded-lg border border-dashed border-border flex flex-col items-center justify-center bg-muted/20 hover:bg-muted/40 transition-colors relative" style="padding-top: 56.25%;">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                          <img src="/video-not-available.png" alt="Video Not Available" class="h-full w-full object-cover opacity-80">
-                        </div>
-                      </div>
-                    </template>
-                  </div>
-                </template>
               </div>
             </CardContent>
           </Card>
