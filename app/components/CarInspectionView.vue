@@ -427,6 +427,49 @@ const engineParts = [
   { key: 'split_9', hasNoImages: true, splitParts: [ { key: 'commentsOnTowingDropdownList', oldKey: 'commentsOnTowing', label: 'Comment on Towing', dropdownName: 'Comments On Towing' }, { key: 'commentsOnOthersDropdownList', oldKey: 'commentsOnOthers', label: 'Comment on Others', dropdownName: 'Comments On Others' } ] },
 ]
 
+const electricalParts = [
+  { key: 'commentsOnClusterMeterDropdownList', oldKey: 'new', imageKey: 'meterConsoleWithEngineOnImages', oldImageKey: 'meterConsoleWithEngineOn', label: 'Cluster Meter', dropdownName: 'Comment on Cluster Meter' },
+  { key: 'split_e1', hasNoImages: true, splitParts: [
+    { key: 'odometerReadingBeforeTestDrive', oldKey: 'odometerReadingInKms', label: 'Odometer Reading', dropdownName: 'Odometer Reading' },
+    { key: 'fuelLevel', oldKey: 'fuelLevel', label: 'Fuel Level', dropdownName: 'Fuel Level' }
+  ] },
+  { key: 'split_e2', hasNoImages: true, splitParts: [
+    { key: 'irvm', oldKey: 'new', label: 'IRVM', dropdownName: 'IRVM' },
+    { key: 'dashboardDropdownList', oldKey: 'new', label: 'Dashboard', dropdownName: 'Dashboard' }
+  ] },
+  { key: 'split_e3', hasNoImages: true, splitParts: [
+    { key: 'infotainmentSystemDropdownList', oldKey: 'stereo', label: 'Infotainment System', dropdownName: 'Infotainment System' },
+    { key: 'inbuiltSpeaker', oldKey: 'inbuiltSpeaker', label: 'Inbuilt Speaker', dropdownName: 'Inbuilt Speaker' }
+  ] },
+  { key: 'split_e4', hasNoImages: true, splitParts: [
+    { key: 'externalSpeaker', oldKey: 'externalSpeaker', label: 'External Speaker', dropdownName: 'External Speaker' },
+    { key: 'steeringMountedMediaControls', oldKey: 'steeringMountedAudioControl', label: 'Steering Audio Controls', dropdownName: 'Steering Mounted Audio Controls' }
+  ] },
+  { key: 'split_e5', hasNoImages: true, splitParts: [
+    { key: 'steeringMountedSystemControls', oldKey: 'steeringMountedAudioControl', label: 'Steering System Controls', dropdownName: 'Steering Mounted System Controls' },
+    { key: 'noOfPowerWindows', oldKey: 'noOfPowerWindows', label: 'Power Windows', dropdownName: 'Number of Power Windows' }
+  ] },
+  { key: 'split_e6', hasNoImages: true, splitParts: [
+    { key: 'acTypeDropdownList', oldKey: 'airConditioningManual', label: 'AC Type', dropdownName: 'AC Type' },
+    { key: 'acCoolingDropdownList', oldKey: 'airConditioningClimateControl', label: 'AC Cooling', dropdownName: 'AC Cooling' }
+  ] },
+  { key: 'commentsOnAc', oldKey: 'commentsOnAc', imageKey: 'acImages', oldImageKey: 'new', label: 'AC', dropdownName: 'Comment on AC' },
+  { key: 'rearWiperWasherDropdownList', oldKey: 'rearWiperWasher', imageKey: 'rearWiperAndWasherImages', oldImageKey: 'new', label: 'Rear Wiper & Washer', dropdownName: 'Rear Wiper & Washer' },
+  { key: 'reverseCameraDropdownList', oldKey: 'reverseCamera', imageKey: 'reverseCameraImages', oldImageKey: 'new', label: 'Reverse Camera', dropdownName: 'Reverse Camera' },
+  { key: 'sunroofDropdownList', oldKey: 'sunroof', imageKey: 'sunroofImages', oldImageKey: 'sunroofImages', label: 'Sunroof', dropdownName: 'Sunroof' },
+  { key: 'split_e7', hasNoImages: true, splitParts: [
+    { key: 'rearDefoggerDropdownList', oldKey: 'rearDefogger', label: 'Rear Defogger', dropdownName: 'Rear Defogger' },
+    { key: 'rhsFrontDoorFeaturesDropdownList', oldKey: 'powerWindowConditionRhsFront', label: 'Driver Door Features', dropdownName: 'Driver Door Features' }
+  ] },
+  { key: 'split_e8', hasNoImages: true, splitParts: [
+    { key: 'lhsFrontDoorFeaturesDropdownList', oldKey: 'powerWindowConditionLhsFront', label: 'Co-Driver Door Features', dropdownName: 'Co-Driver Door features' },
+    { key: 'rhsRearDoorFeaturesDropdownList', oldKey: 'powerWindowConditionRhsRear', label: 'RHS Rear Door Features', dropdownName: 'RHS Rear Door Features' }
+  ] },
+  { key: 'split_e9', hasNoImages: true, splitParts: [
+    { key: 'lhsRearDoorFeaturesDropdownList', oldKey: 'powerWindowConditionLhsRear', label: 'LHS Rear Door Features', dropdownName: 'LHS Rear Door Features' }
+  ] },
+]
+
 const exteriorSections = [
   {
     title: 'Front',
@@ -622,6 +665,13 @@ const exteriorSections = [
     ],
     parts: engineParts,
   },
+  {
+    id: 'electricals',
+    title: 'Electricals',
+    icon: 'i-lucide-zap',
+    imageKeys: [],
+    parts: electricalParts,
+  },
 ]
 
 watch(() => car.value, (newVal) => {
@@ -658,23 +708,6 @@ watch(editForm, () => {
   }, 1500)
 }, { deep: true })
 
-const electricalParts = [
-  { key: 'battery', label: 'Battery' },
-  { key: 'electricals', label: 'Electricals Condition' },
-  { key: 'rearWiperWasher', label: 'Rear Wiper/Washer' },
-  { key: 'rearDefogger', label: 'Rear Defogger' },
-  { key: 'musicSystem', label: 'Music System' },
-  { key: 'stereo', label: 'Stereo' },
-  { key: 'inbuiltSpeaker', label: 'Inbuilt Speaker' },
-  { key: 'externalSpeaker', label: 'External Speaker' },
-  { key: 'steeringMountedAudioControl', label: 'Steering Audio Control' },
-  { key: 'noOfPowerWindows', label: 'Power Windows' },
-  { key: 'powerWindowConditionRhsFront', label: 'RHS Front Window' },
-  { key: 'powerWindowConditionLhsFront', label: 'LHS Front Window' },
-  { key: 'powerWindowConditionRhsRear', label: 'RHS Rear Window' },
-  { key: 'powerWindowConditionLhsRear', label: 'LHS Rear Window' },
-  { key: 'reverseCamera', label: 'Reverse Camera' },
-]
 
 const interiorParts = [
   { key: 'commentOnInterior', label: 'Interior Comments' },
@@ -1309,7 +1342,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
         </div>
 
         <!-- ═══════ EXTERIOR TABS AND ENGINE BAY ═══════ -->
-        <div v-else-if="['front', 'left', 'rear', 'right', 'engine-bay'].includes(activeTab)" class="space-y-6">
+        <div v-else-if="['front', 'left', 'rear', 'right', 'engine-bay', 'electricals'].includes(activeTab)" class="space-y-6">
           <!-- Condition Grid -->
           <Card class="!p-0 !py-0 overflow-hidden" style="padding: 0px !important;">
             <CardContent class="p-0 sm:p-0">
@@ -1577,35 +1610,6 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
           </Card>
         </div>
 
-        <!-- ═══════ ELECTRICALS TAB ═══════ -->
-        <div v-else-if="activeTab === 'electricals'" class="space-y-6">
-          <Card class="!py-0 !gap-0 overflow-hidden">
-            <CardHeader class="pt-5 pb-3">
-              <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-zap" class="size-4 text-primary" />
-                Electrical Components
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent class="pt-4 pb-5">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                <div
-                  v-for="part in electricalParts"
-                  :key="part.key"
-                  class="rounded-lg border overflow-hidden"
-                >
-                  <div class="px-3 py-2 bg-muted/40 border-b flex items-center justify-between gap-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ part.label }}</span>
-                  </div>
-                  <div class="p-2 border-t border-border/50">
-                    <p v-if="props.readonly" class="text-sm font-medium px-1">{{ editForm[part.key] || '—' }}</p>
-                    <Input v-else v-model="editForm[part.key]" class="h-8 text-sm" placeholder="e.g. Okay, Scratched" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         <!-- ═══════ INTERIOR TAB ═══════ -->
         <div v-else-if="activeTab === 'interior'" class="space-y-6">
