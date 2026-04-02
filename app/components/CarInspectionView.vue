@@ -1341,7 +1341,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                                 <span class="text-[9px] font-bold uppercase tracking-wider text-white/90">{{ vk.label }}</span>
                               </div>
                               <template v-if="getVideos(editForm, vk.key).length || (vk.oldKey && getVideos(editForm, vk.oldKey).length)">
-                                <div v-for="(videoUrl, vIdx) in (getVideos(editForm, vk.key).length ? getVideos(editForm, vk.key) : getVideos(editForm, vk.oldKey!))" :key="`${vk.key}-${vIdx}`" class="rounded-lg overflow-hidden border bg-black relative h-full flex-1">
+                                <div v-for="(videoUrl, vIdx) in (getVideos(editForm, vk.key).length ? getVideos(editForm, vk.key) : getVideos(editForm, vk.oldKey!))" :key="`${vk.key}-${vIdx}`" class="rounded-lg overflow-hidden border bg-black relative h-full flex-1 group">
                                   <template v-if="getEmbedUrl(videoUrl).type === 'iframe'">
                                     <iframe
                                       :src="getEmbedUrl(videoUrl).src"
@@ -1362,12 +1362,30 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                                       Your browser does not support the video tag.
                                     </video>
                                   </template>
+                                  <!-- Overlay Actions -->
+                                  <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                    <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(vk.key, vIdx, vk.oldKey)">
+                                      <Icon name="i-lucide-refresh-cw" class="size-3.5" />
+                                    </Button>
+                                    <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage(vk.key, vIdx, vk.oldKey)">
+                                      <Icon name="i-lucide-trash" class="size-3.5 text-white" />
+                                    </Button>
+                                  </div>
                                 </div>
                               </template>
                               <template v-else>
-                                <div class="rounded-lg border border-dashed border-border flex flex-col items-center justify-center bg-muted/20 hover:bg-muted/40 transition-colors relative h-full flex-1 min-h-[80px]">
-                                  <Icon name="i-lucide-video-off" class="size-6 text-muted-foreground/30 mb-1" />
-                                  <span class="text-[9px] font-bold uppercase text-muted-foreground/50">No {{ vk.label }}</span>
+                                <div 
+                                  class="rounded-lg border border-dashed border-border flex flex-col items-center justify-center transition-colors relative h-full flex-1 min-h-[80px]"
+                                  :class="!props.readonly ? 'cursor-pointer bg-muted/20 hover:bg-muted/50 group/add' : 'bg-muted/10'"
+                                  @click="!props.readonly && addImage(vk.key)"
+                                >
+                                  <div v-if="!props.readonly" class="size-10 rounded-full bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center mb-2 group-hover/add:scale-110 transition-transform">
+                                    <Icon name="i-lucide-plus" class="size-5 text-primary" />
+                                  </div>
+                                  <Icon v-else name="i-lucide-video-off" class="size-6 text-muted-foreground/30 mb-1" />
+                                  <span class="text-[9px] font-bold uppercase text-muted-foreground/50 tracking-wider">
+                                    {{ !props.readonly ? 'Add Video' : 'No ' + vk.label }}
+                                  </span>
                                 </div>
                               </template>
                             </div>
