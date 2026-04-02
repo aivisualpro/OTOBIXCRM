@@ -154,6 +154,20 @@ function getValuesArray(val: string | string[] | undefined | null) {
   return v.flatMap(s => typeof s === 'string' ? s.split(',') : String(s)).map(s => s.trim()).filter(Boolean)
 }
 
+function formatDateMMDDYYYY(val: any) {
+  if (!val) return '—'
+  const d = new Date(val)
+  if (isNaN(d.getTime())) return String(val)
+  return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()}`
+}
+
+function formatDateYYYYMMDD(val: any) {
+  if (!val) return ''
+  const d = new Date(val)
+  if (isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`
+}
+
 async function approveLead() {
   editForm.value.approvalStatus = 'Approved'
   await saveQC()
@@ -716,19 +730,16 @@ const documentDetailFields = [
   { label: 'To Be Scrapped', key: 'toBeScrapped', oldKey: 'toBeScrapped', type: 'dropdown', dropdownName: 'To Be Scrapped' },
   { label: 'Chassis Details', key: 'chassisDetails', oldKey: undefined, type: 'dropdown', dropdownName: 'Chassis Details' },
   { label: 'Chassis Embossment Image', key: 'chassisEmbossmentImages', oldKey: undefined, type: 'multiple' },
-  { label: 'Vin Plate Details', key: 'vinPlateDetails', oldKey: undefined, type: 'single' },
+  { label: 'Vin Plate Details', key: 'vinPlateDetails', oldKey: undefined, type: 'dropdown', dropdownName: 'Vin Plate Details' },
   { label: 'Vin Plate Image', key: 'vinPlateImages', oldKey: undefined, type: 'multiple' },
   { label: 'RC Book Availability', key: 'rcBookAvailabilityDropdownList', oldKey: 'rcBookAvailability', type: 'dropdown', dropdownName: 'RC Book Availability' },
   { label: 'RC Condition', key: 'rcCondition', oldKey: 'rcCondition', type: 'dropdown', dropdownName: 'RC Condition' },
   { label: 'RC Token Image', key: 'rcTokenImages', oldKey: 'rcTaxToken', type: 'multiple' },
   { label: 'Mismatch in RC', key: 'mismatchInRcDropdownList', oldKey: 'mismatchInRc', type: 'dropdown', dropdownName: 'Mismatch in RC' },
-  { label: 'Registration Date', key: 'registrationDate', oldKey: 'registrationDate', type: 'single' },
-  { label: 'Fitness Validity', key: 'fitnessValidity', oldKey: 'fitnessTill', type: 'single' },
+  { label: 'Registration Date', key: 'registrationDate', oldKey: 'registrationDate', type: 'date' },
+  { label: 'Fitness Validity', key: 'fitnessValidity', oldKey: 'fitnessTill', type: 'date' },
   { label: 'Engine Number', key: 'engineNumber', oldKey: 'engineNumber', type: 'single' },
   { label: 'Chassis Number', key: 'chassisNumber', oldKey: 'chassisNumber', type: 'single' },
-  { label: 'Make', key: 'make', oldKey: 'make', type: 'single' },
-  { label: 'Model', key: 'model', oldKey: 'model', type: 'single' },
-  { label: 'Variant', key: 'variant', oldKey: 'variant', type: 'single' },
   // Vehicle Specs
   { label: 'Fuel Type', key: 'fuelType', oldKey: 'fuelType', type: 'single' },
   { label: 'Seating Capacity', key: 'seatingCapacity', oldKey: undefined, type: 'single' },
@@ -742,31 +753,31 @@ const documentDetailFields = [
   { label: 'Registered Owner', key: 'registeredOwner', oldKey: 'registeredOwner', type: 'single' },
   { label: 'Registered Address as per RC', key: 'registeredAddressAsPerRc', oldKey: 'registeredAddressAsPerRc', type: 'single' },
   // Tax & Validity
-  { label: 'Road Tax Validity', key: 'roadTaxValidity', oldKey: 'roadTaxValidity', type: 'single' },
-  { label: 'Tax Valid Till', key: 'taxValidTill', oldKey: 'taxValidTill', type: 'single' },
+  { label: 'Road Tax Validity', key: 'roadTaxValidity', oldKey: 'roadTaxValidity', type: 'date' },
+  { label: 'Tax Valid Till', key: 'taxValidTill', oldKey: 'taxValidTill', type: 'date' },
   { label: 'Road Tax Image', key: 'roadTaxImages', oldKey: undefined, type: 'multiple' },
   // Hypothecation
-  { label: 'Hypothecation Details', key: 'hypothecationDetails', oldKey: 'hypothecationDetails', type: 'single' },
+  { label: 'Hypothecation Details', key: 'hypothecationDetails', oldKey: 'hypothecationDetails', type: 'dropdown', dropdownName: 'Hypothecation Details' },
   { label: 'Hypothecated To', key: 'hypothecatedTo', oldKey: undefined, type: 'single' },
   // Insurance
   { label: 'Insurance Type', key: 'insuranceDropdownList', oldKey: 'insurance', type: 'dropdown', dropdownName: 'Insurance' },
-  { label: 'Insurance Validity', key: 'insuranceValidity', oldKey: 'insuranceValidity', type: 'single' },
+  { label: 'Insurance Validity', key: 'insuranceValidity', oldKey: 'insuranceValidity', type: 'date' },
   { label: 'Insured By', key: 'insurer', oldKey: undefined, type: 'single' },
   { label: 'Policy Number', key: 'policyNumber', oldKey: 'insurancePolicyNumber', type: 'single' },
   { label: 'Insurance Image', key: 'insuranceImages', oldKey: 'insuranceCopy', type: 'multiple' },
   // PUC
-  { label: 'PUC Validity', key: 'pucValidity', oldKey: undefined, type: 'single' },
+  { label: 'PUC Validity', key: 'pucValidity', oldKey: undefined, type: 'date' },
   { label: 'PUC Number', key: 'pucNumber', oldKey: undefined, type: 'single' },
   { label: 'PUC Image', key: 'pucImages', oldKey: undefined, type: 'multiple' },
   // Status & Compliance
   { label: 'RC Status', key: 'rcStatus', oldKey: undefined, type: 'dropdown', dropdownName: 'RC Status' },
   { label: 'Blacklist Status', key: 'blacklistStatus', oldKey: undefined, type: 'dropdown', dropdownName: 'Blacklist Status' },
-  { label: 'RTO NOC Details', key: 'rtoNoc', oldKey: 'rtoNoc', type: 'single' },
-  { label: 'RTO Form 28 (2 Copies)', key: 'rtoForm28', oldKey: 'rtoForm28', type: 'single' },
-  { label: 'Party Peshi', key: 'partyPeshi', oldKey: 'partyPeshi', type: 'single' },
-  { label: 'Duplicate Key', key: 'duplicateKey', oldKey: 'duplicateKey', type: 'single' },
+  { label: 'RTO NOC Details', key: 'rtoNoc', oldKey: 'rtoNoc', type: 'dropdown', dropdownName: 'RTO NOC Details' },
+  { label: 'RTO Form 28 (2 Copies)', key: 'rtoForm28', oldKey: 'rtoForm28', type: 'dropdown', dropdownName: 'RTO Form 28' },
+  { label: 'Party Peshi', key: 'partyPeshi', oldKey: 'partyPeshi', type: 'dropdown', dropdownName: 'Party Peshi' },
+  { label: 'Duplicate Key', key: 'duplicateKey', oldKey: 'duplicateKey', type: 'dropdown', dropdownName: 'Duplicate Key' },
   { label: 'Duplicate Key Images', key: 'duplicateKeyImages', oldKey: 'bothKeys', type: 'multiple' },
-  { label: 'Additional Details', key: 'additionalDetailsDropdownList', oldKey: 'additionalDetails', type: 'single' },
+  { label: 'Additional Details', key: 'additionalDetailsDropdownList', oldKey: 'additionalDetails', type: 'dropdown', dropdownName: 'Additional Details' },
 ]
 
 // Lightbox / Gallery
@@ -1193,6 +1204,20 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                     </p>
                     <p v-if="props.readonly" class="text-sm font-medium text-right w-2/3">{{ editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '') || '—' }}</p>
                     <SearchableSelect v-else v-model="editForm[field.key]" :options="getOptions(field.dropdownName || '')" class-name="w-2/3 h-8 shadow-sm text-sm" />
+                  </div>
+                  <!-- DATE field -->
+                  <div v-else-if="field.type === 'date'" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
+                    <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
+                      {{ field.label }}
+                    </p>
+                    <p v-if="props.readonly" class="text-sm font-medium text-right w-2/3">{{ formatDateMMDDYYYY(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')) }}</p>
+                    <Input 
+                      v-else 
+                      :model-value="formatDateYYYYMMDD(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : ''))" 
+                      @update:model-value="editForm[field.key] = $event"
+                      type="date" 
+                      class="h-8 text-sm font-medium w-2/3 shadow-sm bg-transparent !border-0 focus-visible:ring-0 px-0 [&::-webkit-calendar-picker-indicator]:opacity-50" 
+                    />
                   </div>
                   <!-- SINGLE (text) field -->
                   <div v-else class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
