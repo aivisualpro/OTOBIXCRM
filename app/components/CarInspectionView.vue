@@ -409,30 +409,30 @@ function humanize(key: string) {
 
 // ─── Section data builders ───
 const engineParts = [
-  { key: 'engineDropdownList', oldKey: 'engine', label: 'Engine', dropdownName: 'Engine' },
-  { key: 'commentsOnEngineDropdownList', oldKey: 'commentsOnEngine', label: 'Comment on Engine', dropdownName: 'Comment on Engine' },
-  { key: 'engineOilLevelDipstickDropdownList', oldKey: 'engineOilLevelDipstick', label: 'Engine Oil Level Dipstick', dropdownName: 'Engine Oil Level Dipstick' },
-  { key: 'engineOilDropdownList', oldKey: 'engineOil', label: 'Engine Oil', dropdownName: 'Engine Oil' },
-  { key: 'commentsOnEngineOilDropdownList', oldKey: 'commentsOnEngineOil', label: 'Comment on Engine Oil', dropdownName: 'Comment on Engine Oil' },
-  { key: 'enginePermisableBlowByDropdownList', oldKey: 'enginePermisableBlowBy', label: 'Engine Permisable Blowby', dropdownName: 'Engine Permisable Blowby' },
-  { key: 'coolantDropdownList', oldKey: 'coolant', label: 'Coolant', dropdownName: 'Coolant' },
+  { key: 'engineDropdownList', oldKey: 'engine', label: 'Engine', dropdownName: 'Engine', hasNoImages: true },
+  { key: 'commentsOnEngineDropdownList', oldKey: 'commentsOnEngine', label: 'Comment on Engine', dropdownName: 'Comment on Engine', hasNoImages: true },
+  { key: 'engineOilLevelDipstickDropdownList', oldKey: 'engineOilLevelDipstick', label: 'Engine Oil Level Dipstick', dropdownName: 'Engine Oil Level Dipstick', hasNoImages: true },
+  { key: 'engineOilDropdownList', oldKey: 'engineOil', label: 'Engine Oil', dropdownName: 'Engine Oil', hasNoImages: true },
+  { key: 'commentsOnEngineOilDropdownList', oldKey: 'commentsOnEngineOil', label: 'Comment on Engine Oil', dropdownName: 'Comment on Engine Oil', hasNoImages: true },
+  { key: 'enginePermisableBlowByDropdownList', oldKey: 'enginePermisableBlowBy', label: 'Engine Permisable Blowby', dropdownName: 'Engine Permisable Blowby', hasNoImages: true },
+  { key: 'coolantDropdownList', oldKey: 'coolant', label: 'Coolant', dropdownName: 'Coolant', hasNoImages: true },
   { key: 'cowlTopDropdownList', oldKey: 'cowlTop', imageKey: 'cowlTopImages', oldImageKey: 'new', label: 'Cowl Top', dropdownName: 'Cowl Top' },
   { key: 'firewallDropdownList', oldKey: 'firewall', imageKey: 'firewallImages', oldImageKey: 'new', label: 'Firewall', dropdownName: 'Firewall' },
-  { key: 'abs', label: 'ABS' },
+  { key: 'abs', label: 'ABS', hasNoImages: true },
   { key: 'lhsApronDropdownList', oldKey: 'lhsApron', imageKey: 'lhsApronImages', oldImageKey: 'apronLhsRhs', label: 'LHS Apron', dropdownName: 'LHS Apron' },
   { key: 'rhsApronDropdownList', oldKey: 'rhsApron', imageKey: 'rhsApronImages', oldImageKey: 'apronLhsRhs', label: 'RHS Apron', dropdownName: 'RHS Apron' },
   { key: 'batteryDropdownList', oldKey: 'battery', imageKey: 'batteryImages', oldImageKey: 'batteryImages', label: 'Battery', dropdownName: 'Battery' },
-  { key: 'upperCrossMemberDropdownList', oldKey: 'upperCrossMember', label: 'Upper Cross Member', dropdownName: 'Upper Cross Member' },
-  { key: 'lhsSideMemberDropdownList', oldKey: 'new', label: 'LHS Side Member', dropdownName: 'LHS Side Member' },
-  { key: 'rhsSideMemberDropdownList', oldKey: 'new', label: 'RHS Side Member', dropdownName: 'RHS Side Member' },
-  { key: 'engineMountDropdownList', oldKey: 'engineMount', label: 'Engine Mount', dropdownName: 'Engine Mount' },
-  { key: 'headlightSupportDropdownList', oldKey: 'headlightSupport', label: 'Headlamp Support', dropdownName: 'Headlamp Support' },
-  { key: 'radiatorSupportDropdownList', oldKey: 'radiatorSupport', label: 'Radiator Support', dropdownName: 'Radiator Support' },
-  { key: 'commentsOnRadiatorDropdownList', oldKey: 'commentsOnRadiator', label: 'Comment on Radiator', dropdownName: 'Comment on Radiator' },
-  { key: 'lowerCrossMemberDropdownList', oldKey: 'lowerCrossMember', label: 'Lower Cross Member', dropdownName: 'Lower Cross Member' },
-  { key: 'exhaustSmokeDropdownList', oldKey: 'exhaustSmoke', label: 'Exhaust Smoke', dropdownName: 'Exhaust Smoke' },
-  { key: 'commentsOnTowingDropdownList', oldKey: 'commentsOnTowing', label: 'Comment on Towing', dropdownName: 'Comment on Towing' },
-  { key: 'commentsOnOthersDropdownList', oldKey: 'commentsOnOthers', label: 'Comment on Others', dropdownName: 'Comment on Others' },
+  { key: 'upperCrossMemberDropdownList', oldKey: 'upperCrossMember', label: 'Upper Cross Member', dropdownName: 'Upper Cross Member', hasNoImages: true },
+  { key: 'lhsSideMemberDropdownList', oldKey: 'new', label: 'LHS Side Member', dropdownName: 'LHS Side Member', hasNoImages: true },
+  { key: 'rhsSideMemberDropdownList', oldKey: 'new', label: 'RHS Side Member', dropdownName: 'RHS Side Member', hasNoImages: true },
+  { key: 'engineMountDropdownList', oldKey: 'engineMount', label: 'Engine Mount', dropdownName: 'Engine Mount', hasNoImages: true },
+  { key: 'headlightSupportDropdownList', oldKey: 'headlightSupport', label: 'Headlamp Support', dropdownName: 'Headlamp Support', hasNoImages: true },
+  { key: 'radiatorSupportDropdownList', oldKey: 'radiatorSupport', label: 'Radiator Support', dropdownName: 'Radiator Support', hasNoImages: true },
+  { key: 'commentsOnRadiatorDropdownList', oldKey: 'commentsOnRadiator', label: 'Comment on Radiator', dropdownName: 'Comment on Radiator', hasNoImages: true },
+  { key: 'lowerCrossMemberDropdownList', oldKey: 'lowerCrossMember', label: 'Lower Cross Member', dropdownName: 'Lower Cross Member', hasNoImages: true },
+  { key: 'exhaustSmokeDropdownList', oldKey: 'exhaustSmoke', label: 'Exhaust Smoke', dropdownName: 'Exhaust Smoke', hasNoImages: true },
+  { key: 'commentsOnTowingDropdownList', oldKey: 'commentsOnTowing', label: 'Comment on Towing', dropdownName: 'Comment on Towing', hasNoImages: true },
+  { key: 'commentsOnOthersDropdownList', oldKey: 'commentsOnOthers', label: 'Comment on Others', dropdownName: 'Comment on Others', hasNoImages: true },
 ]
 
 const exteriorSections = [
@@ -1328,10 +1328,14 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                   <div
                     v-for="part in activeExteriorSection.parts"
                     :key="part.key"
-                    class="rounded-xl border bg-card shadow-sm flex flex-row overflow-hidden min-h-[160px] h-[160px]"
+                    class="rounded-xl border bg-card shadow-sm flex flex-row overflow-hidden"
+                    :class="(part as any).hasNoImages ? 'min-h-[100px]' : 'min-h-[160px] h-[160px]'"
                   >
                     <!-- Left Side: Controls & Condition -->
-                    <div class="flex flex-col w-[200px] xl:w-[240px] shrink-0 border-r border-border/50 bg-muted/10 relative">
+                    <div 
+                      class="flex flex-col shrink-0 border-r border-border/50 bg-muted/10 relative"
+                      :class="(part as any).hasNoImages ? 'w-full border-r-0' : 'w-[200px] xl:w-[240px]'"
+                    >
                       <template v-if="(part as any).isImageOnly">
                         <div class="h-full w-full flex flex-col bg-white/50 dark:bg-black/20">
                           <div class="px-3 py-2 border-b border-border/50 flex items-center justify-center bg-muted/30 h-10 shrink-0">
@@ -1350,7 +1354,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                           class="h-full border-none shadow-none bg-transparent"
                         >
                           <template #trigger>
-                            <div class="cursor-pointer h-full w-full flex flex-col hover:bg-muted/20 transition-colors group">
+                            <div class="cursor-pointer h-full w-full flex flex-col hover:bg-muted/20 transition-colors group relative">
                               <!-- Header Label -->
                               <div class="px-3 py-2 border-b border-border/50 flex items-center justify-between bg-muted/30 h-10 shrink-0">
                                 <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex-1 truncate group-hover:text-primary transition-colors">{{ part.label }}</span>
@@ -1358,13 +1362,13 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                               </div>
                               
                               <!-- Selected Badges Render -->
-                              <div class="p-3 flex-1 flex flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white/50 dark:bg-black/20">
+                              <div class="p-3 flex-1 flex flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white/50 dark:bg-black/20" :class="(part as any).hasNoImages ? 'max-h-[120px]' : ''">
                                 <div v-if="getValuesArray(editForm[part.key]).length" class="flex flex-wrap gap-2">
                                   <div 
                                     v-for="val in getValuesArray(editForm[part.key])" 
                                     :key="val"
-                                    class="border px-2 py-1.5 rounded flex items-center gap-1.5 shadow-sm w-full"
-                                    :class="getConditionStyle(val).bg"
+                                    class="border px-2 py-1.5 rounded flex items-center gap-1.5 shadow-sm"
+                                    :class="[(part as any).hasNoImages ? 'w-auto' : 'w-full', getConditionStyle(val).bg]"
                                   >
                                     <Icon :name="getConditionStyle(val).icon" class="size-4 shrink-0" />
                                     <span class="text-[13px] font-bold leading-tight">{{ val }}</span>
@@ -1402,13 +1406,13 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                           <div class="px-3 py-2 border-b border-border/50 flex items-center bg-muted/30 h-10 shrink-0">
                             <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex-1 truncate">{{ part.label }}</span>
                           </div>
-                          <div class="p-3 flex-1 flex flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white/50 dark:bg-black/20">
+                          <div class="p-3 flex-1 flex flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white/50 dark:bg-black/20" :class="(part as any).hasNoImages ? 'max-h-[120px]' : ''">
                             <div v-if="getValuesArray(editForm[part.key]).length" class="flex flex-wrap gap-2">
                               <div 
                                 v-for="val in getValuesArray(editForm[part.key])" 
                                 :key="val"
-                                class="border px-2 py-1.5 rounded flex items-center gap-1.5 shadow-sm w-full"
-                                :class="getConditionStyle(val).bg"
+                                class="border px-2 py-1.5 rounded flex items-center gap-1.5 shadow-sm"
+                                :class="[(part as any).hasNoImages ? 'w-auto' : 'w-full', getConditionStyle(val).bg]"
                               >
                                 <Icon :name="getConditionStyle(val).icon" class="size-4 shrink-0" />
                                 <span class="text-[13px] font-bold leading-tight">{{ val }}</span>
@@ -1433,7 +1437,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                     </div>
 
                     <!-- Right Side: Horizontal Image Strip -->
-                    <div class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
+                    <div v-if="!(part as any).hasNoImages" class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
                       <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch">
                         <template v-for="group in ((part as any).imageGroups || [{ key: (part as any).imageKey || `${part.key}Images`, oldKey: (part as any).oldImageKey, label: part.label }])" :key="group.key">
                           <!-- Filled Images for this group -->
@@ -1476,6 +1480,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       </div>
                     </div>
                   </div>
+
                 </div>
               </div>
               <div v-if="activeExteriorSection && sectionImages(activeExteriorSection.imageKeys as any).length" class="mt-8 mb-4">
