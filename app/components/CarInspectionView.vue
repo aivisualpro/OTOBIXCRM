@@ -411,29 +411,17 @@ function humanize(key: string) {
 const engineParts = [
   { key: 'engineDropdownList', oldKey: 'engine', imageKey: 'engineBayImages', oldImageKey: 'engineBay', label: 'Engine', dropdownName: 'Engine' },
   { key: 'engineVideosBox', label: 'Engine Videos', isVideoBox: true, hasNoImages: true },
-  { key: 'commentsOnEngineDropdownList', oldKey: 'commentsOnEngine', label: 'Comment on Engine', dropdownName: 'Comment on Engine', hasNoImages: true },
-  { key: 'engineOilLevelDipstickDropdownList', oldKey: 'engineOilLevelDipstick', label: 'Engine Oil Level Dipstick', dropdownName: 'Engine Oil Level Dipstick', hasNoImages: true },
-  { key: 'engineOilDropdownList', oldKey: 'engineOil', label: 'Engine Oil', dropdownName: 'Engine Oil', hasNoImages: true },
-  { key: 'commentsOnEngineOilDropdownList', oldKey: 'commentsOnEngineOil', label: 'Comment on Engine Oil', dropdownName: 'Comment on Engine Oil', hasNoImages: true },
-  { key: 'enginePermisableBlowByDropdownList', oldKey: 'enginePermisableBlowBy', label: 'Engine Permisable Blowby', dropdownName: 'Engine Permisable Blowby', hasNoImages: true },
-  { key: 'coolantDropdownList', oldKey: 'coolant', label: 'Coolant', dropdownName: 'Coolant', hasNoImages: true },
+  { key: 'split_1', hasNoImages: true, splitParts: [ { key: 'commentsOnEngineDropdownList', oldKey: 'commentsOnEngine', label: 'Comment on Engine', dropdownName: 'Comments On Engine' }, { key: 'engineOilLevelDipstickDropdownList', oldKey: 'engineOilLevelDipstick', label: 'Engine Oil Level Dipstick', dropdownName: 'Engine Oil Level Dipstick' } ] },
+  { key: 'split_2', hasNoImages: true, splitParts: [ { key: 'engineOilDropdownList', oldKey: 'engineOil', label: 'Engine Oil', dropdownName: 'Engine Oil' }, { key: 'commentsOnEngineOilDropdownList', oldKey: 'commentsOnEngineOil', label: 'Comment on Engine Oil', dropdownName: 'Comments On Engine Oil' } ] },
+  { key: 'split_3', hasNoImages: true, splitParts: [ { key: 'enginePermisableBlowByDropdownList', oldKey: 'enginePermisableBlowBy', label: 'Engine Permisable Blowby', dropdownName: 'Engine Permisable Blow By' }, { key: 'coolantDropdownList', oldKey: 'coolant', label: 'Coolant', dropdownName: 'Coolant' } ] },
   { key: 'cowlTopDropdownList', oldKey: 'cowlTop', imageKey: 'cowlTopImages', oldImageKey: 'new', label: 'Cowl Top', dropdownName: 'Cowl Top' },
   { key: 'firewallDropdownList', oldKey: 'firewall', imageKey: 'firewallImages', oldImageKey: 'new', label: 'Firewall', dropdownName: 'Firewall' },
-  { key: 'abs', label: 'ABS', hasNoImages: true },
   { key: 'lhsApronDropdownList', oldKey: 'lhsApron', imageKey: 'lhsApronImages', oldImageKey: 'apronLhsRhs', label: 'LHS Apron', dropdownName: 'LHS Apron' },
   { key: 'rhsApronDropdownList', oldKey: 'rhsApron', imageKey: 'rhsApronImages', oldImageKey: 'apronLhsRhs', label: 'RHS Apron', dropdownName: 'RHS Apron' },
   { key: 'batteryDropdownList', oldKey: 'battery', imageKey: 'batteryImages', oldImageKey: 'batteryImages', label: 'Battery', dropdownName: 'Battery' },
-  { key: 'upperCrossMemberDropdownList', oldKey: 'upperCrossMember', label: 'Upper Cross Member', dropdownName: 'Upper Cross Member', hasNoImages: true },
-  { key: 'lhsSideMemberDropdownList', oldKey: 'new', label: 'LHS Side Member', dropdownName: 'LHS Side Member', hasNoImages: true },
-  { key: 'rhsSideMemberDropdownList', oldKey: 'new', label: 'RHS Side Member', dropdownName: 'RHS Side Member', hasNoImages: true },
-  { key: 'engineMountDropdownList', oldKey: 'engineMount', label: 'Engine Mount', dropdownName: 'Engine Mount', hasNoImages: true },
-  { key: 'headlightSupportDropdownList', oldKey: 'headlightSupport', label: 'Headlamp Support', dropdownName: 'Headlamp Support', hasNoImages: true },
-  { key: 'radiatorSupportDropdownList', oldKey: 'radiatorSupport', label: 'Radiator Support', dropdownName: 'Radiator Support', hasNoImages: true },
-  { key: 'commentsOnRadiatorDropdownList', oldKey: 'commentsOnRadiator', label: 'Comment on Radiator', dropdownName: 'Comment on Radiator', hasNoImages: true },
-  { key: 'lowerCrossMemberDropdownList', oldKey: 'lowerCrossMember', label: 'Lower Cross Member', dropdownName: 'Lower Cross Member', hasNoImages: true },
-  { key: 'exhaustSmokeDropdownList', oldKey: 'exhaustSmoke', label: 'Exhaust Smoke', dropdownName: 'Exhaust Smoke', hasNoImages: true },
-  { key: 'commentsOnTowingDropdownList', oldKey: 'commentsOnTowing', label: 'Comment on Towing', dropdownName: 'Comment on Towing', hasNoImages: true },
-  { key: 'commentsOnOthersDropdownList', oldKey: 'commentsOnOthers', label: 'Comment on Others', dropdownName: 'Comment on Others', hasNoImages: true },
+  { key: 'split_4', hasNoImages: true, splitParts: [ { key: 'abs', label: 'ABS', dropdownName: 'ABS' }, { key: 'upperCrossMemberDropdownList', oldKey: 'upperCrossMember', label: 'Upper Cross Member', dropdownName: 'Upper Cross Member' } ] },
+  { key: 'split_5', hasNoImages: true, splitParts: [ { key: 'lhsSideMemberDropdownList', oldKey: 'new', label: 'LHS Side Member', dropdownName: 'LHS Side Member' }, { key: 'rhsSideMemberDropdownList', oldKey: 'new', label: 'RHS Side Member', dropdownName: 'RHS Side Member' } ] },
+  { key: 'split_6', hasNoImages: true, splitParts: [ { key: 'engineMountDropdownList', oldKey: 'engineMount', label: 'Engine Mount', dropdownName: 'Engine Mount' }, { key: 'headlightSupportDropdownList', oldKey: 'headlightSupport', label: 'Headlamp Support', dropdownName: 'Headlamp Support' } ] },
 ]
 
 const exteriorSections = [
@@ -1395,14 +1383,20 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                     </template>
                     <template v-else>
                       <!-- Left Side: Controls & Condition -->
-                      <div 
-                        class="flex flex-col shrink-0 border-r border-border/50 bg-muted/10 relative"
-                        :class="(part as any).hasNoImages ? 'w-full border-r-0' : 'w-[200px] xl:w-[240px]'"
-                      >
-                      <template v-if="(part as any).isImageOnly">
+                      <div class="flex flex-row flex-1 overflow-hidden h-full">
+                        <template v-for="(renderPart, rIdx) in ((part as any).splitParts || [part])" :key="renderPart.key">
+                          <div 
+                            class="flex flex-col shrink-0 bg-muted/10 relative h-full"
+                            :class="[
+                              ((part as any).splitParts) ? 'w-1/2' : (renderPart as any).hasNoImages ? 'w-full' : 'w-[200px] xl:w-[240px]',
+                              rIdx === 0 && (part as any).splitParts ? 'border-r border-border/50' : '',
+                              !((part as any).splitParts) && !(renderPart as any).hasNoImages ? 'border-r border-border/50' : ''
+                            ]"
+                          >
+                        <template v-if="(renderPart as any).isImageOnly">
                         <div class="h-full w-full flex flex-col bg-white/50 dark:bg-black/20">
                           <div class="px-3 py-2 border-b border-border/50 flex items-center justify-center bg-muted/30 h-10 shrink-0">
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground truncate">{{ part.label }}</span>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground truncate">{{ renderPart.label }}</span>
                           </div>
                           <div class="p-4 flex-1 flex flex-col items-center justify-center text-center gap-2 opacity-60">
                             <Icon name="i-lucide-camera" class="size-5 text-muted-foreground" />
@@ -1410,28 +1404,28 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                           </div>
                         </div>
                       </template>
-                      <template v-else-if="!props.readonly && getOptions((part as any).dropdownName || part.label).length">
+                      <template v-else-if="!props.readonly && getOptions((renderPart as any).dropdownName || renderPart.label).length">
                         <MultiSelect 
-                          v-model="editForm[part.key]" 
-                          :options="getOptions((part as any).dropdownName || part.label)" 
+                          v-model="editForm[renderPart.key]" 
+                          :options="getOptions((renderPart as any).dropdownName || renderPart.label)" 
                           class="h-full border-none shadow-none bg-transparent"
                         >
                           <template #trigger>
                             <div class="cursor-pointer h-full w-full flex flex-col hover:bg-muted/20 transition-colors group relative">
                               <!-- Header Label -->
                               <div class="px-3 py-2 border-b border-border/50 flex items-center justify-between bg-muted/30 h-10 shrink-0">
-                                <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex-1 truncate group-hover:text-primary transition-colors">{{ part.label }}</span>
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex-1 truncate group-hover:text-primary transition-colors">{{ renderPart.label }}</span>
                                 <Icon name="i-lucide-chevron-down" class="size-3.5 text-muted-foreground/50 shrink-0 group-hover:text-primary transition-colors" />
                               </div>
                               
                               <!-- Selected Badges Render -->
-                              <div class="p-3 flex-1 flex flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white/50 dark:bg-black/20" :class="(part as any).hasNoImages ? 'max-h-[120px]' : ''">
-                                <div v-if="getValuesArray(editForm[part.key]).length" class="flex flex-wrap gap-2">
+                              <div class="p-3 flex-1 flex flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white/50 dark:bg-black/20" :class="(renderPart as any).hasNoImages ? 'max-h-[120px]' : ''">
+                                <div v-if="getValuesArray(editForm[renderPart.key]).length" class="flex flex-wrap gap-2">
                                   <div 
-                                    v-for="val in getValuesArray(editForm[part.key])" 
+                                    v-for="val in getValuesArray(editForm[renderPart.key])" 
                                     :key="val"
                                     class="border px-2 py-1.5 rounded flex items-center gap-1.5 shadow-sm"
-                                    :class="[(part as any).hasNoImages ? 'w-auto' : 'w-full', getConditionStyle(val).bg]"
+                                    :class="[(renderPart as any).hasNoImages ? 'w-auto' : 'w-full', getConditionStyle(val).bg]"
                                   >
                                     <Icon :name="getConditionStyle(val).icon" class="size-4 shrink-0" />
                                     <span class="text-[13px] font-bold leading-tight">{{ val }}</span>
@@ -1467,15 +1461,15 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       <template v-else-if="props.readonly">
                         <div class="h-full w-full flex flex-col">
                           <div class="px-3 py-2 border-b border-border/50 flex items-center bg-muted/30 h-10 shrink-0">
-                            <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex-1 truncate">{{ part.label }}</span>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex-1 truncate">{{ renderPart.label }}</span>
                           </div>
-                          <div class="p-3 flex-1 flex flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white/50 dark:bg-black/20" :class="(part as any).hasNoImages ? 'max-h-[120px]' : ''">
-                            <div v-if="getValuesArray(editForm[part.key]).length" class="flex flex-wrap gap-2">
+                          <div class="p-3 flex-1 flex flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white/50 dark:bg-black/20" :class="(renderPart as any).hasNoImages ? 'max-h-[120px]' : ''">
+                            <div v-if="getValuesArray(editForm[renderPart.key]).length" class="flex flex-wrap gap-2">
                               <div 
-                                v-for="val in getValuesArray(editForm[part.key])" 
+                                v-for="val in getValuesArray(editForm[renderPart.key])" 
                                 :key="val"
                                 class="border px-2 py-1.5 rounded flex items-center gap-1.5 shadow-sm"
-                                :class="[(part as any).hasNoImages ? 'w-auto' : 'w-full', getConditionStyle(val).bg]"
+                                :class="[(renderPart as any).hasNoImages ? 'w-auto' : 'w-full', getConditionStyle(val).bg]"
                               >
                                 <Icon :name="getConditionStyle(val).icon" class="size-4 shrink-0" />
                                 <span class="text-[13px] font-bold leading-tight">{{ val }}</span>
@@ -1490,17 +1484,19 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       <template v-else>
                         <!-- Native input fallback -->
                         <div class="px-3 py-2 border-b border-border/50 flex items-center bg-muted/30 h-10 shrink-0">
-                          <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground w-full truncate">{{ part.label }}</span>
+                          <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground w-full truncate">{{ renderPart.label }}</span>
                         </div>
                         <div class="p-3 flex-1 flex flex-col justify-center bg-white/50 dark:bg-black/20">
-                          <p v-if="props.readonly" class="text-sm font-medium">{{ editForm[part.key] || '—' }}</p>
-                          <Input v-else v-model="editForm[part.key]" class="shadow-sm border-border text-sm focus-visible:ring-1 bg-white dark:bg-zinc-900" placeholder="e.g. Scratched, Rust" />
+                          <p v-if="props.readonly" class="text-sm font-medium">{{ editForm[renderPart.key] || '—' }}</p>
+                          <Input v-else v-model="editForm[renderPart.key]" class="shadow-sm border-border text-sm focus-visible:ring-1 bg-white dark:bg-zinc-900" placeholder="e.g. Scratched, Rust" />
                         </div>
                       </template>
-                    </div>
-
-                    <!-- Right Side: Horizontal Image Strip -->
-                    <div v-if="!(part as any).hasNoImages" class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
+                          </div>
+                        </template>
+                      </div>
+                      
+                      <!-- Right Side: Horizontal Image Strip -->
+                    <div v-if="!(part as any).hasNoImages && !(part as any).splitParts" class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
                       <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch">
                         <template v-for="group in ((part as any).imageGroups || [{ key: (part as any).imageKey || `${part.key}Images`, oldKey: (part as any).oldImageKey, label: part.label }])" :key="group.key">
                           <!-- Filled Images for this group -->
