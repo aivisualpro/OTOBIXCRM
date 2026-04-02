@@ -317,12 +317,8 @@ async function replaceImage(key: string, idx: number, oldKey?: string) {
   input.click()
 }
 
-const activeTab = ref('document-details')
-
-const activeExteriorSection = computed(() => exteriorSections.find(s => s.title.toLowerCase().startsWith(activeTab.value)))
-
 const tabs = [
-  { id: 'document-details', label: 'Document Details', icon: 'i-lucide-file-text' },
+  { id: 'details', label: 'Document Details', icon: 'i-lucide-file-text' },
   { id: 'front', label: 'Front', icon: 'i-lucide-arrow-up' },
   { id: 'left', label: 'Left', icon: 'i-lucide-arrow-left' },
   { id: 'rear', label: 'Rear', icon: 'i-lucide-arrow-down' },
@@ -333,6 +329,20 @@ const tabs = [
   { id: 'steering-suspension-brakes', label: 'Steering, Suspension, Brakes', icon: 'i-lucide-disc' },
   { id: 'qc-logs', label: 'QC Audit Logs', icon: 'i-lucide-history' },
 ]
+
+// Route-driven tab: read from URL param, default to 'details'
+const activeTab = computed(() => {
+  const tab = route.params.tab as string
+  if (tab && tabs.some(t => t.id === tab)) return tab
+  return 'details'
+})
+
+function setTab(tabId: string) {
+  const basePath = props.readonly ? '/inspection' : '/qc'
+  router.push(`${basePath}/${carId}/${tabId}`)
+}
+
+const activeExteriorSection = computed(() => exteriorSections.find(s => s.title.toLowerCase().startsWith(activeTab.value)))
 
 // ─── Helpers ───
 function _conditionColor(val: string) {
@@ -388,16 +398,44 @@ const exteriorSections = [
   {
     title: 'Front',
     icon: 'i-lucide-arrow-up',
-    imageKeys: ['frontMain', 'bonnetImages', 'frontWindshieldImages', 'roofImages', 'frontBumperImages', 'lhsHeadlampImages', 'lhsFoglampImages', 'rhsHeadlampImages', 'rhsFoglampImages'],
+    imageKeys: [
+      { new: 'frontMainImages', old: 'frontMain' },
+      { new: 'bonnetOpenImages', old: 'bonnetImages' },
+      { new: 'bonnetClosedImages', old: 'bonnetImages' },
+      { new: 'frontWindshieldImages', old: 'frontWindshieldImages' },
+      { new: 'frontWiperAndWasherImages', old: 'frontWiperAndWasherImages' },
+      { new: 'roofImages', old: 'roofImages' },
+      { new: 'frontBumperImages', old: 'frontBumperImages' },
+      { new: 'frontBumperLhs45DegreeImages', old: 'frontBumperImages' },
+      { new: 'frontBumperRhs45DegreeImages', old: 'frontBumperImages' },
+      { new: 'lhsHeadlampImages', old: 'lhsHeadlampImages' },
+      { new: 'lhsFoglampImages', old: 'lhsFoglampImages' },
+      { new: 'rhsHeadlampImages', old: 'rhsHeadlampImages' },
+      { new: 'rhsFoglampImages', old: 'rhsFoglampImages' },
+    ],
     parts: [
-      { key: 'bonnet', label: 'Bonnet' },
-      { key: 'frontWindshield', label: 'Front Windshield' },
-      { key: 'roof', label: 'Roof' },
-      { key: 'frontBumper', label: 'Front Bumper' },
-      { key: 'lhsHeadlamp', label: 'LHS Headlamp' },
-      { key: 'lhsFoglamp', label: 'LHS Foglamp' },
-      { key: 'rhsHeadlamp', label: 'RHS Headlamp' },
-      { key: 'rhsFoglamp', label: 'RHS Foglamp' },
+      { key: 'frontMainImages', oldKey: 'frontMain', imageKey: 'frontMainImages', oldImageKey: 'frontMain', label: 'Front Main', isImageOnly: true },
+      { key: 'bonnetDropdownList', oldKey: 'bonnet', imageKey: 'bonnetOpenImages', oldImageKey: 'bonnetImages', label: 'Bonnet' },
+      { key: 'bonnetOpenImages', oldKey: 'bonnetImages', imageKey: 'bonnetOpenImages', oldImageKey: 'bonnetImages', label: 'Bonnet Open', isImageOnly: true },
+      { key: 'bonnetClosedImages', oldKey: 'bonnetImages', imageKey: 'bonnetClosedImages', oldImageKey: 'bonnetImages', label: 'Bonnet Closed', isImageOnly: true },
+      { key: 'frontWindshieldDropdownList', oldKey: 'frontWindshield', imageKey: 'frontWindshieldImages', oldImageKey: 'frontWindshieldImages', label: 'Front Windshield' },
+      { key: 'frontWindshieldImages', oldKey: 'frontWindshieldImages', imageKey: 'frontWindshieldImages', oldImageKey: 'frontWindshieldImages', label: 'Front Windshield Image', isImageOnly: true },
+      { key: 'frontWiperAndWasherDropdownList', oldKey: undefined, imageKey: 'frontWiperAndWasherImages', oldImageKey: undefined, label: 'Front Wiper & Washer' },
+      { key: 'frontWiperAndWasherImages', oldKey: undefined, imageKey: 'frontWiperAndWasherImages', oldImageKey: undefined, label: 'Front Wiper & Washer Image', isImageOnly: true },
+      { key: 'roofDropdownList', oldKey: 'roof', imageKey: 'roofImages', oldImageKey: 'roofImages', label: 'Roof' },
+      { key: 'roofImages', oldKey: 'roofImages', imageKey: 'roofImages', oldImageKey: 'roofImages', label: 'Roof Image', isImageOnly: true },
+      { key: 'frontBumperDropdownList', oldKey: 'frontBumper', imageKey: 'frontBumperImages', oldImageKey: 'frontBumperImages', label: 'Front Bumper' },
+      { key: 'frontBumperLhs45DegreeImages', oldKey: 'frontBumperImages', imageKey: 'frontBumperLhs45DegreeImages', oldImageKey: 'frontBumperImages', label: 'Front Bumper LHS 45', isImageOnly: true },
+      { key: 'frontBumperRhs45DegreeImages', oldKey: 'frontBumperImages', imageKey: 'frontBumperRhs45DegreeImages', oldImageKey: 'frontBumperImages', label: 'Front Bumper RHS 45', isImageOnly: true },
+      { key: 'frontBumperImages', oldKey: 'frontBumperImages', imageKey: 'frontBumperImages', oldImageKey: 'frontBumperImages', label: 'Front Bumper Image', isImageOnly: true },
+      { key: 'lhsHeadlampDropdownList', oldKey: 'lhsHeadlamp', imageKey: 'lhsHeadlampImages', oldImageKey: 'lhsHeadlampImages', label: 'LHS Headlamp' },
+      { key: 'lhsHeadlampImages', oldKey: 'lhsHeadlampImages', imageKey: 'lhsHeadlampImages', oldImageKey: 'lhsHeadlampImages', label: 'LHS Headlamp Image', isImageOnly: true },
+      { key: 'lhsFoglampDropdownList', oldKey: 'lhsFoglamp', imageKey: 'lhsFoglampImages', oldImageKey: 'lhsFoglampImages', label: 'LHS Foglamp' },
+      { key: 'lhsFoglampImages', oldKey: 'lhsFoglampImages', imageKey: 'lhsFoglampImages', oldImageKey: 'lhsFoglampImages', label: 'LHS Foglamp Image', isImageOnly: true },
+      { key: 'rhsHeadlampDropdownList', oldKey: 'rhsHeadlamp', imageKey: 'rhsHeadlampImages', oldImageKey: 'rhsHeadlampImages', label: 'RHS Headlamp' },
+      { key: 'rhsHeadlampImages', oldKey: 'rhsHeadlampImages', imageKey: 'rhsHeadlampImages', oldImageKey: 'rhsHeadlampImages', label: 'RHS Headlamp Image', isImageOnly: true },
+      { key: 'rhsFoglampDropdownList', oldKey: 'rhsFoglamp', imageKey: 'rhsFoglampImages', oldImageKey: 'rhsFoglampImages', label: 'RHS Foglamp' },
+      { key: 'rhsFoglampImages', oldKey: 'rhsFoglampImages', imageKey: 'rhsFoglampImages', oldImageKey: 'rhsFoglampImages', label: 'RHS Foglamp Image', isImageOnly: true },
     ],
   },
   {
@@ -798,7 +836,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
             :class="activeTab === tab.id
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'"
-            @click="activeTab = tab.id"
+            @click="setTab(tab.id)"
           >
             <Icon :name="tab.icon" class="size-4" />
             {{ tab.label }}
@@ -807,9 +845,9 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
       </div>
 
       <!-- Tab Content (scrollable) -->
-      <div class="flex-1 min-h-0 overflow-auto bg-muted/10 p-4 lg:p-6">
+      <div class="flex-1 min-h-0 overflow-auto bg-muted/10 px-4 lg:px-6">
         
-        <div v-if="activeTab === 'document-details'" class="animate-in fade-in duration-300 space-y-6">
+        <div v-if="activeTab === 'details'" class="animate-in fade-in duration-300 space-y-6">
           <!-- Hero Section — Card Architecture -->
           <div class="rounded-xl border border-border/80 bg-card shadow-sm overflow-hidden flex flex-col lg:flex-row">
             
