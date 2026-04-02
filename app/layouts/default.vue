@@ -6,7 +6,7 @@
     <LayoutAppSidebar />
     <SidebarInset class="!min-h-0 !max-h-screen overflow-hidden">
       <LayoutHeader />
-      <div class="flex-1 min-h-0 overflow-hidden p-4 lg:p-6">
+      <div class="flex-1 min-h-0 overflow-hidden p-4 lg:p-6 flex flex-col">
         <slot />
       </div>
     </SidebarInset>

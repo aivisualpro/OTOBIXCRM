@@ -533,11 +533,19 @@ const exteriorSections = [
         ]
       },
       { key: 'lhsTailLampDropdownList', oldKey: 'lhsTailLamp', imageKey: 'lhsTailLampImages', oldImageKey: 'lhsTailLampImages', label: 'LHS Tail Lamp' },
-      { key: 'lhsRearFogLampDropdownList', oldKey: undefined, imageKey: 'lhsRearFogLampImages', oldImageKey: undefined, label: 'LHS Rear Fog Lamp' },
+      { key: 'lhsRearFogLampDropdownList', oldKey: undefined, imageKey: 'lhsRearFogLampImages', oldImageKey: undefined, label: 'LHS Rear Fog Lamp', dropdownName: 'LHS Rear Foglamp' },
       { key: 'rhsTailLampDropdownList', oldKey: 'rhsTailLamp', imageKey: 'rhsTailLampImages', oldImageKey: 'rhsTailLampImages', label: 'RHS Tail Lamp' },
-      { key: 'rhsRearFogLampDropdownList', oldKey: undefined, imageKey: 'rhsRearFogLampImages', oldImageKey: undefined, label: 'RHS Rear Fog Lamp' },
+      { key: 'rhsRearFogLampDropdownList', oldKey: undefined, imageKey: 'rhsRearFogLampImages', oldImageKey: undefined, label: 'RHS Rear Fog Lamp', dropdownName: 'RHS Rear Foglamp' },
       { key: 'rearWindshieldDropdownList', oldKey: 'rearWindshield', imageKey: 'rearWindshieldImages', oldImageKey: 'rearWindshieldImages', label: 'Rear Windshield' },
-      { key: 'bootDoorDropdownList', oldKey: 'bootDoor', imageKey: 'bootDoorOpenImages', oldImageKey: 'rearWithBootDoorOpen', label: 'Boot Door' },
+      { 
+        key: 'bootDoorDropdownList', 
+        oldKey: 'bootDoor', 
+        label: 'Boot Door',
+        imageGroups: [
+          { key: 'bootDoorOpenImages', oldKey: 'rearWithBootDoorOpen', label: 'Boot Door Image' },
+          { key: 'rearWithBootDoorOpenImages', oldKey: 'rearWithBootDoorOpen', label: 'Rear With Boot Door Open Image' }
+        ]
+      },
       { key: 'spareWheelDropdownList', oldKey: undefined, imageKey: 'spareWheelImages', oldImageKey: undefined, label: 'Spare Wheel' },
       { key: 'spareTyreDropdownList', oldKey: 'spareTyre', imageKey: 'spareTyreImages', oldImageKey: 'spareTyreImages', label: 'Spare Tyre' },
       { key: 'bootFloorDropdownList', oldKey: 'bootFloor', imageKey: 'bootFloorImages', oldImageKey: 'bootFloorImages', label: 'Boot Floor' },
@@ -895,7 +903,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 </script>
 
 <template>
-  <div class="h-full flex flex-col overflow-hidden -m-4 lg:-m-6">
+  <div class="flex-1 min-h-0 flex flex-col overflow-hidden -m-4 lg:-m-6">
     <!-- Loading -->
     <div v-if="isLoading" class="flex-1 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
@@ -951,7 +959,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
       </div>
 
       <!-- Tab Content (scrollable) -->
-      <div class="flex-1 min-h-0 overflow-auto bg-muted/10 px-4 lg:px-6">
+      <div class="flex-1 min-h-0 overflow-auto bg-muted/10">
+        <div class="px-4 lg:px-6">
         
         <div v-if="activeTab === 'details'" class="animate-in fade-in duration-300 space-y-6">
           <!-- Hero Section — Card Architecture -->
@@ -1994,6 +2003,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
               </div>
             </CardContent>
           </Card>
+        </div>
         </div>
       </div>
     </template>
