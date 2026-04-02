@@ -78,22 +78,35 @@ async function saveQC(silent = false) {
     const userCookie = useCookie('userData')
     const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
 
+    // Build the payload: only send fields that actually changed from the original car data
+    // This prevents image uploads from sending ALL car info to telecallings/AppSheet
+    const changedFields: Record<string, any> = {}
+    const original = car.value || {}
+    const edited = editForm.value || {}
+
+    for (const key of Object.keys(edited)) {
+      if (key === '_id' || key === 'id' || key === 'qcLogs' || key === 'logs') continue
+      const oldStr = JSON.stringify(original[key])
+      const newStr = JSON.stringify(edited[key])
+      if (oldStr !== newStr) {
+        changedFields[key] = edited[key]
+      }
+    }
+
+    // Ensure numeric fields are properly typed when present
+    if ('cubicCapacity' in changedFields) changedFields.cubicCapacity = Number(changedFields.cubicCapacity) || null
+    if ('odometerReadingInKms' in changedFields) changedFields.odometerReadingInKms = Number(changedFields.odometerReadingInKms) || null
+    if ('ownerSerialNumber' in changedFields) changedFields.ownerSerialNumber = Number(changedFields.ownerSerialNumber) || null
+    if ('priceDiscovery' in changedFields) changedFields.priceDiscovery = Number(changedFields.priceDiscovery) || null
+
     // the telecallingId or appointmentId is needed
     // The get API merges them. We send updates using the appointmentId as telecallingId for the update API fallback in server
     await $fetch('/api/leads/update', {
       method: 'PUT',
       body: {
         telecallingId: editForm.value.appointmentId || editForm.value._id,
-        make: editForm.value.make,
-        model: editForm.value.model,
-        variant: editForm.value.variant,
-        fuelType: editForm.value.fuelType,
-        cubicCapacity: Number(editForm.value.cubicCapacity) || null,
-        registrationNumber: editForm.value.registrationNumber,
-        odometerReadingInKms: Number(editForm.value.odometerReadingInKms) || null,
-        ownerSerialNumber: Number(editForm.value.ownerSerialNumber) || null,
-        priceDiscovery: Number(editForm.value.priceDiscovery) || null,
-        ...editForm.value, // Send all mutated fields
+        changedBy: currentUser?.userName || currentUser?.email || 'QC',
+        ...changedFields,
       },
     })
     
