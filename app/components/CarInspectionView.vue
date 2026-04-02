@@ -439,23 +439,22 @@ const exteriorSections = [
         ]
       },
       { key: 'frontWindshieldDropdownList', oldKey: 'frontWindshield', imageKey: 'frontWindshieldImages', oldImageKey: 'frontWindshieldImages', label: 'Front Windshield' },
-      { key: 'frontWindshieldImages', oldKey: 'frontWindshieldImages', imageKey: 'frontWindshieldImages', oldImageKey: 'frontWindshieldImages', label: 'Front Windshield Image', isImageOnly: true },
       { key: 'frontWiperAndWasherDropdownList', oldKey: undefined, imageKey: 'frontWiperAndWasherImages', oldImageKey: undefined, label: 'Front Wiper & Washer' },
-      { key: 'frontWiperAndWasherImages', oldKey: undefined, imageKey: 'frontWiperAndWasherImages', oldImageKey: undefined, label: 'Front Wiper & Washer Image', isImageOnly: true },
       { key: 'roofDropdownList', oldKey: 'roof', imageKey: 'roofImages', oldImageKey: 'roofImages', label: 'Roof' },
-      { key: 'roofImages', oldKey: 'roofImages', imageKey: 'roofImages', oldImageKey: 'roofImages', label: 'Roof Image', isImageOnly: true },
-      { key: 'frontBumperDropdownList', oldKey: 'frontBumper', imageKey: 'frontBumperImages', oldImageKey: 'frontBumperImages', label: 'Front Bumper' },
-      { key: 'frontBumperLhs45DegreeImages', oldKey: 'frontBumperImages', imageKey: 'frontBumperLhs45DegreeImages', oldImageKey: 'frontBumperImages', label: 'Front Bumper LHS 45', isImageOnly: true },
-      { key: 'frontBumperRhs45DegreeImages', oldKey: 'frontBumperImages', imageKey: 'frontBumperRhs45DegreeImages', oldImageKey: 'frontBumperImages', label: 'Front Bumper RHS 45', isImageOnly: true },
-      { key: 'frontBumperImages', oldKey: 'frontBumperImages', imageKey: 'frontBumperImages', oldImageKey: 'frontBumperImages', label: 'Front Bumper Image', isImageOnly: true },
+      { 
+        key: 'frontBumperDropdownList', 
+        oldKey: 'frontBumper', 
+        label: 'Front Bumper',
+        imageGroups: [
+          { key: 'frontBumperImages', oldKey: 'frontBumperImages', label: 'Main' },
+          { key: 'frontBumperLhs45DegreeImages', oldKey: 'frontBumperImages', label: 'LHS 45' },
+          { key: 'frontBumperRhs45DegreeImages', oldKey: 'frontBumperImages', label: 'RHS 45' }
+        ]
+      },
       { key: 'lhsHeadlampDropdownList', oldKey: 'lhsHeadlamp', imageKey: 'lhsHeadlampImages', oldImageKey: 'lhsHeadlampImages', label: 'LHS Headlamp' },
-      { key: 'lhsHeadlampImages', oldKey: 'lhsHeadlampImages', imageKey: 'lhsHeadlampImages', oldImageKey: 'lhsHeadlampImages', label: 'LHS Headlamp Image', isImageOnly: true },
       { key: 'lhsFoglampDropdownList', oldKey: 'lhsFoglamp', imageKey: 'lhsFoglampImages', oldImageKey: 'lhsFoglampImages', label: 'LHS Foglamp' },
-      { key: 'lhsFoglampImages', oldKey: 'lhsFoglampImages', imageKey: 'lhsFoglampImages', oldImageKey: 'lhsFoglampImages', label: 'LHS Foglamp Image', isImageOnly: true },
       { key: 'rhsHeadlampDropdownList', oldKey: 'rhsHeadlamp', imageKey: 'rhsHeadlampImages', oldImageKey: 'rhsHeadlampImages', label: 'RHS Headlamp' },
-      { key: 'rhsHeadlampImages', oldKey: 'rhsHeadlampImages', imageKey: 'rhsHeadlampImages', oldImageKey: 'rhsHeadlampImages', label: 'RHS Headlamp Image', isImageOnly: true },
       { key: 'rhsFoglampDropdownList', oldKey: 'rhsFoglamp', imageKey: 'rhsFoglampImages', oldImageKey: 'rhsFoglampImages', label: 'RHS Foglamp' },
-      { key: 'rhsFoglampImages', oldKey: 'rhsFoglampImages', imageKey: 'rhsFoglampImages', oldImageKey: 'rhsFoglampImages', label: 'RHS Foglamp Image', isImageOnly: true },
     ],
   },
   {
