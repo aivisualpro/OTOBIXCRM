@@ -439,7 +439,7 @@ const exteriorSections = [
         ]
       },
       { key: 'frontWindshieldDropdownList', oldKey: 'frontWindshield', imageKey: 'frontWindshieldImages', oldImageKey: 'frontWindshieldImages', label: 'Front Windshield' },
-      { key: 'frontWiperAndWasherDropdownList', oldKey: undefined, imageKey: 'frontWiperAndWasherImages', oldImageKey: undefined, label: 'Front Wiper & Washer' },
+      { key: 'frontWiperAndWasherDropdownList', oldKey: undefined, imageKey: 'frontWiperAndWasherImages', oldImageKey: undefined, label: 'Front Wiper & Washer', dropdownName: 'frontWiperAndWasher' },
       { key: 'roofDropdownList', oldKey: 'roof', imageKey: 'roofImages', oldImageKey: 'roofImages', label: 'Roof' },
       { 
         key: 'frontBumperDropdownList', 
