@@ -1317,7 +1317,10 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                     v-for="part in activeExteriorSection.parts"
                     :key="part.key"
                     class="rounded-xl border bg-card shadow-sm flex flex-row overflow-hidden"
-                    :class="[(part as any).hasNoImages && !(part as any).isVideoBox ? 'min-h-[100px]' : 'min-h-[160px] h-[160px]']"
+                    :class="[
+                      (part as any).hasNoImages && !(part as any).isVideoBox ? 'min-h-[100px]' : 'min-h-[160px]',
+                      (part as any).isVideoBox ? 'row-span-2 h-auto min-h-[336px]' : 'h-[160px]'
+                    ]"
                   >
                     <template v-if="(part as any).isVideoBox">
                       <div class="w-full h-full flex flex-col p-3 bg-muted/5 relative overflow-hidden">
