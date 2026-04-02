@@ -498,9 +498,29 @@ const exteriorSections = [
   {
     title: 'Rear',
     icon: 'i-lucide-arrow-down',
-    imageKeys: ['rearMain', 'rearWithBootDoorOpen', 'rearBumperImages', 'lhsTailLampImages', 'rhsTailLampImages', 'spareTyreImages', 'bootFloorImages'],
+    imageKeys: [
+      { new: 'rearMainImages', old: 'rearMain' },
+      'rearWithBootDoorOpen',
+      { new: 'rearBumperLhs45DegreeImages', old: 'rearBumperImages' },
+      { new: 'rearBumperRhs45DegreeImages', old: 'rearBumperImages' },
+      { new: 'rearBumperImages', old: 'rearBumperImages' },
+      'lhsTailLampImages',
+      'rhsTailLampImages',
+      'spareTyreImages',
+      'bootFloorImages'
+    ],
     parts: [
-      { key: 'rearBumper', label: 'Rear Bumper' },
+      { key: 'rearMainImages', oldKey: 'rearMain', imageKey: 'rearMainImages', oldImageKey: 'rearMain', label: 'Rear Main', isImageOnly: true },
+      { 
+        key: 'rearBumperDropdownList', 
+        oldKey: 'rearBumper', 
+        label: 'Rear Bumper',
+        imageGroups: [
+          { key: 'rearBumperLhs45DegreeImages', oldKey: 'rearBumperImages', label: 'Rear Bumper LHS 45' },
+          { key: 'rearBumperRhs45DegreeImages', oldKey: 'rearBumperImages', label: 'Rear Bumper RHS 45' },
+          { key: 'rearBumperImages', oldKey: 'rearBumperImages', label: 'Rear Bumper Image' }
+        ]
+      },
       { key: 'lhsTailLamp', label: 'LHS Tail Lamp' },
       { key: 'rhsTailLamp', label: 'RHS Tail Lamp' },
       { key: 'rearWindshield', label: 'Rear Windshield' },
