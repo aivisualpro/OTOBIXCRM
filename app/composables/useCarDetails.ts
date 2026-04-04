@@ -18,7 +18,10 @@ export function useCarDetails() {
     error.value = null
 
     try {
-      const response = await $fetch<CarDetailsResponse>(`/api/leads/${carId}`)
+      const response = await $fetch<CarDetailsResponse>(`/api/leads/${carId}`, {
+        retry: 0,
+        timeout: 15000
+      })
 
       carDetails.value = response.carDetails || response
     }

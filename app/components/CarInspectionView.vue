@@ -103,6 +103,8 @@ async function saveQC(silent = false) {
     // The get API merges them. We send updates using the appointmentId as telecallingId for the update API fallback in server
     await $fetch('/api/leads/update', {
       method: 'PUT',
+      retry: 0,
+      timeout: 15000,
       body: {
         telecallingId: editForm.value.appointmentId || editForm.value._id,
         changedBy: currentUser?.userName || currentUser?.email || 'QC',
@@ -471,6 +473,50 @@ const electricalParts = [
   ] },
 ]
 
+const interiorParts = [
+  // Airbags
+  { key: 'noOfAirBags', oldKey: 'noOfAirBags', label: 'Number of Airbags', dropdownName: 'Number of Airbags', hasNoImages: true },
+  { key: 'driverAirbagDropdownList', oldKey: 'airbagFeaturesDriverSide', imageKey: 'driverAirbagImages', oldImageKey: 'airbags', label: 'Driver Airbag', dropdownName: 'Driver Airbag' },
+  { key: 'coDriverAirbagDropdownList', oldKey: 'airbagFeaturesCoDriverSide', imageKey: 'coDriverAirbagImages', oldImageKey: 'airbags', label: 'Co-Driver Airbag', dropdownName: 'Co-Driver Airbag' },
+  { key: 'driverSeatAirbagDropdownList', oldKey: 'airbagFeaturesRhsAPillarCurtain', imageKey: 'driverSeatAirbagImages', oldImageKey: 'airbags', label: 'Driver Seat Airbag', dropdownName: 'Driver Seat Airbag' },
+  { key: 'coDriverSeatAirbagDropdownList', oldKey: 'airbagFeaturesLhsAPillarCurtain', imageKey: 'coDriverSeatAirbagImages', oldImageKey: 'airbags', label: 'Co-Driver Seat Airbag', dropdownName: 'Co-Driver Seat Airbag' },
+  { key: 'rhsCurtainAirbagDropdownList', oldKey: 'airbagFeaturesRhsBPillarCurtain', imageKey: 'rhsCurtainAirbagImages', oldImageKey: 'airbags', label: 'RHS Curtain Airbag', dropdownName: 'RHS Curtain Airbag' },
+  { key: 'lhsCurtainAirbagDropdownList', oldKey: 'airbagFeaturesLhsBPillarCurtain', imageKey: 'lhsCurtainAirbagImages', oldImageKey: 'airbags', label: 'LHS Curtain Airbag', dropdownName: 'LHS Curtain Airbag' },
+  { key: 'driverSideKneeAirbagDropdownList', oldKey: 'new', imageKey: 'driverSideKneeAirbagImages', oldImageKey: 'airbags', label: 'Driver Knee Airbag', dropdownName: 'Driver Knee Airbag' },
+  { key: 'coDriverKneeSeatAirbagDropdownList', oldKey: 'new', imageKey: 'coDriverKneeSeatAirbagImages', oldImageKey: 'airbags', label: 'Co-Driver Knee Airbag', dropdownName: 'Co-Driver Knee Airbag' },
+  { key: 'rhsRearSideAirbagDropdownList', oldKey: 'airbagFeaturesRhsCPillarCurtain', imageKey: 'rhsRearSideAirbagImages', oldImageKey: 'airbags', label: 'RHS Rear Side Airbag', dropdownName: 'RHS Rear Side Airbags' },
+  { key: 'lhsRearSideAirbagDropdownList', oldKey: 'airbagFeaturesLhsCPillarCurtain', imageKey: 'lhsRearSideAirbagImages', oldImageKey: 'airbags', label: 'LHS Rear Side Airbag', dropdownName: 'LHS Rear Side Airbag' },
+
+  // Seats & Upholstery
+  { key: 'split_i1', hasNoImages: true, splitParts: [
+    { key: 'seatsUpholstery', oldKey: 'leatherSeats/fabricSeats', label: 'Seat Upholsry', dropdownName: 'seatsUpholstery' },
+    { key: 'driverSeatDropdownList', oldKey: 'new', label: 'Driver Seat', dropdownName: 'Driver Seat' }
+  ] },
+  { key: 'split_i2', hasNoImages: true, splitParts: [
+    { key: 'coDriverSeatDropdownList', oldKey: 'new', label: 'Co-Driver Seat', dropdownName: 'Co-Driver Seat' },
+    { key: 'frontCentreArmRestDropdownList', oldKey: 'new', label: 'Front Centre Arm Rest', dropdownName: 'Front Centre Arm Rest' }
+  ] },
+  { key: 'split_i3', hasNoImages: true, splitParts: [
+    { key: 'rearSeatsDropdownList', oldKey: 'new', label: 'Rear Seats', dropdownName: 'Rear Seats' },
+    { key: 'thirdRowSeatsDropdownList', oldKey: 'new', label: 'Third Row Seats', dropdownName: 'Third Row Seats' }
+  ] },
+
+  // Image-only parts
+  { 
+    key: 'doorOpenSeatsImagesBox', 
+    label: 'Seats (Door Open)', 
+    isImageOnly: true, 
+    imageGroups: [
+      { key: 'frontSeatsFromDriverSideImages', oldKey: 'frontSeatsFromDriverSideDoor', label: 'Front Seat from Driver Side (Door Open)' },
+      { key: 'rearSeatsFromRightSideImages', oldKey: 'rearSeatsFromRightSideDoor', label: 'Rear Seat from Right Side (Door Open)' }
+    ] 
+  },
+  { key: 'dashboardImages', oldKey: 'dashboardFromRearSeat', imageKey: 'dashboardImages', oldImageKey: 'dashboardFromRearSeat', label: 'Dashboard from Rear Seat', isImageOnly: true },
+
+  // Additional
+  { key: 'commentOnInteriorDropdownList', oldKey: 'commentOnInterior', label: 'Comment on Interior', dropdownName: 'Comment on Interior', hasNoImages: true },
+]
+
 const exteriorSections = [
   {
     title: 'Front',
@@ -673,6 +719,13 @@ const exteriorSections = [
     imageKeys: [],
     parts: electricalParts,
   },
+  {
+    id: 'interior',
+    title: 'Interior',
+    icon: 'i-lucide-armchair',
+    imageKeys: [],
+    parts: interiorParts,
+  },
 ]
 
 watch(() => car.value, (newVal) => {
@@ -710,14 +763,7 @@ watch(editForm, () => {
 }, { deep: true })
 
 
-const interiorParts = [
-  { key: 'commentOnInterior', label: 'Interior Comments' },
-  { key: 'sunroof', label: 'Sunroof' },
-  { key: 'leatherSeats', label: 'Leather Seats' },
-  { key: 'fabricSeats', label: 'Fabric Seats' },
-  { key: 'airConditioningManual', label: 'AC (Manual)' },
-  { key: 'airConditioningClimateControl', label: 'AC (Climate Control)' },
-]
+
 
 const steeringSuspensionBrakesParts = [
   { key: 'steering', label: 'Steering' },
@@ -1343,7 +1389,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
         </div>
 
         <!-- ═══════ EXTERIOR TABS AND ENGINE BAY ═══════ -->
-        <div v-else-if="['front', 'left', 'rear', 'right', 'engine-bay', 'electricals'].includes(activeTab)" class="space-y-6">
+        <div v-else-if="['front', 'left', 'rear', 'right', 'engine-bay', 'electricals', 'interior'].includes(activeTab)" class="space-y-6">
           <!-- Condition Grid -->
           <Card class="!p-0 !py-0 overflow-hidden" style="padding: 0px !important;">
             <CardContent class="p-0 sm:p-0">
@@ -1612,115 +1658,6 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
           </Card>
         </div>
 
-
-        <!-- ═══════ INTERIOR TAB ═══════ -->
-        <div v-else-if="activeTab === 'interior'" class="space-y-6">
-          <Card class="!py-0 !gap-0 overflow-hidden">
-            <CardHeader class="pt-5 pb-3">
-              <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-armchair" class="size-4 text-primary" />
-                Interior Features
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent class="pt-4 pb-5">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-                <div
-                  v-for="item in [
-                    { label: 'Music System', value: editForm.musicSystem },
-                    { label: 'Stereo', value: editForm.stereo },
-                    { label: 'Inbuilt Speaker', value: editForm.inbuiltSpeaker },
-                    { label: 'External Speaker', value: editForm.externalSpeaker },
-                    { label: 'Steering Audio Control', value: editForm.steeringMountedAudioControl },
-                    { label: 'Power Windows', value: editForm.noOfPowerWindows },
-                    { label: 'Rear Wiper/Washer', value: editForm.rearWiperWasher },
-                    { label: 'Rear Defogger', value: editForm.rearDefogger },
-                    { label: 'Reverse Camera', value: editForm.reverseCamera },
-                    { label: 'Sunroof', value: editForm.sunroof },
-                    { label: 'Leather Seats', value: editForm.leatherSeats },
-                    { label: 'Fabric Seats', value: editForm.fabricSeats },
-                    { label: 'AC (Manual)', value: editForm.airConditioningManual },
-                    { label: 'AC (Climate)', value: editForm.airConditioningClimateControl },
-                  ]" :key="item.label" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0"
-                >
-                  <p class="text-xs text-muted-foreground whitespace-nowrap">
-                    {{ item.label }}
-                  </p>
-                  <p class="text-sm font-medium text-right">
-                    {{ item.value || '—' }}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <!-- Airbags -->
-          <Card class="!py-0 !gap-0 overflow-hidden">
-            <CardHeader class="pt-5 pb-3">
-              <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-shield" class="size-4 text-primary" />
-                Safety — Airbags ({{ car.noOfAirBags || 0 }})
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent class="pt-4 pb-5">
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                <div
-                  v-for="item in [
-                    { label: 'Driver Side', key: 'airbagFeaturesDriverSide' },
-                    { label: 'Co-Driver Side', key: 'airbagFeaturesCoDriverSide' },
-                    { label: 'LHS A-Pillar Curtain', key: 'airbagFeaturesLhsAPillarCurtain' },
-                    { label: 'LHS B-Pillar Curtain', key: 'airbagFeaturesLhsBPillarCurtain' },
-                    { label: 'LHS C-Pillar Curtain', key: 'airbagFeaturesLhsCPillarCurtain' },
-                    { label: 'RHS A-Pillar Curtain', key: 'airbagFeaturesRhsAPillarCurtain' },
-                    { label: 'RHS B-Pillar Curtain', key: 'airbagFeaturesRhsBPillarCurtain' },
-                    { label: 'RHS C-Pillar Curtain', key: 'airbagFeaturesRhsCPillarCurtain' },
-                  ]"
-                  :key="item.key"
-                  class="rounded-lg border overflow-hidden"
-                >
-                  <div class="px-3 py-2 bg-muted/40 border-b">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{{ item.label }}</span>
-                  </div>
-                  <div class="p-2 border-t border-border/50">
-                    <p v-if="props.readonly" class="text-sm font-medium px-1">{{ editForm[item.key] || '—' }}</p>
-                    <Input v-else v-model="editForm[item.key]" class="h-8 text-sm" placeholder="e.g. Okay, Scratched" />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <!-- Interior Photos inline -->
-          <Card class="!py-0 !gap-0 overflow-hidden">
-            <CardHeader class="pt-5 pb-3">
-              <CardTitle class="text-base flex items-center gap-2">
-                <Icon name="i-lucide-camera" class="size-4 text-primary" />
-                Interior Photos
-              </CardTitle>
-            </CardHeader>
-            <Separator />
-            <CardContent class="pt-4 pb-5">
-              <div v-if="sectionImages(interiorImageKeys).length" class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2">
-                <div
-                  v-for="(img, idx) in sectionImages(interiorImageKeys)"
-                  :key="idx"
-                  class="group relative aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border hover:border-primary/50 transition-colors"
-                  @click="openLightbox(sectionImages(interiorImageKeys), idx)"
-                >
-                  <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <Badge variant="secondary" class="absolute bottom-1 left-1 text-[9px] max-w-[calc(100%-8px)] truncate">
-                    {{ img.label }}
-                  </Badge>
-                </div>
-              </div>
-              <p v-else class="text-center text-muted-foreground text-sm py-8">
-                No interior photos available
-              </p>
-            </CardContent>
-          </Card>
-        </div>
 
         <!-- ═══════ STEERING, SUSPENSION, BRAKES TAB ═══════ -->
         <!-- ═══════ STEERING, SUSPENSION, BRAKES TAB ═══════ -->
