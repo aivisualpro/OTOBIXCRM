@@ -10,12 +10,7 @@ const router = useRouter()
 const carId = route.params.id as string
 
 const { setHeader } = usePageHeader()
-setHeader({
-  title: props.readonly ? `Inspection: ${carId}` : `Quality Control: ${carId}`,
-  description: 'Vehicle inspection details',
-  icon: 'i-lucide-scan-eye',
-  showBackButton: true,
-})
+// Header is set dynamically based on active tab below
 
 const { carDetails: car, isLoading, error, fetchCarDetails } = useCarDetails()
 const { fetchDropdowns, getOptions } = useDropdowns()
@@ -389,7 +384,7 @@ async function replaceImage(key: string, idx: number, oldKey?: string) {
 }
 
 const tabs = [
-  { id: 'details', label: 'Document Details', icon: 'i-lucide-file-text' },
+  { id: 'details', label: 'Document & Registration Details', icon: 'i-lucide-file-text' },
   { id: 'front', label: 'Front', icon: 'i-lucide-arrow-up' },
   { id: 'left', label: 'Left', icon: 'i-lucide-arrow-left' },
   { id: 'rear', label: 'Rear', icon: 'i-lucide-arrow-down' },
@@ -407,6 +402,18 @@ const activeTab = computed(() => {
   if (tab && tabs.some(t => t.id === tab))
     return tab
   return 'details'
+})
+
+watchEffect(() => {
+  const currentTab = tabs.find(t => t.id === activeTab.value)
+  if (currentTab) {
+    setHeader({
+      title: props.readonly ? `Inspection: ${carId} / ${currentTab.label}` : `Quality Control: ${carId} / ${currentTab.label}`,
+      description: 'Vehicle inspection details',
+      icon: currentTab.icon || 'i-lucide-scan-eye',
+      showBackButton: true,
+    })
+  }
 })
 
 function setTab(tabId: string) {
@@ -940,7 +947,7 @@ const documentImageKeys = [
 ]
 
 // ─── Document Details field mapping (spreadsheet-driven) ───
-const documentDetailFields = [
+const documentDetailFields: any[] = [
   // Core Identity
   { key: 'chassisEmbossmentImages', type: 'combinedBox', label: 'Chassis Embossment', splitParts: [
     { label: 'To Be Scrapped', key: 'toBeScrapped', oldKey: 'toBeScrapped', type: 'dropdown', dropdownName: 'To Be Scrapped' },
@@ -1006,7 +1013,9 @@ const documentDetailFields = [
   { key: 'duplicateKeyImages', type: 'combinedBox', label: 'Key Details', splitParts: [
     { label: 'Duplicate Key', key: 'duplicateKey', oldKey: 'duplicateKey', type: 'dropdown', dropdownName: 'Duplicate Key' },
   ] },
-  { label: 'Additional Details', key: 'additionalDetailsDropdownList', oldKey: 'additionalDetails', type: 'dropdown', dropdownName: 'Additional Details' },
+  { key: 'additionalDetails', type: 'combinedBox', label: 'Miscellaneous', hideImages: true, splitParts: [
+    { label: 'Additional Details', key: 'additionalDetailsDropdownList', oldKey: 'additionalDetails', type: 'dropdown', dropdownName: 'Additional Details' },
+  ] },
 ]
 
 // Lightbox / Gallery
@@ -1383,13 +1392,6 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
             <!-- All Document Details (spreadsheet-driven new→old field mapping) -->
             <Card class="!py-0 !gap-0 overflow-hidden">
-              <CardHeader class="pt-5 pb-3">
-                <CardTitle class="text-base flex items-center gap-2">
-                  <Icon name="i-lucide-file-badge" class="size-4 text-primary" />
-                  Document & Registration Details
-                </CardTitle>
-              </CardHeader>
-              <Separator />
               <CardContent class="pt-4 pb-5">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 xl:gap-6">
                   <template v-for="field in documentDetailFields" :key="field.key">
