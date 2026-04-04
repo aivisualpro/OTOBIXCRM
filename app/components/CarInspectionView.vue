@@ -36,6 +36,25 @@ const allocatedToName = computed(() => {
   return emailOrName
 })
 
+const qcByName = computed(() => {
+  const emailOrName = car.value?.qcBy
+  if (!emailOrName)
+    return ''
+  const val = String(emailOrName).trim().toLowerCase()
+  const found = allUsers.value.find((u: any) =>
+    String(u.email || '').toLowerCase() === val
+    || String(u.userName || '').toLowerCase() === val
+    || String(u.emailAddress || '').toLowerCase() === val,
+  )
+  if (found) {
+    if (found.fullName)
+      return found.fullName
+    if (found.userName)
+      return found.userName
+  }
+  return emailOrName
+})
+
 const editForm = ref<Record<string, any>>({})
 let _skipAutoSave = false
 
@@ -102,8 +121,10 @@ async function saveQC(silent = false) {
       changedFields.odometerReadingInKms = Number(changedFields.odometerReadingInKms) || null
     if ('ownerSerialNumber' in changedFields)
       changedFields.ownerSerialNumber = Number(changedFields.ownerSerialNumber) || null
-    if ('priceDiscovery' in changedFields)
+    if ('priceDiscovery' in changedFields) {
       changedFields.priceDiscovery = Number(changedFields.priceDiscovery) || null
+      changedFields.priceDiscoveryBy = currentUser?.userName || currentUser?.email || 'QC'
+    }
 
     // the telecallingId or appointmentId is needed
     // The get API merges them. We send updates using the appointmentId as telecallingId for the update API fallback in server
@@ -197,9 +218,26 @@ async function approveLead() {
 }
 
 // Inline approval without redirecting
-async function approveLeadInline() {
-  editForm.value.approvalStatus = 'Approved'
-  await saveQC()
+function approveLeadInline() {
+  toast('Approve Vehicle?', {
+    description: 'Are you sure you want to mark this vehicle as QC Approved?',
+    action: {
+      label: 'Approve',
+      onClick: async () => {
+        editForm.value.approvalStatus = 'Approved'
+        const loadingToast = toast.loading('Approving...')
+        await saveQC(true)
+        toast.dismiss(loadingToast)
+        toast.success('Vehicle successfully marked as QC Approved!')
+        await fetchCarDetails(carId)
+      },
+    },
+    cancel: {
+      label: 'Cancel',
+      onClick: () => {},
+    },
+    duration: 6000,
+  })
 }
 
 // eslint-disable-next-line unused-imports/no-unused-vars
@@ -1438,6 +1476,23 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                     </Avatar>
                     <div class="flex flex-col min-w-0 justify-center">
                       <span class="text-sm font-semibold text-foreground truncate" :title="allocatedToName">{{ allocatedToName }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- QC / Reviewing By -->
+                <div v-if="car.qcBy" class="w-full">
+                  <p class="text-[10px] text-muted-foreground mb-2 font-bold uppercase tracking-wider">
+                    {{ car.approvalStatus === 'Approved' ? 'QC By' : 'Reviewing By' }}
+                  </p>
+                  <div class="flex items-center gap-3 p-3 rounded-lg border border-border/80 bg-background/50 shadow-sm overflow-hidden">
+                    <Avatar class="size-8 shrink-0">
+                      <AvatarFallback class="text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                        {{ (qcByName || 'QC').substring(0, 2).toUpperCase() }}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div class="flex flex-col min-w-0 justify-center">
+                      <span class="text-sm font-semibold text-foreground truncate" :title="qcByName">{{ qcByName }}</span>
                     </div>
                   </div>
                 </div>
