@@ -39,6 +39,24 @@ export function getConditionStyle(val: string) {
   if (lower === 'limited period')
     return { bg: 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400', icon: 'i-lucide-clock' }
 
+  // Fuel Level
+  if (lower === 'reserve')
+    return { bg: 'bg-red-500/15 border-red-500/30 text-red-700 dark:text-red-400', icon: 'i-lucide-fuel' }
+  if (lower === 'less than 25%')
+    return { bg: 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400', icon: 'i-lucide-fuel' }
+  if (lower === '25%-50%')
+    return { bg: 'bg-cyan-500/15 border-cyan-500/30 text-cyan-700 dark:text-cyan-400', icon: 'i-lucide-fuel' }
+  if (lower === 'more than 50%')
+    return { bg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-400', icon: 'i-lucide-check-circle' }
+
+  // Misc additions
+  if (lower === 'manual dimmer' || lower === 'auto dimmer')
+    return { bg: 'bg-green-500/15 border-green-500/30 text-green-700 dark:text-green-400', icon: 'i-lucide-check-circle' }
+  if (lower === 'loose')
+    return { bg: 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400', icon: 'i-lucide-alert-circle' }
+  if (lower === 'externally fitted' || lower === 'manual')
+    return { bg: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-700 dark:text-indigo-400', icon: 'i-lucide-wrench' }
+
   // Keyword-based matching
   const successKeys = ['ok', 'good', 'normal', 'safe', 'satisfactory', 'clean', 'clear', 'photocopy', 'available', 'yes', 'original']
   const errorKeys = ['major', 'tear', 'missing', 'broken', 'damage', 'dent', 'rust', 'cracked', 'rejected', 'scrapped']
