@@ -791,6 +791,12 @@ const exteriorSections = [
     title: 'Engine Bay',
     icon: 'i-lucide-cog',
     imageKeys: [
+      { new: 'engineBayImages', old: 'engineBay' },
+      { new: 'cowlTopImages', old: 'new' },
+      { new: 'firewallImages', old: 'new' },
+      { new: 'lhsApronImages', old: 'apronLhsRhs' },
+      { new: 'rhsApronImages', old: 'apronLhsRhs' },
+      { new: 'batteryImages', old: 'batteryImages' },
     ],
     parts: engineParts,
   },
@@ -798,21 +804,43 @@ const exteriorSections = [
     id: 'electricals',
     title: 'Electricals',
     icon: 'i-lucide-zap',
-    imageKeys: [],
+    imageKeys: [
+      { new: 'meterConsoleWithEngineOnImages', old: 'meterConsoleWithEngineOn' },
+      { new: 'acImages', old: 'new' },
+      { new: 'rearWiperAndWasherImages', old: 'new' },
+      { new: 'reverseCameraImages', old: 'new' },
+      { new: 'sunroofImages', old: 'sunroofImages' },
+    ],
     parts: electricalParts,
   },
   {
     id: 'interior',
     title: 'Interior',
     icon: 'i-lucide-armchair',
-    imageKeys: [],
+    imageKeys: [
+      { new: 'driverAirbagImages', old: 'airbags' },
+      { new: 'coDriverAirbagImages', old: 'airbags' },
+      { new: 'driverSeatAirbagImages', old: 'airbags' },
+      { new: 'coDriverSeatAirbagImages', old: 'airbags' },
+      { new: 'rhsCurtainAirbagImages', old: 'airbags' },
+      { new: 'lhsCurtainAirbagImages', old: 'airbags' },
+      { new: 'driverSideKneeAirbagImages', old: 'airbags' },
+      { new: 'coDriverKneeSeatAirbagImages', old: 'airbags' },
+      { new: 'rhsRearSideAirbagImages', old: 'airbags' },
+      { new: 'lhsRearSideAirbagImages', old: 'airbags' },
+      { new: 'frontSeatsFromDriverSideImages', old: 'frontSeatsFromDriverSideDoor' },
+      { new: 'rearSeatsFromRightSideImages', old: 'rearSeatsFromRightSideDoor' },
+      { new: 'dashboardImages', old: 'dashboardFromRearSeat' },
+    ],
     parts: interiorParts,
   },
   {
     id: 'steering-suspension-brakes',
     title: 'Steering, Suspension & Brakes',
     icon: 'i-lucide-disc',
-    imageKeys: [],
+    imageKeys: [
+      { new: 'odometerReadingAfterTestDriveImages', old: 'new' },
+    ],
     parts: steeringSuspensionBrakesParts,
   },
 ]
@@ -1086,8 +1114,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
     const newKey = typeof entry === 'string' ? entry : entry.new
     const oldKey = typeof entry === 'string' ? undefined : entry.old
     const urls = getImages(obj, newKey, oldKey)
-    for (const url of urls) {
-      imgs.push({ url, label: humanize(newKey) })
+    for (let i = 0; i < urls.length; i++) {
+      imgs.push({ url: urls[i] as string, label: `${humanize(newKey)} Image ${i + 1}` })
     }
   }
   return imgs
@@ -1556,6 +1584,30 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                 </div>
               </CardContent>
             </Card>
+
+            <!-- Document Details Overall Photos -->
+            <div v-if="sectionImages(documentImageKeys).length" class="mt-8 mb-4">
+              <div class="flex items-center gap-2 mb-4 px-2">
+                <Icon name="i-lucide-images" class="size-5 text-primary" />
+                <h3 class="text-base font-semibold tracking-tight">
+                  Document Details Overall Photos
+                </h3>
+                <Separator class="flex-1 ml-2" />
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                <div
+                  v-for="(img, idx) in sectionImages(documentImageKeys)"
+                  :key="idx"
+                  class="group relative aspect-square rounded-xl overflow-hidden bg-muted cursor-pointer border hover:border-primary/50 transition-all duration-300 shadow-sm hover:shadow-md"
+                  @click="openLightbox(sectionImages(documentImageKeys), idx)"
+                >
+                  <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">
+                  <div class="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[8px] text-white font-medium tracking-wider uppercase pointer-events-none truncate max-w-[90%]">
+                    {{ img.label }}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- ═══════ EXTERIOR TABS AND ENGINE BAY ═══════ -->
@@ -1822,11 +1874,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       @click="openLightbox(sectionImages(activeExteriorSection!.imageKeys as any), idx)"
                     >
                       <img :src="img.url" :alt="img.label" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">
-                      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                      <div class="absolute bottom-2 left-2 right-2 flex items-end">
-                        <p class="text-[10px] font-bold text-white/90 uppercase tracking-wider truncate drop-shadow-md">
-                          {{ img.label }}
-                        </p>
+                      <div class="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[8px] text-white font-medium tracking-wider uppercase pointer-events-none truncate max-w-[90%]">
+                        {{ img.label }}
                       </div>
                     </div>
                   </div>
