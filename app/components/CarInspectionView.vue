@@ -491,7 +491,7 @@ const engineParts = [
 ]
 
 const electricalParts = [
-  { key: 'clusterMeterGroup', imageKey: 'meterConsoleWithEngineOnImages', oldImageKey: 'meterConsoleWithEngineOn', label: 'Cluster Meter', isVerticalSplit: true, splitParts: [
+  { key: 'clusterMeterGroup', imageKey: 'meterConsoleWithEngineOnImages', oldImageKey: 'meterConsoleWithEngineOn', label: 'Cluster Meter', splitParts: [
     { key: 'commentsOnClusterMeterDropdownList', label: 'Cluster Meter', dropdownName: 'Comments on Cluster Meter' },
     { key: 'odometerReadingBeforeTestDrive', label: 'Odometer Reading', dropdownName: 'Odometer Reading', inputType: 'number' },
   ] },
@@ -1728,8 +1728,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                           <template v-for="(renderPart, rIdx) in ((part as any).splitParts || [part])" :key="renderPart.key">
                             <div
                               class="flex flex-col shrink-0 bg-muted/10 relative"
-                              :class="[
-                                (part as any).isVerticalSplit ? 'h-1/2 w-[200px] xl:w-[240px]' : (part as any).splitParts ? 'h-full w-1/2' : (renderPart as any).hasNoImages ? 'h-full w-full' : 'h-full w-[200px] xl:w-[240px]',
+                                :class="[
+                                 (part as any).isVerticalSplit ? 'h-1/2 w-[200px] xl:w-[240px]' : (part as any).splitParts ? ((part as any).hasNoImages ? 'h-full w-1/2' : 'h-full w-[240px] xl:w-[280px]') : (renderPart as any).hasNoImages ? 'h-full w-full' : 'h-full w-[200px] xl:w-[240px]',
                                 rIdx === 0 && (part as any).splitParts && !(part as any).isVerticalSplit ? 'border-r border-border/50' : '',
                                 rIdx === 0 && (part as any).isVerticalSplit ? 'border-b border-border/50' : '',
                                 !((part as any).splitParts) && !(renderPart as any).hasNoImages ? 'border-r border-border/50' : '',

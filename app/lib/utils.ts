@@ -30,6 +30,12 @@ export function getConditionStyle(val: string) {
     return { bg: 'bg-green-500/15 border-green-500/30 text-green-700 dark:text-green-400', icon: 'i-lucide-check-circle' }
   if (lower === 'ott')
     return { bg: 'bg-blue-500/15 border-blue-500/30 text-blue-700 dark:text-blue-400', icon: 'i-lucide-badge-check' }
+  if (lower === 'no blow by')
+    return { bg: 'bg-green-500/15 border-green-500/30 text-green-700 dark:text-green-400', icon: 'i-lucide-check-circle' }
+  if (lower === 'permisable blow by')
+    return { bg: 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400', icon: 'i-lucide-info' }
+  if (lower.includes('oil spilage') || lower.includes('back compression'))
+    return { bg: 'bg-red-500/15 border-red-500/30 text-red-700 dark:text-red-400', icon: 'i-lucide-alert-triangle' }
   if (lower === 'limited period')
     return { bg: 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400', icon: 'i-lucide-clock' }
 
