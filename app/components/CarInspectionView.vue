@@ -1639,7 +1639,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       </template>
                       <template v-else>
                         <!-- Left Side: Controls & Condition -->
-                        <div class="flex flex-1 overflow-hidden h-full" :class="(part as any).isVerticalSplit ? 'flex-col' : 'flex-row'">
+                        <div class="flex overflow-hidden h-full" :class="[(part as any).isVerticalSplit ? 'flex-col' : 'flex-row', (part as any).hasNoImages ? 'flex-1' : 'shrink-0']">
                           <template v-for="(renderPart, rIdx) in ((part as any).splitParts || [part])" :key="renderPart.key">
                             <div
                               class="flex flex-col shrink-0 bg-muted/10 relative"
