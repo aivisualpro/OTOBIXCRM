@@ -54,90 +54,70 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    const updateQuery: Record<string, any> = { $set: updates }
+    // The FIELD_MAP in appsheet.ts defines which fields matter to telecalling
+    const APPSHEET_FIELDS = new Set([
+      'appointmentId', 'ownerName', 'customerContactNumber', 'make', 'model',
+      'variant', 'yearOfManufacture', 'odometerReadingInKms', 'ownershipSerialNumber',
+      'vehicleStatus', 'city', 'zipCode', 'inspectionAddress', 'inspectionStatus',
+      'priority', 'appointmentSource', 'allocatedTo', 'repName', 'repContact',
+      'bankSource', 'ncdUcdName', 'referenceName', 'remarks', 'emailAddress',
+      'createdAt', 'otherSource', 'inspectionDateTime', 'approvalStatus', 'updatedAt'
+    ])
 
-    // Add to activity log dynamically
-    if (changes.length > 0) {
-      updateQuery.$push = {
-        qcLogs: {
-          timestamp: updates.updatedAt,
-          changedBy,
-          changes,
-        },
-        logs: {
-          timestamp: updates.updatedAt,
-          changedBy,
-          changes,
-        },
+    const telecallingUpdates: Record<string, any> = {}
+    for (const k of Object.keys(updates)) {
+      if (APPSHEET_FIELDS.has(k)) {
+        telecallingUpdates[k] = updates[k]
       }
     }
 
-    const result = await db.collection('telecallings').findOneAndUpdate(
-      filter,
-      updateQuery,
-      { returnDocument: 'after' },
-    )
+    const telecallingUpdateQuery: Record<string, any> = Object.keys(telecallingUpdates).length > 0 ? { $set: telecallingUpdates } : {}
+    const carsUpdateQuery: Record<string, any> = { $set: { ...updates } }
 
-    if (!result) {
+    // Add to activity log dynamically
+    if (changes.length > 0) {
+      telecallingUpdateQuery.$push = {
+        logs: { timestamp: updates.updatedAt, changedBy, changes }
+      }
+      carsUpdateQuery.$push = {
+        qcLog: { timestamp: updates.updatedAt, changedBy, changes },
+        qcLogs: { timestamp: updates.updatedAt, changedBy, changes }
+      }
+    }
+
+    const hasTelecallingSet = telecallingUpdateQuery.$set && Object.keys(telecallingUpdateQuery.$set).length > 0
+    const hasTelecallingPush = !!telecallingUpdateQuery.$push
+
+    let result
+    if (hasTelecallingSet || hasTelecallingPush) {
+      result = await db.collection('telecallings').findOneAndUpdate(
+        filter,
+        telecallingUpdateQuery,
+        { returnDocument: 'after' },
+      )
+    } else {
+      result = await db.collection('telecallings').findOne(filter)
+    }
+
+    if (!result && !(hasTelecallingSet || hasTelecallingPush)) {
+      // If it didn't update anything and findOne also failed...
       throw createError({ statusCode: 404, message: 'Lead not found' })
     }
 
     // Keep the core 'cars' collection in lock-step with these updates
-    const actualDoc = result.value || result
+    const actualDoc = result?.value || result || oldDoc
     const apptId = actualDoc.appointmentId || oldDoc.appointmentId
     if (apptId) {
-      const carsUpdateObj: Record<string, any> = { $set: { ...updates, appointmentId: apptId } }
-      if (changes.length > 0) {
-        carsUpdateObj.$push = {
-          qcLog: {
-            timestamp: updates.updatedAt,
-            changedBy,
-            changes,
-          }
-        }
-      }
-
+      carsUpdateQuery.$set.appointmentId = apptId
       await db.collection('cars').updateOne(
         { appointmentId: apptId },
-        carsUpdateObj,
+        carsUpdateQuery,
         { upsert: true },
       )
     }
 
-    // Sync to AppSheet ONLY if telecalling-relevant fields changed (not image/QC-only changes)
-    // The FIELD_MAP in appsheet.ts defines which fields matter to telecalling
-    const APPSHEET_FIELDS = new Set([
-      'appointmentId',
-      'ownerName',
-      'customerContactNumber',
-      'make',
-      'model',
-      'variant',
-      'yearOfManufacture',
-      'odometerReadingInKms',
-      'ownershipSerialNumber',
-      'vehicleStatus',
-      'city',
-      'zipCode',
-      'inspectionAddress',
-      'inspectionStatus',
-      'priority',
-      'appointmentSource',
-      'allocatedTo',
-      'repName',
-      'repContact',
-      'bankSource',
-      'ncdUcdName',
-      'referenceName',
-      'remarks',
-      'emailAddress',
-      'createdAt',
-      'otherSource',
-      'inspectionDateTime',
-      'approvalStatus',
-    ])
     const hasAppSheetChange = changes.some((c: any) => APPSHEET_FIELDS.has(c.field))
-    if (hasAppSheetChange) {
+    if (hasAppSheetChange && result) {
       syncLeadToAppSheet('Edit', result, db)
     }
 

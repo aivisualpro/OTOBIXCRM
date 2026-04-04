@@ -196,6 +196,12 @@ async function approveLead() {
   router.push('/leads/approved')
 }
 
+// Inline approval without redirecting
+async function approveLeadInline() {
+  editForm.value.approvalStatus = 'Approved'
+  await saveQC()
+}
+
 // eslint-disable-next-line unused-imports/no-unused-vars
 async function rejectLead() {
   editForm.value.approvalStatus = 'Quality Rejected'
@@ -1391,6 +1397,26 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
               <!-- RIGHT: Pricing / Offer Action -->
               <div class="w-full lg:w-[280px] bg-card p-6 lg:p-8 flex flex-col justify-center">
+                
+                <!-- QC Approved Action -->
+                <div class="mb-8">
+                  <Button
+                    v-if="!props.readonly && car.approvalStatus !== 'Approved'"
+                    class="w-full h-12 bg-emerald-500 hover:bg-emerald-600 focus:ring-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20"
+                    @click="approveLeadInline"
+                  >
+                    <Icon name="i-lucide-check-circle-2" class="mr-2 size-5" />
+                    QC Approved
+                  </Button>
+                  <div
+                    v-else-if="car.approvalStatus === 'Approved'"
+                    class="w-full h-12 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 rounded-lg flex items-center justify-center font-bold"
+                  >
+                    <Icon name="i-lucide-shield-check" class="mr-2 size-5" />
+                    QC Approved
+                  </div>
+                </div>
+
                 <p class="text-sm text-muted-foreground mb-1 font-medium">
                   Price Discovery
                 </p>
