@@ -1008,7 +1008,7 @@ const documentDetailFields: any[] = [
   ] },
   // Tax & Validity
   { key: 'roadTaxImages', type: 'combinedBox', label: 'Road Tax', splitParts: [
-    { label: 'Road Tax Validity', key: 'roadTaxValidity', oldKey: 'roadTaxValidity', type: 'date', dropdownName: undefined },
+    { label: 'Road Tax Validity', key: 'roadTaxValidity', oldKey: 'roadTaxValidity', type: 'multiselect', dropdownName: 'Road Tax Validity' },
     { label: 'Tax Valid Till', key: 'taxValidTill', oldKey: 'taxValidTill', type: 'date', dropdownName: undefined },
   ] },
   // Hypothecation
@@ -1032,11 +1032,11 @@ const documentDetailFields: any[] = [
   // Status & Compliance
   { key: 'statusCompliance', type: 'combinedBox', label: 'Status & Compliance', hideImages: true, splitParts: [
     { label: 'RC Status', key: 'rcStatus', oldKey: undefined, type: 'dropdown', dropdownName: 'RC Status' },
-    { label: 'Blacklist Status', key: 'blacklistStatus', oldKey: undefined, type: 'dropdown', dropdownName: 'Blacklist Status' },
-    { label: 'RTO NOC Details', key: 'rtoNoc', oldKey: 'rtoNoc', type: 'dropdown', dropdownName: 'RTO NOC Details' },
+    { label: 'Blacklist Status', key: 'blacklistStatus', oldKey: undefined, type: 'dropdown', staticOptions: [{ label: 'YES', value: 'YES' }, { label: 'NO', value: 'NO' }] },
+    { label: 'RTO NOC Details', key: 'rtoNoc', oldKey: 'rtoNoc', type: 'multiselect', dropdownName: 'RTO NOC' },
   ], rightParts: [
-    { label: 'RTO Form 28 (2 Copies)', key: 'rtoForm28', oldKey: 'rtoForm28', type: 'dropdown', dropdownName: 'RTO Form 28' },
-    { label: 'Party Peshi', key: 'partyPeshi', oldKey: 'partyPeshi', type: 'dropdown', dropdownName: 'Party Peshi' },
+    { label: 'RTO Form 28 (2 Copies)', key: 'rtoForm28', oldKey: 'rtoForm28', type: 'multiselect', dropdownName: 'RTO Form 28 (2 copies)' },
+    { label: 'Party Peshi', key: 'partyPeshi', oldKey: 'partyPeshi', type: 'multiselect', dropdownName: 'Party Peshi' },
   ] },
   { key: 'duplicateKeyImages', type: 'combinedBox', label: 'Key Details', splitParts: [
     { label: 'Duplicate Key', key: 'duplicateKey', oldKey: 'duplicateKey', type: 'dropdown', dropdownName: 'Duplicate Key' },
@@ -1452,7 +1452,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                                     <template v-else>
                                       <Input v-if="partItem.type === 'date'" :model-value="formatDateYYYYMMDD(editForm[partItem.key])" type="date" class="h-8 text-xs font-medium w-full bg-background" @update:model-value="editForm[partItem.key] = $event" />
                                       <Input v-else-if="partItem.type === 'single'" v-model="editForm[partItem.key]" class="h-8 text-xs font-medium w-full bg-background" />
-                                      <SearchableSelect v-else v-model="editForm[partItem.key]" :options="getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />
+                                      <SearchableSelect v-else v-model="editForm[partItem.key]" :options="partItem.staticOptions || getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />
                                     </template>
                                   </div>
                                 </div>
@@ -1472,7 +1472,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                                 <template v-else>
                                   <Input v-if="partItem.type === 'date'" :model-value="formatDateYYYYMMDD(editForm[partItem.key])" type="date" class="h-8 text-xs font-medium w-full bg-background" @update:model-value="editForm[partItem.key] = $event" />
                                   <Input v-else-if="partItem.type === 'single'" v-model="editForm[partItem.key]" class="h-8 text-xs font-medium w-full bg-background" />
-                                  <SearchableSelect v-else v-model="editForm[partItem.key]" :options="getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />
+                                  <SearchableSelect v-else v-model="editForm[partItem.key]" :options="partItem.staticOptions || getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />
                                 </template>
                               </div>
                             </div>
@@ -1552,7 +1552,40 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       <p v-if="props.readonly" class="text-sm font-medium text-right w-2/3">
                         {{ editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '') || '—' }}
                       </p>
-                      <SearchableSelect v-else v-model="editForm[field.key]" :options="getOptions(field.dropdownName || '')" class-name="w-2/3 h-8 shadow-sm text-sm" />
+                      <SearchableSelect v-else v-model="editForm[field.key]" :options="field.staticOptions || getOptions(field.dropdownName || '')" class-name="w-2/3 h-8 shadow-sm text-sm" />
+                    </div>
+                    <!-- MULTISELECT field -->
+                    <div v-else-if="field.type === 'multiselect'" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
+                      <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
+                        {{ field.label }}
+                      </p>
+                      <p v-if="props.readonly" class="text-sm font-medium text-right w-2/3 truncate">
+                        {{ getValuesArray(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')).join(', ') || '—' }}
+                      </p>
+                      <div v-else class="w-2/3">
+                        <MultiSelect :model-value="editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')" @update:model-value="editForm[field.key] = $event" :options="getOptions(field.dropdownName || '')" class="w-full">
+                          <template #trigger>
+                            <Button variant="outline" class="w-full h-8 flex justify-between items-center text-sm px-3 shadow-sm bg-transparent border-input text-foreground font-normal overflow-hidden group">
+                              <span class="truncate pr-2 w-full text-left font-medium group-hover:text-primary transition-colors">
+                                {{ getValuesArray(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')).length ? getValuesArray(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')).join(', ') : 'Select...' }}
+                              </span>
+                              <Icon name="i-lucide-chevron-down" class="size-3.5 opacity-50 shrink-0 group-hover:text-primary transition-colors" />
+                            </Button>
+                          </template>
+                          <template #option="{ option, selected }">
+                            <div
+                              class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded shadow-sm w-full transition-all duration-200"
+                              :class="[
+                                getConditionStyle(option.label).bg,
+                                selected ? '!border-foreground ring-1 ring-foreground ring-offset-1 ring-offset-background font-black scale-[1.02] z-10' : 'opacity-85 hover:opacity-100',
+                              ]"
+                            >
+                              <Icon :name="getConditionStyle(option.label).icon" class="size-4 shrink-0" />
+                              <span class="text-[13px]" :class="selected ? 'font-black' : 'font-bold'">{{ option.label }}</span>
+                            </div>
+                          </template>
+                        </MultiSelect>
+                      </div>
                     </div>
                     <!-- DATE field -->
                     <div v-else-if="field.type === 'date'" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">

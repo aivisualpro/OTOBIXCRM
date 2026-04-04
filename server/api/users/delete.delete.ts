@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     if (!_client) {
       _client = new MongoClient(uri)
       await _client.connect()
-      console.warn(`[API:users/delete] Connected to MongoDB → DB: ${dbName}`)
+      console.log(`[API:users/delete] Connected to MongoDB → DB: ${dbName}`)
     }
 
     const db = _client.db(dbName)
@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: `User not found with id "${userId}"` })
     }
 
-    console.warn(`[API:users/delete] Deleted user ${userId} from "${dbName}"`)
+    console.log(`[API:users/delete] Deleted user ${userId} from "${dbName}"`)
 
     return {
       success: true,
