@@ -990,17 +990,22 @@ const documentDetailFields = [
     { label: 'Policy Number', key: 'policyNumber', oldKey: 'insurancePolicyNumber', type: 'single', dropdownName: undefined },
   ] },
   // PUC
-  { label: 'PUC Validity', key: 'pucValidity', oldKey: undefined, type: 'date' },
-  { label: 'PUC Number', key: 'pucNumber', oldKey: undefined, type: 'single' },
-  { label: 'PUC Image', key: 'pucImages', oldKey: undefined, type: 'multiple' },
+  { key: 'pucImages', type: 'combinedBox', label: 'PUC Details', splitParts: [
+    { label: 'PUC Validity', key: 'pucValidity', oldKey: undefined, type: 'date', dropdownName: undefined },
+    { label: 'PUC Number', key: 'pucNumber', oldKey: undefined, type: 'single', dropdownName: undefined },
+  ] },
   // Status & Compliance
-  { label: 'RC Status', key: 'rcStatus', oldKey: undefined, type: 'dropdown', dropdownName: 'RC Status' },
-  { label: 'Blacklist Status', key: 'blacklistStatus', oldKey: undefined, type: 'dropdown', dropdownName: 'Blacklist Status' },
-  { label: 'RTO NOC Details', key: 'rtoNoc', oldKey: 'rtoNoc', type: 'dropdown', dropdownName: 'RTO NOC Details' },
-  { label: 'RTO Form 28 (2 Copies)', key: 'rtoForm28', oldKey: 'rtoForm28', type: 'dropdown', dropdownName: 'RTO Form 28' },
-  { label: 'Party Peshi', key: 'partyPeshi', oldKey: 'partyPeshi', type: 'dropdown', dropdownName: 'Party Peshi' },
-  { label: 'Duplicate Key', key: 'duplicateKey', oldKey: 'duplicateKey', type: 'dropdown', dropdownName: 'Duplicate Key' },
-  { label: 'Duplicate Key Images', key: 'duplicateKeyImages', oldKey: 'bothKeys', type: 'multiple' },
+  { key: 'statusCompliance', type: 'combinedBox', label: 'Status & Compliance', hideImages: true, splitParts: [
+    { label: 'RC Status', key: 'rcStatus', oldKey: undefined, type: 'dropdown', dropdownName: 'RC Status' },
+    { label: 'Blacklist Status', key: 'blacklistStatus', oldKey: undefined, type: 'dropdown', dropdownName: 'Blacklist Status' },
+    { label: 'RTO NOC Details', key: 'rtoNoc', oldKey: 'rtoNoc', type: 'dropdown', dropdownName: 'RTO NOC Details' },
+  ], rightParts: [
+    { label: 'RTO Form 28 (2 Copies)', key: 'rtoForm28', oldKey: 'rtoForm28', type: 'dropdown', dropdownName: 'RTO Form 28' },
+    { label: 'Party Peshi', key: 'partyPeshi', oldKey: 'partyPeshi', type: 'dropdown', dropdownName: 'Party Peshi' },
+  ] },
+  { key: 'duplicateKeyImages', type: 'combinedBox', label: 'Key Details', splitParts: [
+    { label: 'Duplicate Key', key: 'duplicateKey', oldKey: 'duplicateKey', type: 'dropdown', dropdownName: 'Duplicate Key' },
+  ] },
   { label: 'Additional Details', key: 'additionalDetailsDropdownList', oldKey: 'additionalDetails', type: 'dropdown', dropdownName: 'Additional Details' },
 ]
 
@@ -1426,8 +1431,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                           </div>
                         </div>
                         <!-- Right: Image Strip OR Alternate Config -->
-                        <div v-if="field.hideImages && field.rightParts" class="flex-1 flex flex-col overflow-y-auto">
-                          <template v-for="partItem in field.rightParts" :key="partItem.key">
+                        <div v-if="field.hideImages" class="flex-1 flex flex-col overflow-y-auto bg-muted/5 dark:bg-muted/10">
+                          <template v-if="field.rightParts" v-for="partItem in field.rightParts" :key="partItem.key">
                             <div class="flex-1 px-3 py-2 border-b border-border/50 last:border-b-0 flex flex-col justify-center gap-1.5 overflow-hidden bg-white/40 dark:bg-black/20">
                               <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 truncate w-full" :title="partItem.label">{{ partItem.label }}</span>
                               <div class="w-full min-w-0 pointer-events-auto flex items-center">
