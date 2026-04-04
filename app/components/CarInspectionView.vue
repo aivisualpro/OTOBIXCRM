@@ -942,44 +942,53 @@ const documentImageKeys = [
 // ─── Document Details field mapping (spreadsheet-driven) ───
 const documentDetailFields = [
   // Core Identity
-  { label: 'Registration Number', key: 'registrationNumber', oldKey: 'registrationNumber', type: 'single' },
-  { label: 'To Be Scrapped', key: 'toBeScrapped', oldKey: 'toBeScrapped', type: 'dropdown', dropdownName: 'To Be Scrapped' },
-  { label: 'Chassis Details', key: 'chassisDetails', oldKey: undefined, type: 'dropdown', dropdownName: 'Chassis Details' },
-  { label: 'Chassis Embossment Image', key: 'chassisEmbossmentImages', oldKey: undefined, type: 'multiple' },
-  { label: 'Vin Plate Details', key: 'vinPlateDetails', oldKey: undefined, type: 'dropdown', dropdownName: 'Vin Plate Details' },
-  { label: 'Vin Plate Image', key: 'vinPlateImages', oldKey: undefined, type: 'multiple' },
-  { label: 'RC Book Availability', key: 'rcBookAvailabilityDropdownList', oldKey: 'rcBookAvailability', type: 'dropdown', dropdownName: 'RC Book Availability' },
-  { label: 'RC Condition', key: 'rcCondition', oldKey: 'rcCondition', type: 'dropdown', dropdownName: 'RC Condition' },
-  { label: 'RC Token Image', key: 'rcTokenImages', oldKey: 'rcTaxToken', type: 'multiple' },
-  { label: 'Mismatch in RC', key: 'mismatchInRcDropdownList', oldKey: 'mismatchInRc', type: 'dropdown', dropdownName: 'Mismatch in RC' },
-  { label: 'Registration Date', key: 'registrationDate', oldKey: 'registrationDate', type: 'date' },
-  { label: 'Fitness Validity', key: 'fitnessValidity', oldKey: 'fitnessTill', type: 'date' },
-  { label: 'Engine Number', key: 'engineNumber', oldKey: 'engineNumber', type: 'single' },
-  { label: 'Chassis Number', key: 'chassisNumber', oldKey: 'chassisNumber', type: 'single' },
-  // Vehicle Specs
-  { label: 'Fuel Type', key: 'fuelType', oldKey: 'fuelType', type: 'single' },
-  { label: 'Seating Capacity', key: 'seatingCapacity', oldKey: undefined, type: 'single' },
-  { label: 'Color', key: 'color', oldKey: undefined, type: 'single' },
-  { label: 'Cubic Capacity', key: 'cubicCapacity', oldKey: 'cubicCapacity', type: 'single' },
-  { label: 'Norms', key: 'norms', oldKey: undefined, type: 'single' },
-  // Registration
-  { label: 'Registration State', key: 'registrationState', oldKey: 'registrationState', type: 'single' },
-  { label: 'Registered RTO', key: 'registeredRto', oldKey: 'registeredRto', type: 'single' },
-  { label: 'Registered Owner', key: 'registeredOwner', oldKey: 'registeredOwner', type: 'single' },
-  { label: 'Registered Address as per RC', key: 'registeredAddressAsPerRc', oldKey: 'registeredAddressAsPerRc', type: 'single' },
+  { key: 'chassisEmbossmentImages', type: 'combinedBox', label: 'Chassis Embossment', splitParts: [
+    { label: 'To Be Scrapped', key: 'toBeScrapped', oldKey: 'toBeScrapped', type: 'dropdown', dropdownName: 'To Be Scrapped' },
+    { label: 'Chassis Details', key: 'chassisDetails', oldKey: undefined, type: 'dropdown', dropdownName: 'Chassis Details' },
+  ] },
+  { key: 'vinPlateImages', type: 'combinedBox', label: 'Vin Plate', splitParts: [
+    { label: 'Vin Plate Details', key: 'vinPlateDetails', oldKey: undefined, type: 'dropdown', dropdownName: 'Vin Plate Details' },
+  ] },
+  { key: 'rcTokenImages', type: 'combinedBox', label: 'RC Token', splitParts: [
+    { label: 'RC Book Availability', key: 'rcBookAvailabilityDropdownList', oldKey: 'rcBookAvailability', type: 'dropdown', dropdownName: 'RC Book Availability' },
+    { label: 'RC Condition', key: 'rcCondition', oldKey: 'rcCondition', type: 'dropdown', dropdownName: 'RC Condition' },
+    { label: 'Mismatch in RC', key: 'mismatchInRcDropdownList', oldKey: 'mismatchInRc', type: 'dropdown', dropdownName: 'Mismatch in RC' },
+  ] },
+  { key: 'technicalSpecs', type: 'combinedBox', label: 'Technical Specs', hideImages: true, splitParts: [
+    { label: 'Fuel Type', key: 'fuelType', oldKey: 'fuelType', type: 'single', dropdownName: undefined },
+    { label: 'Seating Capacity', key: 'seatingCapacity', oldKey: undefined, type: 'single', dropdownName: undefined },
+    { label: 'Color', key: 'color', oldKey: undefined, type: 'single', dropdownName: undefined },
+  ], rightParts: [
+    { label: 'Fitness Validity', key: 'fitnessValidity', oldKey: 'fitnessTill', type: 'date', dropdownName: undefined },
+    { label: 'Engine Number', key: 'engineNumber', oldKey: 'engineNumber', type: 'single', dropdownName: undefined },
+    { label: 'Chassis Number', key: 'chassisNumber', oldKey: 'chassisNumber', type: 'single', dropdownName: undefined },
+  ] },
+  { key: 'registrationDetails', type: 'combinedBox', label: 'Registration Details', hideImages: true, splitParts: [
+    { label: 'Cubic Capacity', key: 'cubicCapacity', oldKey: 'cubicCapacity', type: 'single', dropdownName: undefined },
+    { label: 'Norms', key: 'norms', oldKey: undefined, type: 'single', dropdownName: undefined },
+    { label: 'Registration State', key: 'registrationState', oldKey: 'registrationState', type: 'single', dropdownName: undefined },
+  ], rightParts: [
+    { label: 'Registered RTO', key: 'registeredRto', oldKey: 'registeredRto', type: 'single', dropdownName: undefined },
+    { label: 'Registered Address as per RC', key: 'registeredAddressAsPerRc', oldKey: 'registeredAddressAsPerRc', type: 'single', dropdownName: undefined },
+  ] },
   // Tax & Validity
-  { label: 'Road Tax Validity', key: 'roadTaxValidity', oldKey: 'roadTaxValidity', type: 'date' },
-  { label: 'Tax Valid Till', key: 'taxValidTill', oldKey: 'taxValidTill', type: 'date' },
-  { label: 'Road Tax Image', key: 'roadTaxImages', oldKey: undefined, type: 'multiple' },
+  { key: 'roadTaxImages', type: 'combinedBox', label: 'Road Tax', splitParts: [
+    { label: 'Road Tax Validity', key: 'roadTaxValidity', oldKey: 'roadTaxValidity', type: 'date', dropdownName: undefined },
+    { label: 'Tax Valid Till', key: 'taxValidTill', oldKey: 'taxValidTill', type: 'date', dropdownName: undefined },
+  ] },
   // Hypothecation
-  { label: 'Hypothecation Details', key: 'hypothecationDetails', oldKey: 'hypothecationDetails', type: 'dropdown', dropdownName: 'Hypothecation Details' },
-  { label: 'Hypothecated To', key: 'hypothecatedTo', oldKey: undefined, type: 'single' },
-  // Insurance
-  { label: 'Insurance Type', key: 'insuranceDropdownList', oldKey: 'insurance', type: 'dropdown', dropdownName: 'Insurance' },
-  { label: 'Insurance Validity', key: 'insuranceValidity', oldKey: 'insuranceValidity', type: 'date' },
-  { label: 'Insured By', key: 'insurer', oldKey: undefined, type: 'single' },
-  { label: 'Policy Number', key: 'policyNumber', oldKey: 'insurancePolicyNumber', type: 'single' },
-  { label: 'Insurance Image', key: 'insuranceImages', oldKey: 'insuranceCopy', type: 'multiple' },
+  // Hypothecation & Insurance
+  { key: 'hypothecationInsurance', type: 'combinedBox', label: 'Hypo & Insurance', hideImages: true, splitParts: [
+    { label: 'Hypothecation Details', key: 'hypothecationDetails', oldKey: 'hypothecationDetails', type: 'dropdown', dropdownName: 'Hypothecation Details' },
+    { label: 'Hypothecated To', key: 'hypothecatedTo', oldKey: undefined, type: 'single', dropdownName: undefined },
+  ], rightParts: [
+    { label: 'Insurance Type', key: 'insuranceDropdownList', oldKey: 'insurance', type: 'dropdown', dropdownName: 'Insurance' },
+    { label: 'Insurance Validity', key: 'insuranceValidity', oldKey: 'insuranceValidity', type: 'date', dropdownName: undefined },
+  ] },
+  { key: 'insuranceImages', type: 'combinedBox', label: 'Insurance Policy', splitParts: [
+    { label: 'Insured By', key: 'insurer', oldKey: undefined, type: 'single', dropdownName: undefined },
+    { label: 'Policy Number', key: 'policyNumber', oldKey: 'insurancePolicyNumber', type: 'single', dropdownName: undefined },
+  ] },
   // PUC
   { label: 'PUC Validity', key: 'pucValidity', oldKey: undefined, type: 'date' },
   { label: 'PUC Number', key: 'pucNumber', oldKey: undefined, type: 'single' },
@@ -1129,7 +1138,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
       <!-- Tab Content (scrollable) -->
       <div class="flex-1 min-h-0 overflow-auto bg-muted/10">
-        <div class="px-4 lg:px-6">
+        <div class="p-4 lg:p-6">
           <div v-if="activeTab === 'details'" class="animate-in fade-in duration-300 space-y-6">
             <!-- Hero Section — Card Architecture -->
             <div class="rounded-xl border border-border/80 bg-card shadow-sm overflow-hidden flex flex-col lg:flex-row">
@@ -1179,8 +1188,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                 <!-- Breadcrumbs / Top Info -->
                 <!-- Stats Grid Layout -->
                 <div class="flex flex-col gap-3 mt-auto w-full">
-                  <!-- Row 1: Make, Model, Variant -->
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <!-- Row 1: Make, Model, Variant, MFG Year -->
+                  <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <!-- Make -->
                     <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
                       <p class="text-xs text-muted-foreground mb-2 font-medium">
@@ -1219,46 +1228,6 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                         <SearchableSelect v-else v-model="editForm.variant" :options="variantOptions" placeholder="Variant" class-name="h-8 w-full text-sm font-black shadow-none border-b border-t-0 border-x-0 rounded-none px-0" />
                       </div>
                     </div>
-                  </div>
-
-                  <!-- Row 2: Engine, Odometer, MFG Year -->
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <!-- Engine -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
-                      <p class="text-xs text-muted-foreground mb-1.5 font-medium">
-                        Engine
-                      </p>
-                      <div class="flex items-center gap-2 mt-auto mr-12">
-                        <div class="flex-1 bg-muted/80 rounded-lg py-1.5 px-3 border border-border/60 shadow-inner">
-                          <p class="font-bold text-foreground text-sm tracking-tight truncate">
-                            {{ car.fuelType || '—' }} — {{ car.cubicCapacity || '—' }}<span class="text-[10px] opacity-70 ml-0.5">cc</span>
-                          </p>
-                        </div>
-                      </div>
-                      <div class="absolute right-4 top-1/2 -translate-y-1/2 mt-1 size-12 rounded-full border-[3px] border-[#FBBC05]/10 flex items-center justify-center bg-background shadow-sm">
-                        <Icon name="i-lucide-fuel" class="size-5 text-[#FBBC05]" />
-                      </div>
-                    </div>
-
-                    <!-- Odometer -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
-                      <p class="text-xs text-muted-foreground mb-1.5 font-medium">
-                        Odometer
-                      </p>
-                      <div class="flex items-center gap-2 mt-auto mr-12">
-                        <div class="flex-1 bg-muted/80 rounded-lg py-1.5 px-3 border border-border/60 shadow-inner">
-                          <p v-if="props.readonly" class="font-extrabold text-foreground text-sm tracking-tight">
-                            {{ (car.odometerReadingInKms || 0).toLocaleString('en-IN') }} km
-                          </p>
-                          <Input v-else v-model="editForm.odometerReadingInKms" type="number" class="h-6 text-sm font-extrabold bg-transparent border-none p-0 focus-visible:ring-0 shadow-none text-foreground" />
-                        </div>
-                      </div>
-                      <!-- Decorative circle icon -->
-                      <div class="absolute right-4 top-1/2 -translate-y-1/2 mt-1 size-12 rounded-full border-[3px] border-[#4285F4]/10 flex items-center justify-center bg-background shadow-sm">
-                        <Icon name="i-lucide-gauge" class="size-5 text-[#4285F4]" />
-                      </div>
-                    </div>
-
                     <!-- MFG Year -->
                     <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
                       <p class="text-xs text-muted-foreground mb-1 font-medium">
@@ -1275,21 +1244,63 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                     </div>
                   </div>
 
-                  <!-- Bottom Row: Ownership & City -->
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <!-- Ownership -->
-                    <div class="md:col-span-2 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between">
-                      <p class="text-xs text-muted-foreground mb-2.5 font-medium">
+                  <!-- Bottom Row: Registration, Ownership & City -->
+                  <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <!-- Registration Number -->
+                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                      <p class="text-xs text-muted-foreground mb-1 font-medium">
+                        Registration
+                      </p>
+                      <div class="mt-auto relative z-10 w-full pr-8">
+                        <div v-if="props.readonly" class="text-xl font-black text-foreground truncate uppercase" :title="car.registrationNumber">
+                          {{ car.registrationNumber || '—' }}
+                        </div>
+                        <Input v-else v-model="editForm.registrationNumber" class="h-8 max-w-[120px] text-lg font-black uppercase border-none bg-transparent p-0 focus-visible:ring-0 shadow-none text-foreground" placeholder="MH01..." />
+                      </div>
+                      <div class="absolute right-4 top-1/2 -translate-y-1/2 mt-1 size-12 rounded-full border-[3px] border-slate-200 dark:border-slate-800 flex items-center justify-center bg-background shadow-sm">
+                        <Icon name="i-lucide-car-front" class="size-5 text-slate-400" />
+                      </div>
+                    </div>
+
+                    <!-- Registration Date -->
+                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                      <p class="text-xs text-muted-foreground mb-1 font-medium">
+                        Reg. Date
+                      </p>
+                      <div class="mt-auto relative z-10 w-full pr-8">
+                        <div v-if="props.readonly" class="text-xl font-black text-foreground truncate" :title="formatDateMMDDYYYY(car.registrationDate)">
+                          {{ formatDateMMDDYYYY(car.registrationDate) || '—' }}
+                        </div>
+                        <Input v-else :model-value="formatDateYYYYMMDD(editForm.registrationDate)" type="date" class="h-8 max-w-[140px] text-[15px] font-black border-none bg-transparent p-0 focus-visible:ring-0 shadow-none text-foreground" @update:model-value="editForm.registrationDate = $event" />
+                      </div>
+                      <div class="absolute right-4 top-1/2 -translate-y-1/2 mt-1 size-12 rounded-full border-[3px] border-slate-200 dark:border-slate-800 flex items-center justify-center bg-background shadow-sm">
+                        <Icon name="i-lucide-calendar-days" class="size-5 text-slate-400" />
+                      </div>
+                    </div>
+
+                    <!-- Ownership & Registered Owner -->
+                    <div class="md:col-span-2 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between overflow-hidden relative group">
+                      <p class="text-[11px] text-muted-foreground mb-1.5 font-bold uppercase tracking-widest leading-none">
                         Ownership
                       </p>
-                      <div class="flex gap-1.5 h-9">
+                      
+                      <!-- Owner Name -->
+                      <div class="relative z-10 w-full mb-3 flex-1 min-h-0 flex flex-col justify-center">
+                        <div v-if="props.readonly" class="text-xl font-black text-foreground truncate uppercase tracking-tight" :title="car.registeredOwner">
+                          {{ car.registeredOwner || '—' }}
+                        </div>
+                        <Input v-else v-model="editForm.registeredOwner" class="h-8 w-full text-lg uppercase font-black tracking-tight border-none bg-transparent p-0 focus-visible:ring-0 shadow-none text-foreground placeholder:text-muted-foreground/30" placeholder="ENTER OWNER NAME" />
+                      </div>
+
+                      <!-- Serial Number Ribbon -->
+                      <div class="flex gap-1.5 h-8 mt-auto w-full z-10 relative">
                         <!-- If readonly -->
                         <template v-if="props.readonly">
-                          <div class="bg-blue-600 text-white rounded-md px-4 flex items-center justify-center gap-2 font-bold text-sm shadow-md ring-1 ring-blue-600">
+                          <div class="bg-blue-600 text-white rounded px-5 flex items-center justify-center font-black text-[13px] shadow-md ring-1 ring-blue-600">
                             {{ Number(car.ownerSerialNumber || 1) }}{{ Number(car.ownerSerialNumber || 1) === 1 ? 'st' : Number(car.ownerSerialNumber || 1) === 2 ? 'nd' : Number(car.ownerSerialNumber || 1) === 3 ? 'rd' : 'th' }}
                           </div>
-                          <div class="flex gap-1.5 opacity-50">
-                            <div v-for="n in 5" v-show="n !== Number(car.ownerSerialNumber || 1)" :key="n" class="w-12 rounded-md border border-border/60 bg-muted/50 flex items-center justify-center text-xs font-semibold text-muted-foreground">
+                          <div class="flex gap-1.5 opacity-40">
+                            <div v-for="n in 5" v-show="n !== Number(car.ownerSerialNumber || 1)" :key="n" class="w-10 rounded border border-border/60 bg-muted/30 flex items-center justify-center text-[11px] font-bold text-muted-foreground">
                               {{ n }}{{ n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th' }}
                             </div>
                           </div>
@@ -1300,15 +1311,20 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                             v-for="n in 5"
                             :key="n"
                             type="button"
-                            class="flex-1 rounded-md text-sm font-bold transition-all duration-200 border flex items-center justify-center gap-2"
+                            class="flex-1 rounded text-[13px] font-black transition-all duration-200 border flex items-center justify-center"
                             :class="Number(editForm.ownerSerialNumber) === n
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-600/50 scale-[1.02]'
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-600/50 scale-[1.02] z-10'
                               : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted'"
                             @click="editForm.ownerSerialNumber = n"
                           >
                             {{ n }}{{ n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th' }}
                           </button>
                         </template>
+                      </div>
+                      
+                      <!-- Decorative background icon -->
+                      <div class="absolute right-0 bottom-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none translate-x-3 translate-y-4">
+                        <Icon name="i-lucide-users" class="size-24" />
                       </div>
                     </div>
 
@@ -1341,10 +1357,10 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                   <Input v-else v-model="editForm.priceDiscovery" type="number" class="h-12 text-2xl font-black bg-muted/50 mt-2 shadow-inner border-border/60" />
                 </div>
 
-                <!-- Assigned Inspector -->
+                <!-- Inspected By -->
                 <div v-if="car.allocatedTo" class="mb-2 w-full">
                   <p class="text-[10px] text-muted-foreground mb-2 font-bold uppercase tracking-wider">
-                    Assigned Inspector
+                    Inspected By
                   </p>
                   <div class="flex items-center gap-3 p-3 rounded-lg border border-border/80 bg-background/50 shadow-sm overflow-hidden">
                     <Avatar class="size-8 shrink-0">
@@ -1352,18 +1368,10 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                         {{ (allocatedToName || 'UA').substring(0, 2).toUpperCase() }}
                       </AvatarFallback>
                     </Avatar>
-                    <div class="flex flex-col min-w-0">
+                    <div class="flex flex-col min-w-0 justify-center">
                       <span class="text-sm font-semibold text-foreground truncate" :title="allocatedToName">{{ allocatedToName }}</span>
-                      <span class="text-[10px] text-muted-foreground truncate" :title="car.allocatedTo">{{ car.allocatedTo }}</span>
                     </div>
                   </div>
-                </div>
-
-                <div v-if="!props.readonly" class="mt-6 flex flex-col gap-3">
-                  <Separator />
-                  <p class="text-[10px] text-muted-foreground text-center font-medium uppercase tracking-widest flex items-center justify-center gap-1.5">
-                    <Icon name="i-lucide-check-circle-2" class="size-3 text-emerald-500" /> Auto-saving enabled
-                  </p>
                 </div>
               </div>
             </div>
@@ -1378,14 +1386,16 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
               </CardHeader>
               <Separator />
               <CardContent class="pt-4 pb-5">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 xl:gap-6">
                   <template v-for="field in documentDetailFields" :key="field.key">
-                    <!-- IMAGE (multiple) field — same card style as exterior tabs -->
-                    <div v-if="field.type === 'multiple'" class="sm:col-span-2 lg:col-span-3">
+                    <!-- IMAGE / COMBINED Box field — same card style as exterior tabs -->
+                    <div v-if="field.type === 'multiple' || field.type === 'combinedBox'">
                       <div class="rounded-xl border bg-card shadow-sm flex flex-row overflow-hidden min-h-[160px] h-[160px]">
-                        <!-- Left: Label -->
-                        <div class="flex flex-col w-[200px] xl:w-[240px] shrink-0 border-r border-border/50 bg-muted/10">
-                          <div class="h-full w-full flex flex-col bg-white/50 dark:bg-black/20">
+                        <!-- Left Panel -->
+                        <div class="flex flex-col shrink-0 border-r border-border/50 bg-muted/10" :class="field.hideImages ? 'flex-1' : (field.type === 'combinedBox' ? 'w-[280px] xl:w-[320px]' : 'w-[200px] xl:w-[240px]')">
+                          <!-- Default multiple UI -->
+                          <!-- Default multiple UI -->
+                          <div v-if="field.type === 'multiple'" class="h-full w-full flex flex-col bg-white/50 dark:bg-black/20">
                             <div class="px-3 py-2 border-b border-border/50 flex items-center justify-center bg-muted/30 h-10 shrink-0">
                               <span class="text-[11px] font-bold uppercase tracking-wider text-muted-foreground truncate">{{ field.label }}</span>
                             </div>
@@ -1394,9 +1404,46 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                               <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-widest leading-tight">Images<br>Section</span>
                             </div>
                           </div>
+                          <!-- Combined Box UI -->
+                          <div v-else-if="field.type === 'combinedBox'" class="flex h-full w-full flex-col overflow-hidden leading-snug">
+                            <div class="flex-1 w-full flex flex-col overflow-y-auto">
+                              <template v-for="partItem in field.splitParts" :key="partItem.key">
+                                <div class="flex-1 px-3 py-2 border-b border-border/50 last:border-b-0 flex flex-col justify-center gap-1.5 overflow-hidden bg-white/40 dark:bg-black/20">
+                                  <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 truncate w-full" :title="partItem.label">{{ partItem.label }}</span>
+                                  <div class="w-full min-w-0 pointer-events-auto flex items-center">
+                                    <p v-if="props.readonly" class="text-xs font-medium px-2 py-1.5 bg-muted/50 rounded border border-border/50 truncate w-full">
+                                      {{ partItem.type === 'date' ? (formatDateMMDDYYYY(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')) || '—') : (editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '') || '—') }}
+                                    </p>
+                                    <template v-else>
+                                      <Input v-if="partItem.type === 'date'" :model-value="formatDateYYYYMMDD(editForm[partItem.key])" type="date" class="h-8 text-xs font-medium w-full bg-background" @update:model-value="editForm[partItem.key] = $event" />
+                                      <Input v-else-if="partItem.type === 'single'" v-model="editForm[partItem.key]" class="h-8 text-xs font-medium w-full bg-background" />
+                                      <SearchableSelect v-else v-model="editForm[partItem.key]" :options="getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />
+                                    </template>
+                                  </div>
+                                </div>
+                              </template>
+                            </div>
+                          </div>
                         </div>
-                        <!-- Right: Image Strip -->
-                        <div class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
+                        <!-- Right: Image Strip OR Alternate Config -->
+                        <div v-if="field.hideImages && field.rightParts" class="flex-1 flex flex-col overflow-y-auto">
+                          <template v-for="partItem in field.rightParts" :key="partItem.key">
+                            <div class="flex-1 px-3 py-2 border-b border-border/50 last:border-b-0 flex flex-col justify-center gap-1.5 overflow-hidden bg-white/40 dark:bg-black/20">
+                              <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 truncate w-full" :title="partItem.label">{{ partItem.label }}</span>
+                              <div class="w-full min-w-0 pointer-events-auto flex items-center">
+                                <p v-if="props.readonly" class="text-xs font-medium px-2 py-1.5 bg-muted/50 rounded border border-border/50 truncate w-full">
+                                  {{ partItem.type === 'date' ? (formatDateMMDDYYYY(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')) || '—') : (editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '') || '—') }}
+                                </p>
+                                <template v-else>
+                                  <Input v-if="partItem.type === 'date'" :model-value="formatDateYYYYMMDD(editForm[partItem.key])" type="date" class="h-8 text-xs font-medium w-full bg-background" @update:model-value="editForm[partItem.key] = $event" />
+                                  <Input v-else-if="partItem.type === 'single'" v-model="editForm[partItem.key]" class="h-8 text-xs font-medium w-full bg-background" />
+                                  <SearchableSelect v-else v-model="editForm[partItem.key]" :options="getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />
+                                </template>
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                        <div v-else class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
                           <div v-if="getImages(editForm, field.key, field.oldKey).length" class="flex-1 h-full w-full">
                             <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch">
                               <div
@@ -1406,7 +1453,10 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                                 @click="openLightboxUrls(getImages(editForm, field.key, field.oldKey), idx, field.label)"
                               >
                                 <img :src="imgUrl" :alt="field.label" class="w-full h-full object-cover select-none" loading="lazy">
-                                <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                <div class="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[8px] text-white font-medium tracking-wider uppercase pointer-events-none">
+                                  {{ field.label }} Image {{ idx + 1 }}
+                                </div>
+                                <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity z-10">
                                   <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(field.key, idx, field.oldKey)">
                                     <Icon name="i-lucide-refresh-cw" class="size-3.5" />
                                   </Button>
@@ -1418,13 +1468,19 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                               <!-- Add Photo Endcap -->
                               <div
                                 v-if="!props.readonly"
-                                class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer bg-muted/30 border-r border-border/20 last:border-r-0 flex flex-col items-center justify-center hover:bg-muted/50 transition-colors group/add"
+                                class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer bg-muted/30 border-r border-border/20 last:border-r-0 flex flex-col items-center justify-center hover:bg-muted/50 transition-colors group/add p-3 text-center"
                                 @click.stop="addImage(field.key)"
                               >
                                 <div class="size-10 rounded-full bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center mb-2 group-hover/add:scale-110 transition-transform">
                                   <Icon name="i-lucide-plus" class="size-5 text-primary" />
                                 </div>
-                                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Add Photo</span>
+                                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-tight">
+                                  Add<br>
+                                  <span v-if="field.type === 'combinedBox' || field.type === 'multiple'" class="text-[9px] font-black text-primary/70">
+                                    {{ field.label }}<br>Image {{ getImages(editForm, field.key, field.oldKey).length + 1 }}
+                                  </span>
+                                  <span v-else>Photo</span>
+                                </span>
                               </div>
                             </div>
                             <div v-if="getImages(editForm, field.key, field.oldKey).length > 1" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md text-[8px] text-white font-medium tracking-wider pointer-events-none">
@@ -1436,7 +1492,13 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                             <div class="size-12 rounded-full bg-muted/30 flex items-center justify-center">
                               <Icon name="i-lucide-image-plus" class="size-5 text-muted-foreground/50" />
                             </div>
-                            <span class="text-[11px] text-muted-foreground/60 font-bold tracking-widest uppercase">Click to add Photo</span>
+                            <span class="text-[11px] text-muted-foreground/60 font-bold tracking-widest uppercase text-center leading-relaxed">
+                              Click to add
+                              <template v-if="field.type === 'combinedBox' || field.type === 'multiple'">
+                                <br><span class="text-primary/70">{{ field.label }} Image 1</span>
+                              </template>
+                              <template v-else>Photo</template>
+                            </span>
                           </div>
                           <div v-else class="flex h-full w-full flex-col items-center justify-center bg-transparent gap-3 relative">
                             <div class="size-12 rounded-full bg-muted/30 flex items-center justify-center">
@@ -1697,10 +1759,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                                 @click="openLightboxUrls(getImages(editForm, group.key, group.oldKey), idx, group.label)"
                               >
                                 <img :src="imgUrl" :alt="group.label" class="w-full h-full object-cover select-none" loading="lazy">
-                                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 pt-6 pointer-events-none">
-                                  <p class="text-[9px] text-white/90 font-medium uppercase tracking-wider truncate">
-                                    {{ group.label }}
-                                  </p>
+                                <div class="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[8px] text-white font-medium tracking-wider uppercase pointer-events-none">
+                                  {{ group.label }} Image {{ idx + 1 }}
                                 </div>
                                 <!-- Overlay Actions -->
                                 <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
@@ -1715,13 +1775,18 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                               <!-- Add Photo Endcap for this group -->
                               <div
                                 v-if="!props.readonly"
-                                class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer bg-muted/30 border-r border-border/20 flex flex-col items-center justify-center hover:bg-muted/50 transition-colors group/add"
+                                class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer bg-muted/30 border-r border-border/20 flex flex-col items-center justify-center hover:bg-muted/50 transition-colors group/add p-3 text-center"
                                 @click.stop="addImage(group.key)"
                               >
                                 <div class="size-10 rounded-full bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center mb-2 group-hover/add:scale-110 transition-transform">
                                   <Icon name="i-lucide-plus" class="size-5 text-primary" />
                                 </div>
-                                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-center px-4 leading-tight">Add {{ group.label }}</span>
+                                <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-tight">
+                                  Add<br>
+                                  <span class="text-[9px] font-black text-primary/70">
+                                    {{ group.label }}<br>Image {{ getImages(editForm, group.key, group.oldKey).length + 1 }}
+                                  </span>
+                                </span>
                               </div>
                             </template>
                           </div>
