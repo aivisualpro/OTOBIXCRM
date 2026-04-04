@@ -91,7 +91,7 @@ async function saveQC(silent = false) {
     const edited = editForm.value || {}
 
     for (const key of Object.keys(edited)) {
-      if (key === '_id' || key === 'id' || key === 'qcLogs' || key === 'logs')
+      if (key === '_id' || key === 'id' || key === 'qcLogs' || key === 'logs' || key === 'qcLog')
         continue
       const oldStr = JSON.stringify(original[key])
       const newStr = JSON.stringify(edited[key])
@@ -586,7 +586,7 @@ const steeringSuspensionBrakesParts = [
   ] },
   { key: 'split_ssb4', hasNoImages: true, splitParts: [
     { key: 'driveTrainDropdownList', oldKey: 'new', label: 'Drive Train', dropdownName: 'Drive Train' },
-    { key: 'commentsOnTransmissionDropdownList', oldKey: 'commentsOnTransmission', label: 'Comment on Transmission', dropdownName: 'Comment on Transmission' },
+    { key: 'commentsOnTransmissionDropdownList', oldKey: 'commentsOnTransmission', label: 'Comment on Transmission', dropdownName: 'Comments On Transmission' },
   ] },
 
   { key: 'odometerReadingAfterTestDriveInKms', oldKey: 'new', imageKey: 'odometerReadingAfterTestDriveImages', oldImageKey: 'new', label: 'Odometer Reading after Test Drive', inputType: 'number' },
@@ -1774,7 +1774,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
               </CardHeader>
               <Separator />
               <CardContent class="pt-4 pb-5">
-                <div v-if="!car?.qcLogs || car.qcLogs.length === 0" class="flex flex-col items-center justify-center py-12 px-4 text-center rounded-lg border border-dashed border-border bg-muted/20">
+                <div v-if="!car?.qcLog || car.qcLog.length === 0" class="flex flex-col items-center justify-center py-12 px-4 text-center rounded-lg border border-dashed border-border bg-muted/20">
                   <div class="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
                     <Icon name="i-lucide-file-clock" class="size-6 text-muted-foreground" />
                   </div>
@@ -1786,7 +1786,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                   </p>
                 </div>
                 <div v-else class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
-                  <div v-for="(log, idx) in [...car.qcLogs].reverse()" :key="idx" class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                  <div v-for="(log, idx) in [...(car.qcLog || [])].reverse()" :key="idx" class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                     <div class="flex items-center justify-center w-10 h-10 rounded-full border border-primary/30 bg-background shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
                       <Icon name="i-lucide-user-cog" class="size-4 text-primary" />
                     </div>

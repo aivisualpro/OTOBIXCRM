@@ -86,9 +86,20 @@ export default defineEventHandler(async (event) => {
     const actualDoc = result.value || result
     const apptId = actualDoc.appointmentId || oldDoc.appointmentId
     if (apptId) {
+      const carsUpdateObj: Record<string, any> = { $set: { ...updates, appointmentId: apptId } }
+      if (changes.length > 0) {
+        carsUpdateObj.$push = {
+          qcLog: {
+            timestamp: updates.updatedAt,
+            changedBy,
+            changes,
+          }
+        }
+      }
+
       await db.collection('cars').updateOne(
         { appointmentId: apptId },
-        { $set: { ...updates, appointmentId: apptId } },
+        carsUpdateObj,
         { upsert: true },
       )
     }
