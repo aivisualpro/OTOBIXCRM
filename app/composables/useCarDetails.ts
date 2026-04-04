@@ -20,7 +20,7 @@ export function useCarDetails() {
     try {
       const response = await $fetch<CarDetailsResponse>(`/api/leads/${carId}`, {
         retry: 0,
-        timeout: 15000
+        timeout: 15000,
       })
 
       carDetails.value = response.carDetails || response

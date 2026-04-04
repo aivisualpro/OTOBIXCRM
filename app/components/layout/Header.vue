@@ -39,7 +39,7 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
             <Button v-if="headerState.showBackButton" variant="ghost" size="icon" class="size-8 text-muted-foreground hover:text-foreground shrink-0 hidden lg:flex border border-border/50 bg-background hover:bg-muted" @click="$router.back()">
               <Icon name="i-lucide-arrow-left" class="size-4" />
             </Button>
-            
+
             <div
               v-if="headerState.icon"
               class="size-8 rounded-xl flex items-center justify-center shrink-0 border border-primary/10 shadow-sm transition-all"

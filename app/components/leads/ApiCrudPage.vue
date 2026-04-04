@@ -139,25 +139,27 @@ const inspectors = computed(() =>
 onMounted(() => fetchAllUsers())
 
 function getUserLabel(emailOrName: string) {
-  if (!emailOrName) return '—'
+  if (!emailOrName)
+    return '—'
   const val = String(emailOrName).trim().toLowerCase()
   const found = allUsers.value.find((u: any) =>
     String(u.email || '').toLowerCase() === val
     || String(u.userName || '').toLowerCase() === val
-    || String(u.emailAddress || '').toLowerCase() === val
+    || String(u.emailAddress || '').toLowerCase() === val,
   )
-  
+
   let resolvedName = ''
   if (found) {
     resolvedName = found.fullName || found.userName || found.name || ''
   }
-  
+
   if (!resolvedName && val.includes('@')) {
     // Graceful fallback: 'sanat.das@otobix.in' -> 'Sanat Das'
-    resolvedName = val.split('@')[0]?.replace(/[\._]/g, ' ') || ''
+    resolvedName = val.split('@')[0]?.replace(/[._]/g, ' ') || ''
   }
-  
-  if (!resolvedName) resolvedName = emailOrName
+
+  if (!resolvedName)
+    resolvedName = emailOrName
 
   // Format to standard Title Case (e.g. Sanat Das)
   return resolvedName
@@ -211,13 +213,13 @@ async function confirmReInspection() {
     return
   }
   const lead = inspectedActionLead.value
-  
+
   await doStatusUpdate(lead, {
     inspectionStatus: 'Re-Inspection',
     reAllocatedTo: reAllocatedTo.value,
     reInspectionDateTime: reInspectionDateTime.value,
   })
-  
+
   showReInspectionDialog.value = false
   inspectedActionLead.value = null
   reAllocatedTo.value = ''
@@ -1520,8 +1522,8 @@ function getInitials(name: string): string {
                     :key="n"
                     type="button"
                     class="flex-1 rounded-md text-sm font-bold transition-all duration-200 border flex items-center justify-center gap-1"
-                    :class="Number(formData[field.key]) === n 
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-600/50 scale-[1.02]' 
+                    :class="Number(formData[field.key]) === n
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-1 ring-blue-600/50 scale-[1.02]'
                       : 'bg-muted/30 text-muted-foreground border-border hover:bg-muted'"
                     @click="formData[field.key] = n"
                   >
@@ -1829,7 +1831,9 @@ function getInitials(name: string): string {
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" @click="showInspectedActionDialog = false">Cancel</Button>
+          <Button variant="ghost" @click="showInspectedActionDialog = false">
+            Cancel
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1884,7 +1888,9 @@ function getInitials(name: string): string {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" @click="showReInspectionDialog = false">Cancel</Button>
+          <Button variant="outline" @click="showReInspectionDialog = false">
+            Cancel
+          </Button>
           <Button :disabled="!reAllocatedTo || !reInspectionDateTime || isUpdatingStatus" class="bg-blue-600 hover:bg-blue-700 text-white" @click="confirmReInspection">
             <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
             Confirm Re-Inspection

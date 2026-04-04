@@ -89,19 +89,41 @@ export default defineEventHandler(async (event) => {
       await db.collection('cars').updateOne(
         { appointmentId: apptId },
         { $set: { ...updates, appointmentId: apptId } },
-        { upsert: true }
+        { upsert: true },
       )
     }
 
     // Sync to AppSheet ONLY if telecalling-relevant fields changed (not image/QC-only changes)
     // The FIELD_MAP in appsheet.ts defines which fields matter to telecalling
     const APPSHEET_FIELDS = new Set([
-      'appointmentId', 'ownerName', 'customerContactNumber', 'make', 'model', 'variant',
-      'yearOfManufacture', 'odometerReadingInKms', 'ownershipSerialNumber', 'vehicleStatus',
-      'city', 'zipCode', 'inspectionAddress', 'inspectionStatus', 'priority',
-      'appointmentSource', 'allocatedTo', 'repName', 'repContact', 'bankSource',
-      'ncdUcdName', 'referenceName', 'remarks', 'emailAddress', 'createdAt',
-      'otherSource', 'inspectionDateTime', 'approvalStatus',
+      'appointmentId',
+      'ownerName',
+      'customerContactNumber',
+      'make',
+      'model',
+      'variant',
+      'yearOfManufacture',
+      'odometerReadingInKms',
+      'ownershipSerialNumber',
+      'vehicleStatus',
+      'city',
+      'zipCode',
+      'inspectionAddress',
+      'inspectionStatus',
+      'priority',
+      'appointmentSource',
+      'allocatedTo',
+      'repName',
+      'repContact',
+      'bankSource',
+      'ncdUcdName',
+      'referenceName',
+      'remarks',
+      'emailAddress',
+      'createdAt',
+      'otherSource',
+      'inspectionDateTime',
+      'approvalStatus',
     ])
     const hasAppSheetChange = changes.some((c: any) => APPSHEET_FIELDS.has(c.field))
     if (hasAppSheetChange) {

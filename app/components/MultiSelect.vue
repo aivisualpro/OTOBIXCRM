@@ -18,15 +18,18 @@ const open = ref(false)
 const selectedValues = computed({
   get: () => {
     let vals: string[] = []
-    if (Array.isArray(props.modelValue)) vals = props.modelValue
-    else if (typeof props.modelValue === 'string' && props.modelValue) vals = [props.modelValue]
-    
+    if (Array.isArray(props.modelValue))
+      vals = props.modelValue
+    else if (typeof props.modelValue === 'string' && props.modelValue)
+      vals = [props.modelValue]
+
     return vals.flatMap(v => typeof v === 'string' ? v.split(',') : String(v)).map(s => s.trim()).filter(Boolean)
   },
   set: (val: string[]) => {
-    if (Array.isArray(props.modelValue)) emit('update:modelValue', val)
+    if (Array.isArray(props.modelValue))
+      emit('update:modelValue', val)
     else emit('update:modelValue', val.join(', '))
-  }
+  },
 })
 
 function isSelected(val: string) {
@@ -38,16 +41,17 @@ function toggleOption(val: string) {
   const current = [...selectedValues.value]
   const target = String(val).trim().toLowerCase()
   const idx = current.findIndex(v => v.toLowerCase() === target)
-  
-  if (idx === -1) current.push(val)
+
+  if (idx === -1)
+    current.push(val)
   else current.splice(idx, 1)
-  
+
   selectedValues.value = current
 }
 
 const selectedLabels = computed(() => {
   return selectedValues.value
-    .map(v => {
+    .map((v) => {
       const match = props.options.find(o => String(o.value).trim().toLowerCase() === v.toLowerCase())
       return match ? match.label : v
     })
@@ -80,15 +84,15 @@ const selectedLabels = computed(() => {
               v-for="opt in options"
               :key="opt.value"
               :value="opt.value"
-              @select="toggleOption(String(opt.value))"
               class="w-full flex"
+              @select="toggleOption(String(opt.value))"
             >
               <slot name="option" :option="opt" :selected="selectedValues.includes(String(opt.value)) || isSelected(String(opt.value))">
                 <Icon
                   name="i-lucide-check"
                   :class="cn(
                     'mr-2 size-4',
-                    selectedValues.includes(String(opt.value)) || isSelected(String(opt.value)) ? 'opacity-100 text-primary' : 'opacity-0'
+                    selectedValues.includes(String(opt.value)) || isSelected(String(opt.value)) ? 'opacity-100 text-primary' : 'opacity-0',
                   )"
                 />
                 {{ opt.label }}

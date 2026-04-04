@@ -58,11 +58,11 @@ function handleSelect(val: string) {
               :value="opt.value"
               @select="handleSelect(String(opt.value))"
             >
-              <div 
-                class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded shadow-sm w-full transition-all duration-200" 
+              <div
+                class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded shadow-sm w-full transition-all duration-200"
                 :class="[
                   getConditionStyle(opt.label).bg,
-                  String(modelValue) === String(opt.value) ? '!border-foreground ring-1 ring-foreground ring-offset-1 ring-offset-background font-black scale-[1.02] z-10' : 'opacity-85 hover:opacity-100'
+                  String(modelValue) === String(opt.value) ? '!border-foreground ring-1 ring-foreground ring-offset-1 ring-offset-background font-black scale-[1.02] z-10' : 'opacity-85 hover:opacity-100',
                 ]"
               >
                 <Icon :name="getConditionStyle(opt.label).icon" class="size-4 shrink-0" />
