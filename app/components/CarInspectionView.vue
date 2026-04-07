@@ -243,23 +243,24 @@ async function confirmQCApproval() {
   }
 
   editForm.value.priceDiscovery = qcForm.value.priceDiscovery
-  
+
   const loadingToast = toast.loading('Scheduling auction and completing QC...')
   try {
     // 1. External Integration - Create/schedule auction
     await scheduleAuctionFromModal()
-    
+
     // 2. Local State - Only set to 'Approved' IF auction was successful
     editForm.value.approvalStatus = 'Approved'
-    
+
     // 3. Database DB Save - This will hit /api/leads/update which updates BOTH cars & telecalling collections
     await saveQC(true)
-    
+
     showQCModal.value = false
     toast.dismiss(loadingToast)
     toast.success('Vehicle successfully marked as QC Approved and Auction Scheduled!')
     await fetchCarDetails(carId)
-  } catch (err: any) {
+  }
+  catch (err: any) {
     toast.dismiss(loadingToast)
     toast.error(err?.message || 'Failed to approve or schedule.')
   }
@@ -278,163 +279,185 @@ const KONG_TOKEN = 'QmFwR0RjLjJmMzkyMjJw98UNpMGFqpgGJV6BXgQ1ye12d100f5c'
 const isGeneratingPdf = ref(false)
 
 function _conditionPdfCss(val: any) {
-  if (val === null || val === undefined || val === '') return ''
+  if (val === null || val === undefined || val === '')
+    return ''
   const v = String(val).toLowerCase()
-  if (v.includes('not applicable')) return 'bg-[#fde047] text-[#000000]'
-  if (v === 'okay' || v === 'working' || v === 'effective' || v === 'no mismatch' || v === 'no blow by' || v === 'yes') return 'bg-[#6ee7b7] text-[#000000]'
-  if (v.includes('scratched') || v.includes('damaged') || v.includes('broken') || v.includes('rusted') || v.includes('weak') || v.includes('torn') || v.includes('worn') || v.includes('missing') || v.includes('bad') || v.includes('abnormal')) return 'bg-[#fca5a5] text-[#000000]'
-  if (v.includes('repainted') || v.includes('repaired') || v.includes('changed') || v.includes('low') || v.includes('dirty') || v.includes('leaking') || v.includes('dented')) return 'bg-[#fecdd3] text-[#000000]'
-  if (v.includes('hazy') || v.includes('fade')) return 'bg-[#fed7aa] text-[#000000]'
+  if (v.includes('not applicable'))
+    return 'bg-[#fde047] text-[#000000]'
+  if (v === 'okay' || v === 'working' || v === 'effective' || v === 'no mismatch' || v === 'no blow by' || v === 'yes')
+    return 'bg-[#6ee7b7] text-[#000000]'
+  if (v.includes('scratched') || v.includes('damaged') || v.includes('broken') || v.includes('rusted') || v.includes('weak') || v.includes('torn') || v.includes('worn') || v.includes('missing') || v.includes('bad') || v.includes('abnormal'))
+    return 'bg-[#fca5a5] text-[#000000]'
+  if (v.includes('repainted') || v.includes('repaired') || v.includes('changed') || v.includes('low') || v.includes('dirty') || v.includes('leaking') || v.includes('dented'))
+    return 'bg-[#fecdd3] text-[#000000]'
+  if (v.includes('hazy') || v.includes('fade'))
+    return 'bg-[#fed7aa] text-[#000000]'
   return ''
 }
 
 function formatPdfValue(val: any): string {
-  if (val === null || val === undefined || val === '') return '—'
-  if (Array.isArray(val)) return val.join(', ')
+  if (val === null || val === undefined || val === '')
+    return '—'
+  if (Array.isArray(val))
+    return val.join(', ')
   const str = String(val)
   try {
-     const parsed = JSON.parse(str)
-     if (Array.isArray(parsed)) return parsed.join(', ')
-  } catch(e) {}
+    const parsed = JSON.parse(str)
+    if (Array.isArray(parsed))
+      return parsed.join(', ')
+  }
+  catch (e) {}
   return str
 }
 
 function getPdfFields(partsArray: any[]) {
-  if (!partsArray) return []
+  if (!partsArray)
+    return []
   return partsArray.flatMap((p: any) => p.splitParts ? p.splitParts : [p]).filter((p: any) => !p.isVideoBox && p.label && !p.isImageOnly)
 }
 
 const allPdfImages = computed(() => {
   const imgs: { url: string, label: string }[] = []
-  if (!car.value) return imgs;
-  const c = car.value;
+  if (!car.value)
+    return imgs
+  const c = car.value
 
-  documentDetailFields.forEach(field => {
+  documentDetailFields.forEach((field) => {
     if (field.type === 'combinedBox' && field.key) {
-      getImages(c, field.key, field.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${field.label || field.key} ${i+1}`}))
+      getImages(c, field.key, field.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${field.label || field.key} ${i + 1}` }))
     }
   })
 
-  exteriorSections.forEach(sec => {
+  exteriorSections.forEach((sec) => {
     sec.parts.forEach((part: any) => {
       if (part.imageKey) {
-        getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
-      } else if (part.imageGroups) {
+        getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
+      }
+      else if (part.imageGroups) {
         part.imageGroups.forEach((ig: any) => {
-          getImages(c, ig.key, ig.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${ig.label} ${i+1}`}))
+          getImages(c, ig.key, ig.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${ig.label} ${i + 1}` }))
         })
-      } else if (part.isImageOnly) {
-         getImages(c, part.key, part.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
+      }
+      else if (part.isImageOnly) {
+        getImages(c, part.key, part.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
       }
     })
   })
 
-  engineParts.forEach(part => {
-    if (part.imageKey) getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
+  engineParts.forEach((part) => {
+    if (part.imageKey)
+      getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
   })
-  electricalParts.forEach(part => {
-    if (part.imageKey) getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
+  electricalParts.forEach((part) => {
+    if (part.imageKey)
+      getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
   })
-  interiorParts.forEach(part => {
+  interiorParts.forEach((part) => {
     if (part.imageKey) {
-       getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
-    } else if (part.imageGroups) {
-       part.imageGroups.forEach((ig: any) => {
-          getImages(c, ig.key, ig.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${ig.label} ${i+1}`}))
-       })
+      getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
+    }
+    else if (part.imageGroups) {
+      part.imageGroups.forEach((ig: any) => {
+        getImages(c, ig.key, ig.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${ig.label} ${i + 1}` }))
+      })
     }
   })
-  steeringSuspensionBrakesParts.forEach(part => {
-    if (part.imageKey) getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
+  steeringSuspensionBrakesParts.forEach((part) => {
+    if (part.imageKey)
+      getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
   })
-  
+
   // ensure no video links end up in the pdf output array (which breaks canvas)
   return imgs.filter(img => !img.url.match(/\.(mp4|webm|ogg|mov)$/i))
 })
 
 async function downloadPDF() {
-  isGeneratingPdf.value = true;
-  await nextTick();
-  await new Promise(r => setTimeout(r, 200)); // give DOM time to append images structurally
-  
-  const element = document.getElementById('pdf-container');
+  isGeneratingPdf.value = true
+  await nextTick()
+  await new Promise(r => setTimeout(r, 200)) // give DOM time to append images structurally
+
+  const element = document.getElementById('pdf-container')
   if (!element) {
-    isGeneratingPdf.value = false;
+    isGeneratingPdf.value = false
     toast.error('Template missing!')
-    return;
+    return
   }
-  
+
   const loadingToast = toast.loading('Generating PDF Report... Please wait.')
-  
+
   // MUST INTERCEPT COMPUTED STYLES: 
   // Tailwind v4 uses OKLCH natively, which immediately crashes html2canvas 1.4.1.
-  const originalGetComputedStyle = window.getComputedStyle;
-  window.getComputedStyle = function(el, pseudoElt) {
-    const css = originalGetComputedStyle(el, pseudoElt);
+  const originalGetComputedStyle = window.getComputedStyle
+  window.getComputedStyle = function (el, pseudoElt) {
+    const css = originalGetComputedStyle(el, pseudoElt)
     return new Proxy(css, {
       get(target, prop) {
         if (prop === 'getPropertyValue') {
-          return function(key: string) {
-            const val = target.getPropertyValue(key);
-            if (typeof val === 'string' && val.includes('oklch')) return 'rgb(128, 128, 128)';
-            return val;
+          return function (key: string) {
+            const val = target.getPropertyValue(key)
+            if (typeof val === 'string' && val.includes('oklch'))
+              return 'rgb(128, 128, 128)'
+            return val
           }
         }
-        const val = (target as any)[prop];
+        const val = (target as any)[prop]
         if (typeof val === 'string' && val.includes('oklch')) {
-          return 'rgb(128, 128, 128)';
+          return 'rgb(128, 128, 128)'
         }
         if (typeof val === 'function') {
-          return val.bind(target);
+          return val.bind(target)
         }
-        return val;
-      }
-    });
-  };
+        return val
+      },
+    })
+  }
 
   try {
     if (typeof window !== 'undefined' && !(window as any).html2pdf) {
       await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
+        const script = document.createElement('script')
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+        script.onload = resolve
+        script.onerror = reject
+        document.head.appendChild(script)
+      })
     }
 
     const opt = {
-      margin:       [5, 5, 5, 5],
-      filename:     `Inspection_Report_${car.value?.registrationNumber || car.value?.appointmentId}.pdf`,
-      image:        { type: 'jpeg', quality: 0.8 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
+      margin: [5, 5, 5, 5],
+      filename: `Inspection_Report_${car.value?.registrationNumber || car.value?.appointmentId}.pdf`,
+      image: { type: 'jpeg', quality: 0.8 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }
 
-    await (window as any).html2pdf().set(opt).from(element).save();
+    await (window as any).html2pdf().set(opt).from(element).save()
     toast.dismiss(loadingToast)
     toast.success('PDF Downloaded successfully!')
-  } catch (err) {
+  }
+  catch (err) {
     console.error('PDF Generation Error: ', err)
     toast.dismiss(loadingToast)
     toast.error('Failed to generate PDF')
-  } finally {
-    isGeneratingPdf.value = false;
-    window.getComputedStyle = originalGetComputedStyle;
+  }
+  finally {
+    isGeneratingPdf.value = false
+    window.getComputedStyle = originalGetComputedStyle
   }
 }
 
 async function scheduleAuctionFromModal() {
-  let startTimeDate;
+  let startTimeDate
   if (qcForm.value.auctionMode === 'makeLiveNow') {
     startTimeDate = new Date()
-  } else {
+  }
+  else {
     startTimeDate = new Date(qcForm.value.auctionStartTime)
   }
-  
+
   const durationMs = Number(qcForm.value.auctionDuration) * 60 * 60 * 1000
   const endTimeDate = new Date(startTimeDate.getTime() + durationMs)
-  
+
   const payload = {
     carId: car.value?.carObjectId, // Accurately identify the mongo document in the remote 'cars' collection
     auctionStartTime: startTimeDate.toISOString().replace('Z', '+00:00'),
@@ -448,10 +471,10 @@ async function scheduleAuctionFromModal() {
   const response = await fetch('https://ob-dealerapp-kong.onrender.com/api/otobix/schedule-auction', {
     method: 'POST',
     body: JSON.stringify(payload),
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${KONG_TOKEN}`, 
-      'token': KONG_TOKEN 
+      'Authorization': `Bearer ${KONG_TOKEN}`,
+      'token': KONG_TOKEN,
     },
   })
 
@@ -459,14 +482,15 @@ async function scheduleAuctionFromModal() {
     let errMsg = `Failed to schedule auction: ${response.status}`
     try {
       const data = await response.json()
-      if (data && data.message) errMsg = data.message
-    } catch {
+      if (data && data.message)
+        errMsg = data.message
+    }
+    catch {
       // ignore parsing error
     }
     throw new Error(errMsg)
   }
 }
-
 
 function extractPublicId(url: string) {
   try {
@@ -1407,8 +1431,12 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
           <div class="space-y-2">
             <label class="text-sm font-medium">Auction Mode</label>
             <select v-model="qcForm.auctionMode" class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-              <option value="makeLiveNow">Make Live Now</option>
-              <option value="scheduledForLater">Scheduled For Later</option>
+              <option value="makeLiveNow">
+                Make Live Now
+              </option>
+              <option value="scheduledForLater">
+                Scheduled For Later
+              </option>
             </select>
           </div>
 
@@ -1426,7 +1454,9 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
         </div>
 
         <DialogFooter class="sm:justify-end">
-          <Button variant="outline" @click="showQCModal = false">Cancel</Button>
+          <Button variant="outline" @click="showQCModal = false">
+            Cancel
+          </Button>
           <Button class="bg-emerald-500 hover:bg-emerald-600 focus:ring-emerald-500 text-white font-bold" @click="confirmQCApproval">
             Confirm & Approve
           </Button>
@@ -1485,7 +1515,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
             <Icon :name="tab.icon" class="size-4" />
             {{ tab.label }}
           </button>
-          
+
           <div class="ml-auto flex items-center shrink-0">
             <Button
               v-if="car.approvalStatus === 'Approved'"
@@ -1493,7 +1523,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
               variant="outline"
               @click="downloadPDF"
             >
-              <Icon :name="isGeneratingPdf ? 'i-lucide-loader-2' : 'i-lucide-file-down'" :class="{'animate-spin': isGeneratingPdf}" class="mr-1.5 size-4" />
+              <Icon :name="isGeneratingPdf ? 'i-lucide-loader-2' : 'i-lucide-file-down'" :class="{ 'animate-spin': isGeneratingPdf }" class="mr-1.5 size-4" />
               Download PDF
             </Button>
             <Button
@@ -1564,7 +1594,6 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
               <!-- MIDDLE: Data Grid -->
               <div class="flex-1 min-w-0 p-5 lg:p-6 lg:px-8 flex flex-col gap-6 z-10 relative">
-                
                 <!-- Stats Grid Layout -->
                 <div class="flex flex-col gap-3 mt-auto w-full">
                   <!-- Row 1: Make, Model, Variant, MFG Year -->
@@ -1662,7 +1691,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       <p class="text-[11px] text-muted-foreground mb-1.5 font-bold uppercase tracking-widest leading-none">
                         Ownership
                       </p>
-                      
+
                       <!-- Owner Name -->
                       <div class="relative z-10 w-full mb-3 flex-1 min-h-0 flex flex-col justify-center">
                         <div v-if="props.readonly" class="text-xl font-black text-foreground truncate uppercase tracking-tight" :title="car.registeredOwner">
@@ -1700,7 +1729,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                           </button>
                         </template>
                       </div>
-                      
+
                       <!-- Decorative background icon -->
                       <div class="absolute right-0 bottom-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none translate-x-3 translate-y-4">
                         <Icon name="i-lucide-users" class="size-24" />
@@ -1806,7 +1835,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                         </div>
                         <!-- Right: Image Strip OR Alternate Config -->
                         <div v-if="field.hideImages" class="flex-1 flex flex-col overflow-y-auto bg-muted/5 dark:bg-muted/10">
-                          <template v-if="field.rightParts" v-for="partItem in field.rightParts" :key="partItem.key">
+                          <template v-for="partItem in (field.rightParts || [])" :key="partItem.key">
                             <div class="flex-1 px-3 py-2 border-b border-border/50 last:border-b-0 flex flex-col justify-center gap-1.5 overflow-hidden bg-white/40 dark:bg-black/20">
                               <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 truncate w-full" :title="partItem.label">{{ partItem.label }}</span>
                               <div class="w-full min-w-0 pointer-events-auto flex items-center">
@@ -1907,7 +1936,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                         {{ getValuesArray(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')).join(', ') || '—' }}
                       </p>
                       <div v-else class="w-2/3">
-                        <MultiSelect :model-value="editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')" @update:model-value="editForm[field.key] = $event" :options="getOptions(field.dropdownName || '')" class="w-full">
+                        <MultiSelect :model-value="editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')" :options="getOptions(field.dropdownName || '')" class="w-full" @update:model-value="editForm[field.key] = $event">
                           <template #trigger>
                             <Button variant="outline" class="w-full h-8 flex justify-between items-center text-sm px-3 shadow-sm bg-transparent border-input text-foreground font-normal overflow-hidden group">
                               <span class="truncate pr-2 w-full text-left font-medium group-hover:text-primary transition-colors">
@@ -2072,8 +2101,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                           <template v-for="(renderPart, rIdx) in ((part as any).splitParts || [part])" :key="renderPart.key">
                             <div
                               class="flex flex-col shrink-0 bg-muted/10 relative"
-                                :class="[
-                                 (part as any).isVerticalSplit ? 'h-1/2 w-[200px] xl:w-[240px]' : (part as any).splitParts ? ((part as any).hasNoImages ? 'h-full w-1/2' : 'h-full w-[240px] xl:w-[280px]') : (renderPart as any).hasNoImages ? 'h-full w-full' : 'h-full w-[200px] xl:w-[240px]',
+                              :class="[
+                                (part as any).isVerticalSplit ? 'h-1/2 w-[200px] xl:w-[240px]' : (part as any).splitParts ? ((part as any).hasNoImages ? 'h-full w-1/2' : 'h-full w-[240px] xl:w-[280px]') : (renderPart as any).hasNoImages ? 'h-full w-full' : 'h-full w-[200px] xl:w-[240px]',
                                 rIdx === 0 && (part as any).splitParts && !(part as any).isVerticalSplit ? 'border-r border-border/50' : '',
                                 rIdx === 0 && (part as any).isVerticalSplit ? 'border-b border-border/50' : '',
                                 !((part as any).splitParts) && !(renderPart as any).hasNoImages ? 'border-r border-border/50' : '',
@@ -2594,18 +2623,20 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
             </div>
           </div>
           <div class="text-right">
-            <h1 class="text-xl font-bold text-blue-700 uppercase tracking-wide">Vehicle Inspection Report</h1>
+            <h1 class="text-xl font-bold text-blue-700 uppercase tracking-wide">
+              Vehicle Inspection Report
+            </h1>
             <p class="text-[12px] font-bold text-slate-700 mt-0.5">
               {{ car?.yearMonthOfManufacture ? new Date(car?.yearMonthOfManufacture).getFullYear() : '' }} {{ (car?.make || '').toUpperCase() }}, {{ (car?.model || '').toUpperCase() }}, {{ (car?.variant || '').toUpperCase() }}
             </p>
             <p class="text-[10px] text-slate-500">
-              Inspected: {{ formatDateMMDDYYYY(car?.inspectionDate || car?.createdAt) }} {{ car?.city ? ', ' + String(car.city).toUpperCase() : '' }}
+              Inspected: {{ formatDateMMDDYYYY(car?.inspectionDate || car?.createdAt) }} {{ car?.city ? `, ${String(car.city).toUpperCase()}` : '' }}
             </p>
           </div>
         </div>
 
         <!-- CAR MAIN PICS IN HEADER -->
-        <div class="flex gap-4 mb-6" v-if="(getImages(car, 'frontMain').length) || (getImages(car, 'rearMainImages', 'rearMain').length)">
+        <div v-if="(getImages(car, 'frontMain').length) || (getImages(car, 'rearMainImages', 'rearMain').length)" class="flex gap-4 mb-6">
           <div v-if="getImages(car, 'frontMain').length" class="flex-1 h-[60mm] bg-[#f9fafb] border border-gray-300 rounded overflow-hidden flex items-center justify-center p-1">
             <img :src="getImages(car, 'frontMain')[0]" class="w-full h-full object-contain" crossorigin="anonymous">
           </div>
@@ -2616,11 +2647,15 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
         <!-- A. GENERAL INFO & DOCS -->
         <div class="mb-6 break-inside-avoid">
-          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-2 rounded-t tracking-widest uppercase">A. GENERAL INFORMATION & DOCUMENTATION</h2>
+          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-2 rounded-t tracking-widest uppercase">
+            A. GENERAL INFORMATION & DOCUMENTATION
+          </h2>
           <!-- Table -->
           <div class="grid grid-cols-4 border-l border-t border-gray-300">
             <template v-for="fieldItem in documentDetailFields.flatMap(f => [...(f.splitParts || []), ...(f.rightParts || [])]).filter(f => f.label)" :key="fieldItem.key">
-              <div class="border-r border-b border-gray-300 p-1.5 text-[9px] bg-[#f8fafc] font-semibold text-[#1e293b]">{{ fieldItem.label }}</div>
+              <div class="border-r border-b border-gray-300 p-1.5 text-[9px] bg-[#f8fafc] font-semibold text-[#1e293b]">
+                {{ fieldItem.label }}
+              </div>
               <div class="border-r border-b border-gray-300 p-1.5 text-[9px] truncate">
                 {{ fieldItem.type === 'date' ? (formatDateMMDDYYYY(car?.[fieldItem.key] || car?.[fieldItem.oldKey]) || '—') : formatPdfValue(car?.[fieldItem.dropdownName || fieldItem.key] || car?.[fieldItem.key] || car?.[fieldItem.oldKey] || '') }}
               </div>
@@ -2630,16 +2665,21 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
         <!-- B. INSPECTION ITEMS -->
         <div class="mb-4">
-          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-4 rounded-t tracking-widest uppercase">B. INSPECTION INFORMATION</h2>
+          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-4 rounded-t tracking-widest uppercase">
+            B. INSPECTION INFORMATION
+          </h2>
           <div class="grid grid-cols-2 gap-x-6 gap-y-4">
-            
             <!-- EXTERIOR SECTIONS -->
             <template v-for="sec in exteriorSections" :key="sec.title">
               <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
-                <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">{{ sec.title }}</h3>
+                <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">
+                  {{ sec.title }}
+                </h3>
                 <div class="grid grid-cols-2">
                   <template v-for="part in getPdfFields(sec.parts)" :key="part.key">
-                    <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">{{ part.label }}</div>
+                    <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">
+                      {{ part.label }}
+                    </div>
                     <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
                       {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
                     </div>
@@ -2650,10 +2690,14 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
             <!-- ENGINE BAY -->
             <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
-              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">ENGINE BAY</h3>
+              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">
+                ENGINE BAY
+              </h3>
               <div class="grid grid-cols-2">
                 <template v-for="part in getPdfFields(engineParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">{{ part.label }}</div>
+                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">
+                    {{ part.label }}
+                  </div>
                   <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
                     {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
                   </div>
@@ -2663,10 +2707,14 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
             <!-- ELECTRICALS -->
             <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
-              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">ELECTRICALS</h3>
+              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">
+                ELECTRICALS
+              </h3>
               <div class="grid grid-cols-2">
                 <template v-for="part in getPdfFields(electricalParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">{{ part.label }}</div>
+                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">
+                    {{ part.label }}
+                  </div>
                   <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
                     {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
                   </div>
@@ -2676,10 +2724,14 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
             <!-- INTERIOR -->
             <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
-              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">INTERIOR</h3>
+              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">
+                INTERIOR
+              </h3>
               <div class="grid grid-cols-2">
                 <template v-for="part in getPdfFields(interiorParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">{{ part.label }}</div>
+                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">
+                    {{ part.label }}
+                  </div>
                   <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
                     {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
                   </div>
@@ -2689,28 +2741,35 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
             <!-- STEERING, SUSPENSION & BRAKES -->
             <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
-              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">STEERING, SUSPENSION & BRAKES</h3>
+              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">
+                STEERING, SUSPENSION & BRAKES
+              </h3>
               <div class="grid grid-cols-2">
                 <template v-for="part in getPdfFields(steeringSuspensionBrakesParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">{{ part.label }}</div>
+                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">
+                    {{ part.label }}
+                  </div>
                   <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
                     {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
                   </div>
                 </template>
               </div>
             </div>
-
           </div>
         </div>
 
         <!-- C. VEHICLE IMAGES -->
-        <div class="html2pdf__page-break"></div>
+        <div class="html2pdf__page-break" />
         <div class="mt-8 mb-4">
-          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-6 rounded-t uppercase tracking-widest">C. VEHICLE IMAGES</h2>
+          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-6 rounded-t uppercase tracking-widest">
+            C. VEHICLE IMAGES
+          </h2>
           <div class="grid grid-cols-3 gap-4">
             <template v-for="(img, idx) in allPdfImages" :key="idx">
               <div class="flex flex-col border border-gray-300 rounded shadow-sm overflow-hidden break-inside-avoid h-[45mm]">
-                <div class="bg-[#f8fafc] text-center text-[8px] font-bold py-1.5 px-1 uppercase truncate border-b border-gray-300 text-[#1e293b]">{{ img.label }}</div>
+                <div class="bg-[#f8fafc] text-center text-[8px] font-bold py-1.5 px-1 uppercase truncate border-b border-gray-300 text-[#1e293b]">
+                  {{ img.label }}
+                </div>
                 <div class="flex-1 bg-white flex items-center justify-center p-1 overflow-hidden">
                   <img :src="img.url" class="max-h-full max-w-full object-contain" crossorigin="anonymous">
                 </div>
@@ -2718,17 +2777,16 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
             </template>
           </div>
         </div>
-
       </div>
     </div>
   </div>
 </template>
 
 <style>
-/* 
+/*
   CRITICAL: OVERRIDE ALL OKLCH TAILWIND COLORS FOR HTML2CANVAS 1.4.1
   Tailwind v4 defaults to `oklch()`, which html2canvas fundamentally cannot parse.
-  We are forcefully resetting the background and text color variables 
+  We are forcefully resetting the background and text color variables
   within the PDF block to standard hexadecimal to prevent rendering crash loops.
 */
 #pdf-container, #pdf-container * {

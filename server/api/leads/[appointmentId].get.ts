@@ -15,19 +15,42 @@ export default defineEventHandler(async (event) => {
 
     // The FIELD_MAP in appsheet.ts defines which fields matter to telecalling
     const APPSHEET_FIELDS = new Set([
-      'appointmentId', 'ownerName', 'customerContactNumber', 'make', 'model',
-      'variant', 'yearOfManufacture', 'odometerReadingInKms', 'ownershipSerialNumber',
-      'vehicleStatus', 'city', 'zipCode', 'inspectionAddress', 'inspectionStatus',
-      'priority', 'appointmentSource', 'allocatedTo', 'repName', 'repContact',
-      'bankSource', 'ncdUcdName', 'referenceName', 'remarks', 'emailAddress',
-      'createdAt', 'otherSource', 'inspectionDateTime', 'approvalStatus', 'updatedAt'
+      'appointmentId',
+      'ownerName',
+      'customerContactNumber',
+      'make',
+      'model',
+      'variant',
+      'yearOfManufacture',
+      'odometerReadingInKms',
+      'ownershipSerialNumber',
+      'vehicleStatus',
+      'city',
+      'zipCode',
+      'inspectionAddress',
+      'inspectionStatus',
+      'priority',
+      'appointmentSource',
+      'allocatedTo',
+      'repName',
+      'repContact',
+      'bankSource',
+      'ncdUcdName',
+      'referenceName',
+      'remarks',
+      'emailAddress',
+      'createdAt',
+      'otherSource',
+      'inspectionDateTime',
+      'approvalStatus',
+      'updatedAt',
     ])
 
     // Merge them, prioritizing the CRM (telecalling) edits ONLY for core telecalling fields.
     // This prevents historical garbage (like inspection images accidentally saved to telecallings)
     // from overriding the true source of truth in the 'cars' collection.
     const record = { ...(carRecord || {}) }
-    
+
     // Explicitly retain the native 'cars' collection ObjectId for third-party operations like auction scheduling
     if (carRecord && carRecord._id) {
       record.carObjectId = carRecord._id

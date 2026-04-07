@@ -56,12 +56,35 @@ export default defineEventHandler(async (event) => {
 
     // The FIELD_MAP in appsheet.ts defines which fields matter to telecalling
     const APPSHEET_FIELDS = new Set([
-      'appointmentId', 'ownerName', 'customerContactNumber', 'make', 'model',
-      'variant', 'yearOfManufacture', 'odometerReadingInKms', 'ownershipSerialNumber',
-      'vehicleStatus', 'city', 'zipCode', 'inspectionAddress', 'inspectionStatus',
-      'priority', 'appointmentSource', 'allocatedTo', 'repName', 'repContact',
-      'bankSource', 'ncdUcdName', 'referenceName', 'remarks', 'emailAddress',
-      'createdAt', 'otherSource', 'inspectionDateTime', 'approvalStatus', 'updatedAt'
+      'appointmentId',
+      'ownerName',
+      'customerContactNumber',
+      'make',
+      'model',
+      'variant',
+      'yearOfManufacture',
+      'odometerReadingInKms',
+      'ownershipSerialNumber',
+      'vehicleStatus',
+      'city',
+      'zipCode',
+      'inspectionAddress',
+      'inspectionStatus',
+      'priority',
+      'appointmentSource',
+      'allocatedTo',
+      'repName',
+      'repContact',
+      'bankSource',
+      'ncdUcdName',
+      'referenceName',
+      'remarks',
+      'emailAddress',
+      'createdAt',
+      'otherSource',
+      'inspectionDateTime',
+      'approvalStatus',
+      'updatedAt',
     ])
 
     const telecallingUpdates: Record<string, any> = {}
@@ -73,17 +96,25 @@ export default defineEventHandler(async (event) => {
 
     // Natively cast specific string fields to MongoDB Date format if they are logically dates
     const DATE_FIELDS = new Set([
-      'registrationDate', 'fitnessTill', 'yearMonthOfManufacture',
-      'taxValidTill', 'insuranceValidity', 'permitValidity',
-      'partyPeshiDate', 'cngCylinderTestedDate', 'cngRegistrationDate',
-      'batteryReplacedDate', 'createdAt', 'updatedAt'
+      'registrationDate',
+      'fitnessTill',
+      'yearMonthOfManufacture',
+      'taxValidTill',
+      'insuranceValidity',
+      'permitValidity',
+      'partyPeshiDate',
+      'cngCylinderTestedDate',
+      'cngRegistrationDate',
+      'batteryReplacedDate',
+      'createdAt',
+      'updatedAt',
     ])
 
     for (const k of Object.keys(updates)) {
       if (DATE_FIELDS.has(k) && typeof updates[k] === 'string') {
         const val = updates[k]
         // If it looks like a valid date format and isn't a text placeholder like "Not Applicable"
-        if (val && !isNaN(Date.parse(val)) && !val.toLowerCase().includes('applicable')) {
+        if (val && !Number.isNaN(Date.parse(val)) && !val.toLowerCase().includes('applicable')) {
           updates[k] = new Date(val)
         }
       }
@@ -95,11 +126,11 @@ export default defineEventHandler(async (event) => {
     // Add to activity log dynamically
     if (changes.length > 0) {
       telecallingUpdateQuery.$push = {
-        logs: { timestamp: updates.updatedAt, changedBy, changes }
+        logs: { timestamp: updates.updatedAt, changedBy, changes },
       }
       carsUpdateQuery.$push = {
         qcLog: { timestamp: updates.updatedAt, changedBy, changes },
-        qcLogs: { timestamp: updates.updatedAt, changedBy, changes }
+        qcLogs: { timestamp: updates.updatedAt, changedBy, changes },
       }
     }
 
@@ -113,7 +144,8 @@ export default defineEventHandler(async (event) => {
         telecallingUpdateQuery,
         { returnDocument: 'after' },
       )
-    } else {
+    }
+    else {
       result = await db.collection('telecallings').findOne(filter)
     }
 

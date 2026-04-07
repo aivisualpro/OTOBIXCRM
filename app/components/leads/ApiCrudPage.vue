@@ -226,7 +226,7 @@ async function confirmReInspection() {
   reInspectionDateTime.value = ''
 }
 
-function openQcReviewDialog(lead: any) {
+function _openQcReviewDialog(lead: any) {
   qcReviewingLead.value = lead
   showQcReviewDialog.value = true
 }

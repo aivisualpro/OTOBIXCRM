@@ -18,7 +18,7 @@ async function getDb(event: any) {
   if (!_client) {
     _client = new MongoClient(uri)
     await _client.connect()
-    console.log(`[API:dropdowns] Connected to MongoDB → DB: ${dbName}`)
+    console.warn(`[API:dropdowns] Connected to MongoDB → DB: ${dbName}`)
   }
 
   return _client.db(dbName)

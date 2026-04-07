@@ -19,9 +19,9 @@ async function testUpload() {
     },
   })
 
-  console.log('Status Base Bearer:', response.status)
+  console.warn('Status Base Bearer:', response.status)
   const text = await response.text()
-  console.log('Body:', text)
+  console.warn('Body:', text)
 }
 
 testUpload()

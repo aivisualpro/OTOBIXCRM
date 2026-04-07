@@ -280,12 +280,14 @@ async function handleCreateUser() {
 }
 
 async function handleUpdateStatus(user: any, newStatus: string) {
-  if (!user || user.approvalStatus === newStatus) return
+  if (!user || user.approvalStatus === newStatus)
+    return
   const id = user.id || user._id
   try {
     await updateUser(id, { approvalStatus: newStatus })
     toast.success(`Status updated to ${newStatus}`)
-  } catch (err: any) {
+  }
+  catch (_err: any) {
     toast.error('Failed to update status')
   }
 }
@@ -443,7 +445,7 @@ function toggleSelectAllWorkspaces() {
               <div v-else-if="col.type === 'badge'" @click.stop>
                 <DropdownMenu v-if="col.key === 'approvalStatus'">
                   <DropdownMenuTrigger as-child>
-                    <Badge variant="outline" :class="[getBadgeClass(item[col.key]), 'cursor-pointer hover:opacity-80 transition-opacity']">
+                    <Badge variant="outline" class="cursor-pointer hover:opacity-80 transition-opacity" :class="[getBadgeClass(item[col.key])]">
                       {{ formatBadgeValue(item[col.key]) }}
                       <Icon name="i-lucide-chevron-down" class="ml-1 size-3 opacity-50" />
                     </Badge>

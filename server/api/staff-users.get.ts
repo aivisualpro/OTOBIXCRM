@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
     if (!_client) {
       _client = new MongoClient(uri)
       await _client.connect()
-      console.log(`[API:staff-users] Connected to MongoDB → DB: ${dbName}`)
+      console.warn(`[API:staff-users] Connected to MongoDB → DB: ${dbName}`)
     }
 
     const db = _client.db(dbName)
@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
       })
       .toArray()
 
-    console.log(`[API:staff-users] Found ${staffUsers.length} staff users in "${dbName}"`)
+    console.warn(`[API:staff-users] Found ${staffUsers.length} staff users in "${dbName}"`)
     return { users: staffUsers }
   }
   catch (err: any) {

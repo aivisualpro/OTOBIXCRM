@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     if (!_client) {
       _client = new MongoClient(uri)
       await _client.connect()
-      console.log(`[API:users/add] Connected to MongoDB → DB: ${dbName}`)
+      console.warn(`[API:users/add] Connected to MongoDB → DB: ${dbName}`)
     }
 
     const db = _client.db(dbName)
@@ -81,7 +81,7 @@ export default defineEventHandler(async (event) => {
 
     const result = await db.collection('users').insertOne(doc)
 
-    console.log(`[API:users/add] Created user "${body.userName}" in "${dbName}" → _id: ${result.insertedId}`)
+    console.warn(`[API:users/add] Created user "${body.userName}" in "${dbName}" → _id: ${result.insertedId}`)
 
     return {
       success: true,
