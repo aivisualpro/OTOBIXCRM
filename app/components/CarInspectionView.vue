@@ -280,12 +280,23 @@ const isGeneratingPdf = ref(false)
 function _conditionPdfCss(val: any) {
   if (val === null || val === undefined || val === '') return ''
   const v = String(val).toLowerCase()
-  if (v.includes('not applicable')) return 'bg-yellow-300 text-black'
-  if (v === 'okay' || v === 'working' || v === 'effective' || v === 'no mismatch' || v === 'no blow by' || v === 'yes') return 'bg-emerald-300 text-black'
-  if (v.includes('scratched') || v.includes('damaged') || v.includes('broken') || v.includes('rusted') || v.includes('weak') || v.includes('torn') || v.includes('worn') || v.includes('missing') || v.includes('bad') || v.includes('abnormal')) return 'bg-red-300 text-black'
-  if (v.includes('repainted') || v.includes('repaired') || v.includes('changed') || v.includes('low') || v.includes('dirty') || v.includes('leaking') || v.includes('dented')) return 'bg-rose-200 text-black'
-  if (v.includes('hazy') || v.includes('fade')) return 'bg-orange-200 text-black'
+  if (v.includes('not applicable')) return 'bg-[#fde047] text-[#000000]'
+  if (v === 'okay' || v === 'working' || v === 'effective' || v === 'no mismatch' || v === 'no blow by' || v === 'yes') return 'bg-[#6ee7b7] text-[#000000]'
+  if (v.includes('scratched') || v.includes('damaged') || v.includes('broken') || v.includes('rusted') || v.includes('weak') || v.includes('torn') || v.includes('worn') || v.includes('missing') || v.includes('bad') || v.includes('abnormal')) return 'bg-[#fca5a5] text-[#000000]'
+  if (v.includes('repainted') || v.includes('repaired') || v.includes('changed') || v.includes('low') || v.includes('dirty') || v.includes('leaking') || v.includes('dented')) return 'bg-[#fecdd3] text-[#000000]'
+  if (v.includes('hazy') || v.includes('fade')) return 'bg-[#fed7aa] text-[#000000]'
   return ''
+}
+
+function formatPdfValue(val: any): string {
+  if (val === null || val === undefined || val === '') return '—'
+  if (Array.isArray(val)) return val.join(', ')
+  const str = String(val)
+  try {
+     const parsed = JSON.parse(str)
+     if (Array.isArray(parsed)) return parsed.join(', ')
+  } catch(e) {}
+  return str
 }
 
 function getPdfFields(partsArray: any[]) {
@@ -2594,24 +2605,24 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
         </div>
 
         <!-- CAR MAIN PICS IN HEADER -->
-        <div class="flex gap-4 mb-4" v-if="(getImages(car, 'frontMain').length) || (getImages(car, 'rearMainImages', 'rearMain').length)">
-          <div v-if="getImages(car, 'frontMain').length" class="flex-1 h-[45mm] bg-gray-100 rounded overflow-hidden">
-            <img :src="getImages(car, 'frontMain')[0]" class="w-full h-full object-cover" crossorigin="anonymous">
+        <div class="flex gap-4 mb-6" v-if="(getImages(car, 'frontMain').length) || (getImages(car, 'rearMainImages', 'rearMain').length)">
+          <div v-if="getImages(car, 'frontMain').length" class="flex-1 h-[60mm] bg-[#f9fafb] border border-gray-300 rounded overflow-hidden flex items-center justify-center p-1">
+            <img :src="getImages(car, 'frontMain')[0]" class="w-full h-full object-contain" crossorigin="anonymous">
           </div>
-          <div v-if="getImages(car, 'rearMainImages', 'rearMain').length" class="flex-1 h-[45mm] bg-gray-100 rounded overflow-hidden">
-            <img :src="getImages(car, 'rearMainImages', 'rearMain')[0]" class="w-full h-full object-cover" crossorigin="anonymous">
+          <div v-if="getImages(car, 'rearMainImages', 'rearMain').length" class="flex-1 h-[60mm] bg-[#f9fafb] border border-gray-300 rounded overflow-hidden flex items-center justify-center p-1">
+            <img :src="getImages(car, 'rearMainImages', 'rearMain')[0]" class="w-full h-full object-contain" crossorigin="anonymous">
           </div>
         </div>
 
         <!-- A. GENERAL INFO & DOCS -->
-        <div class="mb-4 break-inside-avoid">
-          <h2 class="bg-gray-200 text-center text-[10px] font-bold py-1 mb-1 border border-gray-300 tracking-wider">A. GENERAL INFORMATION & DOCUMENTATION</h2>
+        <div class="mb-6 break-inside-avoid">
+          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-2 rounded-t tracking-widest uppercase">A. GENERAL INFORMATION & DOCUMENTATION</h2>
           <!-- Table -->
           <div class="grid grid-cols-4 border-l border-t border-gray-300">
             <template v-for="fieldItem in documentDetailFields.flatMap(f => [...(f.splitParts || []), ...(f.rightParts || [])]).filter(f => f.label)" :key="fieldItem.key">
-              <div class="border-r border-b border-gray-300 p-1 text-[9px] bg-slate-50 font-semibold">{{ fieldItem.label }}</div>
-              <div class="border-r border-b border-gray-300 p-1 text-[9px] truncate">
-                {{ fieldItem.type === 'date' ? (formatDateMMDDYYYY(car?.[fieldItem.key] || car?.[fieldItem.oldKey]) || '—') : (car?.[fieldItem.dropdownName || fieldItem.key] || car?.[fieldItem.key] || car?.[fieldItem.oldKey] || '—') }}
+              <div class="border-r border-b border-gray-300 p-1.5 text-[9px] bg-[#f8fafc] font-semibold text-[#1e293b]">{{ fieldItem.label }}</div>
+              <div class="border-r border-b border-gray-300 p-1.5 text-[9px] truncate">
+                {{ fieldItem.type === 'date' ? (formatDateMMDDYYYY(car?.[fieldItem.key] || car?.[fieldItem.oldKey]) || '—') : formatPdfValue(car?.[fieldItem.dropdownName || fieldItem.key] || car?.[fieldItem.key] || car?.[fieldItem.oldKey] || '') }}
               </div>
             </template>
           </div>
@@ -2619,18 +2630,18 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
         <!-- B. INSPECTION ITEMS -->
         <div class="mb-4">
-          <h2 class="bg-gray-200 text-center text-[10px] font-bold py-1 mb-2 border border-gray-300 tracking-wider">B. INSPECTION INFORMATION</h2>
-          <div class="columns-2 gap-4">
+          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-4 rounded-t tracking-widest uppercase">B. INSPECTION INFORMATION</h2>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-4">
             
             <!-- EXTERIOR SECTIONS -->
             <template v-for="sec in exteriorSections" :key="sec.title">
-              <div class="break-inside-avoid mb-4 border border-gray-300">
-                <h3 class="bg-blue-50 text-center font-bold text-[9px] py-1 border-b border-gray-300 uppercase tracking-widest">{{ sec.title }}</h3>
+              <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
+                <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">{{ sec.title }}</h3>
                 <div class="grid grid-cols-2">
                   <template v-for="part in getPdfFields(sec.parts)" :key="part.key">
-                    <div class="border-r border-b border-gray-300 p-1 text-[8.5px] truncate">{{ part.label }}</div>
-                    <div class="border-b border-gray-300 p-1 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '')]">
-                      {{ car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '—' }}
+                    <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">{{ part.label }}</div>
+                    <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
+                      {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
                     </div>
                   </template>
                 </div>
@@ -2638,52 +2649,52 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
             </template>
 
             <!-- ENGINE BAY -->
-            <div class="break-inside-avoid mb-4 border border-gray-300">
-              <h3 class="bg-blue-50 text-center font-bold text-[9px] py-1 border-b border-gray-300 uppercase tracking-widest">ENGINE BAY</h3>
+            <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
+              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">ENGINE BAY</h3>
               <div class="grid grid-cols-2">
                 <template v-for="part in getPdfFields(engineParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1 text-[8.5px] truncate">{{ part.label }}</div>
-                  <div class="border-b border-gray-300 p-1 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '')]">
-                    {{ car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '—' }}
+                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">{{ part.label }}</div>
+                  <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
+                    {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
                   </div>
                 </template>
               </div>
             </div>
 
             <!-- ELECTRICALS -->
-            <div class="break-inside-avoid mb-4 border border-gray-300">
-              <h3 class="bg-blue-50 text-center font-bold text-[9px] py-1 border-b border-gray-300 uppercase tracking-widest">ELECTRICALS</h3>
+            <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
+              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">ELECTRICALS</h3>
               <div class="grid grid-cols-2">
                 <template v-for="part in getPdfFields(electricalParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1 text-[8.5px] truncate">{{ part.label }}</div>
-                  <div class="border-b border-gray-300 p-1 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '')]">
-                    {{ car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '—' }}
+                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">{{ part.label }}</div>
+                  <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
+                    {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
                   </div>
                 </template>
               </div>
             </div>
 
             <!-- INTERIOR -->
-            <div class="break-inside-avoid mb-4 border border-gray-300">
-              <h3 class="bg-blue-50 text-center font-bold text-[9px] py-1 border-b border-gray-300 uppercase tracking-widest">INTERIOR</h3>
+            <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
+              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">INTERIOR</h3>
               <div class="grid grid-cols-2">
                 <template v-for="part in getPdfFields(interiorParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1 text-[8.5px] truncate">{{ part.label }}</div>
-                  <div class="border-b border-gray-300 p-1 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '')]">
-                    {{ car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '—' }}
+                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">{{ part.label }}</div>
+                  <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
+                    {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
                   </div>
                 </template>
               </div>
             </div>
 
             <!-- STEERING, SUSPENSION & BRAKES -->
-            <div class="break-inside-avoid mb-4 border border-gray-300">
-              <h3 class="bg-blue-50 text-center font-bold text-[9px] py-1 border-b border-gray-300 uppercase tracking-widest">STEERING, SUSPENSION & BRAKES</h3>
+            <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
+              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">STEERING, SUSPENSION & BRAKES</h3>
               <div class="grid grid-cols-2">
                 <template v-for="part in getPdfFields(steeringSuspensionBrakesParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1 text-[8.5px] truncate">{{ part.label }}</div>
-                  <div class="border-b border-gray-300 p-1 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '')]">
-                    {{ car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '—' }}
+                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">{{ part.label }}</div>
+                  <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
+                    {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
                   </div>
                 </template>
               </div>
@@ -2695,12 +2706,12 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
         <!-- C. VEHICLE IMAGES -->
         <div class="html2pdf__page-break"></div>
         <div class="mt-8 mb-4">
-          <h2 class="bg-gray-200 text-center text-[10px] font-bold p-1 mb-4 border border-gray-300 tracking-wider">C. VEHICLE IMAGES</h2>
-          <div class="grid grid-cols-3 gap-3">
+          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-6 rounded-t uppercase tracking-widest">C. VEHICLE IMAGES</h2>
+          <div class="grid grid-cols-3 gap-4">
             <template v-for="(img, idx) in allPdfImages" :key="idx">
-              <div class="flex flex-col border border-gray-300 rounded overflow-hidden break-inside-avoid mb-2 w-full h-[40mm]">
-                <div class="bg-gray-100 text-center text-[8.5px] font-bold py-1 px-1 uppercase truncate border-b border-gray-300 w-full">{{ img.label }}</div>
-                <div class="flex-1 bg-gray-50 flex items-center justify-center p-0.5 overflow-hidden">
+              <div class="flex flex-col border border-gray-300 rounded shadow-sm overflow-hidden break-inside-avoid h-[45mm]">
+                <div class="bg-[#f8fafc] text-center text-[8px] font-bold py-1.5 px-1 uppercase truncate border-b border-gray-300 text-[#1e293b]">{{ img.label }}</div>
+                <div class="flex-1 bg-white flex items-center justify-center p-1 overflow-hidden">
                   <img :src="img.url" class="max-h-full max-w-full object-contain" crossorigin="anonymous">
                 </div>
               </div>
