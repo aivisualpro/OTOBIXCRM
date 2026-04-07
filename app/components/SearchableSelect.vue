@@ -3,7 +3,7 @@ import { cn, getConditionStyle } from '~/lib/utils'
 
 const props = defineProps<{
   options: { label: string, value: string }[]
-  modelValue?: string | number
+  modelValue?: any
   placeholder?: string
   searchPlaceholder?: string
   emptyMessage?: string

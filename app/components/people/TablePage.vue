@@ -40,6 +40,7 @@ const {
   fetchAllUsers,
   refreshUsers,
   createUser,
+  updateUser,
 } = usePeopleApi()
 
 onMounted(() => { fetchAllUsers() })
@@ -278,6 +279,17 @@ async function handleCreateUser() {
   }
 }
 
+async function handleUpdateStatus(user: any, newStatus: string) {
+  if (!user || user.approvalStatus === newStatus) return
+  const id = user.id || user._id
+  try {
+    await updateUser(id, { approvalStatus: newStatus })
+    toast.success(`Status updated to ${newStatus}`)
+  } catch (err: any) {
+    toast.error('Failed to update status')
+  }
+}
+
 const roleOptions = ['Dealer', 'Customer', 'Inspection Engineer', 'Admin', 'Retailer', 'Sales Manager', 'Telecaller', 'QC']
 const statusOptions = ['Approved', 'Pending', 'Rejected']
 const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR', 'KOLKATA', 'KRISHNANAGAR', 'CUTTACK', 'ASANSOL', 'RANCHI']
@@ -428,9 +440,24 @@ function toggleSelectAllWorkspaces() {
                 <span class="font-medium uppercase">{{ item[col.key] || '—' }}</span>
               </div>
               <!-- Badge -->
-              <Badge v-else-if="col.type === 'badge'" variant="outline" :class="getBadgeClass(item[col.key])">
-                {{ formatBadgeValue(item[col.key]) }}
-              </Badge>
+              <div v-else-if="col.type === 'badge'" @click.stop>
+                <DropdownMenu v-if="col.key === 'approvalStatus'">
+                  <DropdownMenuTrigger as-child>
+                    <Badge variant="outline" :class="[getBadgeClass(item[col.key]), 'cursor-pointer hover:opacity-80 transition-opacity']">
+                      {{ formatBadgeValue(item[col.key]) }}
+                      <Icon name="i-lucide-chevron-down" class="ml-1 size-3 opacity-50" />
+                    </Badge>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem v-for="s in ['Pending', 'Approved', 'Rejected']" :key="s" @click="handleUpdateStatus(item, s)">
+                      {{ s }}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Badge v-else variant="outline" :class="getBadgeClass(item[col.key])">
+                  {{ formatBadgeValue(item[col.key]) }}
+                </Badge>
+              </div>
               <!-- Date -->
               <span v-else-if="col.type === 'date'" class="text-muted-foreground text-sm">
                 {{ formatDate(item[col.key]) }}

@@ -27,6 +27,12 @@ export default defineEventHandler(async (event) => {
     // This prevents historical garbage (like inspection images accidentally saved to telecallings)
     // from overriding the true source of truth in the 'cars' collection.
     const record = { ...(carRecord || {}) }
+    
+    // Explicitly retain the native 'cars' collection ObjectId for third-party operations like auction scheduling
+    if (carRecord && carRecord._id) {
+      record.carObjectId = carRecord._id
+    }
+
     if (teleRecord) {
       for (const key of Object.keys(teleRecord)) {
         if (key === '_id' || APPSHEET_FIELDS.has(key) || key === 'logs') {

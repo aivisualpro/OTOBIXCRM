@@ -214,30 +214,55 @@ function formatDateYYYYMMDD(val: any) {
 async function approveLead() {
   editForm.value.approvalStatus = 'Approved'
   await saveQC()
+  // Note: approveLead() without inline usually doesn't prompt for auction, 
+  // but if needed we can trigger the modal here too.
   router.push('/leads/approved')
 }
 
-// Inline approval without redirecting
-function approveLeadInline() {
-  toast('Approve Vehicle?', {
-    description: 'Are you sure you want to mark this vehicle as QC Approved?',
-    action: {
-      label: 'Approve',
-      onClick: async () => {
-        editForm.value.approvalStatus = 'Approved'
-        const loadingToast = toast.loading('Approving...')
-        await saveQC(true)
-        toast.dismiss(loadingToast)
-        toast.success('Vehicle successfully marked as QC Approved!')
-        await fetchCarDetails(carId)
-      },
-    },
-    cancel: {
-      label: 'Cancel',
-      onClick: () => {},
-    },
-    duration: 6000,
-  })
+const showQCModal = ref(false)
+const qcForm = ref({
+  priceDiscovery: '',
+  auctionMode: 'makeLiveNow',
+  auctionDuration: 24,
+  auctionStartTime: '',
+})
+
+function openQCModal() {
+  qcForm.value.priceDiscovery = editForm.value.priceDiscovery || car.value?.priceDiscovery || ''
+  showQCModal.value = true
+}
+
+async function confirmQCApproval() {
+  if (!qcForm.value.priceDiscovery) {
+    toast.error('Price Discovery is required')
+    return
+  }
+  if (qcForm.value.auctionMode === 'scheduledForLater' && !qcForm.value.auctionStartTime) {
+    toast.error('Auction Start Time is required for scheduled auction')
+    return
+  }
+
+  editForm.value.priceDiscovery = qcForm.value.priceDiscovery
+  
+  const loadingToast = toast.loading('Scheduling auction and completing QC...')
+  try {
+    // 1. External Integration - Create/schedule auction
+    await scheduleAuctionFromModal()
+    
+    // 2. Local State - Only set to 'Approved' IF auction was successful
+    editForm.value.approvalStatus = 'Approved'
+    
+    // 3. Database DB Save - This will hit /api/leads/update which updates BOTH cars & telecalling collections
+    await saveQC(true)
+    
+    showQCModal.value = false
+    toast.dismiss(loadingToast)
+    toast.success('Vehicle successfully marked as QC Approved and Auction Scheduled!')
+    await fetchCarDetails(carId)
+  } catch (err: any) {
+    toast.dismiss(loadingToast)
+    toast.error(err?.message || 'Failed to approve or schedule.')
+  }
 }
 
 // eslint-disable-next-line unused-imports/no-unused-vars
@@ -249,6 +274,160 @@ async function rejectLead() {
 
 const UPLOAD_BASE = 'https://ob-dealerapp-kong.onrender.com/api/otobix/car'
 const KONG_TOKEN = 'QmFwR0RjLjJmMzkyMjJw98UNpMGFqpgGJV6BXgQ1ye12d100f5c'
+
+const isGeneratingPdf = ref(false)
+
+function _conditionPdfCss(val: any) {
+  if (val === null || val === undefined || val === '') return ''
+  const v = String(val).toLowerCase()
+  if (v.includes('not applicable')) return 'bg-yellow-300 text-black'
+  if (v === 'okay' || v === 'working' || v === 'effective' || v === 'no mismatch' || v === 'no blow by' || v === 'yes') return 'bg-emerald-300 text-black'
+  if (v.includes('scratched') || v.includes('damaged') || v.includes('broken') || v.includes('rusted') || v.includes('weak') || v.includes('torn') || v.includes('worn') || v.includes('missing') || v.includes('bad') || v.includes('abnormal')) return 'bg-red-300 text-black'
+  if (v.includes('repainted') || v.includes('repaired') || v.includes('changed') || v.includes('low') || v.includes('dirty') || v.includes('leaking') || v.includes('dented')) return 'bg-rose-200 text-black'
+  if (v.includes('hazy') || v.includes('fade')) return 'bg-orange-200 text-black'
+  return ''
+}
+
+function getPdfFields(partsArray: any[]) {
+  if (!partsArray) return []
+  return partsArray.flatMap((p: any) => p.splitParts ? p.splitParts : [p]).filter((p: any) => !p.isVideoBox && p.label && !p.isImageOnly)
+}
+
+const allPdfImages = computed(() => {
+  const imgs: { url: string, label: string }[] = []
+  if (!car.value) return imgs;
+  const c = car.value;
+
+  documentDetailFields.forEach(field => {
+    if (field.type === 'combinedBox' && field.key) {
+      getImages(c, field.key, field.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${field.label || field.key} ${i+1}`}))
+    }
+  })
+
+  exteriorSections.forEach(sec => {
+    sec.parts.forEach((part: any) => {
+      if (part.imageKey) {
+        getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
+      } else if (part.imageGroups) {
+        part.imageGroups.forEach((ig: any) => {
+          getImages(c, ig.key, ig.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${ig.label} ${i+1}`}))
+        })
+      } else if (part.isImageOnly) {
+         getImages(c, part.key, part.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
+      }
+    })
+  })
+
+  engineParts.forEach(part => {
+    if (part.imageKey) getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
+  })
+  electricalParts.forEach(part => {
+    if (part.imageKey) getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
+  })
+  interiorParts.forEach(part => {
+    if (part.imageKey) {
+       getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
+    } else if (part.imageGroups) {
+       part.imageGroups.forEach((ig: any) => {
+          getImages(c, ig.key, ig.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${ig.label} ${i+1}`}))
+       })
+    }
+  })
+  steeringSuspensionBrakesParts.forEach(part => {
+    if (part.imageKey) getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i+1}`}))
+  })
+  
+  // ensure no video links end up in the pdf output array (which breaks canvas)
+  return imgs.filter(img => !img.url.match(/\.(mp4|webm|ogg|mov)$/i))
+})
+
+async function downloadPDF() {
+  isGeneratingPdf.value = true;
+  await nextTick();
+  await new Promise(r => setTimeout(r, 200)); // give DOM time to append images structurally
+  
+  const element = document.getElementById('pdf-container');
+  if (!element) {
+    isGeneratingPdf.value = false;
+    toast.error('Template missing!')
+    return;
+  }
+  
+  const loadingToast = toast.loading('Generating PDF Report... Please wait.')
+  try {
+    if (typeof window !== 'undefined' && !(window as any).html2pdf) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+
+    const opt = {
+      margin:       [5, 5, 5, 5],
+      filename:     `Inspection_Report_${car.value?.registrationNumber || car.value?.appointmentId}.pdf`,
+      image:        { type: 'jpeg', quality: 0.8 },
+      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    await (window as any).html2pdf().set(opt).from(element).save();
+    toast.dismiss(loadingToast)
+    toast.success('PDF Downloaded successfully!')
+  } catch (err) {
+    console.error('PDF Generation Error: ', err)
+    toast.dismiss(loadingToast)
+    toast.error('Failed to generate PDF')
+  } finally {
+    isGeneratingPdf.value = false;
+  }
+}
+
+async function scheduleAuctionFromModal() {
+  let startTimeDate;
+  if (qcForm.value.auctionMode === 'makeLiveNow') {
+    startTimeDate = new Date()
+  } else {
+    startTimeDate = new Date(qcForm.value.auctionStartTime)
+  }
+  
+  const durationMs = Number(qcForm.value.auctionDuration) * 60 * 60 * 1000
+  const endTimeDate = new Date(startTimeDate.getTime() + durationMs)
+  
+  const payload = {
+    carId: car.value?.carObjectId, // Accurately identify the mongo document in the remote 'cars' collection
+    auctionStartTime: startTimeDate.toISOString().replace('Z', '+00:00'),
+    auctionDuration: Number(qcForm.value.auctionDuration),
+    auctionEndTime: endTimeDate.toISOString().replace('Z', '+00:00'),
+    auctionMode: qcForm.value.auctionMode,
+  }
+
+  // Use native browser fetch instead of $fetch to bypass Nuxt's internal interceptors
+  // which might override the Authorization header with the app's CRM user token
+  const response = await fetch('https://ob-dealerapp-kong.onrender.com/api/otobix/schedule-auction', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${KONG_TOKEN}`, 
+      'token': KONG_TOKEN 
+    },
+  })
+
+  if (!response.ok) {
+    let errMsg = `Failed to schedule auction: ${response.status}`
+    try {
+      const data = await response.json()
+      if (data && data.message) errMsg = data.message
+    } catch {
+      // ignore parsing error
+    }
+    throw new Error(errMsg)
+  }
+}
+
 
 function extractPublicId(url: string) {
   try {
@@ -1168,6 +1347,54 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
 
 <template>
   <div class="flex-1 min-h-0 flex flex-col overflow-hidden -m-4 lg:-m-6">
+    <!-- QC Approval Modal -->
+    <Dialog :open="showQCModal" @update:open="showQCModal = $event">
+      <DialogContent class="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Approve & Schedule Auction</DialogTitle>
+          <DialogDescription>
+            Please provide the required details before finalizing this vehicle approval.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <!-- Price Discovery -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Price Discovery (Required)</label>
+            <Input v-model="qcForm.priceDiscovery" type="number" placeholder="Enter Price Amount" class="font-bold text-lg" required />
+          </div>
+
+          <!-- Auction Mode -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Auction Mode</label>
+            <select v-model="qcForm.auctionMode" class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+              <option value="makeLiveNow">Make Live Now</option>
+              <option value="scheduledForLater">Scheduled For Later</option>
+            </select>
+          </div>
+
+          <!-- Auction Start Time (If scheduled) -->
+          <div v-if="qcForm.auctionMode === 'scheduledForLater'" class="space-y-2">
+            <label class="text-sm font-medium">Start Date & Time (Required)</label>
+            <Input v-model="qcForm.auctionStartTime" type="datetime-local" class="font-medium" required />
+          </div>
+
+          <!-- Auction Duration -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Auction Duration (Hours)</label>
+            <Input v-model="qcForm.auctionDuration" type="number" min="1" placeholder="Duration in hours" class="font-medium" />
+          </div>
+        </div>
+
+        <DialogFooter class="sm:justify-end">
+          <Button variant="outline" @click="showQCModal = false">Cancel</Button>
+          <Button class="bg-emerald-500 hover:bg-emerald-600 focus:ring-emerald-500 text-white font-bold" @click="confirmQCApproval">
+            Confirm & Approve
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- Loading -->
     <div v-if="isLoading" class="flex-1 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
@@ -1219,6 +1446,33 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
             <Icon :name="tab.icon" class="size-4" />
             {{ tab.label }}
           </button>
+          
+          <div class="ml-auto flex items-center shrink-0">
+            <Button
+              v-if="car.approvalStatus === 'Approved'"
+              class="mr-2 h-8 text-xs font-bold shrink-0 border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20 shadow-sm"
+              variant="outline"
+              @click="downloadPDF"
+            >
+              <Icon :name="isGeneratingPdf ? 'i-lucide-loader-2' : 'i-lucide-file-down'" :class="{'animate-spin': isGeneratingPdf}" class="mr-1.5 size-4" />
+              Download PDF
+            </Button>
+            <Button
+              v-if="!props.readonly && car.approvalStatus !== 'Approved'"
+              class="bg-emerald-500 hover:bg-emerald-600 focus:ring-emerald-500 text-white font-bold shadow-sm h-8 text-xs shrink-0 px-4"
+              @click="openQCModal"
+            >
+              <Icon name="i-lucide-check-circle-2" class="mr-1.5 size-4" />
+              QC Approved
+            </Button>
+            <div
+              v-else-if="car.approvalStatus === 'Approved'"
+              class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 rounded-lg flex items-center justify-center font-bold px-3 h-8 text-xs shrink-0"
+            >
+              <Icon name="i-lucide-shield-check" class="mr-1.5 size-4" />
+              QC Approved
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1270,8 +1524,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
               </div>
 
               <!-- MIDDLE: Data Grid -->
-              <div class="flex-1 min-w-0 p-5 lg:p-6 lg:px-8 flex flex-col gap-6 lg:border-r border-border/60">
-                <!-- Breadcrumbs / Top Info -->
+              <div class="flex-1 min-w-0 p-5 lg:p-6 lg:px-8 flex flex-col gap-6 z-10 relative">
+                
                 <!-- Stats Grid Layout -->
                 <div class="flex flex-col gap-3 mt-auto w-full">
                   <!-- Row 1: Make, Model, Variant, MFG Year -->
@@ -1433,68 +1687,38 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                 </div>
               </div>
 
-              <!-- RIGHT: Pricing / Offer Action -->
-              <div class="w-full lg:w-[280px] bg-card p-6 lg:p-8 flex flex-col justify-center">
-                
-                <!-- QC Approved Action -->
-                <div class="mb-8">
-                  <Button
-                    v-if="!props.readonly && car.approvalStatus !== 'Approved'"
-                    class="w-full h-12 bg-emerald-500 hover:bg-emerald-600 focus:ring-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20"
-                    @click="approveLeadInline"
-                  >
-                    <Icon name="i-lucide-check-circle-2" class="mr-2 size-5" />
-                    QC Approved
-                  </Button>
-                  <div
-                    v-else-if="car.approvalStatus === 'Approved'"
-                    class="w-full h-12 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 rounded-lg flex items-center justify-center font-bold"
-                  >
-                    <Icon name="i-lucide-shield-check" class="mr-2 size-5" />
-                    QC Approved
-                  </div>
+              <!-- RIGHT IMAGE AREA -->
+              <div class="relative w-full lg:w-[320px] shrink-0 h-64 lg:h-auto overflow-hidden bg-muted group cursor-pointer lg:border-l border-border/60" @click="getImages(car, 'rearMainImages', 'rearMain').length && openLightboxUrls(getImages(car, 'rearMainImages', 'rearMain'), 0, `${car.make} ${car.model}`)">
+                <img
+                  v-if="getImages(car, 'rearMainImages', 'rearMain').length"
+                  :src="getImages(car, 'rearMainImages', 'rearMain')[0]"
+                  :alt="`${car.make} ${car.model}`"
+                  class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                >
+                <div v-else class="w-full h-full flex items-center justify-center">
+                  <Icon name="i-lucide-car" class="size-20 text-muted-foreground/30" />
                 </div>
+              </div>
 
-                <p class="text-sm text-muted-foreground mb-1 font-medium">
-                  Price Discovery
-                </p>
-                <div class="text-3xl font-black text-foreground tracking-tight mb-8">
-                  <span v-if="props.readonly">₹ {{ (car.priceDiscovery || 0).toLocaleString('en-IN') }}</span>
-                  <Input v-else v-model="editForm.priceDiscovery" type="number" class="h-12 text-2xl font-black bg-muted/50 mt-2 shadow-inner border-border/60" />
+              <!-- FAR RIGHT: Vertical User Strip -->
+              <div class="hidden lg:flex flex-col w-12 shrink-0 border-l border-border/60">
+                <!-- Inspected By Block -->
+                <div class="flex-1 flex items-center justify-center text-white bg-slate-800 dark:bg-slate-900 border-b border-white/10">
+                  <span class="transform -rotate-180" style="writing-mode: vertical-rl; text-orientation: mixed;">
+                    <span class="flex items-center gap-2 text-[11px] font-black tracking-[0.15em] uppercase whitespace-nowrap">
+                      <span class="text-[9px] text-white/50 tracking-widest mt-1">INSPECTED</span>
+                      <span class="text-blue-400">{{ allocatedToName || 'UA' }}</span>
+                    </span>
+                  </span>
                 </div>
-
-                <!-- Inspected By -->
-                <div v-if="car.allocatedTo" class="mb-2 w-full">
-                  <p class="text-[10px] text-muted-foreground mb-2 font-bold uppercase tracking-wider">
-                    Inspected By
-                  </p>
-                  <div class="flex items-center gap-3 p-3 rounded-lg border border-border/80 bg-background/50 shadow-sm overflow-hidden">
-                    <Avatar class="size-8 shrink-0">
-                      <AvatarFallback class="text-xs font-bold bg-primary/10 text-primary">
-                        {{ (allocatedToName || 'UA').substring(0, 2).toUpperCase() }}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div class="flex flex-col min-w-0 justify-center">
-                      <span class="text-sm font-semibold text-foreground truncate" :title="allocatedToName">{{ allocatedToName }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- QC / Reviewing By -->
-                <div v-if="car.qcBy" class="w-full">
-                  <p class="text-[10px] text-muted-foreground mb-2 font-bold uppercase tracking-wider">
-                    {{ car.approvalStatus === 'Approved' ? 'QC By' : 'Reviewing By' }}
-                  </p>
-                  <div class="flex items-center gap-3 p-3 rounded-lg border border-border/80 bg-background/50 shadow-sm overflow-hidden">
-                    <Avatar class="size-8 shrink-0">
-                      <AvatarFallback class="text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                        {{ (qcByName || 'QC').substring(0, 2).toUpperCase() }}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div class="flex flex-col min-w-0 justify-center">
-                      <span class="text-sm font-semibold text-foreground truncate" :title="qcByName">{{ qcByName }}</span>
-                    </div>
-                  </div>
+                <!-- Reviewing By Block -->
+                <div class="flex-1 flex items-center justify-center text-white bg-slate-800 dark:bg-slate-900">
+                  <span class="transform -rotate-180" style="writing-mode: vertical-rl; text-orientation: mixed;">
+                    <span class="flex items-center gap-2 text-[11px] font-black tracking-[0.15em] uppercase whitespace-nowrap">
+                      <span class="text-[9px] text-white/50 tracking-widest mt-1">{{ car.approvalStatus === 'Approved' ? 'QC BY' : 'REVIEWING' }}</span>
+                      <span class="text-amber-400">{{ qcByName || 'QC' }}</span>
+                    </span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -2318,5 +2542,179 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
         </div>
       </Transition>
     </Teleport>
+
+    <!-- HIDDEN PDF REPORT CONTAINER -->
+    <div v-if="isGeneratingPdf" style="position: absolute; top: -15000px; left: 0; width: 210mm; z-index: -10; pointer-events: none;" class="bg-white text-black">
+      <div id="pdf-container" class="w-[210mm] bg-white p-[10mm] font-sans text-gray-900 mx-auto" style="min-height: 297mm; display: flex; flex-direction: column;">
+        <!-- HEADER -->
+        <div class="flex justify-between items-end border-b-2 border-slate-600 pb-2 mb-4">
+          <div>
+            <div class="text-3xl font-black text-red-600 tracking-tighter flex items-center gap-2">
+              <Icon name="i-lucide-car-front" class="size-8 text-black" />
+              OTOBIX
+            </div>
+          </div>
+          <div class="text-right">
+            <h1 class="text-xl font-bold text-blue-700 uppercase tracking-wide">Vehicle Inspection Report</h1>
+            <p class="text-[12px] font-bold text-slate-700 mt-0.5">
+              {{ car?.yearMonthOfManufacture ? new Date(car?.yearMonthOfManufacture).getFullYear() : '' }} {{ (car?.make || '').toUpperCase() }}, {{ (car?.model || '').toUpperCase() }}, {{ (car?.variant || '').toUpperCase() }}
+            </p>
+            <p class="text-[10px] text-slate-500">
+              Inspected: {{ formatDateMMDDYYYY(car?.inspectionDate || car?.createdAt) }} {{ car?.city ? ', ' + String(car.city).toUpperCase() : '' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- CAR MAIN PICS IN HEADER -->
+        <div class="flex gap-4 mb-4" v-if="(getImages(car, 'frontMain').length) || (getImages(car, 'rearMainImages', 'rearMain').length)">
+          <div v-if="getImages(car, 'frontMain').length" class="flex-1 h-[45mm] bg-gray-100 rounded overflow-hidden">
+            <img :src="getImages(car, 'frontMain')[0]" class="w-full h-full object-cover" crossorigin="anonymous">
+          </div>
+          <div v-if="getImages(car, 'rearMainImages', 'rearMain').length" class="flex-1 h-[45mm] bg-gray-100 rounded overflow-hidden">
+            <img :src="getImages(car, 'rearMainImages', 'rearMain')[0]" class="w-full h-full object-cover" crossorigin="anonymous">
+          </div>
+        </div>
+
+        <!-- A. GENERAL INFO & DOCS -->
+        <div class="mb-4 break-inside-avoid">
+          <h2 class="bg-gray-200 text-center text-[10px] font-bold py-1 mb-1 border border-gray-300 tracking-wider">A. GENERAL INFORMATION & DOCUMENTATION</h2>
+          <!-- Table -->
+          <div class="grid grid-cols-4 border-l border-t border-gray-300">
+            <template v-for="fieldItem in documentDetailFields.flatMap(f => [...(f.splitParts || []), ...(f.rightParts || [])]).filter(f => f.label)" :key="fieldItem.key">
+              <div class="border-r border-b border-gray-300 p-1 text-[9px] bg-slate-50 font-semibold">{{ fieldItem.label }}</div>
+              <div class="border-r border-b border-gray-300 p-1 text-[9px] truncate">
+                {{ fieldItem.type === 'date' ? (formatDateMMDDYYYY(car?.[fieldItem.key] || car?.[fieldItem.oldKey]) || '—') : (car?.[fieldItem.dropdownName || fieldItem.key] || car?.[fieldItem.key] || car?.[fieldItem.oldKey] || '—') }}
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- B. INSPECTION ITEMS -->
+        <div class="mb-4">
+          <h2 class="bg-gray-200 text-center text-[10px] font-bold py-1 mb-2 border border-gray-300 tracking-wider">B. INSPECTION INFORMATION</h2>
+          <div class="columns-2 gap-4">
+            
+            <!-- EXTERIOR SECTIONS -->
+            <template v-for="sec in exteriorSections" :key="sec.title">
+              <div class="break-inside-avoid mb-4 border border-gray-300">
+                <h3 class="bg-blue-50 text-center font-bold text-[9px] py-1 border-b border-gray-300 uppercase tracking-widest">{{ sec.title }}</h3>
+                <div class="grid grid-cols-2">
+                  <template v-for="part in getPdfFields(sec.parts)" :key="part.key">
+                    <div class="border-r border-b border-gray-300 p-1 text-[8.5px] truncate">{{ part.label }}</div>
+                    <div class="border-b border-gray-300 p-1 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '')]">
+                      {{ car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '—' }}
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <!-- ENGINE BAY -->
+            <div class="break-inside-avoid mb-4 border border-gray-300">
+              <h3 class="bg-blue-50 text-center font-bold text-[9px] py-1 border-b border-gray-300 uppercase tracking-widest">ENGINE BAY</h3>
+              <div class="grid grid-cols-2">
+                <template v-for="part in getPdfFields(engineParts)" :key="part.key">
+                  <div class="border-r border-b border-gray-300 p-1 text-[8.5px] truncate">{{ part.label }}</div>
+                  <div class="border-b border-gray-300 p-1 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '')]">
+                    {{ car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '—' }}
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- ELECTRICALS -->
+            <div class="break-inside-avoid mb-4 border border-gray-300">
+              <h3 class="bg-blue-50 text-center font-bold text-[9px] py-1 border-b border-gray-300 uppercase tracking-widest">ELECTRICALS</h3>
+              <div class="grid grid-cols-2">
+                <template v-for="part in getPdfFields(electricalParts)" :key="part.key">
+                  <div class="border-r border-b border-gray-300 p-1 text-[8.5px] truncate">{{ part.label }}</div>
+                  <div class="border-b border-gray-300 p-1 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '')]">
+                    {{ car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '—' }}
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- INTERIOR -->
+            <div class="break-inside-avoid mb-4 border border-gray-300">
+              <h3 class="bg-blue-50 text-center font-bold text-[9px] py-1 border-b border-gray-300 uppercase tracking-widest">INTERIOR</h3>
+              <div class="grid grid-cols-2">
+                <template v-for="part in getPdfFields(interiorParts)" :key="part.key">
+                  <div class="border-r border-b border-gray-300 p-1 text-[8.5px] truncate">{{ part.label }}</div>
+                  <div class="border-b border-gray-300 p-1 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '')]">
+                    {{ car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '—' }}
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- STEERING, SUSPENSION & BRAKES -->
+            <div class="break-inside-avoid mb-4 border border-gray-300">
+              <h3 class="bg-blue-50 text-center font-bold text-[9px] py-1 border-b border-gray-300 uppercase tracking-widest">STEERING, SUSPENSION & BRAKES</h3>
+              <div class="grid grid-cols-2">
+                <template v-for="part in getPdfFields(steeringSuspensionBrakesParts)" :key="part.key">
+                  <div class="border-r border-b border-gray-300 p-1 text-[8.5px] truncate">{{ part.label }}</div>
+                  <div class="border-b border-gray-300 p-1 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '')]">
+                    {{ car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '—' }}
+                  </div>
+                </template>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- C. VEHICLE IMAGES -->
+        <div class="html2pdf__page-break"></div>
+        <div class="mt-8 mb-4">
+          <h2 class="bg-gray-200 text-center text-[10px] font-bold p-1 mb-4 border border-gray-300 tracking-wider">C. VEHICLE IMAGES</h2>
+          <div class="grid grid-cols-3 gap-3">
+            <template v-for="(img, idx) in allPdfImages" :key="idx">
+              <div class="flex flex-col border border-gray-300 rounded overflow-hidden break-inside-avoid mb-2 w-full h-[40mm]">
+                <div class="bg-gray-100 text-center text-[8.5px] font-bold py-1 px-1 uppercase truncate border-b border-gray-300 w-full">{{ img.label }}</div>
+                <div class="flex-1 bg-gray-50 flex items-center justify-center p-0.5 overflow-hidden">
+                  <img :src="img.url" class="max-h-full max-w-full object-contain" crossorigin="anonymous">
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+/* 
+  CRITICAL: OVERRIDE ALL OKLCH TAILWIND COLORS FOR HTML2CANVAS 1.4.1
+  Tailwind v4 defaults to `oklch()`, which html2canvas fundamentally cannot parse.
+  We are forcefully resetting the background and text color variables 
+  within the PDF block to standard hexadecimal to prevent rendering crash loops.
+*/
+#pdf-container {
+  color: #111827 !important;
+}
+#pdf-container :deep(.bg-white) { background-color: #ffffff !important; }
+#pdf-container :deep(.bg-gray-50) { background-color: #f9fafb !important; }
+#pdf-container :deep(.bg-slate-50) { background-color: #f8fafc !important; }
+#pdf-container :deep(.bg-gray-100) { background-color: #f3f4f6 !important; }
+#pdf-container :deep(.bg-gray-200) { background-color: #e5e7eb !important; }
+#pdf-container :deep(.bg-blue-50) { background-color: #eff6ff !important; }
+
+#pdf-container :deep(.text-gray-900) { color: #111827 !important; }
+#pdf-container :deep(.text-slate-700) { color: #334155 !important; }
+#pdf-container :deep(.text-slate-500) { color: #64748b !important; }
+#pdf-container :deep(.text-blue-700) { color: #1d4ed8 !important; }
+#pdf-container :deep(.text-red-600) { color: #dc2626 !important; }
+
+#pdf-container :deep(.border-slate-600) { border-color: #475569 !important; }
+#pdf-container :deep(.border-gray-300) { border-color: #d1d5db !important; }
+
+/* Dynamic condition colors */
+#pdf-container :deep(.bg-yellow-300) { background-color: #fde047 !important; color: #000 !important; }
+#pdf-container :deep(.bg-emerald-300) { background-color: #6ee7b7 !important; color: #000 !important; }
+#pdf-container :deep(.bg-red-300) { background-color: #fca5a5 !important; color: #000 !important; }
+#pdf-container :deep(.bg-rose-200) { background-color: #fecdd3 !important; color: #000 !important; }
+#pdf-container :deep(.bg-orange-200) { background-color: #fed7aa !important; color: #000 !important; }
+</style>

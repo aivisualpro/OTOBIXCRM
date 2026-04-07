@@ -71,6 +71,24 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // Natively cast specific string fields to MongoDB Date format if they are logically dates
+    const DATE_FIELDS = new Set([
+      'registrationDate', 'fitnessTill', 'yearMonthOfManufacture',
+      'taxValidTill', 'insuranceValidity', 'permitValidity',
+      'partyPeshiDate', 'cngCylinderTestedDate', 'cngRegistrationDate',
+      'batteryReplacedDate', 'createdAt', 'updatedAt'
+    ])
+
+    for (const k of Object.keys(updates)) {
+      if (DATE_FIELDS.has(k) && typeof updates[k] === 'string') {
+        const val = updates[k]
+        // If it looks like a valid date format and isn't a text placeholder like "Not Applicable"
+        if (val && !isNaN(Date.parse(val)) && !val.toLowerCase().includes('applicable')) {
+          updates[k] = new Date(val)
+        }
+      }
+    }
+
     const telecallingUpdateQuery: Record<string, any> = Object.keys(telecallingUpdates).length > 0 ? { $set: telecallingUpdates } : {}
     const carsUpdateQuery: Record<string, any> = { $set: { ...updates } }
 
