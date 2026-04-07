@@ -354,6 +354,33 @@ async function downloadPDF() {
   }
   
   const loadingToast = toast.loading('Generating PDF Report... Please wait.')
+  
+  // MUST INTERCEPT COMPUTED STYLES: 
+  // Tailwind v4 uses OKLCH natively, which immediately crashes html2canvas 1.4.1.
+  const originalGetComputedStyle = window.getComputedStyle;
+  window.getComputedStyle = function(el, pseudoElt) {
+    const css = originalGetComputedStyle(el, pseudoElt);
+    return new Proxy(css, {
+      get(target, prop) {
+        if (prop === 'getPropertyValue') {
+          return function(key: string) {
+            const val = target.getPropertyValue(key);
+            if (typeof val === 'string' && val.includes('oklch')) return 'rgb(128, 128, 128)';
+            return val;
+          }
+        }
+        const val = (target as any)[prop];
+        if (typeof val === 'string' && val.includes('oklch')) {
+          return 'rgb(128, 128, 128)';
+        }
+        if (typeof val === 'function') {
+          return val.bind(target);
+        }
+        return val;
+      }
+    });
+  };
+
   try {
     if (typeof window !== 'undefined' && !(window as any).html2pdf) {
       await new Promise((resolve, reject) => {
@@ -382,6 +409,7 @@ async function downloadPDF() {
     toast.error('Failed to generate PDF')
   } finally {
     isGeneratingPdf.value = false;
+    window.getComputedStyle = originalGetComputedStyle;
   }
 }
 
@@ -2685,36 +2713,45 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
   </div>
 </template>
 
-<style scoped>
+<style>
 /* 
   CRITICAL: OVERRIDE ALL OKLCH TAILWIND COLORS FOR HTML2CANVAS 1.4.1
   Tailwind v4 defaults to `oklch()`, which html2canvas fundamentally cannot parse.
   We are forcefully resetting the background and text color variables 
   within the PDF block to standard hexadecimal to prevent rendering crash loops.
 */
+#pdf-container, #pdf-container * {
+  /* Prevent Tailwind's global * { border-color: var(--border) } from crashing the parser */
+  border-color: #e5e7eb !important;
+  outline-color: transparent !important;
+  text-decoration-color: transparent !important;
+  box-shadow: none !important;
+}
 #pdf-container {
   color: #111827 !important;
+  background-color: #ffffff !important;
 }
-#pdf-container :deep(.bg-white) { background-color: #ffffff !important; }
-#pdf-container :deep(.bg-gray-50) { background-color: #f9fafb !important; }
-#pdf-container :deep(.bg-slate-50) { background-color: #f8fafc !important; }
-#pdf-container :deep(.bg-gray-100) { background-color: #f3f4f6 !important; }
-#pdf-container :deep(.bg-gray-200) { background-color: #e5e7eb !important; }
-#pdf-container :deep(.bg-blue-50) { background-color: #eff6ff !important; }
 
-#pdf-container :deep(.text-gray-900) { color: #111827 !important; }
-#pdf-container :deep(.text-slate-700) { color: #334155 !important; }
-#pdf-container :deep(.text-slate-500) { color: #64748b !important; }
-#pdf-container :deep(.text-blue-700) { color: #1d4ed8 !important; }
-#pdf-container :deep(.text-red-600) { color: #dc2626 !important; }
+#pdf-container .bg-white { background-color: #ffffff !important; }
+#pdf-container .bg-gray-50 { background-color: #f9fafb !important; }
+#pdf-container .bg-slate-50 { background-color: #f8fafc !important; }
+#pdf-container .bg-gray-100 { background-color: #f3f4f6 !important; }
+#pdf-container .bg-gray-200 { background-color: #e5e7eb !important; }
+#pdf-container .bg-blue-50 { background-color: #eff6ff !important; }
 
-#pdf-container :deep(.border-slate-600) { border-color: #475569 !important; }
-#pdf-container :deep(.border-gray-300) { border-color: #d1d5db !important; }
+#pdf-container .text-gray-900 { color: #111827 !important; }
+#pdf-container .text-slate-700 { color: #334155 !important; }
+#pdf-container .text-slate-500 { color: #64748b !important; }
+#pdf-container .text-blue-700 { color: #1d4ed8 !important; }
+#pdf-container .text-red-600 { color: #dc2626 !important; }
+
+#pdf-container .border-slate-600 { border-color: #475569 !important; }
+#pdf-container .border-gray-300 { border-color: #d1d5db !important; }
 
 /* Dynamic condition colors */
-#pdf-container :deep(.bg-yellow-300) { background-color: #fde047 !important; color: #000 !important; }
-#pdf-container :deep(.bg-emerald-300) { background-color: #6ee7b7 !important; color: #000 !important; }
-#pdf-container :deep(.bg-red-300) { background-color: #fca5a5 !important; color: #000 !important; }
-#pdf-container :deep(.bg-rose-200) { background-color: #fecdd3 !important; color: #000 !important; }
-#pdf-container :deep(.bg-orange-200) { background-color: #fed7aa !important; color: #000 !important; }
+#pdf-container .bg-yellow-300 { background-color: #fde047 !important; color: #000 !important; }
+#pdf-container .bg-emerald-300 { background-color: #6ee7b7 !important; color: #000 !important; }
+#pdf-container .bg-red-300 { background-color: #fca5a5 !important; color: #000 !important; }
+#pdf-container .bg-rose-200 { background-color: #fecdd3 !important; color: #000 !important; }
+#pdf-container .bg-orange-200 { background-color: #fed7aa !important; color: #000 !important; }
 </style>
