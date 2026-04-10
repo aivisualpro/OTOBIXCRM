@@ -18,10 +18,10 @@ onMounted(() => {
 
 const search = ref('')
 
-// Filter: only show if approvalStatus="Approved" & inspectionStatus="Inspected"
+// Filter: only show if approvalStatus="Approved"
 const baseFilteredItems = computed(() => {
   return allCars.value.filter(car => 
-    car.approvalStatus === 'Approved' && car.inspectionStatus === 'Inspected'
+    car.approvalStatus === 'Approved'
   )
 })
 
