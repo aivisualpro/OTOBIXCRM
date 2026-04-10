@@ -1181,38 +1181,7 @@ const activeExteriorSection = computed(() => exteriorSections.find(s => s.title.
 // ─── Auto-save: debounced deep watch on editForm ───
 let _autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
-watch(() => car.value, (newVal) => {
-  if (newVal) {
-    _skipAutoSave = true // Guard: don't trigger auto-save when resetting editForm from fetched data
-    const clone = JSON.parse(JSON.stringify(newVal))
-    // Automatically map old keys to new keys based on exteriorSections config
-    exteriorSections.forEach((section) => {
-      section.parts.forEach((part: any) => {
-        if (part.oldKey && !clone[part.key] && clone[part.oldKey]) {
-          clone[part.key] = clone[part.oldKey]
-        }
-      })
-    })
-    // Extract year from yearMonthOfManufacture for editing
-    if (clone.yearMonthOfManufacture && !clone.yearOfManufacture) {
-      try { clone.yearOfManufacture = new Date(clone.yearMonthOfManufacture).getFullYear() }
-      catch {}
-    }
-    editForm.value = clone
-    nextTick(() => { _skipAutoSave = false })
-  }
-}, { immediate: true })
-
-watch(editForm, () => {
-  if (_skipAutoSave || props.readonly)
-    return
-  // Debounce: wait 1.5s after last change before saving
-  if (_autoSaveTimer)
-    clearTimeout(_autoSaveTimer)
-  _autoSaveTimer = setTimeout(() => {
-    saveQC(true)
-  }, 1500)
-}, { deep: true })
+// Watch blocks moved below documentDetailFields definition to allow reference
 
 const _exteriorImageKeys = [
   'frontMain',
@@ -1451,6 +1420,48 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
   }
   return imgs
 }
+
+watch(() => car.value, (newVal) => {
+  if (newVal) {
+    _skipAutoSave = true // Guard: don't trigger auto-save when resetting editForm from fetched data
+    const clone = JSON.parse(JSON.stringify(newVal))
+
+    const isFieldEmpty = (val: any) => val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)
+
+    // Automatically map old keys to new keys based on exteriorSections config & documentDetailFields
+    const applyFallback = (item: any) => {
+      if (!item) return
+      if (item.oldKey && isFieldEmpty(clone[item.key]) && clone[item.oldKey]) {
+        clone[item.key] = clone[item.oldKey]
+      }
+      if (item.splitParts) item.splitParts.forEach(applyFallback)
+      if (item.rightParts) item.rightParts.forEach(applyFallback)
+      if (item.imageGroups) item.imageGroups.forEach(applyFallback)
+    }
+
+    exteriorSections.forEach(section => section.parts.forEach(applyFallback))
+    documentDetailFields.forEach(applyFallback)
+
+    // Extract year from yearMonthOfManufacture for editing
+    if (clone.yearMonthOfManufacture && !clone.yearOfManufacture) {
+      try { clone.yearOfManufacture = new Date(clone.yearMonthOfManufacture).getFullYear() }
+      catch {}
+    }
+    editForm.value = clone
+    nextTick(() => { _skipAutoSave = false })
+  }
+}, { immediate: true })
+
+watch(editForm, () => {
+  if (_skipAutoSave || props.readonly)
+    return
+  // Debounce: wait 1.5s after last change before saving
+  if (_autoSaveTimer)
+    clearTimeout(_autoSaveTimer)
+  _autoSaveTimer = setTimeout(() => {
+    saveQC(true)
+  }, 1500)
+}, { deep: true })
 </script>
 
 <template>
