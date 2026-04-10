@@ -36,6 +36,29 @@ onMounted(() => {
 
 const search = ref('')
 
+const quickFilterStatus = ref('all')
+
+const quickFilterCounts = computed(() => {
+  const counts: Record<string, number> = {
+    all: 0,
+    upcoming: 0,
+    live: 0,
+    otobuy: 0,
+    sold: 0,
+    removed: 0,
+    liveAuctionEnded: 0
+  }
+  for (const car of allCars.value) {
+    if (car.approvalStatus === 'Approved') {
+      counts.all = (counts.all || 0) + 1
+      if (typeof car.auctionStatus === 'string' && car.auctionStatus.trim().length > 0) {
+        counts[car.auctionStatus] = (counts[car.auctionStatus] || 0) + 1
+      }
+    }
+  }
+  return counts
+})
+
 const baseFilteredItems = computed(() => {
   let result = allCars.value.filter(car => {
     let ok = car.approvalStatus === 'Approved'
@@ -49,6 +72,10 @@ const baseFilteredItems = computed(() => {
           ok = false
         }
       } else if (car.auctionStatus !== props.filterStatus) {
+        ok = false
+      }
+    } else if (quickFilterStatus.value !== 'all') {
+      if (car.auctionStatus !== quickFilterStatus.value) {
         ok = false
       }
     }
@@ -280,9 +307,26 @@ const pageNumbers = computed(() => {
 <template>
   <ClientOnly>
     <HeaderActions>
-      <div class="relative">
+      <div v-if="!props.filterStatus" class="hidden md:flex items-center bg-muted/40 p-1 rounded-md ml-auto sm:ml-0 overflow-x-auto no-scrollbar">
+        <button
+          v-for="status in ['all', 'upcoming', 'live', 'otobuy', 'sold', 'removed', 'liveAuctionEnded']"
+          :key="status"
+          class="px-2.5 py-1 flex items-center gap-1.5 text-xs font-semibold rounded-sm transition-all whitespace-nowrap"
+          :class="quickFilterStatus === status ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'"
+          @click="quickFilterStatus = status"
+        >
+          <span>{{ status === 'all' ? 'All Data' : status === 'liveAuctionEnded' ? 'Ended' : status === 'otobuy' ? 'OtoBuy' : status.charAt(0).toUpperCase() + status.slice(1) }}</span>
+          <span
+            class="px-1.5 py-0.5 rounded-full text-[10px] leading-none font-bold"
+            :class="quickFilterStatus === status ? 'bg-primary/10 text-primary' : 'bg-muted-foreground/10 text-muted-foreground'"
+          >
+            {{ quickFilterCounts[status] || 0 }}
+          </span>
+        </button>
+      </div>
+      <div class="relative ml-auto sm:ml-0">
         <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-        <Input v-model="search" placeholder="Search sales..." class="pl-8 h-8 w-48 text-sm" />
+        <Input v-model="search" placeholder="Search sales..." class="pl-8 h-8 w-40 text-sm" />
       </div>
       <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
         {{ totalFiltered }} record{{ totalFiltered !== 1 ? 's' : '' }}
