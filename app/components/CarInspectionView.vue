@@ -1461,7 +1461,6 @@ watch(() => car.value, (newVal) => {
 
     exteriorSections.forEach(section => section.parts.forEach(applyFallback))
     documentDetailFields.forEach(applyFallback)
-    console.debug('[editForm fallback] rcTokenImages after applyFallback:', clone.rcTokenImages?.length, '| rcTaxToken:', clone.rcTaxToken?.length)
 
     // Extract year from yearMonthOfManufacture for editing
     if (clone.yearMonthOfManufacture && !clone.yearOfManufacture) {
@@ -2196,12 +2195,16 @@ watch(editForm, () => {
                                 </div>
                                 <template v-if="getVideos(editForm, vk.key).length || (vk.oldKey && getVideos(editForm, vk.oldKey).length)">
                                   <div v-for="(videoUrl, vIdx) in (getVideos(editForm, vk.key).length ? getVideos(editForm, vk.key) : getVideos(editForm, vk.oldKey!))" :key="`${vk.key}-${vIdx}`" class="rounded-lg overflow-hidden border bg-black relative h-full flex-1 group">
+                                    <!-- Loading spinner behind iframe -->
+                                    <div class="absolute inset-0 flex items-center justify-center bg-black/80 pointer-events-none z-0">
+                                      <Icon name="i-lucide-loader-2" class="size-6 text-white/30 animate-spin" />
+                                    </div>
                                     <template v-if="getEmbedUrl(videoUrl).type === 'iframe'">
                                       <iframe
                                         :src="getEmbedUrl(videoUrl).src"
-                                        allow="autoplay"
+                                        allow="autoplay; encrypted-media; fullscreen"
                                         allowfullscreen
-                                        class="absolute inset-0 w-full h-full border-0 object-cover"
+                                        class="absolute inset-0 w-full h-full border-0 z-10"
                                       />
                                     </template>
                                     <template v-else>
@@ -2211,13 +2214,24 @@ watch(editForm, () => {
                                         playsinline
                                         crossorigin="anonymous"
                                         preload="auto"
-                                        class="absolute inset-0 w-full h-full object-cover"
+                                        class="absolute inset-0 w-full h-full object-cover z-10"
                                       >
                                         Your browser does not support the video tag.
                                       </video>
                                     </template>
-                                    <!-- Overlay Actions -->
-                                    <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                    <!-- External open button — always visible -->
+                                    <a
+                                      :href="videoUrl"
+                                      target="_blank"
+                                      rel="noopener"
+                                      class="absolute top-2 right-2 z-20 size-7 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-sm flex items-center justify-center transition-colors"
+                                      title="Open in new tab"
+                                      @click.stop
+                                    >
+                                      <Icon name="i-lucide-external-link" class="size-3.5 text-white" />
+                                    </a>
+                                    <!-- Edit overlay (non-readonly) -->
+                                    <div v-if="!props.readonly" class="absolute top-2 right-10 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                                       <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(vk.key, vIdx, vk.oldKey)">
                                         <Icon name="i-lucide-refresh-cw" class="size-3.5" />
                                       </Button>
