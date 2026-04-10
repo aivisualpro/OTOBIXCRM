@@ -1902,9 +1902,22 @@ watch(editForm, () => {
                                 <div class="flex-1 px-3 py-2 border-b border-border/50 last:border-b-0 flex flex-col justify-center gap-1.5 overflow-hidden bg-white/40 dark:bg-black/20">
                                   <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 truncate w-full" :title="partItem.label">{{ partItem.label }}</span>
                                   <div class="w-full min-w-0 pointer-events-auto flex items-center">
-                                    <p v-if="props.readonly" class="text-xs font-medium px-2 py-1.5 bg-muted/50 rounded border border-border/50 truncate w-full">
-                                      {{ partItem.type === 'date' ? (formatDateMMDDYYYY(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')) || '—') : (editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '') || '—') }}
-                                    </p>
+                                    <template v-if="props.readonly">
+                                      <div v-if="['dropdown', 'multiselect'].includes(partItem.type) && getValuesArray(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')).length" class="flex flex-wrap gap-1.5 w-full">
+                                        <div
+                                          v-for="val in getValuesArray(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : ''))"
+                                          :key="val"
+                                          class="px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1.5 shadow-sm border border-border/50 truncate w-max"
+                                          :class="getConditionStyle(val).bg"
+                                        >
+                                          <Icon :name="getConditionStyle(val).icon" class="size-3 shrink-0" />
+                                          <span class="truncate max-w-[180px]">{{ val }}</span>
+                                        </div>
+                                      </div>
+                                      <p v-else class="text-xs font-medium px-2 py-1.5 bg-muted/50 rounded border border-border/50 truncate w-full" :class="!getValuesArray(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')).length ? 'text-muted-foreground' : ''">
+                                        {{ partItem.type === 'date' ? (formatDateMMDDYYYY(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')) || '—') : (getValuesArray(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')).join(', ') || '—') }}
+                                      </p>
+                                    </template>
                                     <template v-else>
                                       <Input v-if="partItem.type === 'date'" :model-value="formatDateYYYYMMDD(editForm[partItem.key])" type="date" class="h-8 text-xs font-medium w-full bg-background" @update:model-value="editForm[partItem.key] = $event" />
                                       <Input v-else-if="partItem.type === 'single'" v-model="editForm[partItem.key]" class="h-8 text-xs font-medium w-full bg-background" />
@@ -1922,9 +1935,22 @@ watch(editForm, () => {
                             <div class="flex-1 px-3 py-2 border-b border-border/50 last:border-b-0 flex flex-col justify-center gap-1.5 overflow-hidden bg-white/40 dark:bg-black/20">
                               <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 truncate w-full" :title="partItem.label">{{ partItem.label }}</span>
                               <div class="w-full min-w-0 pointer-events-auto flex items-center">
-                                <p v-if="props.readonly" class="text-xs font-medium px-2 py-1.5 bg-muted/50 rounded border border-border/50 truncate w-full">
-                                  {{ partItem.type === 'date' ? (formatDateMMDDYYYY(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')) || '—') : (editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '') || '—') }}
-                                </p>
+                                <template v-if="props.readonly">
+                                  <div v-if="['dropdown', 'multiselect'].includes(partItem.type) && getValuesArray(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')).length" class="flex flex-wrap gap-1.5 w-full">
+                                    <div
+                                      v-for="val in getValuesArray(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : ''))"
+                                      :key="val"
+                                      class="px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1.5 shadow-sm border border-border/50 truncate w-max"
+                                      :class="getConditionStyle(val).bg"
+                                    >
+                                      <Icon :name="getConditionStyle(val).icon" class="size-3 shrink-0" />
+                                      <span class="truncate max-w-[180px]">{{ val }}</span>
+                                    </div>
+                                  </div>
+                                  <p v-else class="text-xs font-medium px-2 py-1.5 bg-muted/50 rounded border border-border/50 truncate w-full" :class="!getValuesArray(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')).length ? 'text-muted-foreground' : ''">
+                                    {{ partItem.type === 'date' ? (formatDateMMDDYYYY(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')) || '—') : (getValuesArray(editForm[partItem.key] || (partItem.oldKey ? editForm[partItem.oldKey] : '')).join(', ') || '—') }}
+                                  </p>
+                                </template>
                                 <template v-else>
                                   <Input v-if="partItem.type === 'date'" :model-value="formatDateYYYYMMDD(editForm[partItem.key])" type="date" class="h-8 text-xs font-medium w-full bg-background" @update:model-value="editForm[partItem.key] = $event" />
                                   <Input v-else-if="partItem.type === 'single'" v-model="editForm[partItem.key]" class="h-8 text-xs font-medium w-full bg-background" />
@@ -2005,9 +2031,20 @@ watch(editForm, () => {
                       <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                         {{ field.label }}
                       </p>
-                      <p v-if="props.readonly" class="text-sm font-medium text-right w-2/3">
-                        {{ editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '') || '—' }}
-                      </p>
+                      <template v-if="props.readonly">
+                        <div v-if="getValuesArray(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')).length" class="flex flex-wrap justify-end gap-1.5 w-2/3">
+                          <div
+                            v-for="val in getValuesArray(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : ''))"
+                            :key="val"
+                            class="px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1.5 shadow-sm border border-border/50 truncate w-max"
+                            :class="getConditionStyle(val).bg"
+                          >
+                            <Icon :name="getConditionStyle(val).icon" class="size-3 shrink-0" />
+                            <span class="truncate max-w-[180px]">{{ val }}</span>
+                          </div>
+                        </div>
+                        <p v-else class="text-sm font-medium text-right w-2/3 text-muted-foreground">—</p>
+                      </template>
                       <SearchableSelect v-else v-model="editForm[field.key]" :options="field.staticOptions || getOptions(field.dropdownName || '')" class-name="w-2/3 h-8 shadow-sm text-sm" />
                     </div>
                     <!-- MULTISELECT field -->
@@ -2015,9 +2052,20 @@ watch(editForm, () => {
                       <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                         {{ field.label }}
                       </p>
-                      <p v-if="props.readonly" class="text-sm font-medium text-right w-2/3 truncate">
-                        {{ getValuesArray(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')).join(', ') || '—' }}
-                      </p>
+                      <template v-if="props.readonly">
+                        <div v-if="getValuesArray(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')).length" class="flex flex-wrap justify-end gap-1.5 w-2/3">
+                          <div
+                            v-for="val in getValuesArray(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : ''))"
+                            :key="val"
+                            class="px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1.5 shadow-sm border border-border/50 truncate w-max"
+                            :class="getConditionStyle(val).bg"
+                          >
+                            <Icon :name="getConditionStyle(val).icon" class="size-3 shrink-0" />
+                            <span class="truncate max-w-[180px]">{{ val }}</span>
+                          </div>
+                        </div>
+                        <p v-else class="text-sm font-medium text-right w-2/3 text-muted-foreground">—</p>
+                      </template>
                       <div v-else class="w-2/3">
                         <MultiSelect :model-value="editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')" :options="getOptions(field.dropdownName || '')" class="w-full" @update:model-value="editForm[field.key] = $event">
                           <template #trigger>
@@ -2064,8 +2112,8 @@ watch(editForm, () => {
                       <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                         {{ field.label }}
                       </p>
-                      <p v-if="props.readonly" class="text-sm font-medium text-right w-2/3">
-                        {{ editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '') || '—' }}
+                      <p v-if="props.readonly" class="text-sm font-medium text-right w-2/3" :class="!getValuesArray(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')).length ? 'text-muted-foreground' : ''">
+                        {{ getValuesArray(editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')).join(', ') || '—' }}
                       </p>
                       <Input v-else v-model="editForm[field.key]" class="h-8 text-sm font-medium w-2/3" />
                     </div>

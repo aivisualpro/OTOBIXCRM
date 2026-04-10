@@ -49,11 +49,9 @@ const quickFilterCounts = computed(() => {
     liveAuctionEnded: 0
   }
   for (const car of allCars.value) {
-    if (car.approvalStatus === 'Approved') {
-      counts.all = (counts.all || 0) + 1
-      if (typeof car.auctionStatus === 'string' && car.auctionStatus.trim().length > 0) {
-        counts[car.auctionStatus] = (counts[car.auctionStatus] || 0) + 1
-      }
+    counts.all = (counts.all || 0) + 1
+    if (typeof car.auctionStatus === 'string' && car.auctionStatus.trim().length > 0) {
+      counts[car.auctionStatus] = (counts[car.auctionStatus] || 0) + 1
     }
   }
   return counts
@@ -61,7 +59,7 @@ const quickFilterCounts = computed(() => {
 
 const baseFilteredItems = computed(() => {
   let result = allCars.value.filter(car => {
-    let ok = car.approvalStatus === 'Approved'
+    let ok = true
     if (props.filterStatus) {
       if (props.filterStatus === 'customer-activity') {
         if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy') {
@@ -471,7 +469,7 @@ const pageNumbers = computed(() => {
             <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
           </TableRow>
           <TableRow v-if="paginatedItems.length === 0">
-            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 15 : 16" class="h-32 text-center text-muted-foreground bg-muted/10">No matching approved inspection records found</TableCell>
+            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 15 : 16" class="h-32 text-center text-muted-foreground bg-muted/10">No matching records found</TableCell>
           </TableRow>
         </TableBody>
       </Table>

@@ -3,7 +3,7 @@ import type { SidebarMenuButtonVariants } from '~/components/ui/sidebar'
 import type { NavLink } from '~/types/nav'
 import { useSidebar } from '~/components/ui/sidebar'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   item: NavLink
   size?: SidebarMenuButtonVariants['size']
 }>(), {
@@ -29,6 +29,17 @@ function onLinkLeave() {
     hoverTimer = null
   }
 }
+
+const isActive = computed(() => {
+  if (props.item.disabled) return false;
+  if (props.item.link === '/') return useRoute().path === '/';
+  
+  const baseParts = props.item.link.split('/');
+  const base = baseParts.length > 1 && baseParts[1] ? '/' + baseParts[1] : '/';
+  
+  const currentPath = useRoute().path;
+  return currentPath === base || currentPath.startsWith(base + '/');
+});
 </script>
 
 <template>
@@ -38,7 +49,7 @@ function onLinkLeave() {
         as-child 
         :tooltip="item.title" 
         :size="size" 
-        :data-active="!item.disabled && ($route.path === item.link || (item.link !== '/' && $route.path.startsWith(item.link + '/')))"
+        :data-active="isActive"
       >
         <!-- Disabled / Coming Soon: render as non-clickable span -->
         <span v-if="item.disabled" class="flex items-center gap-2 opacity-50 cursor-not-allowed w-full">

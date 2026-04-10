@@ -31,11 +31,11 @@ const { allCars, isFetched, globalSearch } = useAuctionsApi()
 
 function getTabCount(filterId: string) {
   if (!isFetched.value) return undefined
-  
+
   let matches = allCars.value.filter(car => {
-    let ok = car.approvalStatus === 'Approved'
+    let ok = true
     if (filterId === 'all') return ok
-    
+
     if (filterId === 'customer-activity') {
       if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy') {
         ok = false
@@ -49,7 +49,7 @@ function getTabCount(filterId: string) {
       }
       return ok
     }
-    
+
     const statusMap: Record<string, string> = {
        live: 'live',
        otobuy: 'otobuy',
@@ -57,19 +57,19 @@ function getTabCount(filterId: string) {
        sold: 'sold',
        removed: 'removed'
     }
-    
+
     if (statusMap[filterId]) {
       if (car.auctionStatus !== statusMap[filterId]) {
         ok = false
       }
     }
-    
+
     return ok
   })
-  
+
   if (globalSearch.value) {
     const q = globalSearch.value.toLowerCase()
-    matches = matches.filter(car => 
+    matches = matches.filter(car =>
       ['make', 'model', 'variant', 'registrationNumber', 'appointmentId'].some(key =>
         String(car[key] ?? '').toLowerCase().includes(q)
       )
@@ -83,16 +83,15 @@ watch(globalSearch, (newVal) => {
   if (newVal && newVal.trim().length > 3) {
     const q = newVal.toLowerCase()
     const globalMatches = allCars.value.filter(car => {
-      if (car.approvalStatus !== 'Approved') return false
       return ['make', 'model', 'variant', 'registrationNumber', 'appointmentId'].some(key =>
         String(car[key] ?? '').toLowerCase().includes(q)
       )
     })
-    
+
     if (globalMatches.length === 1) {
       const match = globalMatches[0]
       if (!match) return
-      
+
       const statusMapRevealed: Record<string, string> = {
          live: 'live',
          otobuy: 'otobuy',
@@ -101,7 +100,7 @@ watch(globalSearch, (newVal) => {
          removed: 'removed'
       }
       const targetTab = statusMapRevealed[match.auctionStatus] || 'all'
-      
+
       if (route.path !== `/sales/${targetTab}`) {
         useRouter().push(`/sales/${targetTab}`)
       }
