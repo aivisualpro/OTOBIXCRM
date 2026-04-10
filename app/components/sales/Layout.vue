@@ -13,6 +13,30 @@ const navItems = [
   { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/sales/sold' },
   { id: 'removed', title: 'Removed', icon: 'i-lucide-trash-2', link: '/sales/removed' },
 ]
+
+// ─── Live counts per tab ───
+const { allCars, isFetched } = useAuctionsApi()
+
+function getTabCount(filterId: string) {
+  if (!isFetched.value) return undefined
+
+  return allCars.value.filter(car => {
+    let ok = car.approvalStatus === 'Approved'
+    if (filterId === 'all') return ok
+    
+    const statusMap: Record<string, string> = {
+       live: 'live',
+       ended: 'liveAuctionEnded',
+       sold: 'sold',
+       removed: 'removed'
+    }
+    
+    if (statusMap[filterId] && car.auctionStatus !== statusMap[filterId]) {
+      ok = false
+    }
+    return ok
+  }).length || undefined
+}
 </script>
 
 <template>
@@ -31,6 +55,15 @@ const navItems = [
         >
           <Icon :name="item.icon" class="size-4" />
           <span>{{ item.title }}</span>
+          <span
+            v-if="getTabCount(item.id) !== undefined"
+            class="text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
+            :class="currentActiveId === item.id 
+               ? 'bg-primary-foreground/20 text-primary-foreground' 
+               : 'bg-muted text-muted-foreground'"
+          >
+            {{ getTabCount(item.id) }}
+          </span>
         </NuxtLink>
       </div>
     </div>

@@ -323,7 +323,7 @@ async function handleRefresh() {
                <p class="text-xs text-muted-foreground mt-0.5 truncate flex items-center gap-1.5">
                   <span class="font-medium text-foreground/80" v-if="car.variant">{{ car.variant }}</span>
                   <span v-if="car.variant" class="size-0.5 rounded-full bg-border" />
-                  <span class="font-mono uppercase">{{ car.registrationNumber || car.appointmentId }}</span>
+                  <span class="font-mono uppercase">{{ [car.registrationNumber, car.appointmentId].filter(Boolean).join(' • ') }}</span>
                </p>
 
                <div class="mt-auto pt-4 flex items-center justify-between">
@@ -420,7 +420,7 @@ async function handleRefresh() {
                    </div>
                    <div class="flex flex-col gap-0.5">
                      <span class="text-xs text-muted-foreground font-medium flex items-center gap-1.5"><Icon name="i-lucide-hash" class="size-3.5" /> App ID / Reg</span>
-                     <span class="text-sm font-mono font-bold text-foreground pl-5">{{ car.registrationNumber || car.appointmentId }}</span>
+                     <span class="text-sm font-mono font-bold text-foreground pl-5">{{ [car.registrationNumber, car.appointmentId].filter(Boolean).join(' • ') }}</span>
                    </div>
                    <div class="flex flex-col gap-0.5 col-span-2 mt-2 pt-4 border-t border-border/50">
                      <span class="text-xs text-muted-foreground font-medium flex items-center gap-1.5"><Icon name="i-lucide-map-pin" class="size-3.5" /> Location</span>
