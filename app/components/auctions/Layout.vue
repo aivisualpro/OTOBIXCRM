@@ -26,7 +26,7 @@ const currentActiveId = computed(() => {
 })
 
 // ─── Live counts per tab ───
-const { allCars, isFetched } = useAuctionsApi()
+const { allCars, isFetched, globalSearch } = useAuctionsApi()
 
 function getTabCount(filterKey: string) {
   if (!isFetched.value)
@@ -34,8 +34,44 @@ function getTabCount(filterKey: string) {
   const filter = auctionRouteFilters[filterKey]
   if (!filter)
     return 0
-  return allCars.value.filter(filter.filterFn).length || undefined
+    
+  let result = allCars.value.filter(filter.filterFn)
+  
+  if (globalSearch.value) {
+    const q = globalSearch.value.toLowerCase()
+    result = result.filter(item =>
+      ['make', 'model', 'variant', 'registrationNumber', 'inspectionLocation', 'fuelType', 'appointmentId'].some(key =>
+        String(item[key] ?? '').toLowerCase().includes(q)
+      )
+    )
+  }
+  
+  return result.length || undefined
 }
+
+watch(globalSearch, (newVal) => {
+  if (newVal && newVal.trim().length > 3) {
+    const q = newVal.toLowerCase()
+    const globalMatches = allCars.value.filter(item =>
+      ['make', 'model', 'variant', 'registrationNumber', 'inspectionLocation', 'fuelType', 'appointmentId'].some(key =>
+        String(item[key] ?? '').toLowerCase().includes(q)
+      )
+    )
+    if (globalMatches.length === 1) {
+      const match = globalMatches[0]
+      if (!match) return
+      
+      for (const [key, filter] of Object.entries(auctionRouteFilters)) {
+        if (filter.filterFn(match)) {
+          if (route.path !== `/auctions/${key}`) {
+            useRouter().push(`/auctions/${key}`)
+          }
+          break
+        }
+      }
+    }
+  }
+})
 </script>
 
 <template>

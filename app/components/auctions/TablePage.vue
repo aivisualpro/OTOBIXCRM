@@ -108,13 +108,13 @@ onUnmounted(() => {
 })
 
 // ─── UI State ───
-const search = ref('')
+const { globalSearch } = useAuctionsApi()
 const baseFilteredItems = computed(() => allCars.value.filter(props.filterFn))
 
 const filteredItems = computed(() => {
   let result = baseFilteredItems.value
-  if (search.value) {
-    const q = search.value.toLowerCase()
+  if (globalSearch.value) {
+    const q = globalSearch.value.toLowerCase()
     result = result.filter(item =>
       ['make', 'model', 'variant', 'registrationNumber', 'inspectionLocation', 'fuelType', 'appointmentId'].some(key =>
         String(item[key] ?? '').toLowerCase().includes(q),
@@ -128,7 +128,7 @@ const filteredItems = computed(() => {
 const ITEMS_PER_PAGE = 30
 const visibleCount = ref(ITEMS_PER_PAGE)
 
-watch(search, () => { 
+watch(globalSearch, () => { 
   visibleCount.value = ITEMS_PER_PAGE
   expandedCarId.value = null
 })
@@ -253,8 +253,8 @@ async function handleRefresh() {
     <HeaderActions>
       <div class="relative">
         <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-        <Input id="globalSearchInput" v-model="search" placeholder="Search auctions..." class="pl-8 pr-12 h-8 w-48 text-sm" />
-        <div v-if="!search" class="pointer-events-none absolute right-1.5 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex text-muted-foreground">
+        <Input id="globalSearchInput" v-model="globalSearch" placeholder="Search across auctions..." class="pl-8 h-8 w-48 text-sm bg-muted/20" />
+        <div v-if="!globalSearch" class="pointer-events-none absolute right-1.5 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex text-muted-foreground">
           <span class="text-[9px]">⌘</span>K
         </div>
       </div>

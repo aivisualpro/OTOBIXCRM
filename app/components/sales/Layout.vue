@@ -27,12 +27,12 @@ const navItems = computed(() => {
 })
 
 // ─── Live counts per tab ───
-const { allCars, isFetched } = useAuctionsApi()
+const { allCars, isFetched, globalSearch } = useAuctionsApi()
 
 function getTabCount(filterId: string) {
   if (!isFetched.value) return undefined
-
-  return allCars.value.filter(car => {
+  
+  let matches = allCars.value.filter(car => {
     let ok = car.approvalStatus === 'Approved'
     if (filterId === 'all') return ok
     
@@ -58,12 +58,56 @@ function getTabCount(filterId: string) {
        removed: 'removed'
     }
     
-    if (statusMap[filterId] && car.auctionStatus !== statusMap[filterId]) {
-      ok = false
+    if (statusMap[filterId]) {
+      if (car.auctionStatus !== statusMap[filterId]) {
+        ok = false
+      }
     }
+    
     return ok
-  }).length || undefined
+  })
+  
+  if (globalSearch.value) {
+    const q = globalSearch.value.toLowerCase()
+    matches = matches.filter(car => 
+      ['make', 'model', 'variant', 'registrationNumber', 'appointmentId'].some(key =>
+        String(car[key] ?? '').toLowerCase().includes(q)
+      )
+    )
+  }
+
+  return matches.length || undefined
 }
+
+watch(globalSearch, (newVal) => {
+  if (newVal && newVal.trim().length > 3) {
+    const q = newVal.toLowerCase()
+    const globalMatches = allCars.value.filter(car => {
+      if (car.approvalStatus !== 'Approved') return false
+      return ['make', 'model', 'variant', 'registrationNumber', 'appointmentId'].some(key =>
+        String(car[key] ?? '').toLowerCase().includes(q)
+      )
+    })
+    
+    if (globalMatches.length === 1) {
+      const match = globalMatches[0]
+      if (!match) return
+      
+      const statusMapRevealed: Record<string, string> = {
+         live: 'live',
+         otobuy: 'otobuy',
+         liveAuctionEnded: 'ended',
+         sold: 'sold',
+         removed: 'removed'
+      }
+      const targetTab = statusMapRevealed[match.auctionStatus] || 'all'
+      
+      if (route.path !== `/sales/${targetTab}`) {
+        useRouter().push(`/sales/${targetTab}`)
+      }
+    }
+  }
+})
 </script>
 
 <template>

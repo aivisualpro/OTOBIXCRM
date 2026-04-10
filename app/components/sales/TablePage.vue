@@ -12,7 +12,7 @@ const props = defineProps<{
 const { setHeader } = usePageHeader()
 setHeader({ title: props.title, description: props.description, icon: props.icon })
 
-const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars } = useAuctionsApi()
+const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars, globalSearch } = useAuctionsApi()
 
 const bidStats = ref<Record<string, { totalBids: number, uniqueDealers: number, lastBidAt?: string }>>({})
 const isStatsLoading = ref(false)
@@ -34,7 +34,7 @@ onMounted(() => {
   fetchBidStats()
 })
 
-const search = ref('')
+
 
 const quickFilterStatus = ref('all')
 
@@ -109,10 +109,10 @@ const baseFilteredItems = computed(() => {
 
 const filteredItems = computed(() => {
   let result = baseFilteredItems.value
-  if (search.value) {
-    const q = search.value.toLowerCase()
+  if (globalSearch && globalSearch.value) {
+    const q = globalSearch.value.toLowerCase()
     result = result.filter(item =>
-      ['make', 'model', 'variant', 'registrationNumber', 'appointmentId'].some(key =>
+      ['make', 'model', 'variant', 'registrationNumber', 'inspectionLocation', 'fuelType', 'appointmentId'].some(key =>
         String(item[key] ?? '').toLowerCase().includes(q),
       ),
     )
@@ -122,7 +122,7 @@ const filteredItems = computed(() => {
 
 const PER_PAGE = 30
 const currentPage = ref(1)
-watch(search, () => { currentPage.value = 1 })
+watch(globalSearch, () => { currentPage.value = 1 })
 
 const totalFiltered = computed(() => filteredItems.value.length)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalFiltered.value / PER_PAGE)))
@@ -326,7 +326,7 @@ const pageNumbers = computed(() => {
       </div>
       <div class="relative ml-auto sm:ml-0">
         <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-        <Input v-model="search" placeholder="Search sales..." class="pl-8 h-8 w-40 text-sm" />
+        <Input v-model="globalSearch" placeholder="Search sales..." class="pl-8 h-8 w-40 text-sm" />
       </div>
       <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
         {{ totalFiltered }} record{{ totalFiltered !== 1 ? 's' : '' }}
