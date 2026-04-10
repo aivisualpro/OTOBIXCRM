@@ -170,7 +170,19 @@ const pageNumbers = computed(() => {
               <p class="font-medium text-xs">{{ car.make }} {{ car.model }}</p>
               <p class="text-[10px] text-muted-foreground">{{ car.variant }} • {{ car.fuelType }}</p>
             </TableCell>
-            <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
+            <TableCell>
+              <div class="flex justify-center">
+                <NuxtLink 
+                  v-if="car.appointmentId" 
+                  :to="`/inspection/${car.appointmentId}`" 
+                  target="_blank" 
+                  class="p-1.5 hover:bg-muted/50 rounded-md transition-colors w-8 h-8 flex items-center justify-center border border-transparent hover:border-border"
+                >
+                  <Icon name="i-lucide-file-text" class="size-4 text-red-500" />
+                </NuxtLink>
+                <span v-else class="text-xs text-muted-foreground">—</span>
+              </div>
+            </TableCell>
             <TableCell class="whitespace-nowrap text-xs">
               <Badge variant="outline" class="font-normal">{{ car.auctionStatus || '—' }}</Badge>
             </TableCell>

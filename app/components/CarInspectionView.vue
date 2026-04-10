@@ -1704,10 +1704,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                         {{ car.yearMonthOfManufacture ? new Date(car.yearMonthOfManufacture).getFullYear() : '—' }}
                       </div>
                       <Input v-else v-model="editForm.yearOfManufacture" type="number" class="h-8 mt-auto text-2xl font-black border-none bg-transparent p-0 focus-visible:ring-0 shadow-none w-24 text-foreground" placeholder="e.g. 2019" />
-                      <!-- Decorative circle icon -->
-                      <div class="absolute right-4 top-1/2 -translate-y-1/2 mt-1 size-12 rounded-full border-[3px] border-slate-200 dark:border-slate-800 flex items-center justify-center bg-background shadow-sm">
-                        <Icon name="i-lucide-calendar" class="size-5 text-slate-400" />
-                      </div>
+
                     </div>
                   </div>
 
@@ -1718,14 +1715,11 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       <p class="text-xs text-muted-foreground mb-1 font-medium">
                         Registration
                       </p>
-                      <div class="mt-auto relative z-10 w-full pr-8">
+                      <div class="mt-auto relative z-10 w-full">
                         <div v-if="props.readonly" class="text-xl font-black text-foreground truncate uppercase" :title="car.registrationNumber">
                           {{ car.registrationNumber || '—' }}
                         </div>
                         <Input v-else v-model="editForm.registrationNumber" class="h-8 max-w-[120px] text-lg font-black uppercase border-none bg-transparent p-0 focus-visible:ring-0 shadow-none text-foreground" placeholder="MH01..." />
-                      </div>
-                      <div class="absolute right-4 top-1/2 -translate-y-1/2 mt-1 size-12 rounded-full border-[3px] border-slate-200 dark:border-slate-800 flex items-center justify-center bg-background shadow-sm">
-                        <Icon name="i-lucide-car-front" class="size-5 text-slate-400" />
                       </div>
                     </div>
 
@@ -1734,14 +1728,11 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                       <p class="text-xs text-muted-foreground mb-1 font-medium">
                         Reg. Date
                       </p>
-                      <div class="mt-auto relative z-10 w-full pr-8">
+                      <div class="mt-auto relative z-10 w-full">
                         <div v-if="props.readonly" class="text-xl font-black text-foreground truncate" :title="formatDateMMDDYYYY(car.registrationDate)">
                           {{ formatDateMMDDYYYY(car.registrationDate) || '—' }}
                         </div>
                         <Input v-else :model-value="formatDateYYYYMMDD(editForm.registrationDate)" type="date" class="h-8 max-w-[140px] text-[15px] font-black border-none bg-transparent p-0 focus-visible:ring-0 shadow-none text-foreground" @update:model-value="editForm.registrationDate = $event" />
-                      </div>
-                      <div class="absolute right-4 top-1/2 -translate-y-1/2 mt-1 size-12 rounded-full border-[3px] border-slate-200 dark:border-slate-800 flex items-center justify-center bg-background shadow-sm">
-                        <Icon name="i-lucide-calendar-days" class="size-5 text-slate-400" />
                       </div>
                     </div>
 
