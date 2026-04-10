@@ -266,10 +266,34 @@ async function confirmQCApproval() {
   }
 }
 
-async function rejectLead() {
+const showRejectModal = ref(false)
+const rejectReason = ref('')
+
+function openRejectModal() {
+  rejectReason.value = editForm.value.rejectionReason || car.value?.rejectionReason || ''
+  showRejectModal.value = true
+}
+
+async function confirmReject() {
+  if (!rejectReason.value.trim()) {
+    toast.error('Rejection reason is required')
+    return
+  }
+  
+  editForm.value.rejectionReason = rejectReason.value
   editForm.value.approvalStatus = 'Rejected'
-  await saveQC()
-  router.push('/leads/rejected')
+  
+  const loadingToast = toast.loading('Rejecting inspection...')
+  try {
+    await saveQC(true)
+    showRejectModal.value = false
+    toast.dismiss(loadingToast)
+    toast.success('Vehicle successfully marked as Rejected!')
+    router.push('/leads/rejected')
+  } catch (err: any) {
+    toast.dismiss(loadingToast)
+    toast.error(err?.message || 'Failed to reject.')
+  }
 }
 
 const UPLOAD_BASE = 'https://ob-dealerapp-kong.onrender.com/api/otobix/car'
@@ -1463,6 +1487,34 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
       </DialogContent>
     </Dialog>
 
+    <!-- Reject Modal -->
+    <Dialog :open="showRejectModal" @update:open="showRejectModal = $event">
+      <DialogContent class="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Reject Inspection</DialogTitle>
+          <DialogDescription>
+            Please provide a reason for rejecting this vehicle.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Rejection Reason</label>
+            <textarea v-model="rejectReason" placeholder="Enter reason here..." class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" rows="3" required></textarea>
+          </div>
+        </div>
+
+        <DialogFooter class="sm:justify-end">
+          <Button variant="outline" @click="showRejectModal = false">
+            Cancel
+          </Button>
+          <Button class="bg-red-500 hover:bg-red-600 focus:ring-red-500 text-white font-bold" @click="confirmReject">
+            Reject Inspection
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- Loading -->
     <div v-if="isLoading" class="flex-1 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
@@ -1528,7 +1580,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
             <Button
               v-if="!props.readonly && car.approvalStatus !== 'Approved'"
               class="mr-2 bg-red-500 hover:bg-red-600 focus:ring-red-500 text-white font-bold shadow-sm h-8 text-xs shrink-0 px-4"
-              @click="rejectLead"
+              @click="openRejectModal"
             >
               <Icon name="i-lucide-x-circle" class="mr-1.5 size-4" />
               Reject
@@ -1778,20 +1830,20 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
               <!-- FAR RIGHT: Vertical User Strip -->
               <div class="hidden lg:flex flex-col w-12 shrink-0 border-l border-border/60">
                 <!-- Inspected By Block -->
-                <div class="flex-1 flex items-center justify-center text-white bg-slate-800 dark:bg-slate-900 border-b border-white/10">
+                <div class="flex-1 flex items-center justify-center border-b border-white/10" :class="car.inspectionStatus === 'Inspected' ? 'bg-[#4285F4] text-white' : 'bg-slate-400 dark:bg-slate-600 text-white'">
                   <span class="transform -rotate-180" style="writing-mode: vertical-rl; text-orientation: mixed;">
                     <span class="flex items-center gap-2 text-[11px] font-black tracking-[0.15em] uppercase whitespace-nowrap">
-                      <span class="text-[9px] text-white/50 tracking-widest mt-1">INSPECTED</span>
-                      <span class="text-blue-400">{{ allocatedToName || 'UA' }}</span>
+                      <span class="text-[9px] opacity-70 tracking-widest mt-1">BY</span>
+                      <span>{{ (allocatedToName || 'UA').split(/[\s_]+/)[0] }}</span>
                     </span>
                   </span>
                 </div>
                 <!-- Reviewing By Block -->
-                <div class="flex-1 flex items-center justify-center text-white bg-slate-800 dark:bg-slate-900">
+                <div class="flex-1 flex items-center justify-center" :class="(car.approvalStatus || '').toLowerCase().includes('approved') ? 'bg-emerald-500 text-white' : (car.approvalStatus || '').toLowerCase().includes('reject') ? 'bg-red-500 text-white' : 'bg-[#FBBC05] text-amber-950'">
                   <span class="transform -rotate-180" style="writing-mode: vertical-rl; text-orientation: mixed;">
                     <span class="flex items-center gap-2 text-[11px] font-black tracking-[0.15em] uppercase whitespace-nowrap">
-                      <span class="text-[9px] text-white/50 tracking-widest mt-1">{{ car.approvalStatus === 'Approved' ? 'QC BY' : 'REVIEWING' }}</span>
-                      <span class="text-amber-400">{{ qcByName || 'QC' }}</span>
+                      <span class="text-[9px] opacity-70 tracking-widest mt-1">{{ car.approvalStatus === 'Approved' ? 'QC BY' : 'BY' }}</span>
+                      <span>{{ (qcByName || 'QC').split(/[\s_]+/)[0] }}</span>
                     </span>
                   </span>
                 </div>
