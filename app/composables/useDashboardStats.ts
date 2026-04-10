@@ -23,6 +23,7 @@ export interface DashboardKpi {
 
   totalDealers: number // Total dealers in the system
   totalCars: number // Total cars in the system
+  totalLeads: number // Total leads in the system (from /leads)
 }
 
 /**
@@ -63,10 +64,15 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
   const { allUsers, fetchAllUsers, isLoading: usersLoading } = usePeopleApi()
 
   const isLoading = computed(() => carsLoading.value || usersLoading.value)
+  const totalLeads = ref(0)
 
   // Fetch data on mount
-  onMounted(async () => {
-    await Promise.all([fetchAllCars(), fetchAllUsers()])
+  onMounted(() => {
+    fetchAllCars()
+    fetchAllUsers()
+    $fetch<any>('/api/leads/total').then(res => {
+      totalLeads.value = res?.total || 0
+    }).catch(err => console.error(err))
   })
 
   // ─── Sold auctions (filtered by auctionEndTime) ───
@@ -146,6 +152,7 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
       growthRateDirection,
       totalDealers,
       totalCars,
+      totalLeads: totalLeads.value,
     }
   })
 

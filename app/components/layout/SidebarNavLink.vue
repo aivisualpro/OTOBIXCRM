@@ -34,7 +34,12 @@ function onLinkLeave() {
 <template>
   <SidebarMenu>
     <SidebarMenuItem>
-      <SidebarMenuButton as-child :tooltip="item.title" :size="size" :data-active="!item.disabled && item.link === $route.path">
+      <SidebarMenuButton 
+        as-child 
+        :tooltip="item.title" 
+        :size="size" 
+        :data-active="!item.disabled && ($route.path === item.link || (item.link !== '/' && $route.path.startsWith(item.link + '/')))"
+      >
         <!-- Disabled / Coming Soon: render as non-clickable span -->
         <span v-if="item.disabled" class="flex items-center gap-2 opacity-50 cursor-not-allowed w-full">
           <Icon v-if="item.icon" :name="item.icon" class="size-4" />

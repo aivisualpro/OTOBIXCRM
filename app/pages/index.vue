@@ -123,14 +123,15 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
 const { activeWorkspace } = useWorkspace()
 
 const WIDGETS_MANIFEST = [
-  { id: 'auctions_closed', title: 'Auctions Closed', icon: 'i-lucide-gavel' },
+  { id: 'auctions_closed', title: 'Sales Revenue', icon: 'i-lucide-banknote' },
+  { id: 'total_leads', title: 'Active Lead Pipeline', icon: 'i-lucide-activity' },
+  { id: 'total_cars', title: 'Total Cars Inventory', icon: 'i-lucide-car-front' },
   { id: 'new_customers', title: 'New Customers', icon: 'i-lucide-users' },
   { id: 'active_accounts', title: 'Active Accounts', icon: 'i-lucide-car' },
-  { id: 'growth_rate', title: 'Growth Rate', icon: 'i-lucide-bar-chart-3' },
-  { id: 'auction_trends', title: 'Auction & Customer Trends', icon: 'i-lucide-trending-up', fullWidth: true },
+  { id: 'growth_rate', title: 'Sales Growth Rate', icon: 'i-lucide-bar-chart-3' },
   { id: 'total_dealers', title: 'Total Dealers', icon: 'i-lucide-contact' },
-  { id: 'total_cars', title: 'Total Cars', icon: 'i-lucide-car-front' },
-  { id: 'dealers_overview', title: 'Dealers Overview', icon: 'i-lucide-building-2', fullWidth: true },
+  { id: 'auction_trends', title: 'Sales & Customer Trends', icon: 'i-lucide-trending-up', fullWidth: true },
+  { id: 'dealers_overview', title: 'People Network', icon: 'i-lucide-building-2', fullWidth: true },
 ]
 
 const availableWidgets = computed(() => {
@@ -251,15 +252,15 @@ function toggleWidget(widgetId: string) {
                 </div>
               </div>
 
-              <!-- 1 ─ Auctions Closed -->
+              <!-- 1 ─ Auctions Closed (Sales Revenue) -->
               <Card v-if="widgetId === 'auctions_closed'" class="@container/card group relative overflow-hidden h-full">
                 <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent transition-all duration-500 group-hover:from-emerald-500/10" />
                 <CardHeader>
                   <CardDescription class="flex items-center gap-2">
                     <div class="flex items-center justify-center rounded-lg bg-emerald-500/10 p-1.5">
-                      <Gavel class="size-3.5 text-emerald-500" />
+                      <Icon name="i-lucide-banknote" class="size-3.5 text-emerald-500" />
                     </div>
-                    Auctions Closed
+                    Total Sales Revenue
                   </CardDescription>
                   <CardTitle class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
                     <template v-if="isLoading">
@@ -295,6 +296,42 @@ function toggleWidget(widgetId: string) {
                   </div>
                   <div class="text-muted-foreground">
                     {{ auctionsFooterSub }}
+                  </div>
+                </CardFooter>
+              </Card>
+
+              <!-- LEAD FUNNEL WIDGET -->
+              <Card v-else-if="widgetId === 'total_leads'" class="@container/card group relative overflow-hidden h-full">
+                <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-fuchsia-500/5 via-transparent to-transparent transition-all duration-500 group-hover:from-fuchsia-500/10" />
+                <CardHeader>
+                  <CardDescription class="flex items-center gap-2">
+                    <div class="flex items-center justify-center rounded-lg bg-fuchsia-500/10 p-1.5">
+                      <Icon name="i-lucide-activity" class="size-3.5 text-fuchsia-500" />
+                    </div>
+                    Active Lead Pipeline
+                  </CardDescription>
+                  <CardTitle class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                    <template v-if="isLoading">
+                      <div class="h-8 w-32 animate-pulse rounded-md bg-muted" />
+                    </template>
+                    <template v-else>
+                      <NumberFlow :value="kpi.totalLeads" />
+                    </template>
+                  </CardTitle>
+                  <CardAction>
+                    <Badge variant="outline" class="border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400">
+                      <Icon name="i-lucide-target" class="size-3.5 mr-1" />
+                      Acquisition
+                    </Badge>
+                  </CardAction>
+                </CardHeader>
+                <CardFooter class="flex-col items-start gap-1.5 text-sm">
+                  <div class="line-clamp-1 flex gap-2 font-medium">
+                    Strong incoming volume
+                    <TrendingUp class="size-4 text-fuchsia-500" />
+                  </div>
+                  <div class="text-muted-foreground">
+                    Total aggregated pipeline source
                   </div>
                 </CardFooter>
               </Card>
