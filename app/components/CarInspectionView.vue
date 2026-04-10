@@ -148,7 +148,7 @@ async function saveQC(silent = false) {
     if (!silent) {
       toast.success('QC Report Saved Successfully')
       // Refetch to reset
-      await fetchCarDetails(carId)
+      await fetchCarDetails(carId.value)
     }
     else {
       // Update the baseline so the diff doesn't re-send already-saved fields
@@ -264,7 +264,7 @@ async function confirmQCApproval() {
     showQCModal.value = false
     toast.dismiss(loadingToast)
     toast.success('Vehicle successfully marked as QC Approved and Auction Scheduled!')
-    await fetchCarDetails(carId)
+    await fetchCarDetails(carId.value)
   }
   catch (err: any) {
     toast.dismiss(loadingToast)
@@ -736,9 +736,9 @@ const activeTab = computed(() => {
 
 watchEffect(() => {
   const currentTab = tabs.find(t => t.id === activeTab.value)
-  if (currentTab) {
+  if (currentTab && !props.headlessPdf) {
     setHeader({
-      title: props.readonly ? `Inspection: ${carId} / ${currentTab.label}` : `Quality Control: ${carId} / ${currentTab.label}`,
+      title: props.readonly ? `Inspection: ${carId.value} / ${currentTab.label}` : `Quality Control: ${carId.value} / ${currentTab.label}`,
       description: 'Vehicle inspection details',
       icon: currentTab.icon || 'i-lucide-scan-eye',
       showBackButton: true,
@@ -748,7 +748,7 @@ watchEffect(() => {
 
 function setTab(tabId: string) {
   const basePath = props.readonly ? '/inspection' : '/qc'
-  router.push(`${basePath}/${carId}/${tabId}`)
+  router.push(`${basePath}/${carId.value}/${tabId}`)
 }
 
 // ─── Helpers ───

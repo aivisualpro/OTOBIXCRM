@@ -229,7 +229,9 @@ const pageNumbers = computed(() => {
             <TableCell class="whitespace-nowrap text-xs">
               <Badge variant="outline" class="font-normal">{{ car.auctionStatus || '—' }}</Badge>
             </TableCell>
-            <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
+            <TableCell class="text-xs whitespace-nowrap font-medium">
+              {{ car.priceDiscovery ? formatCurrency(car.priceDiscovery) : '—' }}
+            </TableCell>
             <TableCell class="text-xs whitespace-nowrap">
               <div class="font-medium">{{ formatCurrency(car.cep) }}</div>
               <div class="text-[10px] text-muted-foreground">Oto: {{ formatCurrency(car.otobuyPrice) }}</div>
@@ -291,16 +293,11 @@ const pageNumbers = computed(() => {
 
   <Dialog v-model:open="showReportPreview">
     <DialogContent class="max-w-[95vw] lg:max-w-6xl xl:max-w-7xl h-[95vh] p-0 flex flex-col overflow-hidden bg-muted/20 border-border">
-      <div class="p-4 border-b flex items-center justify-between bg-background shrink-0">
+      <div class="p-4 pr-12 border-b flex items-center justify-between bg-background shrink-0">
         <div>
           <DialogTitle class="text-lg font-bold">Inspection Report Preview</DialogTitle>
-          <DialogDescription>Review the complete inspection metrics or download the PDF format</DialogDescription>
         </div>
         <div class="flex items-center gap-2">
-          <Button variant="outline" size="sm" @click="shareLink">
-            <Icon name="i-lucide-share-2" class="mr-2 size-4" />
-            Share Link
-          </Button>
           <Button size="sm" :disabled="!pdfBlobUrl" @click="triggerDownload">
             <Icon name="i-lucide-download" class="mr-2 size-4" />
             Download PDF
