@@ -14,7 +14,7 @@ setHeader({ title: props.title, description: props.description, icon: props.icon
 const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars } = useAuctionsApi()
 
 onMounted(() => {
-  fetchAllCars()
+  if (!isFetched.value) fetchAllCars()
 })
 
 const search = ref('')

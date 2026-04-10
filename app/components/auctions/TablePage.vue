@@ -76,7 +76,7 @@ function getCountdownClass(upcomingUntil: string): string {
 }
 
 onMounted(async () => {
-  fetchAllCars()
+  if (!isFetched.value) fetchAllCars()
 
   // Start countdown ticker when on upcoming or live route
   if (hasTimer.value) {

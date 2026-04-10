@@ -49,7 +49,9 @@ async function fetchMargins() {
   }
 }
 
-onMounted(() => fetchMargins())
+onMounted(() => {
+  if (!isFetched.value) fetchMargins()
+})
 
 // ─── Flatten all ranges ───
 interface FlatRange {
