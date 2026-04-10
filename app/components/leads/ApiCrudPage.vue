@@ -1235,7 +1235,7 @@ function getInitials(name: string): string {
       :class="{ 'is-revealed': isRevealed }"
     >
       <Table>
-        <TableHeader class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
+        <TableHeader class="sticky top-0 z-10 bg-muted border-b border-border">
           <TableRow>
             <TableHead
               v-for="col in columns"

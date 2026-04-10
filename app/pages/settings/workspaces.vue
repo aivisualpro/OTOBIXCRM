@@ -195,6 +195,46 @@ function localToggleAuctionTab(tabId: string) {
   isDirty.value = true
 }
 
+// ─── Sales Tabs Sub-Config ───
+const SALES_TABS = [
+  { id: 'all', title: 'All', route: '/sales/all' },
+  { id: 'live', title: 'Live', route: '/sales/live' },
+  { id: 'otobuy', title: 'Otobuy', route: '/sales/otobuy' },
+  { id: 'activity', title: 'Activity', route: '/sales/activity' },
+  { id: 'ended', title: 'Ended', route: '/sales/ended' },
+  { id: 'sold', title: 'Sold', route: '/sales/sold' },
+  { id: 'removed', title: 'Removed', route: '/sales/removed' },
+]
+
+function localToggleSalesTab(tabId: string) {
+  const ws = editingWorkspace.value
+  if (!ws) return
+  if (!ws.salesTabs) ws.salesTabs = SALES_TABS.map(t => t.id)
+  const current = [...ws.salesTabs]
+  const idx = current.indexOf(tabId)
+  if (idx >= 0) { current.splice(idx, 1) } else { current.push(tabId) }
+  ws.salesTabs = current
+  isDirty.value = true
+}
+
+// ─── Retail Tabs Sub-Config ───
+const RETAIL_TABS = [
+  { id: 'all', title: 'All Vehicles', route: '/retail/all' },
+  { id: 'published', title: 'Published', route: '/retail/published' },
+  { id: 'drafts', title: 'Drafts', route: '/retail/drafts' },
+]
+
+function localToggleRetailTab(tabId: string) {
+  const ws = editingWorkspace.value
+  if (!ws) return
+  if (!ws.retailTabs) ws.retailTabs = RETAIL_TABS.map(t => t.id)
+  const current = [...ws.retailTabs]
+  const idx = current.indexOf(tabId)
+  if (idx >= 0) { current.splice(idx, 1) } else { current.push(tabId) }
+  ws.retailTabs = current
+  isDirty.value = true
+}
+
 // ─── Leads Tabs Sub-Config ───
 const LEADS_TABS = [
   { id: 'leads', title: 'Leads' },
@@ -338,6 +378,10 @@ async function saveMenuConfig() {
     const updates: Partial<Workspace> = { menuIds: [...ws.menuIds] }
     if (ws.auctionTabs)
       updates.auctionTabs = [...ws.auctionTabs]
+    if (ws.salesTabs)
+      updates.salesTabs = [...ws.salesTabs]
+    if (ws.retailTabs)
+      updates.retailTabs = [...ws.retailTabs]
     if (ws.leadTabs)
       updates.leadTabs = [...ws.leadTabs]
     if (ws.dashboardWidgets)
@@ -623,6 +667,86 @@ async function saveMenuConfig() {
                         class="size-3.5"
                         :style="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
                         :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Sales Sub-Tabs Options -->
+                  <div
+                    v-if="item.id === 'sales' && editingWorkspace!.menuIds.includes('sales')"
+                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+                  >
+                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                      Visible Sales Tabs
+                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                    </p>
+                    <div
+                      v-for="subTab in SALES_TABS"
+                      :key="subTab.id"
+                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                      @click="localToggleSalesTab(subTab.id)"
+                    >
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <button
+                          v-if="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id)"
+                          title="Set as Default Route"
+                          class="transition-opacity p-0.5 mt-0.5"
+                          :class="safeGetDefaultRoute(editingWorkspace!, 'sales') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
+                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'sales', subTab.route)"
+                        >
+                          <Icon
+                            name="i-lucide-star"
+                            class="size-3 block transition-colors"
+                            :class="safeGetDefaultRoute(editingWorkspace!, 'sales') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
+                          />
+                        </button>
+                        <span class="text-[11px] truncate" :class="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
+                      </div>
+                      <Icon
+                        :name="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                        class="size-3.5"
+                        :style="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Retail Sub-Tabs Options -->
+                  <div
+                    v-if="item.id === 'retail' && editingWorkspace!.menuIds.includes('retail')"
+                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+                  >
+                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                      Visible Retail Tabs
+                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                    </p>
+                    <div
+                      v-for="subTab in RETAIL_TABS"
+                      :key="subTab.id"
+                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                      @click="localToggleRetailTab(subTab.id)"
+                    >
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <button
+                          v-if="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id)"
+                          title="Set as Default Route"
+                          class="transition-opacity p-0.5 mt-0.5"
+                          :class="safeGetDefaultRoute(editingWorkspace!, 'retail') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
+                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'retail', subTab.route)"
+                        >
+                          <Icon
+                            name="i-lucide-star"
+                            class="size-3 block transition-colors"
+                            :class="safeGetDefaultRoute(editingWorkspace!, 'retail') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
+                          />
+                        </button>
+                        <span class="text-[11px] truncate" :class="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
+                      </div>
+                      <Icon
+                        :name="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                        class="size-3.5"
+                        :style="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
                       />
                     </div>
                   </div>

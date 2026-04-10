@@ -1,12 +1,13 @@
 <script setup lang="ts">
 const route = useRoute()
+const { activeWorkspace } = useWorkspace()
 
 const currentActiveId = computed(() => {
   const path = route.path
-  return path.split('/').pop() || 'list'
+  return path.split('/').pop() || 'all'
 })
 
-const navItems = [
+const ALL_SALES_TABS = [
   { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/sales/all' },
   { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/sales/live' },
   { id: 'otobuy', title: 'Otobuy', icon: 'i-lucide-tag', link: '/sales/otobuy' },
@@ -15,6 +16,14 @@ const navItems = [
   { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/sales/sold' },
   { id: 'removed', title: 'Removed', icon: 'i-lucide-trash-2', link: '/sales/removed' },
 ]
+
+const navItems = computed(() => {
+  const allowed = activeWorkspace.value?.salesTabs
+  if (allowed && allowed.length > 0) {
+    return ALL_SALES_TABS.filter(item => allowed.includes(item.id))
+  }
+  return ALL_SALES_TABS
+})
 
 // ─── Live counts per tab ───
 const { allCars, isFetched } = useAuctionsApi()

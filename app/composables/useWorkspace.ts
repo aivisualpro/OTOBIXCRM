@@ -30,6 +30,8 @@ export interface Workspace {
   menuIds: string[]
   auctionTabs?: string[]
   leadTabs?: string[]
+  salesTabs?: string[]
+  retailTabs?: string[]
   dashboardWidgets?: string[]
   systemSettings?: string[]
   defaultRoutes?: Record<string, string>
@@ -48,6 +50,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
   { id: 'people', title: 'People', icon: 'i-lucide-users', link: '/people/dealer', group: 'Workspace' },
   { id: 'auctions', title: 'Auctions', icon: 'i-lucide-gavel', link: '/auctions/upcoming', group: 'Workspace' },
   { id: 'sales', title: 'Sales', icon: 'i-lucide-circle-dollar-sign', link: '/sales', group: 'Workspace' },
+  { id: 'retail', title: 'Retail', icon: 'i-lucide-store', link: '/retail', group: 'Workspace' },
   { id: 'notifications', title: 'Notifications', icon: 'i-lucide-bell', link: '/notifications', group: 'Workspace' },
   { id: 'dropdowns', title: 'Dropdowns', icon: 'i-lucide-list', link: '/dropdowns', group: 'Workspace' },
   { id: 'banners', title: 'Banners', icon: 'i-lucide-image', link: '/banners', group: 'Workspace' },
@@ -203,6 +206,16 @@ export function useWorkspace() {
       // Dynamic Sidebar Redirect fallback for auctions
       if (item.id === 'auctions' && ws.auctionTabs && ws.auctionTabs.length > 0) {
         link = ws.defaultRoutes?.[item.id] || `/auctions/${ws.auctionTabs[0]}`
+      }
+
+      // Dynamic Sidebar Redirect fallback for sales
+      if (item.id === 'sales' && ws.salesTabs && ws.salesTabs.length > 0) {
+        link = ws.defaultRoutes?.[item.id] || `/sales/${ws.salesTabs[0]}`
+      }
+
+      // Dynamic Sidebar Redirect fallback for retail
+      if (item.id === 'retail' && ws.retailTabs && ws.retailTabs.length > 0) {
+        link = ws.defaultRoutes?.[item.id] || `/retail/${ws.retailTabs[0]}`
       }
 
       group.push({
