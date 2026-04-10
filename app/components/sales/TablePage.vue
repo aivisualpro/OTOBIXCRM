@@ -85,6 +85,31 @@ function formatDate(value: string): string {
   catch { return value }
 }
 
+const now = ref(Date.now())
+let timerInterval: ReturnType<typeof setInterval> | null = null
+
+function formatCountdown(targetDate: string, expiredLabel = 'Ended'): string {
+  if (!targetDate) return '—'
+  const target = new Date(targetDate).getTime()
+  const diff = target - now.value
+  if (diff <= 0) return expiredLabel
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const secs = Math.floor((diff % (1000 * 60)) / 1000)
+  if (days > 0) return `${days}d ${hours}h ${mins}m`
+  if (hours > 0) return `${hours}h ${mins}m ${secs}s`
+  return `${mins}m ${secs}s`
+}
+
+onMounted(() => {
+  timerInterval = setInterval(() => { now.value = Date.now() }, 1000)
+})
+
+onUnmounted(() => {
+  if (timerInterval) clearInterval(timerInterval)
+})
+
 function getFirstImage(car: any): string | null {
   // frontMainImages can be a native array OR a JSON string
   let images: any[] = []
@@ -319,7 +344,11 @@ const pageNumbers = computed(() => {
               </div>
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs">
-              <Badge variant="outline" class="font-normal">{{ car.auctionStatus || '—' }}</Badge>
+              <Badge v-if="car.auctionStatus === 'live' && car.auctionEndTime" variant="outline" class="font-bold tracking-wide bg-[#333] text-white border-transparent">
+                <span class="size-1.5 rounded-full mr-1.5 bg-red-500 animate-pulse" />
+                {{ formatCountdown(car.auctionEndTime) }}
+              </Badge>
+              <Badge v-else variant="outline" class="font-normal">{{ car.auctionStatus || '—' }}</Badge>
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap font-medium">
               {{ car.priceDiscovery ? formatCurrency(car.priceDiscovery) : '—' }}
