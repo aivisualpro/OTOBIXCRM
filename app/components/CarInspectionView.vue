@@ -266,9 +266,8 @@ async function confirmQCApproval() {
   }
 }
 
-// eslint-disable-next-line unused-imports/no-unused-vars
 async function rejectLead() {
-  editForm.value.approvalStatus = 'Quality Rejected'
+  editForm.value.approvalStatus = 'Rejected'
   await saveQC()
   router.push('/leads/rejected')
 }
@@ -1528,18 +1527,26 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
             </Button>
             <Button
               v-if="!props.readonly && car.approvalStatus !== 'Approved'"
+              class="mr-2 bg-red-500 hover:bg-red-600 focus:ring-red-500 text-white font-bold shadow-sm h-8 text-xs shrink-0 px-4"
+              @click="rejectLead"
+            >
+              <Icon name="i-lucide-x-circle" class="mr-1.5 size-4" />
+              Reject
+            </Button>
+            <Button
+              v-if="!props.readonly && car.approvalStatus !== 'Approved'"
               class="bg-emerald-500 hover:bg-emerald-600 focus:ring-emerald-500 text-white font-bold shadow-sm h-8 text-xs shrink-0 px-4"
               @click="openQCModal"
             >
               <Icon name="i-lucide-check-circle-2" class="mr-1.5 size-4" />
-              QC Approved
+              Approve Inspection
             </Button>
             <div
               v-else-if="car.approvalStatus === 'Approved'"
               class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 rounded-lg flex items-center justify-center font-bold px-3 h-8 text-xs shrink-0"
             >
               <Icon name="i-lucide-shield-check" class="mr-1.5 size-4" />
-              QC Approved
+              Approve Inspection
             </div>
           </div>
         </div>
@@ -1579,9 +1586,9 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                   v-if="getImages(car, 'frontMain').length"
                   :src="getImages(car, 'frontMain')[0]"
                   :alt="`${car.make} ${car.model}`"
-                  class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 >
-                <div v-else class="w-full h-full flex items-center justify-center">
+                <div v-else class="absolute inset-0 w-full h-full flex items-center justify-center">
                   <Icon name="i-lucide-car" class="size-20 text-muted-foreground/30" />
                 </div>
                 <!-- Top Left Badge -->
@@ -1595,7 +1602,7 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
               <!-- MIDDLE: Data Grid -->
               <div class="flex-1 min-w-0 p-5 lg:p-6 lg:px-8 flex flex-col gap-6 z-10 relative">
                 <!-- Stats Grid Layout -->
-                <div class="flex flex-col gap-3 mt-auto w-full">
+                <div class="flex flex-col gap-3 m-auto w-full">
                   <!-- Row 1: Make, Model, Variant, MFG Year -->
                   <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <!-- Make -->
@@ -1761,9 +1768,9 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
                   v-if="getImages(car, 'rearMainImages', 'rearMain').length"
                   :src="getImages(car, 'rearMainImages', 'rearMain')[0]"
                   :alt="`${car.make} ${car.model}`"
-                  class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 >
-                <div v-else class="w-full h-full flex items-center justify-center">
+                <div v-else class="absolute inset-0 w-full h-full flex items-center justify-center">
                   <Icon name="i-lucide-car" class="size-20 text-muted-foreground/30" />
                 </div>
               </div>
