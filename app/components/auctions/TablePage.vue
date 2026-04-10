@@ -40,6 +40,14 @@ function navigateToInspection(car: any) {
   router.push(`/inspection/${car.appointmentId}`)
 }
 
+const selectedCar = ref<any>(null);
+const showPopup = ref(false);
+
+function openPreview(car: any) {
+  selectedCar.value = car;
+  showPopup.value = true;
+}
+
 // ─── Live countdown timer ───
 const now = ref(Date.now())
 let timerInterval: ReturnType<typeof setInterval> | null = null
@@ -230,6 +238,16 @@ function formatNumber(value: any): string {
   return new Intl.NumberFormat('en-IN').format(Number(value))
 }
 
+function getFirstImage(car: any): string | null {
+  try {
+    if (car.frontMainImages) {
+      const parsed = typeof car.frontMainImages === 'string' ? JSON.parse(car.frontMainImages) : car.frontMainImages;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+    }
+  } catch (e) {}
+  return car.imageUrl || null;
+}
+
 async function handleRefresh() {
   await refreshCars()
   toast.success('Auction data refreshed')
@@ -303,133 +321,71 @@ const pageNumbers = computed(() => {
       </div>
     </div>
 
-    <!-- Table -->
-    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto">
-      <Table>
-        <TableHeader class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
-          <TableRow>
-            <TableHead class="w-16" />
-            <TableHead>Car</TableHead>
-            <TableHead>Reg. No.</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Fuel</TableHead>
-            <TableHead>Odometer</TableHead>
-            <TableHead>Highest Bid</TableHead>
-            <TableHead v-if="isUpcoming">
-              Starts In
-            </TableHead>
-            <TableHead v-else-if="isLive">
-              Ends In
-            </TableHead>
-            <TableHead v-else>
-              Status
-            </TableHead>
-            <TableHead>Auction End</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow
-            v-for="car in paginatedItems"
-            :id="`auction-row-${car.id}`"
-            :key="car.id"
-            class="group cursor-pointer hover:bg-muted/50 transition-all duration-300"
-            :class="{ 'auction-row-highlight': highlightedId === car.id }"
-            @click="navigateToInspection(car)"
-          >
-            <!-- Thumbnail -->
-            <TableCell class="w-16 pr-0">
-              <div class="size-10 rounded-md overflow-hidden bg-muted border">
-                <img
-                  v-if="car.imageUrl"
-                  :src="car.imageUrl"
-                  :alt="`${car.make} ${car.model}`"
-                  class="size-full object-cover"
-                  loading="lazy"
-                >
-                <div v-else class="size-full flex items-center justify-center">
-                  <Icon name="i-lucide-car" class="size-4 text-muted-foreground" />
-                </div>
-              </div>
-            </TableCell>
+    <!-- Cards Grid -->
+    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto p-4 lg:p-6 bg-slate-50/50 dark:bg-transparent">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+        <div
+          v-for="car in paginatedItems"
+          :ref="`auction-row-${car.id}`"
+          :key="car.id"
+          class="group flex flex-col bg-white dark:bg-card border border-border/80 shadow-sm rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:border-primary/50 hover:-translate-y-1 relative"
+          @click="openPreview(car)"
+        >
+          <!-- Status Banner for live/upcoming overlay -->
+          <div v-if="isUpcoming || isLive" class="absolute top-3 right-3 z-20">
+            <Badge variant="secondary" class="bg-white/90 backdrop-blur-md border text-xs shadow-sm shadow-black/5" :class="isUpcoming ? 'text-blue-600' : 'text-rose-600'">
+              <Icon :name="isUpcoming ? 'i-lucide-clock' : 'i-lucide-timer'" class="mr-1.5 size-3" />
+              {{ formatCountdown(isUpcoming ? car.upcomingUntil : car.auctionEndTime, isUpcoming ? 'Starting soon' : 'Ended') }}
+            </Badge>
+          </div>
 
-            <!-- Car Name (Make + Model + Variant) -->
-            <TableCell>
-              <div class="min-w-0">
-                <p class="font-medium text-sm truncate">
-                  {{ car.make }} {{ car.model }}
-                </p>
-                <p class="text-xs text-muted-foreground truncate">
-                  {{ car.variant }}
-                </p>
-              </div>
-            </TableCell>
+          <!-- Top Meta -->
+          <div class="p-4 flex flex-col gap-1 z-10 w-full relative">
+            <h3 class="font-bold text-[#1f3b58] dark:text-foreground text-[17px] leading-tight truncate pr-8">
+              {{ car.make }} {{ car.model }} <span v-if="car.variant" class="font-normal opacity-80 text-[15px]">({{ car.variant }})</span>
+            </h3>
+            <p class="text-[14px] text-[#25527a] dark:text-muted-foreground font-medium font-mono uppercase tracking-wide">
+              {{ car.registrationNumber || car.appointmentId || '—' }}
+            </p>
+          </div>
 
-            <!-- Registration -->
-            <TableCell>
-              <span class="text-sm font-mono">{{ car.registrationNumber || '—' }}</span>
-            </TableCell>
+          <!-- Expanding Image -->
+          <div class="relative w-full h-52 -mt-4 transition-transform duration-500 group-hover:scale-[1.03]">
+            <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-white dark:from-card to-transparent z-10" />
+            <img 
+              v-if="getFirstImage(car)" 
+              :src="getFirstImage(car)!" 
+              class="absolute inset-0 w-full h-full object-contain p-4 drop-shadow-xl" 
+            />
+            <div v-else class="absolute inset-0 flex items-center justify-center opacity-10">
+               <Icon name="i-lucide-car" class="size-24" />
+            </div>
+          </div>
 
-            <!-- Location -->
-            <TableCell>
-              <span class="text-sm">{{ car.inspectionLocation || '—' }}</span>
-            </TableCell>
+          <!-- Bottom Footer -->
+          <div class="p-4 pb-4 mt-auto border-t border-border/50 bg-slate-50/50 dark:bg-muted/10 relative z-20 flex items-center justify-between">
+            <div class="flex items-center gap-1.5 text-slate-500 dark:text-muted-foreground font-medium text-[15px]">
+              <Icon name="i-lucide-user" class="size-4.5 text-[#1f3b58] dark:text-primary stroke-[2.5]" />
+              {{ car.biddersCount || 0 }}
+            </div>
+            
+            <div class="flex items-center gap-4">
+               <span class="rounded bg-[#1f3b58] text-white dark:bg-primary dark:text-primary-foreground text-xs font-bold px-2 py-0.5" v-if="car.highestBid">
+                 {{ formatCurrency(car.highestBid) }}
+               </span>
+               <div class="flex items-center gap-1.5 text-slate-500 dark:text-muted-foreground font-medium text-[15px]">
+                 <Icon name="i-lucide-settings-2" class="size-4.5 text-[#1f3b58] dark:text-primary stroke-[2.5]" />
+                 {{ car.transmission || 'Auto' }}
+               </div>
+            </div>
+          </div>
+        </div>
 
-            <!-- Fuel Type -->
-            <TableCell>
-              <Badge variant="secondary" class="text-xs font-normal">
-                {{ car.fuelType || '—' }}
-              </Badge>
-            </TableCell>
-
-            <!-- Odometer -->
-            <TableCell>
-              <span class="text-sm tabular-nums">{{ formatNumber(car.odometerReadingInKms) }} km</span>
-            </TableCell>
-
-            <!-- Highest Bid -->
-            <TableCell>
-              <span class="font-semibold text-sm tabular-nums" :class="car.highestBid > 0 ? 'text-emerald-600' : 'text-muted-foreground'">
-                {{ formatCurrency(car.highestBid) }}
-              </span>
-            </TableCell>
-
-            <!-- Starts In (countdown) for upcoming -->
-            <TableCell v-if="isUpcoming">
-              <Badge variant="outline" class="tabular-nums font-mono text-xs" :class="getCountdownClass(car.upcomingUntil)">
-                <Icon name="i-lucide-clock" class="mr-1 size-3" />
-                {{ formatCountdown(car.upcomingUntil, 'Starting soon') }}
-              </Badge>
-            </TableCell>
-            <!-- Ends In (countdown) for live -->
-            <TableCell v-else-if="isLive">
-              <Badge variant="outline" class="tabular-nums font-mono text-xs" :class="getCountdownClass(car.auctionEndTime)">
-                <Icon name="i-lucide-timer" class="mr-1 size-3" />
-                {{ formatCountdown(car.auctionEndTime, 'Ended') }}
-              </Badge>
-            </TableCell>
-            <!-- Default: Auction Status Badge -->
-            <TableCell v-else>
-              <Badge variant="outline" :class="getBadgeClass(car.auctionStatus)">
-                {{ getStatusLabel(car.auctionStatus) }}
-              </Badge>
-            </TableCell>
-
-            <!-- Auction End Time -->
-            <TableCell>
-              <span class="text-sm text-muted-foreground">{{ formatDate(car.auctionEndTime) }}</span>
-            </TableCell>
-          </TableRow>
-
-          <TableRow v-if="paginatedItems.length === 0 && !isLoading">
-            <TableCell :colspan="9" class="h-32 text-center">
-              <div class="flex flex-col items-center gap-2 text-muted-foreground">
-                <Icon name="i-lucide-inbox" class="size-8" />
-                <p>No cars found</p>
-              </div>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+        <div v-if="paginatedItems.length === 0 && !isLoading" class="col-span-full h-40 flex flex-col items-center justify-center text-muted-foreground">
+          <Icon name="i-lucide-grid-2x2-x" class="size-10 mb-3 opacity-20" />
+          <p>No auction listings found.</p>
+        </div>
+      </div>
     </div>
 
     <!-- Pagination -->
@@ -458,6 +414,62 @@ const pageNumbers = computed(() => {
         </Button>
       </div>
     </div>
+
+    <!-- Preview Dialog -->
+    <Dialog v-model:open="showPopup">
+      <DialogContent class="sm:max-w-2xl overflow-hidden p-0 rounded-3xl border shadow-2xl bg-white dark:bg-background">
+        <div v-if="selectedCar" class="relative group">
+          <!-- Banner header -->
+          <div class="h-16 bg-gradient-to-r from-[#1f3b58] to-[#25527a] dark:from-primary/20 dark:to-primary/5 flex items-center px-6">
+             <Badge class="bg-white/20 hover:bg-white/30 text-white border-0">{{ getStatusLabel(selectedCar.auctionStatus) }}</Badge>
+          </div>
+          
+          <div class="px-6 pb-6 pt-0 relative -mt-4">
+             <div class="w-20 h-20 rounded-full border-4 border-white dark:border-background bg-card shadow-md flex items-center justify-center overflow-hidden z-20 relative">
+                 <Icon name="i-lucide-car" class="size-8 text-primary shadow-sm" />
+             </div>
+             
+             <div class="mt-4 flex flex-col gap-1">
+                <h2 class="text-2xl font-bold text-[#1f3b58] dark:text-foreground">{{ selectedCar.make }} {{ selectedCar.model }} <span class="font-normal opacity-70">({{ selectedCar.variant }})</span></h2>
+                <div class="flex items-center gap-2 text-[#25527a] dark:text-muted-foreground font-mono font-medium">
+                  {{ selectedCar.registrationNumber || selectedCar.appointmentId }}
+                  <span class="w-1 h-1 rounded-full bg-border" />
+                  {{ selectedCar.inspectionLocation || 'N/A' }}
+                </div>
+             </div>
+
+             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                <div class="bg-muted/30 rounded-xl p-3 flex flex-col gap-1 border border-border/50">
+                   <span class="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Fuel</span>
+                   <span class="text-sm font-semibold">{{ selectedCar.fuelType || '—' }}</span>
+                </div>
+                <div class="bg-muted/30 rounded-xl p-3 flex flex-col gap-1 border border-border/50">
+                   <span class="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Odometer</span>
+                   <span class="text-sm font-semibold tabular-nums">{{ formatNumber(selectedCar.odometerReadingInKms) }} km</span>
+                </div>
+                <div class="bg-muted/30 rounded-xl p-3 flex flex-col gap-1 border border-border/50">
+                   <span class="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Highest Bid</span>
+                   <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-500">{{ formatCurrency(selectedCar.highestBid) }}</span>
+                </div>
+                <div class="bg-muted/30 rounded-xl p-3 flex flex-col gap-1 border border-border/50">
+                   <span class="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Bidders</span>
+                   <span class="text-sm font-semibold">{{ selectedCar.biddersCount || 0 }}</span>
+                </div>
+             </div>
+             
+             <div class="mt-8 flex gap-3">
+               <Button class="w-full h-11" @click="navigateToInspection(selectedCar)">
+                  <Icon name="i-lucide-file-search" class="mr-2" />
+                  Full Inspection Report
+               </Button>
+               <Button variant="outline" class="h-11" @click="showPopup = false">
+                  Cancel
+               </Button>
+             </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
