@@ -1,0 +1,40 @@
+const fs = require('fs');
+const path = require('path');
+
+function replaceInDir(dir) {
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const fullPath = path.join(dir, file);
+    if (fs.statSync(fullPath).isDirectory()) {
+      replaceInDir(fullPath);
+    } else if (fullPath.endsWith('.ts')) {
+      let content = fs.readFileSync(fullPath, 'utf8');
+      // replace all variations
+      let newContent = content.replace(/console\.warn/g, (match, offset, str) => {
+        // check if this line contains MongoDB
+        const lineEnd = str.indexOf('\n', offset);
+        const lineScope = str.substring(offset, lineEnd);
+        if (lineScope.includes('MongoDB')) {
+          return 'console.info';
+        }
+        return match;
+      });
+      if (content !== newContent) {
+        fs.writeFileSync(fullPath, newContent);
+        console.log('Fixed:', fullPath);
+      }
+    }
+  }
+}
+
+replaceInDir(path.join(__dirname, 'server/api'));
+
+const utilsFile = path.join(__dirname, 'server/utils/appsheet.ts');
+if (fs.existsSync(utilsFile)) {
+    let content = fs.readFileSync(utilsFile, 'utf8');
+    let newContent = content.replace(/console\.warn\('\[AppSheet\] Sync error/g, "console.info('[AppSheet] Sync error");
+    if (content !== newContent) {
+        fs.writeFileSync(utilsFile, newContent);
+        console.log('Fixed:', utilsFile);
+    }
+}

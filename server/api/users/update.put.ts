@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
     if (!_client) {
       _client = new MongoClient(uri)
       await _client.connect()
-      console.warn(`[API:users/update] Connected to MongoDB → DB: ${dbName}`)
+      console.info(`[API:users/update] Connected to MongoDB → DB: ${dbName}`)
     }
 
     const db = _client.db(dbName)

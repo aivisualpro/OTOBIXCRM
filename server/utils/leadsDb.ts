@@ -30,7 +30,7 @@ export function getLeadsDb(event: any): Promise<Db> {
       })
       await client.connect()
       _clients[dbName] = client
-      console.warn(`[API:leads] Connected to MongoDB → DB: ${dbName} (${envCookie})`)
+      console.info(`[API:leads] Connected to MongoDB → DB: ${dbName} (${envCookie})`)
       return client.db(dbName)
     })()
   }

@@ -184,7 +184,7 @@ export function syncLeadToAppSheet(
       }
     }
     catch (err: any) {
-      console.warn('[AppSheet] Sync error (non-fatal):', err?.message)
+      console.info('[AppSheet] Sync error (non-fatal):', err?.message)
     }
   })()
 }
