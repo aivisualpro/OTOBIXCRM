@@ -71,12 +71,19 @@ function formatDate(value: string): string {
 
 function getFirstImage(car: any): string | null {
   try {
-    if (car.frontMainImages) {
-      const parsed = typeof car.frontMainImages === 'string' ? JSON.parse(car.frontMainImages) : car.frontMainImages;
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+    if (car.frontMainImages && typeof car.frontMainImages === 'string' && car.frontMainImages !== '[]' && car.frontMainImages !== 'null') {
+      const parsed = JSON.parse(car.frontMainImages);
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string' && parsed[0].startsWith('http')) return parsed[0];
+    } else if (Array.isArray(car.frontMainImages) && car.frontMainImages.length > 0 && typeof car.frontMainImages[0] === 'string' && car.frontMainImages[0].startsWith('http')) {
+      return car.frontMainImages[0];
     }
   } catch (e) {}
-  return car.imageUrl || null;
+
+  const fallback = car.frontMain || car.imageUrl;
+  if (!fallback || fallback === 'null' || fallback === 'undefined' || fallback === '[]' || (typeof fallback === 'string' && !fallback.startsWith('http'))) {
+    return null;
+  }
+  return fallback;
 }
 
 function getInflatedCep(car: any): number {

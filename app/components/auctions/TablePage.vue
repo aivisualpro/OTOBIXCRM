@@ -239,12 +239,19 @@ function formatNumber(value: any): string {
 
 function getFirstImage(car: any): string | null {
   try {
-    if (car.frontMainImages) {
-      const parsed = typeof car.frontMainImages === 'string' ? JSON.parse(car.frontMainImages) : car.frontMainImages;
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+    if (car.frontMainImages && typeof car.frontMainImages === 'string' && car.frontMainImages !== '[]' && car.frontMainImages !== 'null') {
+      const parsed = JSON.parse(car.frontMainImages);
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string' && parsed[0].startsWith('http')) return parsed[0];
+    } else if (Array.isArray(car.frontMainImages) && car.frontMainImages.length > 0 && typeof car.frontMainImages[0] === 'string' && car.frontMainImages[0].startsWith('http')) {
+      return car.frontMainImages[0];
     }
   } catch (e) {}
-  return car.imageUrl || null;
+
+  const fallback = car.frontMain || car.imageUrl;
+  if (!fallback || fallback === 'null' || fallback === 'undefined' || fallback === '[]' || (typeof fallback === 'string' && !fallback.startsWith('http'))) {
+    return null;
+  }
+  return fallback;
 }
 
 async function handleRefresh() {
@@ -280,84 +287,89 @@ async function handleRefresh() {
     <div v-if="fetchError" class="shrink-0 m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
       <Icon name="i-lucide-alert-circle" class="size-5 text-destructive shrink-0" />
       <div class="flex-1">
-        <p class="text-sm font-medium text-destructive">
-          Failed to load auction data
-        </p>
-        <p class="text-xs text-muted-foreground mt-0.5">
-          {{ fetchError }}
-        </p>
+        <p class="text-sm font-medium text-destructive">Failed to load auction data</p>
+        <p class="text-xs text-muted-foreground mt-0.5">{{ fetchError }}</p>
       </div>
-      <Button variant="outline" size="sm" @click="handleRefresh">
-        Retry
-      </Button>
+      <Button variant="outline" size="sm" @click="handleRefresh">Retry</Button>
     </div>
 
     <!-- Loading State -->
     <div v-if="!isFetched && !fetchError" class="flex-1 min-h-0 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
         <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-        <p class="text-sm">
-          Loading auctions...
-        </p>
+        <p class="text-sm">Loading auctions...</p>
       </div>
     </div>
 
     <!-- Cards Grid -->
-    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto p-4 lg:p-6 bg-slate-50/50 dark:bg-transparent">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto p-4 lg:p-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
         <div
           v-for="car in paginatedItems"
           :ref="`auction-row-${car.id}`"
           :key="car.id"
-          class="group flex flex-col bg-white dark:bg-card border border-border/80 shadow-sm rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:border-primary/50 hover:-translate-y-1 relative"
+          class="auction-card group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 hover:shadow-2xl hover:-translate-y-1"
           @click="openPreview(car)"
         >
-          <!-- Status Banner for live/upcoming overlay -->
-          <div v-if="isUpcoming || isLive" class="absolute top-3 right-3 z-20">
-            <Badge variant="secondary" class="bg-white/90 backdrop-blur-md border text-xs shadow-sm shadow-black/5" :class="isUpcoming ? 'text-blue-600' : 'text-rose-600'">
-              <Icon :name="isUpcoming ? 'i-lucide-clock' : 'i-lucide-timer'" class="mr-1.5 size-3" />
-              {{ formatCountdown(isUpcoming ? car.upcomingUntil : car.auctionEndTime, isUpcoming ? 'Starting soon' : 'Ended') }}
-            </Badge>
-          </div>
-
-          <!-- Top Meta -->
-          <div class="p-4 flex flex-col gap-1 z-10 w-full relative">
-            <h3 class="font-bold text-[#1f3b58] dark:text-foreground text-[17px] leading-tight truncate pr-8">
-              {{ car.make }} {{ car.model }} <span v-if="car.variant" class="font-normal opacity-80 text-[15px]">({{ car.variant }})</span>
-            </h3>
-            <p class="text-[14px] text-[#25527a] dark:text-muted-foreground font-medium font-mono uppercase tracking-wide">
-              {{ car.registrationNumber || car.appointmentId || '—' }}
-            </p>
-          </div>
-
-          <!-- Expanding Image -->
-          <div class="relative w-full h-52 -mt-4 transition-transform duration-500 group-hover:scale-[1.03]">
-            <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-white dark:from-card to-transparent z-10" />
+          <!-- Hero Image Section -->
+          <div class="relative h-52 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
             <img 
               v-if="getFirstImage(car)" 
               :src="getFirstImage(car)!" 
-              class="absolute inset-0 w-full h-full object-contain p-4 drop-shadow-xl" 
+              class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+              @error="(e: any) => e.target.style.display = 'none'"
             />
-            <div v-else class="absolute inset-0 flex items-center justify-center opacity-10">
-               <Icon name="i-lucide-car" class="size-24" />
+            <div v-if="!getFirstImage(car)" class="absolute inset-0 flex items-center justify-center">
+               <Icon name="i-lucide-car" class="size-20 text-slate-300 dark:text-slate-700" />
+            </div>
+
+            <!-- Dark gradient overlay from bottom -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+            <!-- Timer Badge -->
+            <div v-if="isUpcoming || isLive" class="absolute top-3 right-3 z-20">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide backdrop-blur-lg border" :class="isLive ? 'bg-rose-500/20 text-rose-100 border-rose-400/30' : 'bg-white/15 text-white border-white/20'">
+                <span v-if="isLive" class="size-1.5 rounded-full bg-rose-400 animate-pulse" />
+                <Icon v-else name="i-lucide-clock" class="size-3" />
+                {{ formatCountdown(isUpcoming ? car.upcomingUntil : car.auctionEndTime, isUpcoming ? 'Starting soon' : 'Ended') }}
+              </span>
+            </div>
+
+            <!-- Title over image -->
+            <div class="absolute bottom-0 left-0 right-0 p-4 z-10">
+              <h3 class="text-white font-bold text-[15px] leading-tight truncate drop-shadow-lg">
+                <template v-if="car.make || car.model">
+                  {{ car.make }} {{ car.model }}
+                </template>
+                <template v-else>
+                  <span class="opacity-60 italic">Pending Details</span>
+                </template>
+              </h3>
+              <p class="text-white/70 text-xs font-mono mt-0.5 truncate">
+                <span v-if="car.variant" class="mr-1.5">{{ car.variant }}</span>
+                <span>{{ car.registrationNumber || car.appointmentId || '—' }}</span>
+              </p>
             </div>
           </div>
 
-          <!-- Bottom Footer -->
-          <div class="p-4 pb-4 mt-auto border-t border-border/50 bg-slate-50/50 dark:bg-muted/10 relative z-20 flex items-center justify-between">
-            <div class="flex items-center gap-1.5 text-slate-500 dark:text-muted-foreground font-medium text-[15px]">
-              <Icon name="i-lucide-user" class="size-4.5 text-[#1f3b58] dark:text-primary stroke-[2.5]" />
-              {{ car.biddersCount || 0 }}
-            </div>
-            
-            <div class="flex items-center gap-4">
-               <span class="rounded bg-[#1f3b58] text-white dark:bg-primary dark:text-primary-foreground text-xs font-bold px-2 py-0.5" v-if="car.highestBid">
-                 {{ formatCurrency(car.highestBid) }}
-               </span>
-               <div class="flex items-center gap-1.5 text-slate-500 dark:text-muted-foreground font-medium text-[15px]">
-                 <Icon name="i-lucide-settings-2" class="size-4.5 text-[#1f3b58] dark:text-primary stroke-[2.5]" />
-                 {{ car.transmission || 'Auto' }}
-               </div>
+          <!-- Specs Section -->
+          <div class="bg-white dark:bg-card border border-t-0 border-border/60 rounded-b-2xl">
+            <div class="grid grid-cols-3 divide-x divide-border/50">
+              <div class="p-3 flex flex-col items-center gap-1">
+                <Icon name="i-lucide-users" class="size-4 text-muted-foreground/60" />
+                <span class="text-[11px] font-bold text-foreground tabular-nums">{{ car.biddersCount || 0 }}</span>
+                <span class="text-[9px] text-muted-foreground uppercase tracking-widest font-medium">Bidders</span>
+              </div>
+              <div class="p-3 flex flex-col items-center gap-1">
+                <Icon name="i-lucide-indian-rupee" class="size-4 text-emerald-500" />
+                <span class="text-[11px] font-bold text-foreground tabular-nums">{{ car.highestBid ? formatCurrency(car.highestBid) : '—' }}</span>
+                <span class="text-[9px] text-muted-foreground uppercase tracking-widest font-medium">Top Bid</span>
+              </div>
+              <div class="p-3 flex flex-col items-center gap-1">
+                <Icon name="i-lucide-gauge" class="size-4 text-muted-foreground/60" />
+                <span class="text-[11px] font-bold text-foreground tabular-nums">{{ car.transmission || 'Auto' }}</span>
+                <span class="text-[9px] text-muted-foreground uppercase tracking-widest font-medium">Trans.</span>
+              </div>
             </div>
           </div>
         </div>
@@ -376,55 +388,74 @@ async function handleRefresh() {
 
     <!-- Preview Dialog -->
     <Dialog v-model:open="showPopup">
-      <DialogContent class="sm:max-w-2xl overflow-hidden p-0 rounded-3xl border shadow-2xl bg-white dark:bg-background">
-        <div v-if="selectedCar" class="relative group">
-          <!-- Banner header -->
-          <div class="h-16 bg-gradient-to-r from-[#1f3b58] to-[#25527a] dark:from-primary/20 dark:to-primary/5 flex items-center px-6">
-             <Badge class="bg-white/20 hover:bg-white/30 text-white border-0">{{ getStatusLabel(selectedCar.auctionStatus) }}</Badge>
+      <DialogContent class="sm:max-w-3xl overflow-hidden p-0 rounded-3xl border-0 shadow-2xl bg-white dark:bg-background">
+        <div v-if="selectedCar" class="relative">
+          <!-- Hero Image in Dialog -->
+          <div class="relative h-72 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
+            <img 
+              v-if="getFirstImage(selectedCar)" 
+              :src="getFirstImage(selectedCar)!" 
+              class="absolute inset-0 w-full h-full object-cover" 
+              @error="(e: any) => e.target.style.display = 'none'"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+            
+            <!-- Status pill over image -->
+            <div class="absolute top-5 left-5 z-10">
+              <Badge class="text-white border-0 backdrop-blur-lg text-xs font-bold px-3 py-1" :class="getBadgeClass(selectedCar.auctionStatus)">
+                {{ getStatusLabel(selectedCar.auctionStatus) }}
+              </Badge>
+            </div>
+
+            <!-- Title overlay at bottom of image -->
+            <div class="absolute bottom-0 left-0 right-0 p-6 z-10">
+              <h2 class="text-3xl font-extrabold text-white drop-shadow-xl">
+                {{ selectedCar.make }} {{ selectedCar.model }}
+                <span class="font-normal text-white/60 text-xl" v-if="selectedCar.variant">({{ selectedCar.variant }})</span>
+              </h2>
+              <div class="flex items-center gap-3 mt-2 text-white/80 text-sm font-mono">
+                <span>{{ selectedCar.registrationNumber || selectedCar.appointmentId }}</span>
+                <span class="size-1 rounded-full bg-white/40" />
+                <span>{{ selectedCar.inspectionLocation || 'N/A' }}</span>
+              </div>
+            </div>
           </div>
           
-          <div class="px-6 pb-6 pt-0 relative -mt-4">
-             <div class="w-20 h-20 rounded-full border-4 border-white dark:border-background bg-card shadow-md flex items-center justify-center overflow-hidden z-20 relative">
-                 <Icon name="i-lucide-car" class="size-8 text-primary shadow-sm" />
-             </div>
+          <!-- Specification Grid -->
+          <div class="px-6 pt-6 pb-2">
+            <h4 class="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Specification</h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="spec-card rounded-xl p-3.5 flex flex-col gap-1.5 bg-muted/40 dark:bg-muted/20 border border-border/50">
+                <Icon name="i-lucide-fuel" class="size-5 text-amber-500" />
+                <span class="text-sm font-bold text-foreground">{{ selectedCar.fuelType || '—' }}</span>
+                <span class="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Fuel Type</span>
+              </div>
+              <div class="spec-card rounded-xl p-3.5 flex flex-col gap-1.5 bg-muted/40 dark:bg-muted/20 border border-border/50">
+                <Icon name="i-lucide-gauge" class="size-5 text-blue-500" />
+                <span class="text-sm font-bold text-foreground tabular-nums">{{ formatNumber(selectedCar.odometerReadingInKms) }} km</span>
+                <span class="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Odometer</span>
+              </div>
+              <div class="spec-card rounded-xl p-3.5 flex flex-col gap-1.5 bg-muted/40 dark:bg-muted/20 border border-border/50">
+                <Icon name="i-lucide-trending-up" class="size-5 text-emerald-500" />
+                <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ formatCurrency(selectedCar.highestBid) }}</span>
+                <span class="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Highest Bid</span>
+              </div>
+              <div class="spec-card rounded-xl p-3.5 flex flex-col gap-1.5 bg-muted/40 dark:bg-muted/20 border border-border/50">
+                <Icon name="i-lucide-users" class="size-5 text-violet-500" />
+                <span class="text-sm font-bold text-foreground tabular-nums">{{ selectedCar.biddersCount || 0 }}</span>
+                <span class="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Bidders</span>
+              </div>
+            </div>
+          </div>
              
-             <div class="mt-4 flex flex-col gap-1">
-                <h2 class="text-2xl font-bold text-[#1f3b58] dark:text-foreground">{{ selectedCar.make }} {{ selectedCar.model }} <span class="font-normal opacity-70">({{ selectedCar.variant }})</span></h2>
-                <div class="flex items-center gap-2 text-[#25527a] dark:text-muted-foreground font-mono font-medium">
-                  {{ selectedCar.registrationNumber || selectedCar.appointmentId }}
-                  <span class="w-1 h-1 rounded-full bg-border" />
-                  {{ selectedCar.inspectionLocation || 'N/A' }}
-                </div>
-             </div>
-
-             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                <div class="bg-muted/30 rounded-xl p-3 flex flex-col gap-1 border border-border/50">
-                   <span class="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Fuel</span>
-                   <span class="text-sm font-semibold">{{ selectedCar.fuelType || '—' }}</span>
-                </div>
-                <div class="bg-muted/30 rounded-xl p-3 flex flex-col gap-1 border border-border/50">
-                   <span class="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Odometer</span>
-                   <span class="text-sm font-semibold tabular-nums">{{ formatNumber(selectedCar.odometerReadingInKms) }} km</span>
-                </div>
-                <div class="bg-muted/30 rounded-xl p-3 flex flex-col gap-1 border border-border/50">
-                   <span class="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Highest Bid</span>
-                   <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-500">{{ formatCurrency(selectedCar.highestBid) }}</span>
-                </div>
-                <div class="bg-muted/30 rounded-xl p-3 flex flex-col gap-1 border border-border/50">
-                   <span class="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Bidders</span>
-                   <span class="text-sm font-semibold">{{ selectedCar.biddersCount || 0 }}</span>
-                </div>
-             </div>
-             
-             <div class="mt-8 flex gap-3">
-               <Button class="w-full h-11" @click="navigateToInspection(selectedCar)">
-                  <Icon name="i-lucide-file-search" class="mr-2" />
-                  Full Inspection Report
-               </Button>
-               <Button variant="outline" class="h-11" @click="showPopup = false">
-                  Cancel
-               </Button>
-             </div>
+          <div class="px-6 pb-6 pt-4 flex gap-3">
+            <Button class="w-full h-11 rounded-xl font-semibold" @click="navigateToInspection(selectedCar)">
+               <Icon name="i-lucide-file-search" class="mr-2 size-4" />
+               Full Inspection Report
+            </Button>
+            <Button variant="outline" class="h-11 rounded-xl px-6" @click="showPopup = false">
+               Close
+            </Button>
           </div>
         </div>
       </DialogContent>
@@ -433,54 +464,25 @@ async function handleRefresh() {
 </template>
 
 <style scoped>
-.auction-row-highlight {
-  animation: row-glow 3s ease-out forwards;
-  position: relative;
-  z-index: 1;
+.auction-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.auction-card:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+.dark .auction-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.dark .auction-card:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
-.auction-row-highlight td {
-  border-top: 1px solid oklch(0.65 0.25 265) !important;
-  border-bottom: 1px solid oklch(0.65 0.25 265) !important;
+.spec-card {
+  transition: all 0.2s ease;
 }
-
-.auction-row-highlight td:first-child {
-  border-left: 2px solid oklch(0.65 0.25 265) !important;
-}
-
-.auction-row-highlight td:last-child {
-  border-right: 2px solid oklch(0.65 0.25 265) !important;
-}
-
-@keyframes row-glow {
-  0% {
-    background-color: oklch(0.65 0.25 265 / 15%);
-    box-shadow: inset 0 0 20px oklch(0.65 0.25 265 / 8%), 0 0 15px oklch(0.65 0.25 265 / 10%);
-  }
-  30% {
-    background-color: oklch(0.65 0.25 265 / 10%);
-    box-shadow: inset 0 0 15px oklch(0.65 0.25 265 / 5%), 0 0 10px oklch(0.65 0.25 265 / 6%);
-  }
-  70% {
-    background-color: oklch(0.65 0.25 265 / 5%);
-    box-shadow: inset 0 0 8px oklch(0.65 0.25 265 / 2%), 0 0 5px oklch(0.65 0.25 265 / 3%);
-  }
-  100% {
-    background-color: transparent;
-    box-shadow: none;
-  }
-}
-
-.dark .auction-row-highlight td {
-  border-top-color: oklch(0.7 0.2 265) !important;
-  border-bottom-color: oklch(0.7 0.2 265) !important;
-}
-
-.dark .auction-row-highlight td:first-child {
-  border-left-color: oklch(0.7 0.2 265) !important;
-}
-
-.dark .auction-row-highlight td:last-child {
-  border-right-color: oklch(0.7 0.2 265) !important;
+.spec-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 </style>
+
