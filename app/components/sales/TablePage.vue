@@ -13,8 +13,24 @@ setHeader({ title: props.title, description: props.description, icon: props.icon
 
 const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars } = useAuctionsApi()
 
+const bidStats = ref<Record<string, { totalBids: number, uniqueDealers: number }>>({})
+const isStatsLoading = ref(false)
+
+async function fetchBidStats() {
+  try {
+    isStatsLoading.value = true
+    const res = await $fetch<any>('/api/sales/bids-stats')
+    if (res.success && res.stats) {
+      bidStats.value = res.stats
+    }
+  } catch(e) {} finally {
+    isStatsLoading.value = false
+  }
+}
+
 onMounted(() => {
   if (!isFetched.value) fetchAllCars()
+  fetchBidStats()
 })
 
 const search = ref('')
@@ -70,20 +86,25 @@ function formatDate(value: string): string {
 }
 
 function getFirstImage(car: any): string | null {
+  let images: string[] = []
   try {
     if (car.frontMainImages && typeof car.frontMainImages === 'string' && car.frontMainImages !== '[]' && car.frontMainImages !== 'null') {
-      const parsed = JSON.parse(car.frontMainImages);
-      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string' && parsed[0].startsWith('http')) return parsed[0];
-    } else if (Array.isArray(car.frontMainImages) && car.frontMainImages.length > 0 && typeof car.frontMainImages[0] === 'string' && car.frontMainImages[0].startsWith('http')) {
-      return car.frontMainImages[0];
+      const parsed = JSON.parse(car.frontMainImages)
+      if (Array.isArray(parsed)) images = parsed
+    } else if (Array.isArray(car.frontMainImages)) {
+      images = car.frontMainImages
     }
   } catch (e) {}
 
-  const fallback = car.frontMain || car.imageUrl;
-  if (!fallback || fallback === 'null' || fallback === 'undefined' || fallback === '[]' || (typeof fallback === 'string' && !fallback.startsWith('http'))) {
-    return null;
+  images = images.filter(url => typeof url === 'string' && url.trim().length > 5 && url !== 'null' && url !== 'undefined')
+
+  if (images.length === 0) {
+    const fb = car.frontMain || car.imageUrl
+    if (fb && typeof fb === 'string' && fb.trim().length > 5 && fb !== 'null' && fb !== 'undefined' && fb !== '[]') {
+      images.push(fb)
+    }
   }
-  return fallback;
+  return images.length > 0 ? (images[0] ?? null) : null
 }
 
 function getInflatedCep(car: any): number {
@@ -230,9 +251,6 @@ const pageNumbers = computed(() => {
             <TableHead class="whitespace-nowrap">Auto Bid</TableHead>
             <TableHead class="whitespace-nowrap">GAP</TableHead>
             <TableHead class="whitespace-nowrap">Overall Bids</TableHead>
-            <TableHead class="whitespace-nowrap">Portfol. Bids</TableHead>
-            <TableHead class="whitespace-nowrap">Portfol. Dealers</TableHead>
-            <TableHead class="whitespace-nowrap">Prosp. Dealers</TableHead>
             <TableHead class="whitespace-nowrap">Retail Status</TableHead>
             <TableHead class="whitespace-nowrap">Quality</TableHead>
             <TableHead class="whitespace-nowrap">Remarks</TableHead>
@@ -299,16 +317,20 @@ const pageNumbers = computed(() => {
               {{ (getInflatedCep(car) && car.highestBid) ? formatCurrency(getInflatedCep(car) - Number(car.highestBid)) : '—' }}
             </TableCell>
 
-            <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
-            <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
-            <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
-            <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
+            <TableCell class="text-[11px] font-mono text-center font-semibold text-foreground/80 tracking-wide">
+              <template v-if="isStatsLoading">
+                 <Icon name="i-lucide-loader-2" class="size-3 animate-spin inline-block text-muted-foreground opacity-50" />
+              </template>
+              <template v-else>
+                 {{ bidStats[String(car.id || car._id)]?.totalBids || 0 }} <span class="mx-0.5 text-muted-foreground/50">/</span> {{ bidStats[String(car.id || car._id)]?.uniqueDealers || 0 }}
+              </template>
+            </TableCell>
             <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
             <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
             <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
           </TableRow>
           <TableRow v-if="paginatedItems.length === 0">
-            <TableCell colspan="19" class="h-32 text-center text-muted-foreground bg-muted/10">No matching approved inspection records found</TableCell>
+            <TableCell colspan="16" class="h-32 text-center text-muted-foreground bg-muted/10">No matching approved inspection records found</TableCell>
           </TableRow>
         </TableBody>
       </Table>
