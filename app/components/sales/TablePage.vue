@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
+import { useClipboard } from '@vueuse/core'
 
 const props = defineProps<{
   title: string
@@ -68,9 +69,50 @@ function formatDate(value: string): string {
   catch { return value }
 }
 
+function getFirstImage(car: any): string | null {
+  try {
+    if (car.frontMainImages) {
+      const parsed = typeof car.frontMainImages === 'string' ? JSON.parse(car.frontMainImages) : car.frontMainImages;
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+    }
+  } catch (e) {}
+  return car.imageUrl || null;
+}
+
 async function handleRefresh() {
   await refreshCars()
   toast.success('Sales data refreshed')
+}
+
+const showReportPreview = ref(false)
+const previewAppId = ref('')
+const pdfBlobUrl = ref('')
+const { copy } = useClipboard()
+
+function openPreview(appid: string) {
+  previewAppId.value = ''
+  pdfBlobUrl.value = ''
+  nextTick(() => {
+    previewAppId.value = appid
+    showReportPreview.value = true
+  })
+}
+
+function triggerDownload() {
+  if (pdfBlobUrl.value) {
+    const a = document.createElement('a')
+    a.href = pdfBlobUrl.value
+    a.download = `Inspection_Report_${previewAppId.value}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+}
+
+function shareLink() {
+  const url = `${window.location.origin}/inspection/${previewAppId.value}`
+  copy(url)
+  toast.success('Inspection link copied to clipboard!')
 }
 
 const pageNumbers = computed(() => {
@@ -135,7 +177,7 @@ const pageNumbers = computed(() => {
             <TableHead class="whitespace-nowrap">Car Pic</TableHead>
             <TableHead class="whitespace-nowrap">App ID</TableHead>
             <TableHead class="whitespace-nowrap">Specs</TableHead>
-            <TableHead class="whitespace-nowrap">Insp. Report, PDF</TableHead>
+            <TableHead class="whitespace-nowrap">Report</TableHead>
             <TableHead class="whitespace-nowrap">Auction Status</TableHead>
             <TableHead class="whitespace-nowrap">PD</TableHead>
             <TableHead class="whitespace-nowrap">CEP & OtoBuy</TableHead>
@@ -161,7 +203,7 @@ const pageNumbers = computed(() => {
             <TableCell class="whitespace-nowrap text-xs text-muted-foreground">{{ formatDate(car.createdAt) }}</TableCell>
             <TableCell class="w-16">
               <div class="size-10 rounded-md overflow-hidden bg-muted border">
-                <img v-if="car.imageUrl" :src="car.imageUrl" class="size-full object-cover">
+                <img v-if="getFirstImage(car)" :src="getFirstImage(car)!" class="size-full object-cover">
                 <div v-else class="size-full flex items-center justify-center"><Icon name="i-lucide-car" class="size-4 text-muted-foreground" /></div>
               </div>
             </TableCell>
@@ -172,14 +214,15 @@ const pageNumbers = computed(() => {
             </TableCell>
             <TableCell>
               <div class="flex justify-center">
-                <NuxtLink 
+                <Button 
                   v-if="car.appointmentId" 
-                  :to="`/inspection/${car.appointmentId}`" 
-                  target="_blank" 
+                  variant="ghost" 
+                  size="icon" 
                   class="p-1.5 hover:bg-muted/50 rounded-md transition-colors w-8 h-8 flex items-center justify-center border border-transparent hover:border-border"
+                  @click.stop="openPreview(car.appointmentId)"
                 >
                   <Icon name="i-lucide-file-text" class="size-4 text-red-500" />
-                </NuxtLink>
+                </Button>
                 <span v-else class="text-xs text-muted-foreground">—</span>
               </div>
             </TableCell>
@@ -245,4 +288,38 @@ const pageNumbers = computed(() => {
       </div>
     </div>
   </div>
+
+  <Dialog v-model:open="showReportPreview">
+    <DialogContent class="max-w-[95vw] lg:max-w-6xl xl:max-w-7xl h-[95vh] p-0 flex flex-col overflow-hidden bg-muted/20 border-border">
+      <div class="p-4 border-b flex items-center justify-between bg-background shrink-0">
+        <div>
+          <DialogTitle class="text-lg font-bold">Inspection Report Preview</DialogTitle>
+          <DialogDescription>Review the complete inspection metrics or download the PDF format</DialogDescription>
+        </div>
+        <div class="flex items-center gap-2">
+          <Button variant="outline" size="sm" @click="shareLink">
+            <Icon name="i-lucide-share-2" class="mr-2 size-4" />
+            Share Link
+          </Button>
+          <Button size="sm" :disabled="!pdfBlobUrl" @click="triggerDownload">
+            <Icon name="i-lucide-download" class="mr-2 size-4" />
+            Download PDF
+          </Button>
+        </div>
+      </div>
+      <div class="flex-1 bg-muted relative overflow-hidden flex items-center justify-center">
+        <iframe v-if="pdfBlobUrl" :src="pdfBlobUrl" class="w-full h-full border-0 absolute inset-0 bg-white" />
+        <div v-else class="flex flex-col items-center gap-3 text-muted-foreground p-8 text-center max-w-sm mx-auto">
+          <Icon name="i-lucide-loader-2" class="size-8 animate-spin text-primary" />
+          <p class="text-sm font-medium text-foreground">Generating PDF Document...</p>
+          <p class="text-xs">Preparing the high-resolution inspection report document. This may take a few moments...</p>
+        </div>
+        
+        <!-- Hidden Generator -->
+        <div class="hidden absolute top-[-10000px] left-[-10000px] pointer-events-none opacity-0">
+          <CarInspectionView v-if="previewAppId && !pdfBlobUrl" :appointment-id="previewAppId" headless-pdf @pdf-blob-ready="pdfBlobUrl = $event" />
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
 </template>

@@ -3,11 +3,13 @@ import { toast } from 'vue-sonner'
 
 const props = defineProps<{
   readonly?: boolean
+  appointmentId?: string
+  headlessPdf?: boolean
 }>()
 
 const route = useRoute()
 const router = useRouter()
-const carId = route.params.id as string
+const carId = computed(() => (props.appointmentId || route.params.id) as string)
 
 const { setHeader } = usePageHeader()
 // Header is set dynamically based on active tab below
@@ -82,12 +84,16 @@ const variantOptions = computed(() => {
 })
 
 onMounted(() => {
-  if (!props.readonly) {
+  if (!props.readonly && !props.headlessPdf) {
     fetchDropdowns()
     fetchCarDropdowns()
   }
-  fetchCarDetails(carId)
-  fetchAllUsers()
+  if (carId.value) fetchCarDetails(carId.value)
+  if (!props.headlessPdf) fetchAllUsers()
+})
+
+watch(carId, (newVal) => {
+  if (newVal) fetchCarDetails(newVal)
 })
 const isSaving = ref(false)
 
@@ -394,10 +400,12 @@ const allPdfImages = computed(() => {
   return imgs.filter(img => !img.url.match(/\.(mp4|webm|ogg|mov)$/i))
 })
 
-async function downloadPDF() {
+const emit = defineEmits(['pdf-blob-ready'])
+
+async function downloadPDF(action: 'save' | 'blob' = 'save') {
   isGeneratingPdf.value = true
   await nextTick()
-  await new Promise(r => setTimeout(r, 200)) // give DOM time to append images structurally
+  await new Promise(r => setTimeout(r, props.headlessPdf ? 1000 : 200)) // give DOM time to append images structurally
 
   const element = document.getElementById('pdf-container')
   if (!element) {
@@ -454,9 +462,15 @@ async function downloadPDF() {
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     }
 
+    if (action === 'blob') {
+      const pdfBlob = await (window as any).html2pdf().set(opt).from(element).output('blob')
+      toast.dismiss(loadingToast)
+      return URL.createObjectURL(pdfBlob)
+    }
+
     await (window as any).html2pdf().set(opt).from(element).save()
     toast.dismiss(loadingToast)
-    toast.success('PDF Downloaded successfully!')
+    if (!props.headlessPdf) toast.success('PDF Downloaded successfully!')
   }
   catch (err) {
     console.error('PDF Generation Error: ', err)
@@ -468,6 +482,13 @@ async function downloadPDF() {
     window.getComputedStyle = originalGetComputedStyle
   }
 }
+
+watch(car, async (newVal) => {
+  if (newVal && props.headlessPdf) {
+    const url = await downloadPDF('blob')
+    emit('pdf-blob-ready', url)
+  }
+})
 
 async function scheduleAuctionFromModal() {
   let startTimeDate
