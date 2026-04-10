@@ -79,6 +79,18 @@ function getFirstImage(car: any): string | null {
   return car.imageUrl || null;
 }
 
+function getInflatedCep(car: any): number {
+  const basePrice = Number(car.customerExpectedPrice || car.cep || 0)
+  if (!basePrice) return 0
+  
+  const fixedMarginPct = Number(car.fixedMargin || 0)
+  const varMarginStr = String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')
+  const varMarginPct = Number(varMarginStr) || 0
+  
+  const rawCep = basePrice + (basePrice * fixedMarginPct / 100) + (basePrice * varMarginPct / 100)
+  return Math.ceil(rawCep / 1000) * 1000
+}
+
 async function handleRefresh() {
   await refreshCars()
   toast.success('Sales data refreshed')
@@ -180,7 +192,8 @@ const pageNumbers = computed(() => {
             <TableHead class="whitespace-nowrap">Report</TableHead>
             <TableHead class="whitespace-nowrap">Auction Status</TableHead>
             <TableHead class="whitespace-nowrap">PD</TableHead>
-            <TableHead class="whitespace-nowrap">CEP & OtoBuy</TableHead>
+            <TableHead class="whitespace-nowrap">CEP</TableHead>
+            <TableHead class="whitespace-nowrap">OtoBuy</TableHead>
             <TableHead class="whitespace-nowrap">Act Bids</TableHead>
             <TableHead class="whitespace-nowrap">HB</TableHead>
             <TableHead class="whitespace-nowrap">Auto Bid</TableHead>
@@ -232,9 +245,11 @@ const pageNumbers = computed(() => {
             <TableCell class="text-xs whitespace-nowrap font-medium">
               {{ car.priceDiscovery ? formatCurrency(car.priceDiscovery) : '—' }}
             </TableCell>
-            <TableCell class="text-xs whitespace-nowrap">
-              <div class="font-medium">{{ formatCurrency(car.cep) }}</div>
-              <div class="text-[10px] text-muted-foreground">Oto: {{ formatCurrency(car.otobuyPrice) }}</div>
+            <TableCell class="text-xs whitespace-nowrap font-medium" title="Inflated CEP">
+              {{ formatCurrency(getInflatedCep(car)) }}
+            </TableCell>
+            <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
+              {{ formatCurrency(car.otobuyPrice) }}
             </TableCell>
             <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
             
@@ -244,8 +259,8 @@ const pageNumbers = computed(() => {
             
             <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
             
-            <TableCell class="text-xs whitespace-nowrap font-medium tabular-nums shadow-sm" :class="Number(car.cep) - Number(car.highestBid) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
-              {{ (car.cep && car.highestBid) ? formatCurrency(Number(car.cep) - Number(car.highestBid)) : '—' }}
+            <TableCell class="text-xs whitespace-nowrap font-medium tabular-nums shadow-sm" :class="getInflatedCep(car) - Number(car.highestBid || 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
+              {{ (getInflatedCep(car) && car.highestBid) ? formatCurrency(getInflatedCep(car) - Number(car.highestBid)) : '—' }}
             </TableCell>
 
             <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
