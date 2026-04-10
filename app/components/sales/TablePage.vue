@@ -37,13 +37,26 @@ onMounted(() => {
 const search = ref('')
 
 const baseFilteredItems = computed(() => {
-  return allCars.value.filter(car => {
+  let result = allCars.value.filter(car => {
     let ok = car.approvalStatus === 'Approved'
-    if (props.filterStatus && car.auctionStatus !== props.filterStatus) {
-      ok = false
+    if (props.filterStatus) {
+      if (props.filterStatus === 'activity') {
+        if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy') {
+          ok = false
+        }
+      } else if (car.auctionStatus !== props.filterStatus) {
+        ok = false
+      }
     }
     return ok
   })
+
+  // Ensure 'activity' tab enforces descending latest-activity sort
+  if (props.filterStatus === 'activity') {
+    result.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+  }
+
+  return result
 })
 
 const filteredItems = computed(() => {
@@ -287,7 +300,7 @@ const pageNumbers = computed(() => {
             <TableHead class="whitespace-nowrap">App ID</TableHead>
             <TableHead class="whitespace-nowrap">Specs</TableHead>
             <TableHead class="whitespace-nowrap">Report</TableHead>
-            <TableHead v-if="!['liveAuctionEnded', 'removed'].includes(filterStatus || '')" class="whitespace-nowrap">Auction Status</TableHead>
+            <TableHead v-if="!['liveAuctionEnded', 'removed', 'sold'].includes(filterStatus || '')" class="whitespace-nowrap">Auction Status</TableHead>
             <TableHead class="whitespace-nowrap">PD</TableHead>
             <TableHead class="whitespace-nowrap">CEP</TableHead>
             <TableHead class="whitespace-nowrap">OtoBuy</TableHead>
@@ -347,7 +360,7 @@ const pageNumbers = computed(() => {
                 <span v-else class="text-xs text-muted-foreground">—</span>
               </div>
             </TableCell>
-            <TableCell v-if="!['liveAuctionEnded', 'removed'].includes(filterStatus || '')" class="whitespace-nowrap text-xs">
+            <TableCell v-if="!['liveAuctionEnded', 'removed', 'sold'].includes(filterStatus || '')" class="whitespace-nowrap text-xs">
               <Badge v-if="car.auctionStatus === 'live' && car.auctionEndTime" variant="outline" class="font-bold tracking-wide bg-[#333] text-white border-transparent">
                 <span class="size-1.5 rounded-full mr-1.5 bg-red-500 animate-pulse" />
                 {{ formatCountdown(car.auctionEndTime) }}
@@ -393,7 +406,7 @@ const pageNumbers = computed(() => {
             <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
           </TableRow>
           <TableRow v-if="paginatedItems.length === 0">
-            <TableCell :colspan="['liveAuctionEnded', 'removed'].includes(filterStatus || '') ? 15 : 16" class="h-32 text-center text-muted-foreground bg-muted/10">No matching approved inspection records found</TableCell>
+            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold'].includes(filterStatus || '') ? 15 : 16" class="h-32 text-center text-muted-foreground bg-muted/10">No matching approved inspection records found</TableCell>
           </TableRow>
         </TableBody>
       </Table>

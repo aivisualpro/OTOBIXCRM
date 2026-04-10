@@ -9,6 +9,7 @@ const currentActiveId = computed(() => {
 const navItems = [
   { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/sales/all' },
   { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/sales/live' },
+  { id: 'activity', title: 'Activity', icon: 'i-lucide-activity', link: '/sales/activity' },
   { id: 'ended', title: 'Ended', icon: 'i-lucide-timer-off', link: '/sales/ended' },
   { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/sales/sold' },
   { id: 'removed', title: 'Removed', icon: 'i-lucide-trash-2', link: '/sales/removed' },
@@ -23,6 +24,13 @@ function getTabCount(filterId: string) {
   return allCars.value.filter(car => {
     let ok = car.approvalStatus === 'Approved'
     if (filterId === 'all') return ok
+    
+    if (filterId === 'activity') {
+      if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy') {
+        ok = false
+      }
+      return ok
+    }
     
     const statusMap: Record<string, string> = {
        live: 'live',
