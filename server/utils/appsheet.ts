@@ -138,6 +138,7 @@ export function syncLeadToAppSheet(
             'ApplicationAccessKey': APPSHEET_ACCESS_KEY,
           },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(10000)
         })
 
         const text = await res.text()

@@ -1,3 +1,5 @@
+process.env.BROWSERSLIST_IGNORE_OLD_DATA = 'true'
+
 import tailwindcss from '@tailwindcss/vite'
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({

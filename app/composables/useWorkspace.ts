@@ -46,6 +46,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
   { id: 'leads', title: 'Leads', icon: 'i-lucide-magnet', link: '/leads', group: 'Workspace' },
   { id: 'people', title: 'People', icon: 'i-lucide-users', link: '/people/dealer', group: 'Workspace' },
   { id: 'auctions', title: 'Auctions', icon: 'i-lucide-gavel', link: '/auctions/upcoming', group: 'Workspace' },
+  { id: 'sales', title: 'Sales', icon: 'i-lucide-circle-dollar-sign', link: '/sales', group: 'Workspace' },
   { id: 'notifications', title: 'Notifications', icon: 'i-lucide-bell', link: '/notifications', group: 'Workspace' },
   { id: 'dropdowns', title: 'Dropdowns', icon: 'i-lucide-list', link: '/dropdowns', group: 'Workspace' },
   { id: 'banners', title: 'Banners', icon: 'i-lucide-image', link: '/banners', group: 'Workspace' },

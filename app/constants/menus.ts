@@ -25,6 +25,11 @@ export const navMenu: NavMenu[] = [
         link: '/auctions/upcoming',
       },
       {
+        title: 'Sales',
+        icon: 'i-lucide-circle-dollar-sign',
+        link: '/sales',
+      },
+      {
         title: 'Notifications',
         icon: 'i-lucide-bell',
         link: '/notifications',
