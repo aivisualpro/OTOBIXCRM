@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CrudColumn } from '~/composables/useCrud'
 import { toast } from 'vue-sonner'
+import { useIntersectionObserver } from '@vueuse/core'
 
 const props = defineProps<{
   title: string
@@ -147,11 +148,11 @@ const filteredItems = computed(() => {
   return result
 })
 
-// ─── Client-side pagination (30 per page) ───
-const PER_PAGE = 30
-const currentPage = ref(1)
+// ─── Infinite Scroll ───
+const ITEMS_PER_PAGE = 30
+const visibleCount = ref(ITEMS_PER_PAGE)
 
-watch(search, () => { currentPage.value = 1 })
+watch(search, () => { visibleCount.value = ITEMS_PER_PAGE })
 
 function focusGlobalSearch() {
   const el = document.getElementById('globalSearchInput') as HTMLInputElement | null
@@ -174,21 +175,19 @@ function handleGlobalKeydown(e: KeyboardEvent) {
 }
 
 const totalFiltered = computed(() => filteredItems.value.length)
-const totalPages = computed(() => Math.max(1, Math.ceil(totalFiltered.value / PER_PAGE)))
+const paginatedItems = computed(() => filteredItems.value.slice(0, visibleCount.value))
+const hasMore = computed(() => paginatedItems.value.length < filteredItems.value.length)
 
-const paginatedItems = computed(() => {
-  const start = (currentPage.value - 1) * PER_PAGE
-  return filteredItems.value.slice(start, start + PER_PAGE)
-})
-
-function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value)
-    return
-  currentPage.value = page
-}
-
-const showingFrom = computed(() => totalFiltered.value === 0 ? 0 : ((currentPage.value - 1) * PER_PAGE) + 1)
-const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFiltered.value))
+const loadMoreTrigger = ref<HTMLElement | null>(null)
+useIntersectionObserver(
+  loadMoreTrigger,
+  (entries) => {
+    if (entries?.[0]?.isIntersecting && hasMore.value) {
+      visibleCount.value += ITEMS_PER_PAGE
+    }
+  },
+  { rootMargin: '400px' }
+)
 
 // ─── Formatters ───
 const statusBadgeClasses: Record<string, string> = {
@@ -253,24 +252,6 @@ async function handleRefresh() {
   toast.success('Auction data refreshed')
 }
 
-// ─── Pagination with ellipsis ───
-const pageNumbers = computed(() => {
-  const total = totalPages.value
-  const current = currentPage.value
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
-  const pages: (number | string)[] = [1]
-  if (current > 3)
-    pages.push('...')
-  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-    pages.push(i)
-  }
-  if (current < total - 2)
-    pages.push('...')
-  pages.push(total)
-  return pages
-})
 </script>
 
 <template>
@@ -385,33 +366,11 @@ const pageNumbers = computed(() => {
           <Icon name="i-lucide-grid-2x2-x" class="size-10 mb-3 opacity-20" />
           <p>No auction listings found.</p>
         </div>
-      </div>
-    </div>
-
-    <!-- Pagination -->
-    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex flex-wrap items-center justify-between gap-2">
-      <p class="text-xs text-muted-foreground tabular-nums">
-        Showing {{ showingFrom }} to {{ showingTo }} out of {{ totalFiltered }} cars
-      </p>
-      <div v-if="totalPages > 1" class="flex items-center gap-1">
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
-          <Icon name="i-lucide-chevron-left" class="size-3.5" />
-        </Button>
-        <template v-for="pg in pageNumbers" :key="pg">
-          <Button
-            v-if="pg !== '...'"
-            :variant="pg === currentPage ? 'default' : 'outline'"
-            size="icon"
-            class="size-7 text-xs"
-            @click="goToPage(pg as number)"
-          >
-            {{ pg }}
-          </Button>
-          <span v-else class="px-1 text-xs text-muted-foreground">…</span>
-        </template>
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
-          <Icon name="i-lucide-chevron-right" class="size-3.5" />
-        </Button>
+        
+        <!-- Infinite Scroll Trigger -->
+        <div v-if="hasMore" ref="loadMoreTrigger" class="col-span-full h-24 flex items-center justify-center">
+          <Icon name="i-lucide-loader-2" class="size-6 animate-spin text-muted-foreground opacity-50" />
+        </div>
       </div>
     </div>
 
