@@ -86,25 +86,41 @@ function formatDate(value: string): string {
 }
 
 function getFirstImage(car: any): string | null {
-  let images: string[] = []
+  // frontMainImages can be a native array OR a JSON string
+  let images: any[] = []
   try {
-    if (car.frontMainImages && typeof car.frontMainImages === 'string' && car.frontMainImages !== '[]' && car.frontMainImages !== 'null') {
+    if (Array.isArray(car.frontMainImages)) {
+      images = car.frontMainImages
+    } else if (typeof car.frontMainImages === 'string' && car.frontMainImages !== '[]' && car.frontMainImages !== 'null' && car.frontMainImages !== '') {
       const parsed = JSON.parse(car.frontMainImages)
       if (Array.isArray(parsed)) images = parsed
-    } else if (Array.isArray(car.frontMainImages)) {
-      images = car.frontMainImages
     }
   } catch (e) {}
 
-  images = images.filter(url => typeof url === 'string' && url.trim().length > 5 && url !== 'null' && url !== 'undefined')
+  let validImages = images
+    .map((item: any) => {
+      if (typeof item === 'string') return item.trim()
+      if (item && typeof item === 'object' && typeof item.url === 'string') return item.url.trim()
+      return null
+    })
+    .filter((url): url is string => !!url && url.length > 5 && url !== 'null' && url !== 'undefined')
 
-  if (images.length === 0) {
-    const fb = car.frontMain || car.imageUrl
-    if (fb && typeof fb === 'string' && fb.trim().length > 5 && fb !== 'null' && fb !== 'undefined' && fb !== '[]') {
-      images.push(fb)
+  if (validImages.length === 0) {
+    // frontMain can also be an array or string
+    const fb = car.frontMain
+    if (Array.isArray(fb)) {
+      const first = fb.find((x: any) => typeof x === 'string' && x.trim().length > 5 && x !== 'null')
+      if (first) validImages.push(first.trim())
+    } else if (fb && typeof fb === 'string' && fb.trim().length > 5 && fb !== 'null' && fb !== '[]') {
+      validImages.push(fb.trim())
     }
   }
-  return images.length > 0 ? (images[0] ?? null) : null
+
+  if (validImages.length === 0 && car.imageUrl && typeof car.imageUrl === 'string' && car.imageUrl.trim().length > 5) {
+    validImages.push(car.imageUrl.trim())
+  }
+
+  return validImages.length > 0 ? (validImages[0] ?? null) : null
 }
 
 function getInflatedCep(car: any): number {
