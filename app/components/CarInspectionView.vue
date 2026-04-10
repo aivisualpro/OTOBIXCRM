@@ -2688,9 +2688,8 @@ function sectionImages(keys: (string | { new: string, old: string })[]) {
         <!-- HEADER -->
         <div class="flex justify-between items-end border-b-2 border-slate-600 pb-2 mb-4">
           <div>
-            <div class="text-3xl font-black text-red-600 tracking-tighter flex items-center gap-2">
-              <Icon name="i-lucide-car-front" class="size-8 text-black" />
-              OTOBIX
+            <div class="flex items-center">
+              <img src="/apple-touch-icon.png" class="h-16 w-auto object-contain" />
             </div>
           </div>
           <div class="text-right">
