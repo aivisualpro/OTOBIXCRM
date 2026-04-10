@@ -5,8 +5,6 @@ const { activeWorkspace } = useWorkspace()
 
 const RETAIL_TABS = [
   { id: 'all', title: 'All Vehicles', link: '/retail/all' },
-  { id: 'published', title: 'Published', link: '/retail/published' },
-  { id: 'drafts', title: 'Drafts', link: '/retail/drafts' },
 ]
 
 const navItems = computed(() => {

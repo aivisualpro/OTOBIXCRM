@@ -14,7 +14,7 @@ setHeader({ title: props.title, description: props.description, icon: props.icon
 
 const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars } = useAuctionsApi()
 
-const bidStats = ref<Record<string, { totalBids: number, uniqueDealers: number }>>({})
+const bidStats = ref<Record<string, { totalBids: number, uniqueDealers: number, lastBidAt?: string }>>({})
 const isStatsLoading = ref(false)
 
 async function fetchBidStats() {
@@ -40,8 +40,12 @@ const baseFilteredItems = computed(() => {
   let result = allCars.value.filter(car => {
     let ok = car.approvalStatus === 'Approved'
     if (props.filterStatus) {
-      if (props.filterStatus === 'activity') {
+      if (props.filterStatus === 'customer-activity') {
         if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy') {
+          ok = false
+        }
+      } else if (props.filterStatus === 'dealer-activity') {
+        if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy' && car.auctionStatus !== 'upcoming') {
           ok = false
         }
       } else if (car.auctionStatus !== props.filterStatus) {
@@ -51,9 +55,26 @@ const baseFilteredItems = computed(() => {
     return ok
   })
 
-  // Ensure 'activity' tab enforces descending latest-activity sort
-  if (props.filterStatus === 'activity') {
+  // Ensure 'customer-activity' tab enforces descending latest-activity sort
+  if (props.filterStatus === 'customer-activity') {
     result.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
+  }
+  
+  // 'dealer-activity' tab relies directly on tracking $max updatedAt of active bids per vehicle
+  if (props.filterStatus === 'dealer-activity') {
+    result.sort((a, b) => {
+      const statA = bidStats.value[String(a.id || a._id)]
+      const actA = statA?.lastBidAt 
+        ? new Date(statA.lastBidAt).getTime() 
+        : new Date(a.createdAt || 0).getTime() // Fallback to creation date if no bids
+      
+      const statB = bidStats.value[String(b.id || b._id)]
+      const actB = statB?.lastBidAt 
+        ? new Date(statB.lastBidAt).getTime() 
+        : new Date(b.createdAt || 0).getTime() 
+
+      return actB - actA
+    })
   }
 
   return result

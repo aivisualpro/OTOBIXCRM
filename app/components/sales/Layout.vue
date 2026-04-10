@@ -11,7 +11,8 @@ const ALL_SALES_TABS = [
   { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/sales/all' },
   { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/sales/live' },
   { id: 'otobuy', title: 'Otobuy', icon: 'i-lucide-tag', link: '/sales/otobuy' },
-  { id: 'activity', title: 'Activity', icon: 'i-lucide-activity', link: '/sales/activity' },
+  { id: 'customer-activity', title: 'Customer Activity', icon: 'i-lucide-activity', link: '/sales/customer-activity' },
+  { id: 'dealer-activity', title: 'Dealer Activity', icon: 'i-lucide-users', link: '/sales/dealer-activity' },
   { id: 'ended', title: 'Ended', icon: 'i-lucide-timer-off', link: '/sales/ended' },
   { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/sales/sold' },
   { id: 'removed', title: 'Removed', icon: 'i-lucide-trash-2', link: '/sales/removed' },
@@ -35,8 +36,15 @@ function getTabCount(filterId: string) {
     let ok = car.approvalStatus === 'Approved'
     if (filterId === 'all') return ok
     
-    if (filterId === 'activity') {
+    if (filterId === 'customer-activity') {
       if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy') {
+        ok = false
+      }
+      return ok
+    }
+
+    if (filterId === 'dealer-activity') {
+      if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy' && car.auctionStatus !== 'upcoming') {
         ok = false
       }
       return ok

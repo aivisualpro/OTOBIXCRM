@@ -200,7 +200,8 @@ const SALES_TABS = [
   { id: 'all', title: 'All', route: '/sales/all' },
   { id: 'live', title: 'Live', route: '/sales/live' },
   { id: 'otobuy', title: 'Otobuy', route: '/sales/otobuy' },
-  { id: 'activity', title: 'Activity', route: '/sales/activity' },
+  { id: 'customer-activity', title: 'Customer Activity', route: '/sales/customer-activity' },
+  { id: 'dealer-activity', title: 'Dealer Activity', route: '/sales/dealer-activity' },
   { id: 'ended', title: 'Ended', route: '/sales/ended' },
   { id: 'sold', title: 'Sold', route: '/sales/sold' },
   { id: 'removed', title: 'Removed', route: '/sales/removed' },
@@ -220,8 +221,6 @@ function localToggleSalesTab(tabId: string) {
 // ─── Retail Tabs Sub-Config ───
 const RETAIL_TABS = [
   { id: 'all', title: 'All Vehicles', route: '/retail/all' },
-  { id: 'published', title: 'Published', route: '/retail/published' },
-  { id: 'drafts', title: 'Drafts', route: '/retail/drafts' },
 ]
 
 function localToggleRetailTab(tabId: string) {

@@ -16,21 +16,27 @@ export default defineEventHandler(async (event) => {
         $group: { 
           _id: { $toString: "$carId" }, 
           totalBids: { $sum: 1 }, 
-          uniqueDealers: { $addToSet: { $toString: "$userId" } } 
+          uniqueDealers: { $addToSet: { $toString: "$userId" } },
+          lastBidAt: { $max: "$updatedAt" }
         } 
       },
       { 
         $project: { 
           _id: 1, 
           totalBids: 1, 
-          uniqueDealerCount: { $size: "$uniqueDealers" } 
+          uniqueDealerCount: { $size: "$uniqueDealers" },
+          lastBidAt: 1
         } 
       }
     ]).toArray()
 
     const formattedStats = stats.reduce((acc: any, curr) => {
       if (curr._id) {
-         acc[curr._id] = { totalBids: curr.totalBids, uniqueDealers: curr.uniqueDealerCount }
+         acc[curr._id] = { 
+           totalBids: curr.totalBids, 
+           uniqueDealers: curr.uniqueDealerCount, 
+           lastBidAt: curr.lastBidAt
+         }
       }
       return acc
     }, {})
