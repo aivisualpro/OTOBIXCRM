@@ -10,6 +10,8 @@ const navItems = [
   { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/sales/all' },
   { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/sales/live' },
   { id: 'ended', title: 'Ended', icon: 'i-lucide-timer-off', link: '/sales/ended' },
+  { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/sales/sold' },
+  { id: 'removed', title: 'Removed', icon: 'i-lucide-trash-2', link: '/sales/removed' },
 ]
 </script>
 
