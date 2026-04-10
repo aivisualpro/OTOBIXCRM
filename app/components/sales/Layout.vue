@@ -9,6 +9,7 @@ const currentActiveId = computed(() => {
 const navItems = [
   { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/sales/all' },
   { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/sales/live' },
+  { id: 'otobuy', title: 'Otobuy', icon: 'i-lucide-tag', link: '/sales/otobuy' },
   { id: 'activity', title: 'Activity', icon: 'i-lucide-activity', link: '/sales/activity' },
   { id: 'ended', title: 'Ended', icon: 'i-lucide-timer-off', link: '/sales/ended' },
   { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/sales/sold' },
@@ -34,6 +35,7 @@ function getTabCount(filterId: string) {
     
     const statusMap: Record<string, string> = {
        live: 'live',
+       otobuy: 'otobuy',
        ended: 'liveAuctionEnded',
        sold: 'sold',
        removed: 'removed'

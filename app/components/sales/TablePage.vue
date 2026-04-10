@@ -300,7 +300,7 @@ const pageNumbers = computed(() => {
             <TableHead class="whitespace-nowrap">App ID</TableHead>
             <TableHead class="whitespace-nowrap">Specs</TableHead>
             <TableHead class="whitespace-nowrap">Report</TableHead>
-            <TableHead v-if="!['liveAuctionEnded', 'removed', 'sold'].includes(filterStatus || '')" class="whitespace-nowrap">Auction Status</TableHead>
+            <TableHead v-if="!['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '')" class="whitespace-nowrap">Auction Status</TableHead>
             <TableHead class="whitespace-nowrap">PD</TableHead>
             <TableHead class="whitespace-nowrap">CEP</TableHead>
             <TableHead class="whitespace-nowrap">OtoBuy</TableHead>
@@ -360,7 +360,7 @@ const pageNumbers = computed(() => {
                 <span v-else class="text-xs text-muted-foreground">—</span>
               </div>
             </TableCell>
-            <TableCell v-if="!['liveAuctionEnded', 'removed', 'sold'].includes(filterStatus || '')" class="whitespace-nowrap text-xs">
+            <TableCell v-if="!['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '')" class="whitespace-nowrap text-xs">
               <Badge v-if="car.auctionStatus === 'live' && car.auctionEndTime" variant="outline" class="font-bold tracking-wide bg-[#333] text-white border-transparent">
                 <span class="size-1.5 rounded-full mr-1.5 bg-red-500 animate-pulse" />
                 {{ formatCountdown(car.auctionEndTime) }}
@@ -374,7 +374,7 @@ const pageNumbers = computed(() => {
               {{ formatCurrency(getInflatedCep(car)) }}
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
-              {{ formatCurrency(car.otobuyPrice) }}
+              {{ formatCurrency(car.oneClickPrice) }}
             </TableCell>
             <TableCell class="text-xs text-center px-1">
               <Button variant="outline" class="h-6 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 border-blue-200 text-[10px] uppercase font-bold tracking-wider rounded-md" @click.stop="fetchAndShowBids(car)">
@@ -406,7 +406,7 @@ const pageNumbers = computed(() => {
             <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
           </TableRow>
           <TableRow v-if="paginatedItems.length === 0">
-            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold'].includes(filterStatus || '') ? 15 : 16" class="h-32 text-center text-muted-foreground bg-muted/10">No matching approved inspection records found</TableCell>
+            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 15 : 16" class="h-32 text-center text-muted-foreground bg-muted/10">No matching approved inspection records found</TableCell>
           </TableRow>
         </TableBody>
       </Table>
