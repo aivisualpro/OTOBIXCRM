@@ -1,5 +1,5 @@
 <script setup lang="ts">
-navigateTo('/sales/list', { replace: true })
+navigateTo('/sales/all', { replace: true })
 </script>
 
 <template>

@@ -6,6 +6,7 @@ const props = defineProps<{
   title: string
   description: string
   icon: string
+  filterStatus?: string
 }>()
 
 const { setHeader } = usePageHeader()
@@ -35,11 +36,14 @@ onMounted(() => {
 
 const search = ref('')
 
-// Filter: only show if approvalStatus="Approved"
 const baseFilteredItems = computed(() => {
-  return allCars.value.filter(car => 
-    car.approvalStatus === 'Approved'
-  )
+  return allCars.value.filter(car => {
+    let ok = car.approvalStatus === 'Approved'
+    if (props.filterStatus && car.auctionStatus !== props.filterStatus) {
+      ok = false
+    }
+    return ok
+  })
 })
 
 const filteredItems = computed(() => {

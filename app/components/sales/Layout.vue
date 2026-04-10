@@ -7,7 +7,9 @@ const currentActiveId = computed(() => {
 })
 
 const navItems = [
-  { id: 'list', title: 'Sales List', icon: 'i-lucide-list', link: '/sales/list' },
+  { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/sales/all' },
+  { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/sales/live' },
+  { id: 'ended', title: 'Ended', icon: 'i-lucide-timer-off', link: '/sales/ended' },
 ]
 </script>
 
