@@ -127,6 +127,30 @@ function shareLink() {
   toast.success('Inspection link copied to clipboard!')
 }
 
+const showBidsPopup = ref(false)
+const selectedCarForBids = ref<any>(null)
+const bidsLoading = ref(false)
+const carBids = ref<any[]>([])
+
+async function fetchAndShowBids(car: any) {
+  selectedCarForBids.value = car
+  showBidsPopup.value = true
+  bidsLoading.value = true
+  carBids.value = []
+  
+  try {
+    const rawId = car._id?.$oid || car._id || car.id
+    const res = await $fetch<any>(`/api/sales/bids?carId=${rawId}`)
+    if (res.success) {
+      carBids.value = res.bids || []
+    }
+  } catch (err) {
+    toast.error('Failed to load bids')
+  } finally {
+    bidsLoading.value = false
+  }
+}
+
 const pageNumbers = computed(() => {
   const total = totalPages.value
   const current = currentPage.value
@@ -251,7 +275,12 @@ const pageNumbers = computed(() => {
             <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
               {{ formatCurrency(car.otobuyPrice) }}
             </TableCell>
-            <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
+            <TableCell class="text-xs text-center px-1">
+              <Button variant="outline" class="h-6 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 border-blue-200 text-[10px] uppercase font-bold tracking-wider rounded-md" @click.stop="fetchAndShowBids(car)">
+                 <Icon name="i-lucide-gavel" class="mr-1 size-3" />
+                 View
+              </Button>
+            </TableCell>
             
             <TableCell class="text-xs font-bold text-emerald-600 tabular-nums">
               {{ formatCurrency(car.highestBid) }}
@@ -331,6 +360,84 @@ const pageNumbers = computed(() => {
         <div class="hidden absolute top-[-10000px] left-[-10000px] pointer-events-none opacity-0">
           <CarInspectionView v-if="previewAppId && !pdfBlobUrl" :appointment-id="previewAppId" headless-pdf @pdf-blob-ready="pdfBlobUrl = $event" />
         </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+
+  <!-- Active Bids Inspector Popup -->
+  <Dialog v-model:open="showBidsPopup">
+    <DialogContent class="sm:max-w-4xl max-h-[85vh] overflow-hidden flex flex-col p-0 rounded-2xl border-0 shadow-2xl bg-white dark:bg-background">
+      <div class="shrink-0 p-5 border-b flex items-center justify-between bg-gradient-to-r from-blue-50/50 to-transparent dark:from-muted/20">
+        <div>
+          <DialogTitle class="flex items-center gap-2 text-xl font-bold text-[#1f3b58] dark:text-foreground">
+            <Icon name="i-lucide-gavel" class="size-6 text-blue-600" />
+            Live Auction Bids
+          </DialogTitle>
+          <DialogDescription class="mt-1 flex items-center gap-2">
+            <span class="font-medium text-foreground">{{ selectedCarForBids?.make }} {{ selectedCarForBids?.model }}</span>
+            <span class="text-muted-foreground">({{ selectedCarForBids?.variant }})</span>
+            <Badge variant="secondary" class="font-mono text-[10px] ml-2">{{ selectedCarForBids?.appointmentId || selectedCarForBids?.registrationNumber }}</Badge>
+          </DialogDescription>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto min-h-[300px] p-0 relative">
+        <div v-if="bidsLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-background/80 backdrop-blur-sm z-10 text-muted-foreground gap-3">
+           <Icon name="i-lucide-loader-2" class="size-8 animate-spin text-blue-500" />
+           <p class="font-medium">Syncing live bids...</p>
+        </div>
+        
+        <div v-else-if="carBids.length === 0" class="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
+           <div class="size-20 rounded-full bg-muted/30 flex items-center justify-center mb-4 border border-dashed border-border/50">
+             <Icon name="i-lucide-receipt" class="size-8 opacity-40" />
+           </div>
+           <p class="text-base font-semibold text-foreground/70">No Bids Registered</p>
+           <p class="text-sm mt-1">This vehicle currently has no active bidding history.</p>
+        </div>
+        
+        <Table v-else>
+           <TableHeader class="sticky top-0 bg-muted/80 backdrop-blur-md z-10">
+             <TableRow>
+               <TableHead class="w-16 text-center">#</TableHead>
+               <TableHead>Execution Time</TableHead>
+               <TableHead>Bid Amount</TableHead>
+               <TableHead>Dealer / Buyer</TableHead>
+               <TableHead>Phone</TableHead>
+               <TableHead class="text-right">Status</TableHead>
+             </TableRow>
+           </TableHeader>
+           <TableBody>
+             <TableRow v-for="(bid, idx) in carBids" :key="bid._id" class="group transition-colors hover:bg-blue-50/30">
+               <TableCell class="text-center text-xs text-muted-foreground font-mono">{{ idx + 1 }}</TableCell>
+               <TableCell>
+                  <div class="flex items-center gap-2">
+                     <Icon name="i-lucide-clock" class="size-3.5 text-muted-foreground" />
+                     <span class="font-mono text-xs">{{ formatDate(bid.createdAt) }}</span>
+                  </div>
+               </TableCell>
+               <TableCell class="font-bold text-emerald-600 text-[15px] tabular-nums">{{ formatCurrency(bid.bidAmount || bid.amount) }}</TableCell>
+               <TableCell>
+                  <div v-if="bid.dealer" class="flex flex-col gap-0.5">
+                    <span class="text-sm font-semibold">{{ bid.dealer.shopName || bid.dealer.fullName || 'Unknown Dealer' }}</span>
+                    <span v-if="bid.dealer.shopName && bid.dealer.fullName" class="text-[10px] text-muted-foreground w-max uppercase tracking-wider">{{ bid.dealer.fullName }}</span>
+                  </div>
+                  <span v-else class="text-muted-foreground italic text-xs">Unregistered User</span>
+               </TableCell>
+               <TableCell>
+                  <span class="font-mono text-xs bg-muted/50 px-2 py-1 rounded-md" v-if="bid.dealer?.phone">{{ bid.dealer.phone }}</span>
+                  <span v-else class="text-muted-foreground">—</span>
+               </TableCell>
+               <TableCell class="text-right">
+                  <Badge variant="outline" :class="idx === 0 && !bid.isActive ? 'bg-amber-100 text-amber-800 border-amber-300' : (bid.isActive ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300')">
+                     <span class="flex items-center gap-1.5">
+                        <span class="size-1.5 rounded-full" :class="idx === 0 || bid.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/30'" />
+                        {{ idx === 0 || bid.isActive ? 'Active' : 'Archived' }}
+                     </span>
+                  </Badge>
+               </TableCell>
+             </TableRow>
+           </TableBody>
+        </Table>
       </div>
     </DialogContent>
   </Dialog>
