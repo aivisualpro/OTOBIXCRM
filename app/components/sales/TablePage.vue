@@ -280,9 +280,23 @@ const pageNumbers = computed(() => {
           >
             <TableCell class="whitespace-nowrap text-xs text-muted-foreground">{{ formatDate(car.createdAt) }}</TableCell>
             <TableCell class="w-16">
-              <div class="size-10 rounded-md overflow-hidden bg-muted border">
-                <img v-if="getFirstImage(car)" :src="getFirstImage(car)!" class="size-full object-cover">
-                <div v-else class="size-full flex items-center justify-center"><Icon name="i-lucide-car" class="size-4 text-muted-foreground" /></div>
+              <div class="relative group/img size-10 rounded-md overflow-visible">
+                <div class="size-10 rounded-md overflow-hidden bg-muted border cursor-zoom-in">
+                  <img v-if="getFirstImage(car)" :src="getFirstImage(car)!" class="size-full object-cover" />
+                  <div v-else class="size-full flex items-center justify-center"><Icon name="i-lucide-car" class="size-4 text-muted-foreground" /></div>
+                </div>
+                <!-- Hover popup -->
+                <Transition name="img-popup">
+                  <div
+                    v-if="getFirstImage(car)"
+                    class="img-popup-panel pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 z-50 hidden group-hover/img:block"
+                  >
+                    <div class="bg-card border shadow-2xl rounded-xl overflow-hidden w-96 h-72">
+                      <img :src="getFirstImage(car)!" class="w-full h-full object-cover" />
+                    </div>
+                    <div class="absolute left-0 top-1/2 -translate-x-1.5 -translate-y-1/2 w-3 h-3 bg-card border-l border-b rotate-45 border-border" />
+                  </div>
+                </Transition>
               </div>
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs font-mono">{{ car.appointmentId || '—' }}</TableCell>

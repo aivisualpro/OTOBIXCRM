@@ -2,14 +2,23 @@
 import { auctionRouteFilters } from '~/constants/auctions'
 
 const route = useRoute()
+const { activeWorkspace } = useWorkspace()
 
-const navItems = Object.entries(auctionRouteFilters).map(([key, filter]) => ({
-  id: key,
-  title: filter.label,
-  icon: filter.icon,
-  color: filter.color,
-  link: `/auctions/${key}`,
-}))
+const navItems = computed(() => {
+  const allItems = Object.entries(auctionRouteFilters).map(([key, filter]) => ({
+    id: key,
+    title: filter.label,
+    icon: filter.icon,
+    color: filter.color,
+    link: `/auctions/${key}`,
+  }))
+
+  const allowedTabs = activeWorkspace.value?.auctionTabs
+  if (allowedTabs && allowedTabs.length > 0) {
+    return allItems.filter(item => allowedTabs.includes(item.id))
+  }
+  return allItems
+})
 
 const currentActiveId = computed(() => {
   const path = route.path

@@ -174,6 +174,27 @@ function deselectAll() {
   isDirty.value = true
 }
 
+// ─── Auction Tabs Sub-Config ───
+const AUCTION_TABS = [
+  { id: 'upcoming', title: 'Upcoming', route: '/auctions/upcoming' },
+  { id: 'live', title: 'Live', route: '/auctions/live' },
+  { id: 'otobuy', title: 'Otobuy', route: '/auctions/otobuy' },
+  { id: 'ended', title: 'Ended', route: '/auctions/ended' },
+  { id: 'sold', title: 'Sold', route: '/auctions/sold' },
+  { id: 'removed', title: 'Removed', route: '/auctions/removed' },
+]
+
+function localToggleAuctionTab(tabId: string) {
+  const ws = editingWorkspace.value
+  if (!ws) return
+  if (!ws.auctionTabs) ws.auctionTabs = AUCTION_TABS.map(t => t.id)
+  const current = [...ws.auctionTabs]
+  const idx = current.indexOf(tabId)
+  if (idx >= 0) { current.splice(idx, 1) } else { current.push(tabId) }
+  ws.auctionTabs = current
+  isDirty.value = true
+}
+
 // ─── Leads Tabs Sub-Config ───
 const LEADS_TABS = [
   { id: 'leads', title: 'Leads' },
@@ -315,6 +336,8 @@ async function saveMenuConfig() {
   isSavingMenu.value = true
   try {
     const updates: Partial<Workspace> = { menuIds: [...ws.menuIds] }
+    if (ws.auctionTabs)
+      updates.auctionTabs = [...ws.auctionTabs]
     if (ws.leadTabs)
       updates.leadTabs = [...ws.leadTabs]
     if (ws.dashboardWidgets)
@@ -521,6 +544,46 @@ async function saveMenuConfig() {
                       :active-color="editingWorkspace!.color"
                       class="scale-90 pointer-events-none"
                     />
+                  </div>
+
+                  <!-- Auctions Sub-Tabs Options -->
+                  <div
+                    v-if="item.id === 'auctions' && editingWorkspace!.menuIds.includes('auctions')"
+                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+                  >
+                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                      Visible Auction Tabs
+                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                    </p>
+                    <div
+                      v-for="subTab in AUCTION_TABS"
+                      :key="subTab.id"
+                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                      @click="localToggleAuctionTab(subTab.id)"
+                    >
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <button
+                          v-if="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id)"
+                          title="Set as Default Route"
+                          class="transition-opacity p-0.5 mt-0.5"
+                          :class="safeGetDefaultRoute(editingWorkspace!, 'auctions') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
+                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'auctions', subTab.route)"
+                        >
+                          <Icon
+                            name="i-lucide-star"
+                            class="size-3 block transition-colors"
+                            :class="safeGetDefaultRoute(editingWorkspace!, 'auctions') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
+                          />
+                        </button>
+                        <span class="text-[11px] truncate" :class="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
+                      </div>
+                      <Icon
+                        :name="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                        class="size-3.5"
+                        :style="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                      />
+                    </div>
                   </div>
 
                   <!-- Leads Sub-Tabs Options -->

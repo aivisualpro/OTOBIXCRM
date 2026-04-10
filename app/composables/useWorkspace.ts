@@ -28,6 +28,7 @@ export interface Workspace {
   description?: string
   color?: string
   menuIds: string[]
+  auctionTabs?: string[]
   leadTabs?: string[]
   dashboardWidgets?: string[]
   systemSettings?: string[]
@@ -197,6 +198,11 @@ export function useWorkspace() {
       // Dynamic Sidebar Redirect fallback to first tab if they explicitly lock out the index leads
       if (item.id === 'leads' && ws.leadTabs && ws.leadTabs.length > 0 && !ws.leadTabs.includes('leads')) {
         link = ws.defaultRoutes?.[item.id] || `/leads/${ws.leadTabs[0]}`
+      }
+
+      // Dynamic Sidebar Redirect fallback for auctions
+      if (item.id === 'auctions' && ws.auctionTabs && ws.auctionTabs.length > 0) {
+        link = ws.defaultRoutes?.[item.id] || `/auctions/${ws.auctionTabs[0]}`
       }
 
       group.push({
