@@ -76,6 +76,29 @@ function saveRemarks() {
   isRemarksOpen.value = false
 }
 
+const isImageModalOpen = ref(false)
+const selectedImageCar = ref<any>(null)
+const imageCarDetails = ref<any>(null)
+const isFetchingImageDetails = ref(false)
+
+async function openImageModal(car: any) {
+  selectedImageCar.value = car
+  isImageModalOpen.value = true
+  imageCarDetails.value = null
+  
+  if (car.appointmentId) {
+    try {
+      isFetchingImageDetails.value = true
+      const res = await $fetch<any>(`/api/leads/${car.appointmentId}`)
+      if (res && res.carDetails) {
+        imageCarDetails.value = res.carDetails
+      }
+    } catch(e) {} finally {
+      isFetchingImageDetails.value = false
+    }
+  }
+}
+
 const isHistoryOpen = ref(false)
 const selectedCarForHistory = ref<any>(null)
 
@@ -542,7 +565,7 @@ const pageNumbers = computed(() => {
             <TableCell class="whitespace-nowrap text-xs text-muted-foreground">{{ formatDate(car.createdAt) }}</TableCell>
             <TableCell class="w-24">
               <div class="relative group/img w-20 h-14 rounded-md overflow-visible hover:z-[60]">
-                <div class="size-full rounded-md overflow-hidden bg-muted border cursor-zoom-in">
+                <div @click="openImageModal(car)" class="size-full rounded-md overflow-hidden bg-muted border cursor-zoom-in">
                   <img v-if="getFirstImage(car)" :src="getFirstImage(car)!" class="size-full object-cover" />
                   <div v-else class="size-full flex items-center justify-center"><Icon name="i-lucide-car" class="size-5 text-muted-foreground" /></div>
                 </div>
@@ -1008,6 +1031,85 @@ const pageNumbers = computed(() => {
         <Button variant="outline" size="sm" @click="isRemarksOpen = false">Cancel</Button>
         <Button size="sm" @click="saveRemarks">Save Remarks</Button>
       </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
+  <!-- Car Pic Details Dialog -->
+  <Dialog :open="isImageModalOpen" @update:open="isImageModalOpen = $event">
+    <DialogContent class="sm:max-w-[750px] p-0 overflow-hidden bg-background">
+      <button @click="isImageModalOpen = false" class="absolute top-3 right-3 z-50 flex items-center justify-center size-8 rounded-full bg-white/90 hover:bg-white text-black shadow-md border hover:scale-105 transition-all focus:outline-none">
+         <Icon name="i-lucide-x" class="size-4" />
+      </button>
+      <div class="flex flex-col md:flex-row h-auto min-h-[350px]">
+        <div class="w-full md:w-1/2 bg-muted relative border-r overflow-hidden flex items-center justify-center">
+           <img v-if="getFirstImage(selectedImageCar)" :src="getFirstImage(selectedImageCar)!" class="w-full h-full object-cover max-h-[450px]" />
+           <div v-else class="text-muted-foreground flex flex-col items-center">
+              <Icon name="i-lucide-car" class="size-12 opacity-30 mb-2" />
+              <span class="text-xs font-semibold">No Image Provided</span>
+           </div>
+        </div>
+        <div class="w-full md:w-1/2 p-6 flex flex-col bg-card">
+           <div class="flex items-center gap-2 mb-6 border-b pb-4">
+              <Icon name="i-lucide-car-front" class="size-5 text-emerald-600" />
+              <h3 class="text-base font-bold">{{ selectedImageCar?.make }} {{ selectedImageCar?.model }} <span class="text-xs font-normal text-muted-foreground ml-1">{{ selectedImageCar?.variant }}</span></h3>
+           </div>
+           
+           <div class="space-y-0 mt-3 flex-1 flex flex-col">
+              <div class="border rounded-lg overflow-hidden flex-1 shadow-sm">
+                 <div class="grid grid-cols-[140px_1fr] border-b">
+                    <div class="bg-muted/30 p-2.5 text-[10px] font-bold tracking-widest uppercase text-muted-foreground flex items-center gap-1.5"><Icon name="i-lucide-hash" class="size-3" /> Registration</div>
+                    <div class="p-2.5 text-sm flex items-center">
+                       <span class="font-mono bg-muted/60 px-2 py-0.5 rounded border border-border/50 shadow-sm">{{ selectedImageCar?.registrationNumber || selectedImageCar?.teleVehicleRegistrationNumber || imageCarDetails?.registrationNumber || 'Not documented' }}</span>
+                    </div>
+                 </div>
+
+                 <div class="grid grid-cols-[140px_1fr] border-b">
+                    <div class="bg-muted/30 p-2.5 text-[10px] font-bold tracking-widest uppercase text-muted-foreground flex items-center gap-1.5"><Icon name="i-lucide-user" class="size-3" /> Owner</div>
+                    <div class="p-2.5 text-sm font-medium">{{ selectedImageCar?.ownerName || imageCarDetails?.ownerName || imageCarDetails?.registeredOwner || 'Unknown' }}</div>
+                 </div>
+
+                 <div class="grid grid-cols-[140px_1fr] border-b">
+                    <div class="bg-muted/30 p-2.5 text-[10px] font-bold tracking-widest uppercase text-muted-foreground flex items-center gap-1.5"><Icon name="i-lucide-building-2" class="size-3" /> Hypothecation</div>
+                    <div class="p-2.5 text-sm font-medium capitalize">{{ selectedImageCar?.hypothecationDetails || imageCarDetails?.hypothecationDetails || 'Not Hypothecated' }}</div>
+                 </div>
+
+                 <div class="grid grid-cols-[140px_1fr]">
+                    <div class="bg-muted/30 p-2.5 text-[10px] font-bold tracking-widest uppercase text-muted-foreground flex items-center gap-1.5"><Icon name="i-lucide-landmark" class="size-3" /> Hypothecated To</div>
+                    <div class="p-2.5 text-sm font-medium capitalize">{{ selectedImageCar?.hypothecatedTo || imageCarDetails?.hypothecatedTo || 'N/A' }}</div>
+                 </div>
+              </div>
+
+              <div v-if="isFetchingImageDetails" class="py-4 flex gap-2 items-center text-muted-foreground mt-4 shrink-0">
+                 <Icon name="i-lucide-loader-2" class="size-4 animate-spin" />
+                 <span class="text-xs">Connecting to telecalling database...</span>
+              </div>
+              <div v-else-if="imageCarDetails?.customerContactNumber || selectedImageCar?.customerContactNumber" class="space-y-2 pt-4 border-t mt-4 shrink-0">
+                 <p class="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1.5">Customer Contact</p>
+                 <div class="flex items-center justify-between border rounded-lg p-2.5 bg-muted/20 shadow-sm">
+                    <div class="flex items-center gap-2.5">
+                       <Icon name="i-lucide-phone" class="size-4 text-emerald-600" />
+                       <span class="font-mono text-base tracking-tight font-bold">{{ imageCarDetails?.customerContactNumber || selectedImageCar?.customerContactNumber }}</span>
+                    </div>
+                    <div class="flex gap-2">
+                       <a :href="`tel:${imageCarDetails?.customerContactNumber || selectedImageCar?.customerContactNumber}`" class="size-8 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center transition-colors hover:scale-105" title="Call Customer">
+                          <Icon name="i-lucide-phone-call" class="size-3.5" />
+                       </a>
+                       <a :href="`sms:${imageCarDetails?.customerContactNumber || selectedImageCar?.customerContactNumber}`" class="size-8 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-700 flex items-center justify-center transition-colors hover:scale-105" title="Send SMS">
+                          <Icon name="i-lucide-message-square" class="size-3.5" />
+                       </a>
+                       <a :href="`https://wa.me/${String(imageCarDetails?.customerContactNumber || selectedImageCar?.customerContactNumber).replace(/\D/g, '')}`" target="_blank" class="size-8 rounded-full bg-[#E8F8F0] hover:bg-[#D4F3E3] text-[#25D366] flex items-center justify-center transition-colors hover:scale-105" title="WhatsApp">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="size-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                       </a>
+                    </div>
+                 </div>
+              </div>
+              <div v-else class="py-5 flex flex-col items-center justify-center text-center text-xs text-muted-foreground border-t mt-4 gap-2 bg-muted/20 rounded-lg shrink-0">
+                 <Icon name="i-lucide-phone-off" class="size-6 opacity-30" />
+                 <p>No valid contact details found in telecalling registry</p>
+              </div>
+           </div>
+        </div>
+      </div>
     </DialogContent>
   </Dialog>
 </template>
