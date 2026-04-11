@@ -301,7 +301,9 @@ const quickFilterCounts = computed(() => {
     liveAuctionEnded: 0,
   }
   for (const car of allCars.value) {
-    if (!car.auctionStatus || car.auctionStatus.trim() === '' || car.auctionStatus === 'inspected') continue
+    if (!car.auctionStatus || car.auctionStatus.trim() === '' || car.auctionStatus === 'inspected') {
+      continue
+    }
     counts.all = (counts.all || 0) + 1
     if (typeof car.auctionStatus === 'string') {
       counts[car.auctionStatus] = (counts[car.auctionStatus] || 0) + 1
@@ -523,6 +525,22 @@ function getNetBidAmount(rawValue: any, sourceInfo?: any, fallbackCar?: any): nu
 
   const netBid = baseBid / factor
   return Math.floor(netBid / 1000) * 1000
+}
+
+function getRetailOtobuyOffer(car: any): number {
+  const baseOffer = Number(car.otobuyOffer) || 0
+  if (!baseOffer) return 0
+
+  const fixedMarginPct = Number(car.fixedMargin || 0)
+  const varMarginStr = String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')
+  const varMarginPct = Number(varMarginStr) || 0
+
+  const totalMargin = (fixedMarginPct + varMarginPct) / 100.0
+  const factor = 1 + totalMargin
+  if (factor <= 0) return 0
+
+  const netOffer = baseOffer / factor
+  return Math.floor(netOffer / 1000) * 1000
 }
 
 function getSimulatedNetBid(car: any): number {
@@ -884,9 +902,7 @@ const pageNumbers = computed(() => {
             <TableHead class="whitespace-nowrap text-center">
               HB
             </TableHead>
-            <TableHead class="whitespace-nowrap text-center">
-              Auto Bid
-            </TableHead>
+
             <TableHead class="whitespace-nowrap text-center">
               GAP
             </TableHead>
@@ -1035,7 +1051,7 @@ const pageNumbers = computed(() => {
               {{ formatCurrency(car.oneClickPrice) }}
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap text-emerald-600 font-semibold dark:text-emerald-400">
-              {{ formatCurrency(car.otobuyOffer) }}
+              {{ formatCurrency(getRetailOtobuyOffer(car)) }}
             </TableCell>
             <TableCell class="text-xs text-center px-1">
               <Button variant="outline" class="h-6 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 border-blue-200 text-[10px] uppercase font-bold tracking-wider rounded-md" @click.stop="fetchAndShowBids(car)">
@@ -1048,9 +1064,7 @@ const pageNumbers = computed(() => {
               {{ formatCurrency(getNetBidAmount(car.highestBid, car, car)) }}
             </TableCell>
 
-            <TableCell class="text-xs text-muted-foreground text-center">
-              —
-            </TableCell>
+
 
             <TableCell class="text-xs align-middle">
               <div class="flex flex-col items-center gap-1 w-full justify-center min-h-[44px] relative">
@@ -1379,7 +1393,7 @@ const pageNumbers = computed(() => {
             </TableCell>
           </TableRow>
           <TableRow v-if="paginatedItems.length === 0">
-            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 22 : 23" class="h-32 text-center text-muted-foreground bg-muted/10">
+            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 21 : 22" class="h-32 text-center text-muted-foreground bg-muted/10">
               No matching records found
             </TableCell>
           </TableRow>

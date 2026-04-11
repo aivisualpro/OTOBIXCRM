@@ -60,7 +60,9 @@ const quickFilterCounts = computed(() => {
     liveAuctionEnded: 0,
   }
   for (const car of allCars.value) {
-    if (!car.auctionStatus || car.auctionStatus.trim() === '' || car.auctionStatus === 'inspected') continue
+    if (!car.auctionStatus || car.auctionStatus.trim() === '' || car.auctionStatus === 'inspected') {
+      continue
+    }
     counts.all = (counts.all || 0) + 1
     if (typeof car.auctionStatus === 'string') {
       counts[car.auctionStatus] = (counts[car.auctionStatus] || 0) + 1
@@ -267,6 +269,28 @@ function getInflatedCep(car: any): number {
 
   const rawCep = basePrice + (basePrice * fixedMarginPct / 100) + (basePrice * varMarginPct / 100)
   return Math.ceil(rawCep / 1000) * 1000
+}
+
+function getSalesOneClickPrice(car: any): number {
+  const basePrice = Number(car.oneClickPrice || 0)
+  if (!basePrice) return 0
+
+  const fixedMarginPct = Number(car.fixedMargin || 0)
+  const varMarginStr = String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')
+  const varMarginPct = Number(varMarginStr) || 0
+
+  const raw = basePrice + (basePrice * fixedMarginPct / 100) + (basePrice * varMarginPct / 100)
+  return Math.ceil(raw / 1000) * 1000
+}
+
+function getHighestAutoBid(car: any): number {
+  if (!car || !Array.isArray(car.autoBidsForLiveSection)) return 0
+  const relevantBids = car.autoBidsForLiveSection.filter((b: any) => {
+    const cid = String(b.carId)
+    return cid === String(car._id) || cid === String(car.id)
+  })
+  if (!relevantBids.length) return 0
+  return Math.max(...relevantBids.map((b: any) => Number(b.maxAmount) || 0))
 }
 
 function getAuctionStatusColor(status: string) {
@@ -560,7 +584,7 @@ const pageNumbers = computed(() => {
               {{ formatCurrency(getInflatedCep(car)) }}
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
-              {{ formatCurrency(car.oneClickPrice) }}
+              {{ formatCurrency(getSalesOneClickPrice(car)) }}
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap text-emerald-600 font-semibold dark:text-emerald-400">
               {{ formatCurrency(car.otobuyOffer) }}
@@ -576,8 +600,8 @@ const pageNumbers = computed(() => {
               {{ formatCurrency(car.highestBid) }}
             </TableCell>
 
-            <TableCell class="text-xs text-muted-foreground text-center">
-              —
+            <TableCell class="text-xs font-bold text-blue-600 tabular-nums text-center">
+              {{ getHighestAutoBid(car) ? formatCurrency(getHighestAutoBid(car)) : '—' }}
             </TableCell>
 
             <TableCell class="text-xs whitespace-nowrap font-medium tabular-nums shadow-sm" :class="getInflatedCep(car) - Number(car.highestBid || 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
