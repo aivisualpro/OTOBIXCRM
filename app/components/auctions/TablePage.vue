@@ -210,7 +210,7 @@ function getAllImages(car: any): string[] {
   catch (e) {}
 
   // Normalize: each item may be a string URL or an object with a .url property
-  let validImages = images
+  const validImages = images
     .map((item: any) => {
       if (typeof item === 'string')
         return item.trim()

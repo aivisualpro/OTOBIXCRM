@@ -1,13 +1,35 @@
 import { MongoClient } from 'mongodb'
 
+let _client: MongoClient | null = null
+
+async function getClient(uri: string): Promise<MongoClient> {
+  if (_client) {
+    try {
+      await _client.db('admin').command({ ping: 1 })
+      return _client
+    }
+    catch {
+      try { await _client.close() } catch {}
+      _client = null
+    }
+  }
+  _client = new MongoClient(uri, {
+    serverSelectionTimeoutMS: 10000,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 30000,
+  })
+  await _client.connect()
+  return _client
+}
+
 export default defineEventHandler(async (event) => {
-  const uri = process.env.NUXT_MONGODB_URI
+  const config = useRuntimeConfig(event)
+  const uri = (config.mongodbUri as string) || process.env.NUXT_MONGODB_URI || ''
   if (!uri)
     return { error: 'No Mongo URI' }
 
-  const client = new MongoClient(uri)
   try {
-    await client.connect()
+    const client = await getClient(uri)
     const db = client.db('otobix_auction_app')
     const bidsCollection = db.collection('bids')
 
@@ -45,9 +67,7 @@ export default defineEventHandler(async (event) => {
     return { success: true, stats: formattedStats }
   }
   catch (err: any) {
+    _client = null
     return { success: false, error: err.message }
-  }
-  finally {
-    await client.close()
   }
 })

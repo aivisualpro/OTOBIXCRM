@@ -7,7 +7,7 @@ const SYSTEM_TABS = [
 ]
 
 // To highlight the active tab accurately even on nested routes
-const isTabActive = (tabId: string) => {
+function isTabActive(tabId: string) {
   if (tabId === '') {
     return route.path === '/settings/system' || route.path === '/settings/system/'
   }
@@ -25,7 +25,7 @@ const isTabActive = (tabId: string) => {
         :to="tab.id ? `/settings/system/${tab.id}` : `/settings/system`"
         class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left"
         :class="isTabActive(tab.id)
-          ? 'bg-primary/10 text-primary hover:bg-primary/15' 
+          ? 'bg-primary/10 text-primary hover:bg-primary/15'
           : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground'"
       >
         <Icon :name="tab.icon" class="size-4" />

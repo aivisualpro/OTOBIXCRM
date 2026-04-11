@@ -59,8 +59,12 @@ const cardThemes = [
 function getTheme(idx: number) { return cardThemes[idx % cardThemes.length]! }
 
 function formatValue(val: any): string {
-  if (val === null || val === undefined) return '—'
-  if (typeof val === 'number') return val.toLocaleString()
+  if (val === null || val === undefined) {
+    return '—'
+  }
+  if (typeof val === 'number') {
+    return val.toLocaleString()
+  }
   return String(val)
 }
 
@@ -193,7 +197,7 @@ async function handleDelete() {
           <p class="text-base font-semibold">No margin tiers defined</p>
           <p class="text-sm text-muted-foreground mt-1">Add your pricing breakdown to automate margin execution.</p>
         </div>
-        <Button variant="outline" size="sm" @click="openCreate" class="mt-2">
+        <Button class="mt-2" variant="outline" size="sm" @click="openCreate">
           Create First Scheme
         </Button>
       </div>

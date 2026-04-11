@@ -298,7 +298,7 @@ const quickFilterCounts = computed(() => {
 })
 
 const baseFilteredItems = computed(() => {
-  let result = allCars.value.filter((car) => {
+  const result = allCars.value.filter((car) => {
     // Exclude records with blank auction status altogether
     if (!car.auctionStatus || car.auctionStatus.trim() === '') {
       return false
@@ -454,7 +454,7 @@ function getFirstImage(car: any): string | null {
   }
   catch (e) {}
 
-  let validImages = images
+  const validImages = images
     .map((item: any) => {
       if (typeof item === 'string')
         return item.trim()
@@ -497,17 +497,29 @@ function getInflatedCep(car: any): number {
   return Math.ceil(rawCep / 1000) * 1000
 }
 
-function getNetBidAmount(bid: any): number {
-  const baseBid = Number(bid.bidAmount || bid.amount) || 0
-  if (!baseBid) return 0
+const showBidsPopup = ref(false)
+const selectedCarForBids = ref<any>(null)
+const bidsLoading = ref(false)
+const carBids = ref<any[]>([])
 
-  const fixedMarginPct = Number(bid.fixedMargin || selectedCarForBids.value?.fixedMargin || 0)
-  const varMarginStr = String(bid.variableMargin || selectedCarForBids.value?.variableMargin || '0').replace(/[^0-9.-]/g, '')
+function getNetBidAmount(rawValue: any, sourceInfo?: any, fallbackCar?: any): number {
+  if (rawValue == null) {
+    return 0
+  }
+  const baseBid = Number(rawValue) || 0
+  if (!baseBid) {
+    return 0
+  }
+
+  const fixedMarginPct = Number(sourceInfo?.fixedMargin || fallbackCar?.fixedMargin || 0)
+  const varMarginStr = String(sourceInfo?.variableMargin || fallbackCar?.variableMargin || '0').replace(/[^0-9.-]/g, '')
   const varMarginPct = Number(varMarginStr) || 0
 
   const totalMargin = (fixedMarginPct + varMarginPct) / 100.0
   const factor = 1 + totalMargin
-  if (factor <= 0) return 0
+  if (factor <= 0) {
+    return 0
+  }
 
   const netBid = baseBid / factor
   return Math.floor(netBid / 1000) * 1000
@@ -561,11 +573,6 @@ function shareLink() {
   copy(url)
   toast.success('Inspection link copied to clipboard!')
 }
-
-const showBidsPopup = ref(false)
-const selectedCarForBids = ref<any>(null)
-const bidsLoading = ref(false)
-const carBids = ref<any[]>([])
 
 async function fetchAndShowBids(car: any) {
   selectedCarForBids.value = car
@@ -830,7 +837,7 @@ const pageNumbers = computed(() => {
             </TableCell>
 
             <TableCell class="text-xs font-bold text-emerald-600 tabular-nums">
-              {{ formatCurrency(car.highestBid) }}
+              {{ formatCurrency(getNetBidAmount(car.highestBid, car, car)) }}
             </TableCell>
 
             <TableCell class="text-xs text-muted-foreground text-center">
@@ -1154,6 +1161,9 @@ const pageNumbers = computed(() => {
               <TableHead>Bid Amount</TableHead>
               <TableHead>Dealer / Buyer</TableHead>
               <TableHead>Phone</TableHead>
+              <TableHead class="text-center">
+                System Bid
+              </TableHead>
               <TableHead class="text-right">
                 Status
               </TableHead>
@@ -1171,7 +1181,7 @@ const pageNumbers = computed(() => {
                 </div>
               </TableCell>
               <TableCell class="font-bold text-emerald-600 text-[15px] tabular-nums">
-                {{ formatCurrency(getNetBidAmount(bid)) }}
+                {{ formatCurrency(getNetBidAmount(bid.bidAmount || bid.amount, bid, selectedCarForBids)) }}
               </TableCell>
               <TableCell>
                 <div v-if="bid.dealer" class="flex flex-col gap-0.5">
@@ -1183,6 +1193,16 @@ const pageNumbers = computed(() => {
               <TableCell>
                 <span v-if="bid.dealer?.phone" class="font-mono text-xs bg-muted/50 px-2 py-1 rounded-md">{{ bid.dealer.phone }}</span>
                 <span v-else class="text-muted-foreground">—</span>
+              </TableCell>
+              <TableCell class="text-center">
+                <span
+                  v-if="bid.isSystemBid"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-violet-100 text-violet-700 border border-violet-200 dark:bg-violet-950/60 dark:text-violet-300 dark:border-violet-800"
+                >
+                  <Icon name="i-lucide-check-circle-2" class="size-3 shrink-0" />
+                  Auto
+                </span>
+                <span v-else class="text-muted-foreground/40 text-xs">—</span>
               </TableCell>
               <TableCell class="text-right">
                 <Badge variant="outline" :class="idx === 0 && !bid.isActive ? 'bg-amber-100 text-amber-800 border-amber-300' : (bid.isActive ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-100 text-emerald-800 border-emerald-300')">

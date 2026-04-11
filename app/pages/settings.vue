@@ -44,20 +44,20 @@ function switchTab(id: string) {
     <!-- Tab Bar -->
     <div class="shrink-0 border-b bg-background/80 backdrop-blur-sm z-10 flex items-center justify-between">
       <div class="flex items-center gap-2 px-4 lg:px-6 py-2 overflow-x-auto no-scrollbar">
-          <button
-            v-for="tab in tabs"
-            :key="tab.id"
-            class="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold rounded-md transition-all whitespace-nowrap flex-shrink-0"
-            :class="activeTab === tab.id
-              ? 'bg-primary text-primary-foreground shadow-sm'
-              : 'bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground'"
-            @click="switchTab(tab.id)"
-          >
-            <Icon :name="tab.icon" class="size-4" />
-            <span>{{ tab.label }}</span>
-          </button>
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          class="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold rounded-md transition-all whitespace-nowrap flex-shrink-0"
+          :class="activeTab === tab.id
+            ? 'bg-primary text-primary-foreground shadow-sm'
+            : 'bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground'"
+          @click="switchTab(tab.id)"
+        >
+          <Icon :name="tab.icon" class="size-4" />
+          <span>{{ tab.label }}</span>
+        </button>
       </div>
-      <div id="settings-tab-actions" class="px-4 lg:px-6 flex items-center gap-2 flex-shrink-0"></div>
+      <div id="settings-tab-actions" class="px-4 lg:px-6 flex items-center gap-2 flex-shrink-0" />
     </div>
 
     <!-- Tab Content -->
