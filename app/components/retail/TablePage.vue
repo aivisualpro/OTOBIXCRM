@@ -484,18 +484,6 @@ function getFirstImage(car: any): string | null {
   return validImages.length > 0 ? (validImages[0] ?? null) : null
 }
 
-function getInflatedCep(car: any): number {
-  const basePrice = Number(car.customerExpectedPrice || car.cep || 0)
-  if (!basePrice)
-    return 0
-
-  const fixedMarginPct = Number(car.fixedMargin || 0)
-  const varMarginStr = String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')
-  const varMarginPct = Number(varMarginStr) || 0
-
-  const rawCep = basePrice + (basePrice * fixedMarginPct / 100) + (basePrice * varMarginPct / 100)
-  return Math.ceil(rawCep / 1000) * 1000
-}
 
 const showBidsPopup = ref(false)
 const selectedCarForBids = ref<any>(null)
@@ -844,8 +832,8 @@ const pageNumbers = computed(() => {
               —
             </TableCell>
 
-            <TableCell class="text-xs whitespace-nowrap font-medium tabular-nums shadow-sm" :class="getInflatedCep(car) - Number(car.highestBid || 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
-              {{ (getInflatedCep(car) && car.highestBid) ? formatCurrency(getInflatedCep(car) - Number(car.highestBid)) : '—' }}
+            <TableCell class="text-xs whitespace-nowrap font-medium tabular-nums shadow-sm" :class="Number(car.customerExpectedPrice || 0) - Number(car.highestBid || 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
+              {{ (Number(car.customerExpectedPrice || 0) && car.highestBid) ? formatCurrency(Number(car.customerExpectedPrice || 0) - Number(car.highestBid)) : '—' }}
             </TableCell>
 
             <TableCell class="text-[11px] font-mono text-center font-semibold text-foreground/80 tracking-wide">
