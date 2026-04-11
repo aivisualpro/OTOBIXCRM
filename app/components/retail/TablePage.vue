@@ -858,12 +858,24 @@ const pageNumbers = computed(() => {
             </TableCell>
 
             <!-- Current Margin -->
-            <TableCell class="text-xs text-center px-1">
-              <div class="min-h-[28px] min-w-[60px] flex items-center justify-center cursor-pointer group rounded hover:bg-muted/50 transition-colors" @click="startEdit(car, 'currentMargin')">
-                <Input v-if="isEditing(car, 'currentMargin')" v-model="car.currentMargin" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'currentMargin')" @keydown.enter="stopEdit(car, 'currentMargin')" @keydown.esc="cancelEdit(car, 'currentMargin')" />
-                <span v-else-if="car.currentMargin">{{ car.currentMargin }}</span>
-                <Icon v-else name="i-lucide-pencil" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
+            <TableCell class="text-xs text-center px-2">
+              <template v-if="Number(car.fixedMargin) || Number(String(car.variableMargin || '').replace(/[^0-9.-]/g, ''))">
+                <div class="inline-flex flex-col items-center gap-0.5">
+                  <div class="flex items-center gap-1 text-[10px] font-semibold tabular-nums">
+                    <span class="px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800 whitespace-nowrap">
+                      Fix: {{ Number(car.fixedMargin) || 0 }}%
+                    </span>
+                    <span class="text-muted-foreground/50">+</span>
+                    <span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800 whitespace-nowrap">
+                      Var: {{ Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')) || 0 }}%
+                    </span>
+                  </div>
+                  <span class="text-[11px] font-black tabular-nums text-foreground/80">
+                    ({{ (Number(car.fixedMargin) || 0) + (Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')) || 0) }}%)
+                  </span>
+                </div>
+              </template>
+              <span v-else class="text-muted-foreground/40">—</span>
             </TableCell>
 
             <!-- Margin Simulation -->

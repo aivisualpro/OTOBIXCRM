@@ -11,7 +11,8 @@ async function getClient(uri: string): Promise<MongoClient> {
     }
     catch {
       // Connection is stale/dead — tear it down
-      try { await _client.close() } catch {}
+      try { await _client.close() }
+      catch {}
       _client = null
     }
   }

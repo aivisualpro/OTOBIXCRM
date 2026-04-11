@@ -9,7 +9,8 @@ async function getClient(uri: string): Promise<MongoClient> {
       return _client
     }
     catch {
-      try { await _client.close() } catch {}
+      try { await _client.close() }
+      catch {}
       _client = null
     }
   }

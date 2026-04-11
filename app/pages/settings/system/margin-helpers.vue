@@ -185,7 +185,9 @@ async function handleDelete() {
       <!-- Loading State -->
       <div v-if="isLoading && !isFetched" class="flex flex-col items-center justify-center py-20 gap-4 border rounded-xl bg-muted/10">
         <Icon name="i-lucide-loader-2" class="size-8 animate-spin text-primary" />
-        <p class="text-sm text-muted-foreground font-medium animate-pulse">Syncing logic tiers...</p>
+        <p class="text-sm text-muted-foreground font-medium animate-pulse">
+          Syncing logic tiers...
+        </p>
       </div>
 
       <!-- Empty State -->
@@ -194,8 +196,12 @@ async function handleDelete() {
           <Icon name="i-lucide-calculator" class="size-8 text-muted-foreground" />
         </div>
         <div class="text-center">
-          <p class="text-base font-semibold">No margin tiers defined</p>
-          <p class="text-sm text-muted-foreground mt-1">Add your pricing breakdown to automate margin execution.</p>
+          <p class="text-base font-semibold">
+            No margin tiers defined
+          </p>
+          <p class="text-sm text-muted-foreground mt-1">
+            Add your pricing breakdown to automate margin execution.
+          </p>
         </div>
         <Button class="mt-2" variant="outline" size="sm" @click="openCreate">
           Create First Scheme
@@ -212,7 +218,9 @@ async function handleDelete() {
                 <Icon name="i-lucide-percent" class="size-5 text-emerald-600" />
               </div>
               <div>
-                <h3 class="text-lg font-bold text-foreground">Global Tier Template</h3>
+                <h3 class="text-lg font-bold text-foreground">
+                  Global Tier Template
+                </h3>
                 <div class="flex items-center gap-2 mt-0.5 text-sm">
                   <span class="text-muted-foreground">Fixed Margin:</span>
                   <span class="font-bold text-emerald-600 tabular-nums">{{ record.fixedMargin }}%</span>
@@ -230,7 +238,9 @@ async function handleDelete() {
           </div>
 
           <!-- Tiers Grid -->
-          <h4 class="text-sm font-semibold mb-4 text-muted-foreground">Dynamic Variable Ranges (Lacs)</h4>
+          <h4 class="text-sm font-semibold mb-4 text-muted-foreground">
+            Dynamic Variable Ranges (Lacs)
+          </h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             <div
               v-for="(range, idx) in (record.variableRanges || [])"
@@ -260,13 +270,17 @@ async function handleDelete() {
               <!-- Fields -->
               <div class="space-y-2 mt-4 pl-2 grid grid-cols-2 gap-x-2">
                 <div class="space-y-0.5">
-                  <p class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">Min (Lacs)</p>
+                  <p class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">
+                    Min (Lacs)
+                  </p>
                   <div class="rounded-md border px-2 py-1.5 text-xs font-semibold tabular-nums text-foreground/80 shadow-sm bg-white">
                     {{ formatValue((range as any).min) }}
                   </div>
                 </div>
                 <div class="space-y-0.5">
-                  <p class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">Max (Lacs)</p>
+                  <p class="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/60">
+                    Max (Lacs)
+                  </p>
                   <div class="rounded-md border px-2 py-1.5 text-xs font-semibold tabular-nums text-foreground/80 shadow-sm bg-white">
                     {{ formatValue((range as any).max) }}
                   </div>
@@ -303,7 +317,9 @@ async function handleDelete() {
               placeholder="e.g. 2.0"
               class="w-full sm:max-w-[200px] h-10 px-3 rounded-lg border bg-background text-sm outline-none focus:ring-2 focus:ring-primary/30"
             >
-            <p class="text-xs text-muted-foreground mt-1">This fixed percentage is applied to all vehicles.</p>
+            <p class="text-xs text-muted-foreground mt-1">
+              This fixed percentage is applied to all vehicles.
+            </p>
           </div>
 
           <!-- Variable Ranges -->
