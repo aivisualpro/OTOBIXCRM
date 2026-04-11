@@ -200,7 +200,7 @@ function timeAgo(dateStr: string) {
 </script>
 
 <template>
-  <div class="p-4 md:p-6 lg:p-8 space-y-6">
+  <div class="space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div class="space-y-1">

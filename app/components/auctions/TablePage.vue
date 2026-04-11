@@ -303,8 +303,8 @@ async function confirmCep(car: any) {
     }
   }
   else {
-    if (newCep <= currentCep) {
-      toast.error(`Act. CEP must be greater than the current value (${formatCurrency(currentCep)})`)
+    if (newCep >= currentCep) {
+      toast.error(`Act. CEP must be less than the current value (${formatCurrency(currentCep)})`)
       return
     }
   }
@@ -399,7 +399,7 @@ async function confirmCep(car: any) {
               </div>
 
               <div class="absolute top-2.5 right-2.5">
-                <Badge v-if="isUpcoming || isLive" class="backdrop-blur-md bg-black/60 text-white font-semibold tabular-nums border-0">
+                <Badge v-if="isUpcoming || isLive" class="backdrop-blur-md text-white font-semibold tabular-nums border-0" :class="isLive ? 'bg-emerald-800/90' : 'bg-black/60'">
                   <span v-if="isLive" class="size-1.5 rounded-full bg-rose-500 animate-pulse mr-1.5 inline-block" />
                   <Icon v-else name="i-lucide-clock" class="size-3 mr-1" />
                   {{ formatCountdown(isUpcoming ? car.upcomingUntil : car.auctionEndTime) }}
@@ -547,7 +547,7 @@ async function confirmCep(car: any) {
                   </div>
                 </div>
 
-                <Badge class="font-semibold text-sm px-3 py-1 border-0" :class="isUpcoming || isLive ? 'bg-blue-500/10 text-blue-600' : 'bg-muted text-muted-foreground opacity-80'">
+                <Badge class="font-semibold text-sm px-3 py-1 border-0" :class="isLive ? 'bg-emerald-800/90 text-white' : (isUpcoming ? 'bg-blue-500/10 text-blue-600' : 'bg-muted text-muted-foreground opacity-80')">
                   <span v-if="isLive" class="size-1.5 rounded-full bg-rose-500 animate-pulse mr-2 inline-block" />
                   {{ isUpcoming || isLive ? formatCountdown(isUpcoming ? car.upcomingUntil : car.auctionEndTime) : getStatusLabel(car.auctionStatus || statusKey) }}
                 </Badge>

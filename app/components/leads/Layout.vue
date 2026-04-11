@@ -67,7 +67,7 @@ const filteredNavItems = computed(() => {
   <div class="-m-4 lg:-m-6 h-[calc(100%+2rem)] lg:h-[calc(100%+3rem)] flex flex-col overflow-hidden bg-background">
     <!-- Tab Navigation Bar -->
     <div class="shrink-0 border-b bg-muted/30">
-      <div class="flex items-center gap-0 overflow-x-auto no-scrollbar px-2">
+      <div class="flex items-center gap-0 overflow-x-auto no-scrollbar px-[19px]">
         <NuxtLink
           v-for="item in filteredNavItems"
           :key="item.id"

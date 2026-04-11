@@ -301,8 +301,9 @@ const quickFilterCounts = computed(() => {
     liveAuctionEnded: 0,
   }
   for (const car of allCars.value) {
+    if (!car.auctionStatus || car.auctionStatus.trim() === '' || car.auctionStatus === 'inspected') continue
     counts.all = (counts.all || 0) + 1
-    if (typeof car.auctionStatus === 'string' && car.auctionStatus.trim().length > 0) {
+    if (typeof car.auctionStatus === 'string') {
       counts[car.auctionStatus] = (counts[car.auctionStatus] || 0) + 1
     }
   }
@@ -312,7 +313,7 @@ const quickFilterCounts = computed(() => {
 const baseFilteredItems = computed(() => {
   const result = allCars.value.filter((car) => {
     // Exclude records with blank auction status altogether
-    if (!car.auctionStatus || car.auctionStatus.trim() === '') {
+    if (!car.auctionStatus || car.auctionStatus.trim() === '' || car.auctionStatus === 'inspected') {
       return false
     }
 
@@ -663,8 +664,8 @@ async function confirmCep(car: any) {
     }
   }
   else {
-    if (newCep <= currentCep) {
-      toast.error(`Act. CEP must be greater than the current value (${formatCurrency(currentCep)})`)
+    if (newCep >= currentCep) {
+      toast.error(`Act. CEP must be less than the current value (${formatCurrency(currentCep)})`)
       return
     }
   }
@@ -872,7 +873,10 @@ const pageNumbers = computed(() => {
               Act. CEP
             </TableHead>
             <TableHead class="whitespace-nowrap">
-              OtoBuy
+              1-Clik Price
+            </TableHead>
+            <TableHead class="whitespace-nowrap">
+              OtoBuy Offer
             </TableHead>
             <TableHead class="whitespace-nowrap text-center">
               Deal Price
@@ -981,7 +985,7 @@ const pageNumbers = computed(() => {
               </div>
             </TableCell>
             <TableCell v-if="!['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '')" class="whitespace-nowrap text-xs">
-              <Badge v-if="car.auctionStatus === 'live' && car.auctionEndTime" variant="outline" class="font-bold tracking-wide bg-[#333] text-white border-transparent uppercase text-[10px]">
+              <Badge v-if="car.auctionStatus === 'live' && car.auctionEndTime" variant="outline" class="font-bold tracking-wide bg-emerald-800 text-white border-transparent uppercase text-[10px]">
                 <span class="size-1.5 rounded-full mr-1.5 bg-red-500 animate-pulse" />
                 {{ formatCountdown(car.auctionEndTime) }}
               </Badge>
@@ -1029,6 +1033,9 @@ const pageNumbers = computed(() => {
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
               {{ formatCurrency(car.oneClickPrice) }}
+            </TableCell>
+            <TableCell class="text-xs whitespace-nowrap text-emerald-600 font-semibold dark:text-emerald-400">
+              {{ formatCurrency(car.otobuyOffer) }}
             </TableCell>
             <TableCell class="text-xs text-center px-1">
               <Button variant="outline" class="h-6 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 border-blue-200 text-[10px] uppercase font-bold tracking-wider rounded-md" @click.stop="fetchAndShowBids(car)">
@@ -1372,7 +1379,7 @@ const pageNumbers = computed(() => {
             </TableCell>
           </TableRow>
           <TableRow v-if="paginatedItems.length === 0">
-            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 21 : 22" class="h-32 text-center text-muted-foreground bg-muted/10">
+            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 22 : 23" class="h-32 text-center text-muted-foreground bg-muted/10">
               No matching records found
             </TableCell>
           </TableRow>
