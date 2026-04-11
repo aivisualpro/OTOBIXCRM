@@ -274,6 +274,7 @@ function getAuctionStatusColor(status: string) {
     return 'bg-muted text-muted-foreground'
   switch (status.toLowerCase()) {
     case 'inspected': return 'bg-orange-600 text-white border-transparent'
+    case 'upcoming': return 'bg-amber-500 text-white border-transparent'
     case 'liveauctionended': return 'bg-gray-600 text-white border-transparent'
     case 'otobuy': return 'bg-blue-600 text-white border-transparent'
     case 'sold': return 'bg-green-600 text-white border-transparent'

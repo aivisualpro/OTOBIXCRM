@@ -507,7 +507,7 @@ async function confirmCep(car: any) {
                       {{ car.highestBid ? formatCurrency(car.highestBid) : 'Awaiting Bids' }}
                     </p>
                   </div>
-                  
+
                   <div class="border-l border-border/60 pl-8 md:pl-12 flex flex-col gap-1">
                     <p class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                       Act. CEP
