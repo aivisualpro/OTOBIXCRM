@@ -265,6 +265,13 @@ function stopEdit(car: any, field: string) {
   }
 }
 
+function cancelEdit(car: any, field: string) {
+  if (editingCell.value?.id === String(car._id || car.id) && editingCell.value?.field === field) {
+    car[field] = editingCell.value.originalValue
+    editingCell.value = null
+  }
+}
+
 function isEditing(car: any, field: string) {
   return editingCell.value?.id === String(car._id || car.id) && editingCell.value?.field === field
 }
@@ -488,6 +495,22 @@ function getInflatedCep(car: any): number {
 
   const rawCep = basePrice + (basePrice * fixedMarginPct / 100) + (basePrice * varMarginPct / 100)
   return Math.ceil(rawCep / 1000) * 1000
+}
+
+function getNetBidAmount(bid: any): number {
+  const baseBid = Number(bid.bidAmount || bid.amount) || 0
+  if (!baseBid) return 0
+
+  const fixedMarginPct = Number(bid.fixedMargin || selectedCarForBids.value?.fixedMargin || 0)
+  const varMarginStr = String(bid.variableMargin || selectedCarForBids.value?.variableMargin || '0').replace(/[^0-9.-]/g, '')
+  const varMarginPct = Number(varMarginStr) || 0
+
+  const totalMargin = (fixedMarginPct + varMarginPct) / 100.0
+  const factor = 1 + totalMargin
+  if (factor <= 0) return 0
+
+  const netBid = baseBid / factor
+  return Math.floor(netBid / 1000) * 1000
 }
 
 function getAuctionStatusColor(status: string) {
@@ -830,7 +853,7 @@ const pageNumbers = computed(() => {
             <!-- Current Margin -->
             <TableCell class="text-xs text-center px-1">
               <div class="min-h-[28px] min-w-[60px] flex items-center justify-center cursor-pointer group rounded hover:bg-muted/50 transition-colors" @click="startEdit(car, 'currentMargin')">
-                <Input v-if="isEditing(car, 'currentMargin')" v-model="car.currentMargin" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'currentMargin')" @keydown.enter="stopEdit(car, 'currentMargin')" />
+                <Input v-if="isEditing(car, 'currentMargin')" v-model="car.currentMargin" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'currentMargin')" @keydown.enter="stopEdit(car, 'currentMargin')" @keydown.esc="cancelEdit(car, 'currentMargin')" />
                 <span v-else-if="car.currentMargin">{{ car.currentMargin }}</span>
                 <Icon v-else name="i-lucide-pencil" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
@@ -839,7 +862,7 @@ const pageNumbers = computed(() => {
             <!-- Margin Simulation -->
             <TableCell class="text-xs text-center px-1">
               <div class="min-h-[28px] min-w-[60px] flex items-center justify-center cursor-pointer group rounded hover:bg-muted/50 transition-colors" @click="startEdit(car, 'marginSimulation')">
-                <Input v-if="isEditing(car, 'marginSimulation')" v-model="car.marginSimulation" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'marginSimulation')" @keydown.enter="stopEdit(car, 'marginSimulation')" />
+                <Input v-if="isEditing(car, 'marginSimulation')" v-model="car.marginSimulation" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'marginSimulation')" @keydown.enter="stopEdit(car, 'marginSimulation')" @keydown.esc="cancelEdit(car, 'marginSimulation')" />
                 <span v-else-if="car.marginSimulation">{{ car.marginSimulation }}</span>
                 <Icon v-else name="i-lucide-pencil" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
@@ -848,7 +871,7 @@ const pageNumbers = computed(() => {
             <!-- Re-Set Margin -->
             <TableCell class="text-xs text-center px-1">
               <div class="min-h-[28px] min-w-[60px] flex items-center justify-center cursor-pointer group rounded hover:bg-muted/50 transition-colors" @click="startEdit(car, 'reSetMargin')">
-                <Input v-if="isEditing(car, 'reSetMargin')" v-model="car.reSetMargin" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'reSetMargin')" @keydown.enter="stopEdit(car, 'reSetMargin')" />
+                <Input v-if="isEditing(car, 'reSetMargin')" v-model="car.reSetMargin" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'reSetMargin')" @keydown.enter="stopEdit(car, 'reSetMargin')" @keydown.esc="cancelEdit(car, 'reSetMargin')" />
                 <span v-else-if="car.reSetMargin">{{ car.reSetMargin }}</span>
                 <Icon v-else name="i-lucide-pencil" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
@@ -925,7 +948,7 @@ const pageNumbers = computed(() => {
               <div class="flex flex-col items-center justify-center gap-1.5 py-2 min-h-[40px]">
                 <!-- TOP ROW: Date & Time -->
                 <div v-if="car.dealStatus === 'Under Negotiation'" class="w-full flex justify-center">
-                  <Input v-if="isEditing(car, 'followupTimeStamp')" v-model="car.followupTimeStamp" type="datetime-local" autofocus class="h-[24px] w-[140px] text-[10px] px-1 bg-card shadow-sm border-border" @blur="stopEdit(car, 'followupTimeStamp')" @keydown.enter="stopEdit(car, 'followupTimeStamp')" />
+                  <Input v-if="isEditing(car, 'followupTimeStamp')" v-model="car.followupTimeStamp" type="datetime-local" autofocus class="h-[24px] w-[140px] text-[10px] px-1 bg-card shadow-sm border-border" @blur="stopEdit(car, 'followupTimeStamp')" @keydown.enter="stopEdit(car, 'followupTimeStamp')" @keydown.esc="cancelEdit(car, 'followupTimeStamp')" />
                   <button v-else class="hover:opacity-80 transition-opacity flex justify-center w-[140px]" title="Edit Followup Time" @click="startEdit(car, 'followupTimeStamp')">
                     <div v-if="car.followupTimeStamp" class="w-full px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-transparent shadow-sm whitespace-nowrap flex items-center justify-center gap-1" :class="getFollowupBgColor(car.followupTimeStamp)">
                       <Icon name="i-lucide-calendar-clock" class="size-3 shrink-0" />
@@ -980,7 +1003,7 @@ const pageNumbers = computed(() => {
             <!-- Tentative Handover Date -->
             <TableCell class="text-xs text-center px-1">
               <div class="min-h-[28px] min-w-[60px] flex items-center justify-center cursor-pointer group rounded hover:bg-muted/50 transition-colors" @click="startEdit(car, 'tentativeHandoverDate')">
-                <Input v-if="isEditing(car, 'tentativeHandoverDate')" v-model="car.tentativeHandoverDate" type="date" autofocus class="h-6 w-[130px] text-[10px]" @blur="stopEdit(car, 'tentativeHandoverDate')" @keydown.enter="stopEdit(car, 'tentativeHandoverDate')" />
+                <Input v-if="isEditing(car, 'tentativeHandoverDate')" v-model="car.tentativeHandoverDate" type="date" autofocus class="h-6 w-[130px] text-[10px]" @blur="stopEdit(car, 'tentativeHandoverDate')" @keydown.enter="stopEdit(car, 'tentativeHandoverDate')" @keydown.esc="cancelEdit(car, 'tentativeHandoverDate')" />
                 <span v-else-if="car.tentativeHandoverDate" class="whitespace-nowrap">{{ formatDateDMY(car.tentativeHandoverDate) }}</span>
                 <Icon v-else name="i-lucide-pencil" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
@@ -1148,7 +1171,7 @@ const pageNumbers = computed(() => {
                 </div>
               </TableCell>
               <TableCell class="font-bold text-emerald-600 text-[15px] tabular-nums">
-                {{ formatCurrency(bid.bidAmount || bid.amount) }}
+                {{ formatCurrency(getNetBidAmount(bid)) }}
               </TableCell>
               <TableCell>
                 <div v-if="bid.dealer" class="flex flex-col gap-0.5">

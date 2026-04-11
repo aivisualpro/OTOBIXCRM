@@ -486,13 +486,13 @@ const pageNumbers = computed(() => {
             <TableCell class="whitespace-nowrap text-xs text-muted-foreground">
               {{ formatDate(car.createdAt) }}
             </TableCell>
-            <TableCell class="w-16">
+            <TableCell class="w-24">
               <HoverCard :open-delay="200" :close-delay="100">
                 <HoverCardTrigger as-child>
-                  <div class="relative size-10 rounded-md overflow-hidden bg-muted border cursor-zoom-in">
+                  <div class="relative w-20 h-14 rounded-md overflow-hidden bg-muted border cursor-zoom-in">
                     <img v-if="getFirstImage(car)" :src="getFirstImage(car)!" class="size-full object-cover">
                     <div v-else class="size-full flex items-center justify-center">
-                      <Icon name="i-lucide-car" class="size-4 text-muted-foreground" />
+                      <Icon name="i-lucide-car" class="size-5 text-muted-foreground" />
                     </div>
                   </div>
                 </HoverCardTrigger>
@@ -531,11 +531,10 @@ const pageNumbers = computed(() => {
                 <Button
                   v-if="car.appointmentId"
                   variant="ghost"
-                  size="icon"
-                  class="p-1.5 hover:bg-muted/50 rounded-md transition-colors w-8 h-8 flex items-center justify-center border border-transparent hover:border-border"
+                  class="p-1 hover:bg-muted/50 rounded-md transition-colors w-12 h-12 flex items-center justify-center border border-transparent hover:border-border"
                   @click.stop="openPreview(car.appointmentId)"
                 >
-                  <Icon name="i-lucide-file-text" class="size-4 text-red-500" />
+                  <Icon name="i-lucide-file-text" class="!size-8 text-red-500 shrink-0" />
                 </Button>
                 <span v-else class="text-xs text-muted-foreground">—</span>
               </div>

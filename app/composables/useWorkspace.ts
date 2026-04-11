@@ -55,7 +55,6 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
   { id: 'dropdowns', title: 'Dropdowns', icon: 'i-lucide-list', link: '/dropdowns', group: 'Workspace' },
   { id: 'banners', title: 'Banners', icon: 'i-lucide-image', link: '/banners', group: 'Workspace' },
   { id: 'variances', title: 'Variances', icon: 'i-lucide-layers', link: '/variances', group: 'Workspace' },
-  { id: 'car-margins', title: 'Car Margins', icon: 'i-lucide-percent', link: '/car-margins', group: 'Workspace' },
   // Apps
   { id: 'tasks', title: 'Tasks', icon: 'i-lucide-check-square', link: '/tasks', group: 'Apps' },
   { id: 'timeline', title: 'Timeline', icon: 'i-lucide-gantt-chart', link: '/timeline', group: 'Apps' },

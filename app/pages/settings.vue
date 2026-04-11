@@ -40,36 +40,29 @@ function switchTab(id: string) {
 </script>
 
 <template>
-  <div class="w-full flex flex-col h-full overflow-hidden">
+  <div class="-m-4 lg:-m-6 h-[calc(100%+2rem)] lg:h-[calc(100%+3rem)] flex flex-col overflow-hidden bg-background">
     <!-- Tab Bar -->
-    <div class="shrink-0 border-b bg-muted/20">
-      <div class="px-4 lg:px-6">
-        <nav class="flex items-center gap-1 -mb-px overflow-x-auto scrollbar-none">
+    <div class="shrink-0 border-b bg-background/80 backdrop-blur-sm z-10 flex items-center justify-between">
+      <div class="flex items-center gap-2 px-4 lg:px-6 py-2 overflow-x-auto no-scrollbar">
           <button
             v-for="tab in tabs"
             :key="tab.id"
-            class="relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap"
+            class="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold rounded-md transition-all whitespace-nowrap flex-shrink-0"
             :class="activeTab === tab.id
-              ? 'text-primary'
-              : 'text-muted-foreground hover:text-foreground'"
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground'"
             @click="switchTab(tab.id)"
           >
             <Icon :name="tab.icon" class="size-4" />
-            {{ tab.label }}
-            <span
-              v-if="activeTab === tab.id"
-              class="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-primary"
-            />
+            <span>{{ tab.label }}</span>
           </button>
-        </nav>
       </div>
+      <div id="settings-tab-actions" class="px-4 lg:px-6 flex items-center gap-2 flex-shrink-0"></div>
     </div>
 
     <!-- Tab Content -->
-    <div class="flex-1 min-h-0 overflow-y-auto">
-      <div class="max-w-7xl">
-        <NuxtPage />
-      </div>
+    <div class="flex-1 min-h-0 overflow-y-auto w-full">
+      <NuxtPage />
     </div>
   </div>
 </template>

@@ -423,7 +423,7 @@ async function saveMenuConfig() {
       </HeaderActions>
     </ClientOnly>
 
-    <div class="h-[calc(100vh-8.5rem)] min-h-[500px] m-4 lg:m-6 border rounded-xl flex flex-col md:flex-row overflow-hidden bg-background shadow-sm">
+    <div class="h-full flex flex-col md:flex-row overflow-hidden bg-background">
       <!-- Left Sidebar: Workspaces -->
       <div class="w-full md:w-80 shrink-0 border-r bg-muted/10 p-4 overflow-y-auto space-y-3">
         <div
