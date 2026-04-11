@@ -8,14 +8,14 @@ const currentActiveId = computed(() => {
 })
 
 const ALL_SALES_TABS = [
-  { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/sales/all' },
-  { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/sales/live' },
-  { id: 'otobuy', title: 'Otobuy', icon: 'i-lucide-tag', link: '/sales/otobuy' },
-  { id: 'customer-activity', title: 'Customer Activity', icon: 'i-lucide-activity', link: '/sales/customer-activity' },
-  { id: 'dealer-activity', title: 'Dealer Activity', icon: 'i-lucide-users', link: '/sales/dealer-activity' },
-  { id: 'ended', title: 'Ended', icon: 'i-lucide-timer-off', link: '/sales/ended' },
-  { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/sales/sold' },
-  { id: 'removed', title: 'Removed', icon: 'i-lucide-trash-2', link: '/sales/removed' },
+  { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/retail/all' },
+  { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/retail/live' },
+  { id: 'otobuy', title: 'Otobuy', icon: 'i-lucide-tag', link: '/retail/otobuy' },
+  { id: 'customer-activity', title: 'Customer Activity', icon: 'i-lucide-activity', link: '/retail/customer-activity' },
+  { id: 'dealer-activity', title: 'Dealer Activity', icon: 'i-lucide-users', link: '/retail/dealer-activity' },
+  { id: 'ended', title: 'Ended', icon: 'i-lucide-timer-off', link: '/retail/ended' },
+  { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/retail/sold' },
+  { id: 'removed', title: 'Removed', icon: 'i-lucide-trash-2', link: '/retail/removed' },
 ]
 
 const navItems = computed(() => {
@@ -75,7 +75,7 @@ function getTabCount(filterId: string) {
   if (globalSearch.value) {
     const q = globalSearch.value.toLowerCase()
     matches = matches.filter(car =>
-      ['make', 'model', 'variant', 'registrationNumber', 'appointmentId'].some(key =>
+      ['make', 'model', 'variant', 'registrationNumber', 'appointmentId', 'registeredRto', 'registrationState', 'roadTaxValidity', 'ownerSerialNumber', 'fuelType'].some(key =>
         String(car[key] ?? '').toLowerCase().includes(q)
       )
     )
@@ -88,7 +88,7 @@ watch(globalSearch, (newVal) => {
   if (newVal && newVal.trim().length > 3) {
     const q = newVal.toLowerCase()
     const globalMatches = allCars.value.filter(car => {
-      return ['make', 'model', 'variant', 'registrationNumber', 'appointmentId'].some(key =>
+      return ['make', 'model', 'variant', 'registrationNumber', 'appointmentId', 'registeredRto', 'registrationState', 'roadTaxValidity', 'ownerSerialNumber', 'fuelType'].some(key =>
         String(car[key] ?? '').toLowerCase().includes(q)
       )
     })
@@ -106,8 +106,8 @@ watch(globalSearch, (newVal) => {
       }
       const targetTab = statusMapRevealed[match.auctionStatus] || 'all'
 
-      if (route.path !== `/sales/${targetTab}`) {
-        useRouter().push(`/sales/${targetTab}`)
+      if (route.path !== `/retail/${targetTab}`) {
+        useRouter().push(`/retail/${targetTab}`)
       }
     }
   }

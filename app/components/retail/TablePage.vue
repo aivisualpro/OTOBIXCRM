@@ -20,7 +20,7 @@ const isStatsLoading = ref(false)
 async function fetchBidStats() {
   try {
     isStatsLoading.value = true
-    const res = await $fetch<any>('/api/sales/bids-stats')
+    const res = await $fetch<any>('/api/retail/bids-stats')
     if (res.success && res.stats) {
       bidStats.value = res.stats
     }
@@ -115,9 +115,9 @@ const filteredItems = computed(() => {
   if (globalSearch && globalSearch.value) {
     const q = globalSearch.value.toLowerCase()
     result = result.filter(item =>
-      ['make', 'model', 'variant', 'registrationNumber', 'inspectionLocation', 'fuelType', 'appointmentId'].some(key =>
-        String(item[key] ?? '').toLowerCase().includes(q),
-      ),
+      ['make', 'model', 'variant', 'registrationNumber', 'inspectionLocation', 'fuelType', 'appointmentId', 'registeredRto', 'registrationState', 'roadTaxValidity', 'ownerSerialNumber'].some(key =>
+        String(item[key] ?? '').toLowerCase().includes(q)
+      )
     )
   }
   return result
@@ -145,6 +145,14 @@ const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFil
 function formatCurrency(value: any): string {
   if (!value || isNaN(Number(value))) return '—'
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value))
+}
+
+function formatYear(value: string): string {
+  if (!value) return '—'
+  try {
+    const year = new Date(value).getFullYear()
+    return isNaN(year) ? value : String(year)
+  } catch { return value }
 }
 
 function formatDate(value: string): string {
@@ -230,7 +238,7 @@ function getInflatedCep(car: any): number {
 
 async function handleRefresh() {
   await refreshCars()
-  toast.success('Sales data refreshed')
+  toast.success('Retail data refreshed')
 }
 
 const showReportPreview = ref(false)
@@ -277,7 +285,7 @@ async function fetchAndShowBids(car: any) {
   
   try {
     const rawId = car._id?.$oid || car._id || car.id
-    const res = await $fetch<any>(`/api/sales/bids?carId=${rawId}`)
+    const res = await $fetch<any>(`/api/retail/bids?carId=${rawId}`)
     if (res.success) {
       carBids.value = res.bids || []
     }
@@ -329,7 +337,7 @@ const pageNumbers = computed(() => {
       </div>
       <div class="relative ml-auto sm:ml-0">
         <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-        <Input v-model="globalSearch" placeholder="Search sales..." class="pl-8 h-8 w-40 text-sm" />
+        <Input v-model="globalSearch" placeholder="Search retail..." class="pl-8 h-8 w-40 text-sm" />
       </div>
       <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
         {{ totalFiltered }} record{{ totalFiltered !== 1 ? 's' : '' }}
@@ -345,7 +353,7 @@ const pageNumbers = computed(() => {
     <div v-if="fetchError" class="shrink-0 m-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-3">
       <Icon name="i-lucide-alert-circle" class="size-5 text-destructive shrink-0" />
       <div class="flex-1">
-        <p class="text-sm font-medium text-destructive">Failed to load sales data</p>
+        <p class="text-sm font-medium text-destructive">Failed to load retail data</p>
         <p class="text-xs text-muted-foreground mt-0.5">{{ fetchError }}</p>
       </div>
       <Button variant="outline" size="sm" @click="handleRefresh">Retry</Button>
@@ -354,7 +362,7 @@ const pageNumbers = computed(() => {
     <div v-if="!isFetched && !fetchError" class="flex-1 min-h-0 flex items-center justify-center">
       <div class="flex flex-col items-center gap-3 text-muted-foreground">
         <Icon name="i-lucide-loader-2" class="size-8 animate-spin" />
-        <p class="text-sm">Loading sales data...</p>
+        <p class="text-sm">Loading retail data...</p>
       </div>
     </div>
 
@@ -389,17 +397,17 @@ const pageNumbers = computed(() => {
             class="group hover:bg-muted/50 transition-all duration-300"
           >
             <TableCell class="whitespace-nowrap text-xs text-muted-foreground">{{ formatDate(car.createdAt) }}</TableCell>
-            <TableCell class="w-16">
-              <div class="relative group/img size-10 rounded-md overflow-visible">
-                <div class="size-10 rounded-md overflow-hidden bg-muted border cursor-zoom-in">
+            <TableCell class="w-24">
+              <div class="relative group/img w-20 h-14 rounded-md overflow-visible">
+                <div class="size-full rounded-md overflow-hidden bg-muted border cursor-zoom-in">
                   <img v-if="getFirstImage(car)" :src="getFirstImage(car)!" class="size-full object-cover" />
-                  <div v-else class="size-full flex items-center justify-center"><Icon name="i-lucide-car" class="size-4 text-muted-foreground" /></div>
+                  <div v-else class="size-full flex items-center justify-center"><Icon name="i-lucide-car" class="size-5 text-muted-foreground" /></div>
                 </div>
                 <!-- Hover popup -->
                 <Transition name="img-popup">
                   <div
                     v-if="getFirstImage(car)"
-                    class="img-popup-panel pointer-events-none absolute left-12 top-1/2 -translate-y-1/2 z-50 hidden group-hover/img:block"
+                    class="img-popup-panel pointer-events-none absolute left-24 top-1/2 -translate-y-1/2 z-50 hidden group-hover/img:block"
                   >
                     <div class="bg-card border shadow-2xl rounded-xl overflow-hidden w-96 h-72">
                       <img :src="getFirstImage(car)!" class="w-full h-full object-cover" />
@@ -410,9 +418,23 @@ const pageNumbers = computed(() => {
               </div>
             </TableCell>
             <TableCell class="whitespace-nowrap text-xs font-mono">{{ car.appointmentId || '—' }}</TableCell>
-            <TableCell class="whitespace-nowrap">
+            <TableCell class="min-w-[260px] max-w-[320px] py-3">
               <p class="font-medium text-xs">{{ car.make }} {{ car.model }}</p>
-              <p class="text-[10px] text-muted-foreground">{{ car.variant }} • {{ car.fuelType }}</p>
+              <div class="flex flex-wrap items-center gap-1.5 mt-1 mb-0.5">
+                <p class="text-[11px] text-muted-foreground leading-none">{{ car.variant }}</p>
+                <span v-if="car.fuelType" class="bg-rose-500/10 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider leading-none">{{ car.fuelType }}</span>
+                <span v-if="car.ownerSerialNumber" class="bg-primary/10 text-primary px-1.5 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider leading-none">Owner {{ car.ownerSerialNumber }}</span>
+              </div>
+              <div class="mt-1.5 flex flex-wrap gap-x-1.5 gap-y-1.5 text-[10px] text-muted-foreground leading-tight">
+                <span v-if="car.registrationDate" class="bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider leading-none">Reg. {{ formatYear(car.registrationDate) }}</span>
+                <span v-if="car.registeredRto" class="bg-violet-500/10 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider leading-none">{{ car.registeredRto }}</span>
+                <span v-if="car.registrationState" class="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider leading-none">{{ car.registrationState }}</span>
+              </div>
+              <div v-if="car.roadTaxValidity || car.taxValidTill" class="mt-1 flex flex-wrap items-center gap-x-1 gap-y-1 text-[10px] text-muted-foreground leading-tight">
+                <span v-if="car.roadTaxValidity">Tax: {{ car.roadTaxValidity }}</span>
+                <span v-if="car.roadTaxValidity && car.taxValidTill">•</span>
+                <span v-if="car.taxValidTill">Till {{ formatDate(car.taxValidTill) }}</span>
+              </div>
             </TableCell>
             <TableCell>
               <div class="flex justify-center">

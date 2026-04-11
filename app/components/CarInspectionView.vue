@@ -421,6 +421,14 @@ const allPdfImages = computed(() => {
   return imgs.filter(img => !img.url.match(/\.(mp4|webm|ogg|mov)$/i))
 })
 
+const pdfSections = computed(() => [
+  ...exteriorSections,
+  { title: 'Engine Bay', parts: engineParts },
+  { title: 'Electricals', parts: electricalParts },
+  { title: 'Interior', parts: interiorParts },
+  { title: 'Steering, Suspension & Brakes', parts: steeringSuspensionBrakesParts },
+])
+
 const emit = defineEmits(['pdf-blob-ready'])
 
 async function downloadPDF(action: 'save' | 'blob' = 'save') {
@@ -2828,114 +2836,87 @@ watch(editForm, () => {
           </div>
         </div>
 
-        <!-- B. INSPECTION ITEMS -->
+        <!-- B. INSPECTION ITEMS & CONDITION -->
         <div class="mb-4">
           <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-4 rounded-t tracking-widest uppercase">
-            B. INSPECTION INFORMATION
+            B. VEHICLE CONDITION & IMAGES
           </h2>
-          <div class="grid grid-cols-2 gap-x-6 gap-y-4">
-            <!-- EXTERIOR SECTIONS -->
-            <template v-for="sec in exteriorSections" :key="sec.title">
-              <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
-                <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">
+          <div class="space-y-4">
+            <template v-for="sec in pdfSections" :key="sec.title">
+              <div class="break-inside-avoid">
+                <h3 class="bg-[#eff6ff] text-[#1d4ed8] font-bold text-[9px] px-2 py-1.5 border border-[#d1d5db] uppercase tracking-widest mb-2 rounded shadow-sm">
                   {{ sec.title }}
                 </h3>
-                <div class="grid grid-cols-2">
-                  <template v-for="part in getPdfFields(sec.parts)" :key="part.key">
-                    <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">
-                      {{ part.label }}
-                    </div>
-                    <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
-                      {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
-                    </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <template v-for="part in sec.parts" :key="part.key">
+                    <!-- Normal parts -->
+                    <template v-if="!(part as any).isVideoBox && !(part as any).splitParts">
+                      <div class="border border-[#d1d5db] rounded shadow-sm overflow-hidden flex flex-row min-h-[22mm] bg-white break-inside-avoid">
+                        <div class="flex-1 flex flex-col">
+                          <div class="bg-[#f8fafc] border-b border-[#d1d5db] px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider text-[#334155] truncate">
+                            {{ part.label }}
+                          </div>
+                          <div class="p-1 px-1.5 flex flex-wrap gap-1 mt-auto mb-auto">
+                            <template v-if="getDisplayValues(car, (part as any).dropdownName || part.key, (part as any).oldKey).length">
+                              <div v-for="val in getDisplayValues(car, (part as any).dropdownName || part.key, (part as any).oldKey)" :key="val" class="border px-1 py-0.5 rounded flex items-center gap-1 shadow-sm" :class="getConditionStyle(val).bg">
+                                <Icon :name="getConditionStyle(val).icon" class="size-2.5 shrink-0" />
+                                <span class="text-[7.5px] font-bold leading-none">{{ val }}</span>
+                              </div>
+                            </template>
+                            <div v-else class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">Condition Okay</div>
+                          </div>
+                        </div>
+                        <div class="w-[32mm] border-l border-[#d1d5db] bg-[#f9fafb] p-0.5 flex items-center justify-center shrink-0">
+                          <img v-if="getImages(car, (part as any).imageKey || part.key, (part as any).oldImageKey || (part as any).oldKey).length && !getImages(car, (part as any).imageKey || part.key, (part as any).oldImageKey || (part as any).oldKey)[0]?.match(/\.(mp4|webm|ogg|mov)$/i)" :src="getImages(car, (part as any).imageKey || part.key, (part as any).oldImageKey || (part as any).oldKey)[0]!" class="max-w-full max-h-full object-contain" crossorigin="anonymous">
+                          <div v-else class="text-[6px] text-[#9ca3af] uppercase tracking-widest text-center">No Image</div>
+                        </div>
+                      </div>
+                    </template>
+                    <!-- Split Parts -->
+                    <template v-else-if="(part as any).splitParts">
+                      <template v-for="spart in (part as any).splitParts" :key="spart.key">
+                        <div class="border border-[#d1d5db] rounded shadow-sm overflow-hidden flex flex-row min-h-[22mm] bg-white break-inside-avoid">
+                          <div class="flex-1 flex flex-col">
+                            <div class="bg-[#f8fafc] border-b border-[#d1d5db] px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider text-[#334155] truncate">
+                              {{ spart.label }}
+                            </div>
+                            <div class="p-1 px-1.5 flex flex-wrap gap-1 mt-auto mb-auto">
+                              <template v-if="getDisplayValues(car, spart.dropdownName || spart.key, spart.oldKey).length">
+                                <div v-for="val in getDisplayValues(car, spart.dropdownName || spart.key, spart.oldKey)" :key="val" class="border px-1 py-0.5 rounded flex items-center gap-1 shadow-sm" :class="getConditionStyle(val).bg">
+                                  <Icon :name="getConditionStyle(val).icon" class="size-2.5 shrink-0" />
+                                  <span class="text-[7.5px] font-bold leading-none">{{ val }}</span>
+                                </div>
+                              </template>
+                              <div v-else class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">Condition Okay</div>
+                            </div>
+                          </div>
+                          <div class="w-[32mm] border-l border-[#d1d5db] bg-[#f9fafb] p-0.5 flex items-center justify-center shrink-0">
+                            <img v-if="getImages(car, spart.imageKey || spart.key, spart.oldImageKey || spart.oldKey).length && !getImages(car, spart.imageKey || spart.key, spart.oldImageKey || spart.oldKey)[0]?.match(/\.(mp4|webm|ogg|mov)$/i)" :src="getImages(car, spart.imageKey || spart.key, spart.oldImageKey || spart.oldKey)[0]!" class="max-w-full max-h-full object-contain" crossorigin="anonymous">
+                            <div v-else class="text-[6px] text-[#9ca3af] uppercase tracking-widest text-center">No Image</div>
+                          </div>
+                        </div>
+                      </template>
+                    </template>
                   </template>
                 </div>
               </div>
             </template>
-
-            <!-- ENGINE BAY -->
-            <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
-              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">
-                ENGINE BAY
-              </h3>
-              <div class="grid grid-cols-2">
-                <template v-for="part in getPdfFields(engineParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">
-                    {{ part.label }}
-                  </div>
-                  <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
-                    {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <!-- ELECTRICALS -->
-            <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
-              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">
-                ELECTRICALS
-              </h3>
-              <div class="grid grid-cols-2">
-                <template v-for="part in getPdfFields(electricalParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">
-                    {{ part.label }}
-                  </div>
-                  <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
-                    {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <!-- INTERIOR -->
-            <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
-              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">
-                INTERIOR
-              </h3>
-              <div class="grid grid-cols-2">
-                <template v-for="part in getPdfFields(interiorParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">
-                    {{ part.label }}
-                  </div>
-                  <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
-                    {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <!-- STEERING, SUSPENSION & BRAKES -->
-            <div class="break-inside-avoid border border-gray-300 rounded shadow-sm overflow-hidden">
-              <h3 class="bg-[#eff6ff] text-[#1d4ed8] text-center font-bold text-[9px] py-1.5 border-b border-gray-300 uppercase tracking-widest">
-                STEERING, SUSPENSION & BRAKES
-              </h3>
-              <div class="grid grid-cols-2">
-                <template v-for="part in getPdfFields(steeringSuspensionBrakesParts)" :key="part.key">
-                  <div class="border-r border-b border-gray-300 p-1.5 text-[8.5px] truncate font-medium bg-[#f8fafc]">
-                    {{ part.label }}
-                  </div>
-                  <div class="border-b border-gray-300 p-1.5 text-[8.5px] font-medium" :class="[(!car?.[part.dropdownName || part.key] && !car?.[part.key] && !car?.[part.oldKey]) ? '' : _conditionPdfCss(formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || ''))]">
-                    {{ formatPdfValue(car?.[part.dropdownName || part.key] || car?.[part.key] || car?.[part.oldKey] || '') }}
-                  </div>
-                </template>
-              </div>
-            </div>
           </div>
         </div>
 
-        <!-- C. VEHICLE IMAGES -->
+        <!-- C. EXTRA IMAGE GALLERY -->
         <div class="html2pdf__page-break" />
-        <div class="mt-8 mb-4">
+        <div class="mt-8 mb-4 break-inside-avoid">
           <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-6 rounded-t uppercase tracking-widest">
-            C. VEHICLE IMAGES
+            C. IMAGE GALLERY (EXTRAS)
           </h2>
-          <div class="grid grid-cols-3 gap-4">
+          <div class="grid grid-cols-4 gap-2">
             <template v-for="(img, idx) in allPdfImages" :key="idx">
-              <div class="flex flex-col border border-gray-300 rounded shadow-sm overflow-hidden break-inside-avoid h-[45mm]">
-                <div class="bg-[#f8fafc] text-center text-[8px] font-bold py-1.5 px-1 uppercase truncate border-b border-gray-300 text-[#1e293b]">
+              <div class="flex flex-col border border-[#d1d5db] rounded overflow-hidden break-inside-avoid h-[30mm]">
+                <div class="bg-[#f8fafc] text-center text-[6px] font-bold py-1 px-1 uppercase truncate border-b border-[#d1d5db] text-[#1e293b]">
                   {{ img.label }}
                 </div>
-                <div class="flex-1 bg-white flex items-center justify-center p-1 overflow-hidden">
+                <div class="flex-1 bg-[#f9fafb] flex items-center justify-center p-0.5 overflow-hidden">
                   <img :src="img.url" class="max-h-full max-w-full object-contain" crossorigin="anonymous">
                 </div>
               </div>
@@ -2982,10 +2963,28 @@ watch(editForm, () => {
 #pdf-container .border-slate-600 { border-color: #475569 !important; }
 #pdf-container .border-gray-300 { border-color: #d1d5db !important; }
 
-/* Dynamic condition colors */
-#pdf-container .bg-yellow-300 { background-color: #fde047 !important; color: #000 !important; }
-#pdf-container .bg-emerald-300 { background-color: #6ee7b7 !important; color: #000 !important; }
-#pdf-container .bg-red-300 { background-color: #fca5a5 !important; color: #000 !important; }
-#pdf-container .bg-rose-200 { background-color: #fecdd3 !important; color: #000 !important; }
-#pdf-container .bg-orange-200 { background-color: #fed7aa !important; color: #000 !important; }
+/* Dynamic condition colors & badge colors */
+#pdf-container .bg-emerald-500\/15 { background-color: rgba(16, 185, 129, 0.15) !important; }
+#pdf-container .border-emerald-500\/30 { border-color: rgba(16, 185, 129, 0.3) !important; }
+#pdf-container .text-emerald-600 { color: #059669 !important; }
+
+#pdf-container .bg-green-500\/15 { background-color: rgba(34, 197, 94, 0.15) !important; }
+#pdf-container .border-green-500\/30 { border-color: rgba(34, 197, 94, 0.3) !important; }
+#pdf-container .text-green-700 { color: #15803d !important; }
+
+#pdf-container .bg-red-500\/15 { background-color: rgba(239, 68, 68, 0.15) !important; }
+#pdf-container .border-red-500\/30 { border-color: rgba(239, 68, 68, 0.3) !important; }
+#pdf-container .text-red-700 { color: #b91c1c !important; }
+
+#pdf-container .bg-amber-500\/15 { background-color: rgba(245, 158, 11, 0.15) !important; }
+#pdf-container .border-amber-500\/30 { border-color: rgba(245, 158, 11, 0.3) !important; }
+#pdf-container .text-amber-700 { color: #b45309 !important; }
+
+#pdf-container .bg-indigo-500\/15 { background-color: rgba(99, 102, 241, 0.15) !important; }
+#pdf-container .border-indigo-500\/30 { border-color: rgba(99, 102, 241, 0.3) !important; }
+#pdf-container .text-indigo-700 { color: #4338ca !important; }
+
+#pdf-container .bg-slate-500\/15 { background-color: rgba(100, 116, 139, 0.15) !important; }
+#pdf-container .border-slate-500\/30 { border-color: rgba(100, 116, 139, 0.3) !important; }
+#pdf-container .text-slate-700 { color: #334155 !important; }
 </style>
