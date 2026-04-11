@@ -264,6 +264,74 @@ async function handleRefresh() {
   await refreshCars()
   toast.success('Auction data refreshed')
 }
+
+// ─── Act. CEP Edit Workflow ───
+const OTOBIX_API_BASE = 'https://ob-dealerapp-kong.onrender.com/api'
+const cepEditing = ref<Record<string, boolean>>({})
+const cepValue = ref<Record<string, string>>({})
+const cepSaving = ref<Record<string, boolean>>({})
+
+function openCep(car: any) {
+  const key = car._id || car.id
+  cepValue.value[key] = String(Number(car.customerExpectedPrice || 0))
+  cepEditing.value[key] = true
+}
+
+function closeCep(car: any) {
+  const key = car._id || car.id
+  cepEditing.value[key] = false
+  cepValue.value[key] = ''
+}
+
+async function confirmCep(car: any) {
+  const key = car._id || car.id
+  const newCep = Number(cepValue.value[key])
+  const rawId = car._id?.$oid || car._id || car.id
+
+  if (isNaN(newCep) || newCep <= 0) {
+    toast.error('Invalid price')
+    return
+  }
+
+  const currentCep = Number(car.customerExpectedPrice) || 0
+  const pd = Number(car.priceDiscovery) || 0
+
+  if (!currentCep) {
+    if (pd > 0 && newCep > pd * 1.5) {
+      toast.error(`Act. CEP cannot exceed 150% of PD (${formatCurrency(pd * 1.5)})`)
+      return
+    }
+  }
+  else {
+    if (newCep <= currentCep) {
+      toast.error(`Act. CEP must be greater than the current value (${formatCurrency(currentCep)})`)
+      return
+    }
+  }
+
+  cepSaving.value[key] = true
+  try {
+    await $fetch(`${OTOBIX_API_BASE}/otobix/set-customer-expected-price`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer QmFwR0RjLjJmMzkyMjJw98UNpMGFqpgGJV6BXgQ1ye12d100f5c`,
+      },
+      body: {
+        carId: rawId,
+        customerExpectedPrice: newCep,
+      },
+    })
+    car.customerExpectedPrice = newCep
+    toast.success(`Act. CEP updated to ${formatCurrency(newCep)}`)
+    closeCep(car)
+  }
+  catch (err: any) {
+    toast.error(err?.data?.message || err?.message || 'Failed to update Act. CEP')
+  }
+  finally {
+    cepSaving.value[key] = false
+  }
+}
 </script>
 
 <template>
@@ -429,15 +497,56 @@ async function handleRefresh() {
                 </p>
               </div>
 
-              <div class="flex items-end justify-between mt-6 bg-muted/30 rounded-2xl p-5 border border-border/60">
-                <div>
-                  <p class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
-                    Highest Expected Bid
-                  </p>
-                  <p class="text-3xl font-black text-emerald-600 dark:text-emerald-500 tabular-nums">
-                    {{ car.highestBid ? formatCurrency(car.highestBid) : 'Awaiting Bids' }}
-                  </p>
+              <div class="flex items-center justify-between mt-6 bg-muted/30 rounded-2xl p-5 border border-border/60">
+                <div class="flex items-center gap-8 md:gap-12 pl-2">
+                  <div class="flex flex-col gap-1">
+                    <p class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Highest Bid
+                    </p>
+                    <p class="text-3xl font-black text-emerald-600 dark:text-emerald-500 tabular-nums leading-none mt-1">
+                      {{ car.highestBid ? formatCurrency(car.highestBid) : 'Awaiting Bids' }}
+                    </p>
+                  </div>
+                  
+                  <div class="border-l border-border/60 pl-8 md:pl-12 flex flex-col gap-1">
+                    <p class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Act. CEP
+                    </p>
+                    <!-- CEP Editor -->
+                    <div class="flex flex-col items-start justify-center group rounded relative cursor-pointer" @click="!cepEditing[car._id || car.id] && openCep(car)">
+                      <template v-if="!cepEditing[car._id || car.id]">
+                        <div class="flex items-center gap-3 font-black text-2xl text-foreground tabular-nums leading-none transition-colors group-hover:text-amber-600 mt-1" title="Actual Customer Expected Price">
+                          <span>{{ car.customerExpectedPrice ? formatCurrency(car.customerExpectedPrice) : '—' }}</span>
+                          <Icon name="i-lucide-pencil" class="size-4 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </template>
+                      <template v-else>
+                        <div class="flex items-center gap-2 mt-0.5" @click.stop>
+                          <div class="relative bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-lg flex items-center px-3 py-1 shadow-sm transition-all">
+                            <span class="text-teal-600 dark:text-teal-400 font-bold text-lg mr-1">₹</span>
+                            <input
+                              v-model="cepValue[car._id || car.id]"
+                              type="number"
+                              class="w-28 bg-transparent text-teal-700 dark:text-teal-300 font-black tabular-nums text-xl border-none outline-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder-teal-600/30"
+                              placeholder="Price"
+                              @keydown.enter="confirmCep(car)"
+                            >
+                          </div>
+                          <div class="flex items-center gap-1.5 ml-1">
+                            <button class="size-8 flex items-center justify-center rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors shadow-sm border border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800" @click.stop="confirmCep(car)">
+                              <Icon v-if="cepSaving[car._id || car.id]" name="i-lucide-loader-2" class="size-4 animate-spin" />
+                              <Icon v-else name="i-lucide-check" class="size-4" />
+                            </button>
+                            <button class="size-8 flex items-center justify-center rounded-full bg-background hover:bg-muted text-muted-foreground transition-colors shadow-sm border border-border" @click.stop="closeCep(car)">
+                              <Icon name="i-lucide-x" class="size-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
                 </div>
+
                 <Badge class="font-semibold text-sm px-3 py-1 border-0" :class="isUpcoming || isLive ? 'bg-blue-500/10 text-blue-600' : 'bg-muted text-muted-foreground opacity-80'">
                   <span v-if="isLive" class="size-1.5 rounded-full bg-rose-500 animate-pulse mr-2 inline-block" />
                   {{ isUpcoming || isLive ? formatCountdown(isUpcoming ? car.upcomingUntil : car.auctionEndTime) : getStatusLabel(car.auctionStatus || statusKey) }}

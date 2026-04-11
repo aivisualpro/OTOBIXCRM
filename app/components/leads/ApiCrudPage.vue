@@ -1231,10 +1231,10 @@ function getInitials(name: string): string {
     <!-- Table (scrollable) — instant reveal with smooth animation -->
     <div
       v-else
-      class="flex-1 min-h-0 overflow-auto leads-table-reveal"
+      class="flex-1 min-h-0 overflow-hidden flex flex-col leads-table-reveal"
       :class="{ 'is-revealed': isRevealed }"
     >
-      <Table>
+      <Table container-class="h-full pb-10 px-[19px]">
         <TableHeader class="sticky top-0 z-10 bg-muted border-b border-border">
           <TableRow>
             <TableHead

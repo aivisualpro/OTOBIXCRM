@@ -496,7 +496,6 @@ function getFirstImage(car: any): string | null {
   return validImages.length > 0 ? (validImages[0] ?? null) : null
 }
 
-
 const showBidsPopup = ref(false)
 const selectedCarForBids = ref<any>(null)
 const bidsLoading = ref(false)
@@ -527,15 +526,17 @@ function getNetBidAmount(rawValue: any, sourceInfo?: any, fallbackCar?: any): nu
 
 function getSimulatedNetBid(car: any): number {
   const baseBid = Number(car.highestBid) || 0
-  if (!baseBid) return 0
-  
+  if (!baseBid)
+    return 0
+
   const simMarginStr = String(car.marginSimulation || '0').replace(/[^0-9.-]/g, '')
   const simMarginPct = Number(simMarginStr) || 0
-  
+
   const totalMargin = simMarginPct / 100.0
   const factor = 1 + totalMargin
-  if (factor <= 0) return 0
-  
+  if (factor <= 0)
+    return 0
+
   const netBid = baseBid / factor
   return Math.floor(netBid / 1000) * 1000
 }
@@ -647,9 +648,25 @@ async function confirmCep(car: any) {
   const newCep = Number(cepValue.value[key])
   const rawId = car._id?.$oid || car._id || car.id
 
-  if (isNaN(newCep) || newCep < 0) {
+  if (isNaN(newCep) || newCep <= 0) {
     toast.error('Invalid price')
     return
+  }
+
+  const currentCep = Number(car.customerExpectedPrice) || 0
+  const pd = Number(car.priceDiscovery) || 0
+
+  if (!currentCep) {
+    if (pd > 0 && newCep > pd * 1.5) {
+      toast.error(`Act. CEP cannot exceed 150% of PD (${formatCurrency(pd * 1.5)})`)
+      return
+    }
+  }
+  else {
+    if (newCep <= currentCep) {
+      toast.error(`Act. CEP must be greater than the current value (${formatCurrency(currentCep)})`)
+      return
+    }
   }
 
   cepSaving.value[key] = true
@@ -827,7 +844,7 @@ const pageNumbers = computed(() => {
 
     <!-- Table -->
     <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-hidden flex flex-col">
-      <Table container-class="h-full pb-10">
+      <Table container-class="h-full pb-10 px-[19px]">
         <TableHeader class="sticky top-0 z-20 bg-background border-b border-border shadow-sm">
           <TableRow>
             <TableHead class="whitespace-nowrap">
@@ -978,14 +995,12 @@ const pageNumbers = computed(() => {
             <!-- Act. CEP Edit Workflow -->
             <TableCell class="text-xs whitespace-nowrap align-middle px-2">
               <div class="min-h-[36px] flex flex-col items-center justify-center gap-1 group rounded relative" :class="cepEditing[car._id || car.id] ? '' : 'hover:bg-muted/30 cursor-pointer'" @click="!cepEditing[car._id || car.id] && openCep(car)">
-                
                 <template v-if="!cepEditing[car._id || car.id]">
                   <div class="flex items-center gap-1.5 font-medium" title="Actual CEP">
                     <span>{{ car.customerExpectedPrice ? formatCurrency(car.customerExpectedPrice) : '—' }}</span>
                     <Icon name="i-lucide-pencil" class="size-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </template>
-
                 <template v-else>
                   <div class="flex items-center gap-1">
                     <div class="relative bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-full flex items-center px-2 py-0.5 shadow-sm transition-all shadow-teal-500/10">
@@ -1010,7 +1025,6 @@ const pageNumbers = computed(() => {
                     </div>
                   </div>
                 </template>
-
               </div>
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
@@ -1037,7 +1051,7 @@ const pageNumbers = computed(() => {
                   {{ formatCurrency(Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car)) }}
                 </span>
                 <span v-else class="text-muted-foreground/50">—</span>
-                
+
                 <Transition
                   enter-active-class="transition-all duration-300 ease-out z-10"
                   enter-from-class="opacity-0 -translate-y-2 scale-95"
@@ -1090,7 +1104,6 @@ const pageNumbers = computed(() => {
             <!-- Margin Simulation -->
             <TableCell class="text-xs text-center px-1">
               <div class="min-h-[32px] min-w-[70px] flex items-center justify-center p-1 rounded group transition-colors relative" :class="isEditing(car, 'marginSimulation') ? '' : 'hover:bg-muted/30'">
-
                 <!-- Not Editing State -->
                 <div v-if="!isEditing(car, 'marginSimulation')" class="flex items-center gap-1.5 cursor-pointer w-full justify-center" @click="startSimulation(car)">
                   <span v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''" class="font-bold text-primary bg-primary/10 px-2.5 py-0.5 tabular-nums rounded">
@@ -1143,7 +1156,6 @@ const pageNumbers = computed(() => {
             <!-- Re-Set Var. Margin -->
             <TableCell class="text-xs text-center px-1">
               <div class="min-h-[36px] min-w-[80px] flex flex-col items-center justify-center gap-1 p-1 group rounded relative" :class="resetVarEditing[car._id || car.id] ? '' : 'hover:bg-muted/30 cursor-pointer'" @click="!resetVarEditing[car._id || car.id] && openResetVar(car)">
-
                 <!-- Display: current variableMargin -->
                 <template v-if="!resetVarEditing[car._id || car.id]">
                   <div class="flex flex-row items-center justify-center gap-1.5 w-full">
@@ -1154,7 +1166,6 @@ const pageNumbers = computed(() => {
                     <Icon name="i-lucide-arrow-down-to-dot" class="size-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </template>
-
                 <!-- Edit mode: inline input + confirm -->
                 <template v-else>
                   <div class="flex flex-col items-center gap-1 w-full">
@@ -1175,9 +1186,9 @@ const pageNumbers = computed(() => {
                           @keydown.enter.stop="confirmResetVar(car)"
                           @keydown.esc.stop="closeResetVar(car)"
                           @click.stop
-                        />
+                        >
                       </div>
-                      
+
                       <!-- Action buttons -->
                       <div class="flex items-center gap-1">
                         <button

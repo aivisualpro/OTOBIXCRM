@@ -414,8 +414,8 @@ function toggleSelectAllWorkspaces() {
     </div>
 
     <!-- Table (scrollable) -->
-    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto">
-      <Table>
+    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-hidden flex flex-col">
+      <Table container-class="h-full pb-10 px-[19px]">
         <TableHeader class="sticky top-0 z-10 bg-muted/50 backdrop-blur-sm">
           <TableRow>
             <TableHead v-for="col in columns" :key="col.key">

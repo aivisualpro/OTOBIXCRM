@@ -24,7 +24,7 @@ export interface AuctionRouteFilter {
 export const auctionRouteFilters: Record<string, AuctionRouteFilter> = {
   upcoming: {
     label: 'Upcoming',
-    filterFn: (car: any) => !car.auctionStatus || car.auctionStatus === '' || car.auctionStatus === 'upcoming',
+    filterFn: (car: any) => car.auctionStatus === 'upcoming',
     icon: 'i-lucide-clock',
     color: 'text-blue-500',
   },

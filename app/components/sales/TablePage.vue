@@ -422,8 +422,8 @@ const pageNumbers = computed(() => {
     </div>
 
     <!-- Table -->
-    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto">
-      <Table>
+    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-hidden flex flex-col">
+      <Table container-class="h-full pb-10 px-[19px]">
         <TableHeader class="sticky top-0 z-20 bg-background border-b border-border shadow-sm">
           <TableRow>
             <TableHead class="whitespace-nowrap">
