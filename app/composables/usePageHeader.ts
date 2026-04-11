@@ -2,6 +2,7 @@ interface PageHeaderState {
   title: string
   description?: string
   icon?: string
+  badge?: string
   showBackButton?: boolean
 }
 
@@ -9,6 +10,7 @@ const headerState = reactive<PageHeaderState>({
   title: '',
   description: '',
   icon: '',
+  badge: '',
   showBackButton: false,
 })
 
@@ -17,6 +19,7 @@ export function usePageHeader() {
     headerState.title = opts.title
     headerState.description = opts.description || ''
     headerState.icon = opts.icon || ''
+    headerState.badge = opts.badge || ''
     headerState.showBackButton = opts.showBackButton ?? false
   }
 
@@ -24,6 +27,7 @@ export function usePageHeader() {
     headerState.title = ''
     headerState.description = ''
     headerState.icon = ''
+    headerState.badge = ''
     headerState.showBackButton = false
   }
 

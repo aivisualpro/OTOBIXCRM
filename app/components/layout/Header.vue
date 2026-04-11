@@ -26,13 +26,13 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
 </script>
 
 <template>
-  <header class="sticky top-0 md:peer-data-[variant=inset]:top-2 z-10 h-(--header-height) flex items-center gap-4 border-b bg-background/80 backdrop-blur-xl px-4 md:px-6 md:rounded-tl-xl md:rounded-tr-xl">
-    <div class="flex items-center gap-3 min-w-0">
-      <SidebarTrigger class="hover:bg-accent/50 transition-colors rounded-lg" />
-      <div class="h-5 w-px bg-border/60 mx-1" />
-      <div class="flex items-center gap-3 min-w-0">
+  <header class="sticky top-0 md:peer-data-[variant=inset]:top-2 z-10 min-h-(--header-height) py-1.5 flex items-center gap-4 border-b bg-background/80 backdrop-blur-xl px-4 md:px-6 md:rounded-tl-xl md:rounded-tr-xl">
+    <div class="flex items-center gap-3 min-w-0 flex-1">
+      <SidebarTrigger class="hover:bg-accent/50 transition-colors rounded-lg shrink-0" />
+      <div class="h-5 w-px bg-border/60 mx-1 shrink-0" />
+      <div class="flex items-center gap-4 min-w-0 flex-1">
         <ClientOnly>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-3">
             <Button v-if="headerState.showBackButton" variant="ghost" size="icon" class="size-8 text-muted-foreground hover:text-foreground shrink-0 lg:hidden" @click="$router.back()">
               <Icon name="i-lucide-arrow-left" class="size-4" />
             </Button>
@@ -42,20 +42,28 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
 
             <div
               v-if="headerState.icon"
-              class="size-8 rounded-xl flex items-center justify-center shrink-0 border border-primary/10 shadow-sm transition-all"
-              :style="{ background: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 12%, transparent), color-mix(in oklch, var(--primary) 3%, transparent))' }"
+              class="size-10 rounded-full flex items-center justify-center shrink-0 shadow-sm transition-all"
+              :class="headerState.title === 'Notifications' ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-primary/5 border border-primary/10'"
             >
-              <Icon :name="headerState.icon" class="size-4 text-primary" />
+              <Icon :name="headerState.icon" class="size-5" :class="headerState.title === 'Notifications' ? 'text-blue-600 dark:text-blue-400' : 'text-primary'" />
             </div>
           </div>
         </ClientOnly>
-        <div class="min-w-0 flex items-center">
-          <h1
-            class="text-base font-bold tracking-tight truncate drop-shadow-sm"
-            style="background: linear-gradient(110deg, var(--foreground) 30%, color-mix(in oklch, var(--foreground) 70%, transparent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"
-          >
-            {{ displayTitle }}
-          </h1>
+        
+        <div class="min-w-0 flex flex-col justify-center">
+          <div class="flex items-center gap-3">
+            <h1
+              class="text-lg md:text-xl font-bold tracking-tight truncate drop-shadow-sm text-slate-900 dark:text-white"
+            >
+              {{ displayTitle }}
+            </h1>
+            <div v-if="headerState.badge" class="bg-red-600 text-white px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center shrink-0">
+              {{ headerState.badge }}
+            </div>
+          </div>
+          <p v-if="headerState.description" class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-md hidden md:block">
+            {{ headerState.description }}
+          </p>
         </div>
       </div>
     </div>

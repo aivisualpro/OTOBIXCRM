@@ -62,12 +62,6 @@ async function fetchNotifications() {
   }
 }
 
-// Watch tab changes and refetch
-watch(activeTab, () => fetchNotifications())
-
-// Initial fetch
-onMounted(() => fetchNotifications())
-
 const filteredNotifications = computed(() => {
   if (activeTab.value === 'all')
     return notifications.value
@@ -82,6 +76,22 @@ const filteredNotifications = computed(() => {
 const unreadCount = computed(() => unreadCounts.value.all)
 
 const tabCounts = computed(() => unreadCounts.value)
+
+// Watch tab changes and refetch
+watch(activeTab, () => fetchNotifications())
+
+const { setHeader } = usePageHeader()
+watch([unreadCount, () => activeTab.value], () => {
+  setHeader({
+    title: 'Notifications',
+    icon: 'i-lucide-bell',
+    description: 'Stay updated on inspections, auctions, and system activity.',
+    badge: unreadCount.value ? `${unreadCount.value} new` : '',
+  })
+}, { immediate: true })
+
+// Initial fetch
+onMounted(() => fetchNotifications())
 
 // Mark all notifications as read
 async function markAllRead() {
@@ -201,67 +211,55 @@ function timeAgo(dateStr: string) {
 
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div class="space-y-1">
-        <h1 class="text-2xl font-bold tracking-tight flex items-center gap-3">
-          <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Icon name="i-lucide-bell" class="size-5 text-primary" />
-          </div>
-          Notifications
-          <Badge v-if="unreadCount" variant="destructive" class="text-xs">
-            {{ unreadCount }} new
-          </Badge>
-        </h1>
-        <p class="text-sm text-muted-foreground">
-          Stay updated on inspections, auctions, and system activity.
-        </p>
-      </div>
+    <!-- Header Actions (Teleported) -->
+    <Teleport to="#header-actions">
       <div class="flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
-          class="gap-2"
+          class="gap-2 h-8 px-3 rounded-lg border-border/50 bg-background/50 hover:bg-background"
           @click="fetchNotifications"
         >
-          <Icon name="i-lucide-refresh-cw" class="size-4" :class="loading ? 'animate-spin' : ''" />
-          Refresh
+          <Icon name="i-lucide-refresh-cw" class="size-3.5" :class="loading ? 'animate-spin' : ''" />
+          <span class="hidden sm:inline">Refresh</span>
         </Button>
         <Button
           v-if="unreadCount"
           variant="outline"
           size="sm"
-          class="gap-2"
+          class="gap-2 h-8 px-3 rounded-lg border-border/50 bg-background/50 hover:bg-background"
           @click="markAllRead"
         >
-          <Icon name="i-lucide-check-check" class="size-4" />
-          Mark all read
+          <Icon name="i-lucide-check-check" class="size-3.5" />
+          <span class="hidden sm:inline">Mark all read</span>
         </Button>
       </div>
-    </div>
+    </Teleport>
 
-    <!-- Tab bar -->
-    <div class="flex items-center gap-1 p-1 bg-muted/50 rounded-xl border w-fit">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        class="relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
-        :class="
-          activeTab === tab.id
-            ? 'bg-background text-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-        "
-        @click="activeTab = tab.id"
-      >
-        <Icon :name="tab.icon" class="size-4" />
-        {{ tab.label }}
-        <span
-          v-if="tabCounts[tab.id as keyof typeof tabCounts]"
-          class="flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground"
+    <!-- Actions bar -->
+    <div class="flex items-center justify-between gap-4">
+      <div class="flex items-center gap-1 p-1 bg-muted/50 rounded-xl border w-fit">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          class="relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+          :class="
+            activeTab === tab.id
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+          "
+          @click="activeTab = tab.id"
         >
-          {{ tabCounts[tab.id as keyof typeof tabCounts] }}
-        </span>
-      </button>
+          <Icon :name="tab.icon" class="size-4" />
+          {{ tab.label }}
+          <span
+            v-if="tabCounts[tab.id as keyof typeof tabCounts]"
+            class="flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground"
+          >
+            {{ tabCounts[tab.id as keyof typeof tabCounts] }}
+          </span>
+        </button>
+      </div>
     </div>
 
     <!-- Loading state -->
