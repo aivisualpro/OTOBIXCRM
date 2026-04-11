@@ -186,11 +186,14 @@ const AUCTION_TABS = [
 
 function localToggleAuctionTab(tabId: string) {
   const ws = editingWorkspace.value
-  if (!ws) return
-  if (!ws.auctionTabs) ws.auctionTabs = AUCTION_TABS.map(t => t.id)
+  if (!ws)
+    return
+  if (!ws.auctionTabs)
+    ws.auctionTabs = AUCTION_TABS.map(t => t.id)
   const current = [...ws.auctionTabs]
   const idx = current.indexOf(tabId)
-  if (idx >= 0) { current.splice(idx, 1) } else { current.push(tabId) }
+  if (idx >= 0) { current.splice(idx, 1) }
+  else { current.push(tabId) }
   ws.auctionTabs = current
   isDirty.value = true
 }
@@ -209,11 +212,14 @@ const SALES_TABS = [
 
 function localToggleSalesTab(tabId: string) {
   const ws = editingWorkspace.value
-  if (!ws) return
-  if (!ws.salesTabs) ws.salesTabs = SALES_TABS.map(t => t.id)
+  if (!ws)
+    return
+  if (!ws.salesTabs)
+    ws.salesTabs = SALES_TABS.map(t => t.id)
   const current = [...ws.salesTabs]
   const idx = current.indexOf(tabId)
-  if (idx >= 0) { current.splice(idx, 1) } else { current.push(tabId) }
+  if (idx >= 0) { current.splice(idx, 1) }
+  else { current.push(tabId) }
   ws.salesTabs = current
   isDirty.value = true
 }
@@ -225,11 +231,14 @@ const RETAIL_TABS = [
 
 function localToggleRetailTab(tabId: string) {
   const ws = editingWorkspace.value
-  if (!ws) return
-  if (!ws.retailTabs) ws.retailTabs = RETAIL_TABS.map(t => t.id)
+  if (!ws)
+    return
+  if (!ws.retailTabs)
+    ws.retailTabs = RETAIL_TABS.map(t => t.id)
   const current = [...ws.retailTabs]
   const idx = current.indexOf(tabId)
-  if (idx >= 0) { current.splice(idx, 1) } else { current.push(tabId) }
+  if (idx >= 0) { current.splice(idx, 1) }
+  else { current.push(tabId) }
   ws.retailTabs = current
   isDirty.value = true
 }

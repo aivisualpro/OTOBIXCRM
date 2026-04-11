@@ -70,7 +70,7 @@ export function useDashboardStats(dateRange: Ref<DashboardDateRange>) {
   onMounted(() => {
     fetchAllCars()
     fetchAllUsers()
-    $fetch<any>('/api/leads/total').then(res => {
+    $fetch<any>('/api/leads/total').then((res) => {
       totalLeads.value = res?.total || 0
     }).catch(err => console.error(err))
   })

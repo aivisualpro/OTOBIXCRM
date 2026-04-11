@@ -7,6 +7,7 @@ const props = defineProps<{
   headlessPdf?: boolean
 }>()
 
+const emit = defineEmits(['pdfBlobReady'])
 const route = useRoute()
 const router = useRouter()
 const carId = computed(() => (props.appointmentId || route.params.id) as string)
@@ -88,12 +89,15 @@ onMounted(() => {
     fetchDropdowns()
     fetchCarDropdowns()
   }
-  if (carId.value) fetchCarDetails(carId.value)
-  if (!props.headlessPdf) fetchAllUsers()
+  if (carId.value)
+    fetchCarDetails(carId.value)
+  if (!props.headlessPdf)
+    fetchAllUsers()
 })
 
 watch(carId, (newVal) => {
-  if (newVal) fetchCarDetails(newVal)
+  if (newVal)
+    fetchCarDetails(newVal)
 })
 const isSaving = ref(false)
 
@@ -200,20 +204,24 @@ function getValuesArray(val: string | string[] | undefined | null) {
 
 function getDisplayValues(form: any, key: string, oldKey?: string) {
   const primary = getValuesArray(form[key])
-  if (primary.length > 0) return primary
+  if (primary.length > 0)
+    return primary
   if (oldKey) {
     const secondary = getValuesArray(form[oldKey])
-    if (secondary.length > 0) return secondary
+    if (secondary.length > 0)
+      return secondary
   }
   return []
 }
 
 function getSingleDisplayValue(form: any, key: string, oldKey?: string) {
   const val = form[key]
-  if (val !== undefined && val !== null && val !== '' && (!Array.isArray(val) || val.length > 0)) return val
+  if (val !== undefined && val !== null && val !== '' && (!Array.isArray(val) || val.length > 0))
+    return val
   if (oldKey) {
     const oldVal = form[oldKey]
-    if (oldVal !== undefined && oldVal !== null && oldVal !== '' && (!Array.isArray(oldVal) || oldVal.length > 0)) return oldVal
+    if (oldVal !== undefined && oldVal !== null && oldVal !== '' && (!Array.isArray(oldVal) || oldVal.length > 0))
+      return oldVal
   }
   return ''
 }
@@ -236,7 +244,6 @@ function formatDateYYYYMMDD(val: any) {
   return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`
 }
 
-// eslint-disable-next-line unused-imports/no-unused-vars
 async function approveLead() {
   editForm.value.approvalStatus = 'Approved'
   await saveQC()
@@ -306,10 +313,10 @@ async function confirmReject() {
     toast.error('Rejection reason is required')
     return
   }
-  
+
   editForm.value.rejectionReason = rejectReason.value
   editForm.value.approvalStatus = 'Rejected'
-  
+
   const loadingToast = toast.loading('Rejecting inspection...')
   try {
     await saveQC(true)
@@ -317,7 +324,8 @@ async function confirmReject() {
     toast.dismiss(loadingToast)
     toast.success('Vehicle successfully marked as Rejected!')
     router.push('/leads/rejected')
-  } catch (err: any) {
+  }
+  catch (err: any) {
     toast.dismiss(loadingToast)
     toast.error(err?.message || 'Failed to reject.')
   }
@@ -365,159 +373,6 @@ function getPdfFields(partsArray: any[]) {
     return []
   return partsArray.flatMap((p: any) => p.splitParts ? p.splitParts : [p]).filter((p: any) => !p.isVideoBox && p.label && !p.isImageOnly)
 }
-
-const allPdfImages = computed(() => {
-  const imgs: { url: string, label: string }[] = []
-  if (!car.value)
-    return imgs
-  const c = car.value
-
-  documentDetailFields.forEach((field) => {
-    if (field.type === 'combinedBox' && field.key) {
-      getImages(c, field.key, field.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${field.label || field.key} ${i + 1}` }))
-    }
-  })
-
-  exteriorSections.forEach((sec) => {
-    sec.parts.forEach((part: any) => {
-      if (part.imageKey) {
-        getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
-      }
-      else if (part.imageGroups) {
-        part.imageGroups.forEach((ig: any) => {
-          getImages(c, ig.key, ig.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${ig.label} ${i + 1}` }))
-        })
-      }
-      else if (part.isImageOnly) {
-        getImages(c, part.key, part.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
-      }
-    })
-  })
-
-  engineParts.forEach((part) => {
-    if (part.imageKey)
-      getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
-  })
-  electricalParts.forEach((part) => {
-    if (part.imageKey)
-      getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
-  })
-  interiorParts.forEach((part) => {
-    if (part.imageKey) {
-      getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
-    }
-    else if (part.imageGroups) {
-      part.imageGroups.forEach((ig: any) => {
-        getImages(c, ig.key, ig.oldKey).forEach((u, i) => imgs.push({ url: u, label: `${ig.label} ${i + 1}` }))
-      })
-    }
-  })
-  steeringSuspensionBrakesParts.forEach((part) => {
-    if (part.imageKey)
-      getImages(c, part.imageKey, part.oldImageKey).forEach((u, i) => imgs.push({ url: u, label: `${part.label} ${i + 1}` }))
-  })
-
-  // ensure no video links end up in the pdf output array (which breaks canvas)
-  return imgs.filter(img => !img.url.match(/\.(mp4|webm|ogg|mov)$/i))
-})
-
-const pdfSections = computed(() => [
-  ...exteriorSections,
-  { title: 'Engine Bay', parts: engineParts },
-  { title: 'Electricals', parts: electricalParts },
-  { title: 'Interior', parts: interiorParts },
-  { title: 'Steering, Suspension & Brakes', parts: steeringSuspensionBrakesParts },
-])
-
-const emit = defineEmits(['pdf-blob-ready'])
-
-async function downloadPDF(action: 'save' | 'blob' = 'save') {
-  isGeneratingPdf.value = true
-  await nextTick()
-  await new Promise(r => setTimeout(r, props.headlessPdf ? 1000 : 200)) // give DOM time to append images structurally
-
-  const element = document.getElementById('pdf-container')
-  if (!element) {
-    isGeneratingPdf.value = false
-    toast.error('Template missing!')
-    return
-  }
-
-  const loadingToast = toast.loading('Generating PDF Report... Please wait.')
-
-  // MUST INTERCEPT COMPUTED STYLES: 
-  // Tailwind v4 uses OKLCH natively, which immediately crashes html2canvas 1.4.1.
-  const originalGetComputedStyle = window.getComputedStyle
-  window.getComputedStyle = function (el, pseudoElt) {
-    const css = originalGetComputedStyle(el, pseudoElt)
-    return new Proxy(css, {
-      get(target, prop) {
-        if (prop === 'getPropertyValue') {
-          return function (key: string) {
-            const val = target.getPropertyValue(key)
-            if (typeof val === 'string' && val.includes('oklch'))
-              return 'rgb(128, 128, 128)'
-            return val
-          }
-        }
-        const val = (target as any)[prop]
-        if (typeof val === 'string' && val.includes('oklch')) {
-          return 'rgb(128, 128, 128)'
-        }
-        if (typeof val === 'function') {
-          return val.bind(target)
-        }
-        return val
-      },
-    })
-  }
-
-  try {
-    if (typeof window !== 'undefined' && !(window as any).html2pdf) {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script')
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
-        script.onload = resolve
-        script.onerror = reject
-        document.head.appendChild(script)
-      })
-    }
-
-    const opt = {
-      margin: [5, 5, 5, 5],
-      filename: `Inspection_Report_${car.value?.registrationNumber || car.value?.appointmentId}.pdf`,
-      image: { type: 'jpeg', quality: 0.8 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    }
-
-    if (action === 'blob') {
-      const pdfBlob = await (window as any).html2pdf().set(opt).from(element).output('blob')
-      toast.dismiss(loadingToast)
-      return URL.createObjectURL(pdfBlob)
-    }
-
-    await (window as any).html2pdf().set(opt).from(element).save()
-    toast.dismiss(loadingToast)
-    if (!props.headlessPdf) toast.success('PDF Downloaded successfully!')
-  }
-  catch (err) {
-    console.error('PDF Generation Error: ', err)
-    toast.dismiss(loadingToast)
-    toast.error('Failed to generate PDF')
-  }
-  finally {
-    isGeneratingPdf.value = false
-    window.getComputedStyle = originalGetComputedStyle
-  }
-}
-
-watch(car, async (newVal) => {
-  if (newVal && props.headlessPdf) {
-    const url = await downloadPDF('blob')
-    emit('pdf-blob-ready', url)
-  }
-})
 
 async function scheduleAuctionFromModal() {
   let startTimeDate
@@ -1458,13 +1313,17 @@ watch(() => car.value, (newVal) => {
 
     // Automatically map old keys to new keys based on exteriorSections config & documentDetailFields
     const applyFallback = (item: any) => {
-      if (!item) return
+      if (!item)
+        return
       if (item.oldKey && isFieldEmpty(clone[item.key]) && clone[item.oldKey]) {
         clone[item.key] = clone[item.oldKey]
       }
-      if (item.splitParts) item.splitParts.forEach(applyFallback)
-      if (item.rightParts) item.rightParts.forEach(applyFallback)
-      if (item.imageGroups) item.imageGroups.forEach(applyFallback)
+      if (item.splitParts)
+        item.splitParts.forEach(applyFallback)
+      if (item.rightParts)
+        item.rightParts.forEach(applyFallback)
+      if (item.imageGroups)
+        item.imageGroups.forEach(applyFallback)
     }
 
     exteriorSections.forEach(section => section.parts.forEach(applyFallback))
@@ -1561,7 +1420,7 @@ watch(editForm, () => {
         <div class="space-y-4 py-4">
           <div class="space-y-2">
             <label class="text-sm font-medium">Rejection Reason</label>
-            <textarea v-model="rejectReason" placeholder="Enter reason here..." class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" rows="3" required></textarea>
+            <textarea v-model="rejectReason" placeholder="Enter reason here..." class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" rows="3" required />
           </div>
         </div>
 
@@ -1765,7 +1624,6 @@ watch(editForm, () => {
                         {{ car.yearMonthOfManufacture ? new Date(car.yearMonthOfManufacture).getFullYear() : '—' }}
                       </div>
                       <Input v-else v-model="editForm.yearOfManufacture" type="number" class="h-8 mt-auto text-2xl font-black border-none bg-transparent p-0 focus-visible:ring-0 shadow-none w-24 text-foreground" placeholder="e.g. 2019" />
-
                     </div>
                   </div>
 
@@ -2071,7 +1929,9 @@ watch(editForm, () => {
                             <span class="truncate max-w-[180px]">{{ val }}</span>
                           </div>
                         </div>
-                        <p v-else class="text-sm font-medium text-right w-2/3 text-muted-foreground">—</p>
+                        <p v-else class="text-sm font-medium text-right w-2/3 text-muted-foreground">
+                          —
+                        </p>
                       </template>
                       <SearchableSelect v-else v-model="editForm[field.key]" :options="field.staticOptions || getOptions(field.dropdownName || '')" class-name="w-2/3 h-8 shadow-sm text-sm" />
                     </div>
@@ -2092,7 +1952,9 @@ watch(editForm, () => {
                             <span class="truncate max-w-[180px]">{{ val }}</span>
                           </div>
                         </div>
-                        <p v-else class="text-sm font-medium text-right w-2/3 text-muted-foreground">—</p>
+                        <p v-else class="text-sm font-medium text-right w-2/3 text-muted-foreground">
+                          —
+                        </p>
                       </template>
                       <div v-else class="w-2/3">
                         <MultiSelect :model-value="editForm[field.key] || (field.oldKey ? editForm[field.oldKey] : '')" :options="getOptions(field.dropdownName || '')" class="w-full" @update:model-value="editForm[field.key] = $event">
@@ -2792,7 +2654,7 @@ watch(editForm, () => {
         <div class="flex justify-between items-end border-b-2 border-slate-600 pb-2 mb-4">
           <div>
             <div class="flex items-center">
-              <img src="/apple-touch-icon.png" class="h-28 w-auto object-contain" />
+              <img src="/apple-touch-icon.png" class="h-28 w-auto object-contain">
             </div>
           </div>
           <div class="text-right">
@@ -2858,7 +2720,9 @@ watch(editForm, () => {
                           </div>
                           <div class="p-1 px-1.5 flex flex-wrap gap-1 mt-auto mb-auto">
                             <template v-if="(part as any).isImageOnly">
-                              <div class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">Images Only Section</div>
+                              <div class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">
+                                Images Only Section
+                              </div>
                             </template>
                             <template v-else-if="getDisplayValues(car, (part as any).dropdownName || part.key, (part as any).oldKey).length">
                               <div v-for="val in getDisplayValues(car, (part as any).dropdownName || part.key, (part as any).oldKey)" :key="val" class="border px-1 py-0.5 rounded flex items-center gap-1 shadow-sm" :class="getConditionStyle(val).bg">
@@ -2866,12 +2730,16 @@ watch(editForm, () => {
                                 <span class="text-[7.5px] font-bold leading-none">{{ val }}</span>
                               </div>
                             </template>
-                            <div v-else class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">Condition Okay</div>
+                            <div v-else class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">
+                              Condition Okay
+                            </div>
                           </div>
                         </div>
                         <div class="w-[32mm] border-l border-[#d1d5db] bg-[#f9fafb] p-0.5 flex items-center justify-center shrink-0">
                           <img v-if="getImages(car, (part as any).imageKey || part.key, (part as any).oldImageKey || (part as any).oldKey).length && !getImages(car, (part as any).imageKey || part.key, (part as any).oldImageKey || (part as any).oldKey)[0]?.match(/\.(mp4|webm|ogg|mov)$/i)" :src="getImages(car, (part as any).imageKey || part.key, (part as any).oldImageKey || (part as any).oldKey)[0]!" class="max-w-full max-h-full object-contain" crossorigin="anonymous">
-                          <div v-else class="text-[6px] text-[#9ca3af] uppercase tracking-widest text-center">No Image</div>
+                          <div v-else class="text-[6px] text-[#9ca3af] uppercase tracking-widest text-center">
+                            No Image
+                          </div>
                         </div>
                       </div>
                     </template>
@@ -2885,7 +2753,9 @@ watch(editForm, () => {
                             </div>
                             <div class="p-1 px-1.5 flex flex-wrap gap-1 mt-auto mb-auto">
                               <template v-if="(spart as any).isImageOnly">
-                                <div class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">Images Only Section</div>
+                                <div class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">
+                                  Images Only Section
+                                </div>
                               </template>
                               <template v-else-if="getDisplayValues(car, spart.dropdownName || spart.key, spart.oldKey).length">
                                 <div v-for="val in getDisplayValues(car, spart.dropdownName || spart.key, spart.oldKey)" :key="val" class="border px-1 py-0.5 rounded flex items-center gap-1 shadow-sm" :class="getConditionStyle(val).bg">
@@ -2893,12 +2763,16 @@ watch(editForm, () => {
                                   <span class="text-[7.5px] font-bold leading-none">{{ val }}</span>
                                 </div>
                               </template>
-                              <div v-else class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">Condition Okay</div>
+                              <div v-else class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">
+                                Condition Okay
+                              </div>
                             </div>
                           </div>
                           <div class="w-[32mm] border-l border-[#d1d5db] bg-[#f9fafb] p-0.5 flex items-center justify-center shrink-0">
                             <img v-if="getImages(car, spart.imageKey || spart.key, spart.oldImageKey || spart.oldKey).length && !getImages(car, spart.imageKey || spart.key, spart.oldImageKey || spart.oldKey)[0]?.match(/\.(mp4|webm|ogg|mov)$/i)" :src="getImages(car, spart.imageKey || spart.key, spart.oldImageKey || spart.oldKey)[0]!" class="max-w-full max-h-full object-contain" crossorigin="anonymous">
-                            <div v-else class="text-[6px] text-[#9ca3af] uppercase tracking-widest text-center">No Image</div>
+                            <div v-else class="text-[6px] text-[#9ca3af] uppercase tracking-widest text-center">
+                              No Image
+                            </div>
                           </div>
                         </div>
                       </template>

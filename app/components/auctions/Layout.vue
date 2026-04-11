@@ -34,18 +34,18 @@ function getTabCount(filterKey: string) {
   const filter = auctionRouteFilters[filterKey]
   if (!filter)
     return 0
-    
+
   let result = allCars.value.filter(filter.filterFn)
-  
+
   if (globalSearch.value) {
     const q = globalSearch.value.toLowerCase()
     result = result.filter(item =>
       ['make', 'model', 'variant', 'registrationNumber', 'inspectionLocation', 'fuelType', 'appointmentId'].some(key =>
-        String(item[key] ?? '').toLowerCase().includes(q)
-      )
+        String(item[key] ?? '').toLowerCase().includes(q),
+      ),
     )
   }
-  
+
   return result.length || undefined
 }
 
@@ -54,13 +54,14 @@ watch(globalSearch, (newVal) => {
     const q = newVal.toLowerCase()
     const globalMatches = allCars.value.filter(item =>
       ['make', 'model', 'variant', 'registrationNumber', 'inspectionLocation', 'fuelType', 'appointmentId'].some(key =>
-        String(item[key] ?? '').toLowerCase().includes(q)
-      )
+        String(item[key] ?? '').toLowerCase().includes(q),
+      ),
     )
     if (globalMatches.length === 1) {
       const match = globalMatches[0]
-      if (!match) return
-      
+      if (!match)
+        return
+
       for (const [key, filter] of Object.entries(auctionRouteFilters)) {
         if (filter.filterFn(match)) {
           if (route.path !== `/auctions/${key}`) {
@@ -93,9 +94,9 @@ watch(globalSearch, (newVal) => {
           <span
             v-if="getTabCount(item.id) !== undefined"
             class="text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
-            :class="currentActiveId === item.id 
-               ? 'bg-primary-foreground/20 text-primary-foreground' 
-               : 'bg-muted text-muted-foreground'"
+            :class="currentActiveId === item.id
+              ? 'bg-primary-foreground/20 text-primary-foreground'
+              : 'bg-muted text-muted-foreground'"
           >
             {{ getTabCount(item.id) }}
           </span>

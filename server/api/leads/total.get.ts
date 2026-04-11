@@ -4,11 +4,12 @@ export default defineEventHandler(async (event) => {
     const db = await getLeadsDb(event)
     const col = db.collection('telecallings')
     const count = await col.estimatedDocumentCount()
-    
+
     return {
-      total: count
+      total: count,
     }
-  } catch (err: any) {
+  }
+  catch (err: any) {
     console.error('[API:leads] GET total failed:', err.message)
     return { total: 0 }
   }

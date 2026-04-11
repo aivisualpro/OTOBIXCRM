@@ -30,16 +30,18 @@ const navItems = computed(() => {
 const { allCars, isFetched, globalSearch } = useAuctionsApi()
 
 function getTabCount(filterId: string) {
-  if (!isFetched.value) return undefined
+  if (!isFetched.value)
+    return undefined
 
-  let matches = allCars.value.filter(car => {
+  let matches = allCars.value.filter((car) => {
     // Exclude records with blank auction status altogether
     if (!car.auctionStatus || car.auctionStatus.trim() === '') {
       return false
     }
 
     let ok = true
-    if (filterId === 'all') return ok
+    if (filterId === 'all')
+      return ok
 
     if (filterId === 'customer-activity') {
       if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy') {
@@ -56,11 +58,11 @@ function getTabCount(filterId: string) {
     }
 
     const statusMap: Record<string, string> = {
-       live: 'live',
-       otobuy: 'otobuy',
-       ended: 'liveAuctionEnded',
-       sold: 'sold',
-       removed: 'removed'
+      live: 'live',
+      otobuy: 'otobuy',
+      ended: 'liveAuctionEnded',
+      sold: 'sold',
+      removed: 'removed',
     }
 
     if (statusMap[filterId]) {
@@ -76,8 +78,8 @@ function getTabCount(filterId: string) {
     const q = globalSearch.value.toLowerCase()
     matches = matches.filter(car =>
       ['make', 'model', 'variant', 'registrationNumber', 'appointmentId', 'registeredRto', 'registrationState', 'roadTaxValidity', 'ownerSerialNumber', 'fuelType'].some(key =>
-        String(car[key] ?? '').toLowerCase().includes(q)
-      )
+        String(car[key] ?? '').toLowerCase().includes(q),
+      ),
     )
   }
 
@@ -87,22 +89,23 @@ function getTabCount(filterId: string) {
 watch(globalSearch, (newVal) => {
   if (newVal && newVal.trim().length > 3) {
     const q = newVal.toLowerCase()
-    const globalMatches = allCars.value.filter(car => {
+    const globalMatches = allCars.value.filter((car) => {
       return ['make', 'model', 'variant', 'registrationNumber', 'appointmentId', 'registeredRto', 'registrationState', 'roadTaxValidity', 'ownerSerialNumber', 'fuelType'].some(key =>
-        String(car[key] ?? '').toLowerCase().includes(q)
+        String(car[key] ?? '').toLowerCase().includes(q),
       )
     })
 
     if (globalMatches.length === 1) {
       const match = globalMatches[0]
-      if (!match) return
+      if (!match)
+        return
 
       const statusMapRevealed: Record<string, string> = {
-         live: 'live',
-         otobuy: 'otobuy',
-         liveAuctionEnded: 'ended',
-         sold: 'sold',
-         removed: 'removed'
+        live: 'live',
+        otobuy: 'otobuy',
+        liveAuctionEnded: 'ended',
+        sold: 'sold',
+        removed: 'removed',
       }
       const targetTab = statusMapRevealed[match.auctionStatus] || 'all'
 
@@ -133,9 +136,9 @@ watch(globalSearch, (newVal) => {
           <span
             v-if="getTabCount(item.id) !== undefined"
             class="text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
-            :class="currentActiveId === item.id 
-               ? 'bg-primary-foreground/20 text-primary-foreground' 
-               : 'bg-muted text-muted-foreground'"
+            :class="currentActiveId === item.id
+              ? 'bg-primary-foreground/20 text-primary-foreground'
+              : 'bg-muted text-muted-foreground'"
           >
             {{ getTabCount(item.id) }}
           </span>

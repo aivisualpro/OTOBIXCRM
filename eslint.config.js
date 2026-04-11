@@ -8,6 +8,11 @@ export default withNuxt(antfu(
       'style/no-trailing-spaces': ['error', { ignoreComments: true }],
       // Relaxes inline statements a bit
       'style/max-statements-per-line': ['error', { max: 2 }],
+      'no-console': 'off',
+      'unused-imports/no-unused-vars': 'off',
+      'node/prefer-global/process': 'off',
+      'unicorn/prefer-number-properties': 'off',
+      'prefer-const': 'warn',
     },
   },
   // Allow trailing space for markdown formatting

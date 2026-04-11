@@ -50,7 +50,8 @@ async function fetchMargins() {
 }
 
 onMounted(() => {
-  if (!isFetched.value) fetchMargins()
+  if (!isFetched.value)
+    fetchMargins()
 })
 
 // ─── Flatten all ranges ───

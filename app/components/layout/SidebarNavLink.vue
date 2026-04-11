@@ -31,24 +31,26 @@ function onLinkLeave() {
 }
 
 const isActive = computed(() => {
-  if (props.item.disabled) return false;
-  if (props.item.link === '/') return useRoute().path === '/';
-  
-  const baseParts = props.item.link.split('/');
-  const base = baseParts.length > 1 && baseParts[1] ? '/' + baseParts[1] : '/';
-  
-  const currentPath = useRoute().path;
-  return currentPath === base || currentPath.startsWith(base + '/');
-});
+  if (props.item.disabled)
+    return false
+  if (props.item.link === '/')
+    return useRoute().path === '/'
+
+  const baseParts = props.item.link.split('/')
+  const base = baseParts.length > 1 && baseParts[1] ? `/${baseParts[1]}` : '/'
+
+  const currentPath = useRoute().path
+  return currentPath === base || currentPath.startsWith(`${base}/`)
+})
 </script>
 
 <template>
   <SidebarMenu>
     <SidebarMenuItem>
-      <SidebarMenuButton 
-        as-child 
-        :tooltip="item.title" 
-        :size="size" 
+      <SidebarMenuButton
+        as-child
+        :tooltip="item.title"
+        :size="size"
         :data-active="isActive"
       >
         <!-- Disabled / Coming Soon: render as non-clickable span -->
