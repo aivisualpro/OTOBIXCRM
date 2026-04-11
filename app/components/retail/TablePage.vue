@@ -513,6 +513,41 @@ function getNetBidAmount(rawValue: any, sourceInfo?: any, fallbackCar?: any): nu
   return Math.floor(netBid / 1000) * 1000
 }
 
+function getSimulatedNetBid(car: any): number {
+  const baseBid = Number(car.highestBid) || 0
+  if (!baseBid) return 0
+  
+  const simMarginStr = String(car.marginSimulation || '0').replace(/[^0-9.-]/g, '')
+  const simMarginPct = Number(simMarginStr) || 0
+  
+  const totalMargin = simMarginPct / 100.0
+  const factor = 1 + totalMargin
+  if (factor <= 0) return 0
+  
+  const netBid = baseBid / factor
+  return Math.floor(netBid / 1000) * 1000
+}
+
+function startSimulation(car: any) {
+  if (car.marginSimulation === undefined || car.marginSimulation === null || car.marginSimulation === '') {
+    const fixedMarginPct = Number(car.fixedMargin || 0)
+    const varMarginStr = String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')
+    const varMarginPct = Number(varMarginStr) || 0
+    car.marginSimulation = (fixedMarginPct + varMarginPct).toFixed(1)
+  }
+  startEdit(car, 'marginSimulation')
+}
+
+function stepSimulation(car: any, step: number) {
+  const current = Number(car.marginSimulation) || 0
+  car.marginSimulation = Math.max(0, current + step).toFixed(1)
+}
+
+function resetSimulation(car: any) {
+  car.marginSimulation = undefined
+  stopEdit(car, 'marginSimulation')
+}
+
 function getAuctionStatusColor(status: string) {
   if (!status)
     return 'bg-muted text-muted-foreground'
@@ -832,8 +867,29 @@ const pageNumbers = computed(() => {
               —
             </TableCell>
 
-            <TableCell class="text-xs whitespace-nowrap font-medium tabular-nums shadow-sm" :class="Number(car.customerExpectedPrice || 0) - Number(car.highestBid || 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
-              {{ (Number(car.customerExpectedPrice || 0) && car.highestBid) ? formatCurrency(Number(car.customerExpectedPrice || 0) - Number(car.highestBid)) : '—' }}
+            <TableCell class="text-xs whitespace-nowrap font-medium tabular-nums relative" :class="Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
+              <div class="flex flex-col items-center gap-1 w-full justify-center min-h-[40px] pt-1">
+                <span class="shadow-sm transition-all">
+                  {{ (Number(car.customerExpectedPrice || 0) && car.highestBid) ? formatCurrency(Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car)) : '—' }}
+                </span>
+                
+                <Transition
+                  enter-active-class="transition-all duration-300 ease-out"
+                  enter-from-class="opacity-0 -translate-y-2 scale-95"
+                  enter-to-class="opacity-100 translate-y-0 scale-100"
+                  leave-active-class="transition-all duration-200 ease-in absolute"
+                  leave-from-class="opacity-100 translate-y-0 scale-100"
+                  leave-to-class="opacity-0 -translate-y-2 scale-95"
+                >
+                  <div
+                    v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''"
+                    class="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 shadow-sm flex items-center gap-1 font-bold whitespace-nowrap"
+                  >
+                    <Icon name="i-lucide-activity" class="size-3" />
+                    {{ formatCurrency(Number(car.customerExpectedPrice || 0) - getSimulatedNetBid(car)) }}
+                  </div>
+                </Transition>
+              </div>
             </TableCell>
 
             <TableCell class="text-[11px] font-mono text-center font-semibold text-foreground/80 tracking-wide">
@@ -868,10 +924,35 @@ const pageNumbers = computed(() => {
 
             <!-- Margin Simulation -->
             <TableCell class="text-xs text-center px-1">
-              <div class="min-h-[28px] min-w-[60px] flex items-center justify-center cursor-pointer group rounded hover:bg-muted/50 transition-colors" @click="startEdit(car, 'marginSimulation')">
-                <Input v-if="isEditing(car, 'marginSimulation')" v-model="car.marginSimulation" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'marginSimulation')" @keydown.enter="stopEdit(car, 'marginSimulation')" @keydown.esc="cancelEdit(car, 'marginSimulation')" />
-                <span v-else-if="car.marginSimulation">{{ car.marginSimulation }}</span>
-                <Icon v-else name="i-lucide-pencil" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div class="min-h-[32px] min-w-[70px] flex items-center justify-center p-1 rounded group transition-colors relative" :class="isEditing(car, 'marginSimulation') ? '' : 'hover:bg-muted/30'">
+                
+                <!-- Not Editing State -->
+                <div v-if="!isEditing(car, 'marginSimulation')" class="flex items-center gap-1.5 cursor-pointer w-full justify-center" @click="startSimulation(car)">
+                  <span v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''" class="font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                    {{ Number(car.marginSimulation).toFixed(1) }}%
+                  </span>
+                  <span v-else class="text-muted-foreground/40">—</span>
+                  <Icon v-if="car.marginSimulation === undefined || car.marginSimulation === null || car.marginSimulation === ''" name="i-lucide-activity" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+
+                <!-- Editing / Stepper State -->
+                <div v-else class="flex items-center gap-1 bg-muted/30 p-0.5 rounded-full border shadow-sm">
+                      <button class="size-6 flex items-center justify-center rounded-full bg-background hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm border border-border/50 text-muted-foreground" @click.stop="stepSimulation(car, -0.5)">
+                        <Icon name="i-lucide-minus" class="size-3" />
+                      </button>
+                      
+                      <div class="font-bold tabular-nums text-[11px] text-primary min-w-[36px] text-center cursor-pointer" @click.stop="stopEdit(car, 'marginSimulation')">
+                        {{ Number(car.marginSimulation).toFixed(1) }}%
+                      </div>
+
+                      <button class="size-6 flex items-center justify-center rounded-full bg-background hover:bg-emerald-50 hover:text-emerald-600 transition-colors shadow-sm border border-border/50 text-muted-foreground" @click.stop="stepSimulation(car, 0.5)">
+                        <Icon name="i-lucide-plus" class="size-3" />
+                      </button>
+                      
+                      <button class="absolute -top-1.5 -right-1.5 size-4 bg-muted border border-border text-muted-foreground rounded-full hover:bg-destructive hover:text-destructive-foreground hover:border-destructive flex items-center justify-center shadow-sm z-10" @click.stop="resetSimulation(car)">
+                        <Icon name="i-lucide-x" class="size-2.5" />
+                      </button>
+                </div>
               </div>
             </TableCell>
 
