@@ -163,6 +163,16 @@ function formatCurrency(value: any): string {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value))
 }
 
+function formatYear(value: string): string {
+  if (!value)
+    return '—'
+  try {
+    const year = new Date(value).getFullYear()
+    return isNaN(year) ? value : String(year)
+  }
+  catch { return value }
+}
+
 function formatDate(value: string): string {
   if (!value)
     return '—'
@@ -461,9 +471,7 @@ const pageNumbers = computed(() => {
             <TableHead class="whitespace-nowrap">
               Deal Status
             </TableHead>
-            <TableHead class="whitespace-nowrap">
-              Quality
-            </TableHead>
+
             <TableHead class="whitespace-nowrap">
               Remarks
             </TableHead>
@@ -496,13 +504,27 @@ const pageNumbers = computed(() => {
             <TableCell class="whitespace-nowrap text-xs font-mono">
               {{ car.appointmentId || '—' }}
             </TableCell>
-            <TableCell class="whitespace-nowrap">
+            <TableCell class="min-w-[260px] max-w-[320px] py-3">
               <p class="font-medium text-xs">
                 {{ car.make }} {{ car.model }}
               </p>
-              <p class="text-[10px] text-muted-foreground">
-                {{ car.variant }} • {{ car.fuelType }}
-              </p>
+              <div class="flex flex-wrap items-center gap-1.5 mt-1 mb-0.5">
+                <p class="text-[11px] text-muted-foreground leading-none">
+                  {{ car.variant }}
+                </p>
+                <span v-if="car.fuelType" class="bg-rose-500/10 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider leading-none">{{ car.fuelType }}</span>
+                <span v-if="car.ownerSerialNumber" class="bg-primary/10 text-primary px-1.5 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider leading-none">Owner {{ car.ownerSerialNumber }}</span>
+              </div>
+              <div class="mt-1.5 flex flex-wrap gap-x-1.5 gap-y-1.5 text-[10px] text-muted-foreground leading-tight">
+                <span v-if="car.registrationDate" class="bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider leading-none">Reg. {{ formatYear(car.registrationDate) }}</span>
+                <span v-if="car.registeredRto" class="bg-violet-500/10 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider leading-none">{{ car.registeredRto }}</span>
+                <span v-if="car.registrationState" class="bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider leading-none">{{ car.registrationState }}</span>
+              </div>
+              <div v-if="car.roadTaxValidity || car.taxValidTill" class="mt-1 flex flex-wrap items-center gap-x-1 gap-y-1 text-[10px] text-muted-foreground leading-tight">
+                <span v-if="car.roadTaxValidity">Tax: {{ car.roadTaxValidity }}</span>
+                <span v-if="car.roadTaxValidity && car.taxValidTill">•</span>
+                <span v-if="car.taxValidTill">Till {{ formatDate(car.taxValidTill) }}</span>
+              </div>
             </TableCell>
             <TableCell>
               <div class="flex justify-center">
@@ -575,15 +597,13 @@ const pageNumbers = computed(() => {
               </div>
             </TableCell>
 
-            <TableCell class="text-xs text-muted-foreground text-center">
-              —
-            </TableCell>
+
             <TableCell class="text-xs text-muted-foreground text-center">
               —
             </TableCell>
           </TableRow>
           <TableRow v-if="paginatedItems.length === 0">
-            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 15 : 16" class="h-32 text-center text-muted-foreground bg-muted/10">
+            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 14 : 15" class="h-32 text-center text-muted-foreground bg-muted/10">
               No matching records found
             </TableCell>
           </TableRow>
