@@ -14,6 +14,14 @@ setHeader({ title: props.title, description: props.description, icon: props.icon
 
 const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars, globalSearch } = useAuctionsApi()
 
+const { fetchDropdowns, getOptions } = useDropdowns()
+
+function getOptionMeta(dropdownName: string, value: string) {
+  if (!value) return {}
+  const opts = getOptions(dropdownName) || []
+  return opts.find((o: any) => String(o.value) === String(value)) || {}
+}
+
 const bidStats = ref<Record<string, { totalBids: number, uniqueDealers: number, lastBidAt?: string }>>({})
 const isStatsLoading = ref(false)
 
@@ -32,8 +40,8 @@ async function fetchBidStats() {
 onMounted(() => {
   if (!isFetched.value) fetchAllCars()
   fetchBidStats()
+  fetchDropdowns()
 })
-
 
 
 const quickFilterStatus = ref('all')
@@ -389,7 +397,7 @@ const pageNumbers = computed(() => {
             <TableHead class="whitespace-nowrap">Auto Bid</TableHead>
             <TableHead class="whitespace-nowrap">GAP</TableHead>
             <TableHead class="whitespace-nowrap">Overall Bids</TableHead>
-            <TableHead class="whitespace-nowrap">Retail Status</TableHead>
+            <TableHead class="whitespace-nowrap">Deal Status</TableHead>
             <TableHead class="whitespace-nowrap">Quality</TableHead>
             <TableHead class="whitespace-nowrap">Remarks</TableHead>
           </TableRow>
@@ -402,7 +410,7 @@ const pageNumbers = computed(() => {
           >
             <TableCell class="whitespace-nowrap text-xs text-muted-foreground">{{ formatDate(car.createdAt) }}</TableCell>
             <TableCell class="w-16">
-              <div class="relative group/img size-10 rounded-md overflow-visible">
+              <div class="relative group/img size-10 rounded-md overflow-visible hover:z-[60]">
                 <div class="size-10 rounded-md overflow-hidden bg-muted border cursor-zoom-in">
                   <img v-if="getFirstImage(car)" :src="getFirstImage(car)!" class="size-full object-cover" />
                   <div v-else class="size-full flex items-center justify-center"><Icon name="i-lucide-car" class="size-4 text-muted-foreground" /></div>
@@ -483,7 +491,16 @@ const pageNumbers = computed(() => {
                  {{ bidStats[String(car.id || car._id)]?.totalBids || 0 }} <span class="mx-0.5 text-muted-foreground/50">/</span> {{ bidStats[String(car.id || car._id)]?.uniqueDealers || 0 }}
               </template>
             </TableCell>
-            <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
+            
+            <TableCell class="text-xs text-center px-1">
+              <div class="inline-flex px-2 py-1 items-center justify-center gap-1.5 min-w-[70px] rounded text-[10px] uppercase font-bold tracking-wider transition-colors border" 
+                :class="!car.dealStatus ? 'border-dashed border-border/60 bg-muted/50 text-muted-foreground' : 'text-white border-transparent shadow-sm'"
+                :style="car.dealStatus ? { backgroundColor: getOptionMeta('Deal Status', car.dealStatus).color || '#27272a' } : {}">
+                <Icon v-if="car.dealStatus && getOptionMeta('Deal Status', car.dealStatus).icon" :name="getOptionMeta('Deal Status', car.dealStatus).icon" class="size-3 shrink-0" />
+                <span class="truncate max-w-[80px]">{{ car.dealStatus || 'Set Status' }}</span>
+              </div>
+            </TableCell>
+
             <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
             <TableCell class="text-xs text-muted-foreground text-center">—</TableCell>
           </TableRow>

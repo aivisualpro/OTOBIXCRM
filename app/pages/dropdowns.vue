@@ -380,7 +380,7 @@ function getCardColor(index: number) {
 </script>
 
 <template>
-  <div>
+  <div class="flex flex-col flex-1 h-full min-h-0 overflow-hidden relative w-full">
     <!-- Teleport toolbar -->
     <ClientOnly>
       <HeaderActions>

@@ -53,7 +53,7 @@ export function useDropdowns() {
         const firstKey = Object.keys(v)[0] || ''
         const val = v[valueKey || 'value'] || v[labelKey || 'label'] || v[firstKey]
         const lbl = v[labelKey || 'label'] || v[valueKey || 'value'] || v[firstKey]
-        return { label: String(lbl), value: String(val) }
+        return { ...v, label: String(lbl), value: String(val) }
       }
       return { label: String(v), value: String(v) }
     })
