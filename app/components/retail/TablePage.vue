@@ -236,6 +236,18 @@ function getInflatedCep(car: any): number {
   return Math.ceil(rawCep / 1000) * 1000
 }
 
+function getAuctionStatusColor(status: string) {
+  if (!status) return 'bg-muted text-muted-foreground'
+  switch (status.toLowerCase()) {
+    case 'inspected': return 'bg-orange-600 text-white border-transparent'
+    case 'liveauctionended': return 'bg-gray-600 text-white border-transparent'
+    case 'otobuy': return 'bg-blue-600 text-white border-transparent'
+    case 'sold': return 'bg-green-600 text-white border-transparent'
+    case 'removed': return 'bg-zinc-900 text-white border-transparent'
+    default: return 'bg-muted text-muted-foreground'
+  }
+}
+
 async function handleRefresh() {
   await refreshCars()
   toast.success('Retail data refreshed')
@@ -369,7 +381,7 @@ const pageNumbers = computed(() => {
     <!-- Table -->
     <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto">
       <Table>
-        <TableHeader class="sticky top-0 z-10 bg-muted border-b border-border">
+        <TableHeader class="sticky top-0 z-20 bg-background border-b border-border shadow-sm">
           <TableRow>
             <TableHead class="whitespace-nowrap">Date</TableHead>
             <TableHead class="whitespace-nowrap">Car Pic</TableHead>
@@ -378,7 +390,7 @@ const pageNumbers = computed(() => {
             <TableHead class="whitespace-nowrap">Report</TableHead>
             <TableHead v-if="!['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '')" class="whitespace-nowrap">Auction Status</TableHead>
             <TableHead class="whitespace-nowrap">PD</TableHead>
-            <TableHead class="whitespace-nowrap">CEP</TableHead>
+            <TableHead class="whitespace-nowrap">Act. CEP</TableHead>
             <TableHead class="whitespace-nowrap">OtoBuy</TableHead>
             <TableHead class="whitespace-nowrap">Act Bids</TableHead>
             <TableHead class="whitespace-nowrap">HB</TableHead>
@@ -441,27 +453,28 @@ const pageNumbers = computed(() => {
                 <Button 
                   v-if="car.appointmentId" 
                   variant="ghost" 
-                  size="icon" 
-                  class="p-1.5 hover:bg-muted/50 rounded-md transition-colors w-8 h-8 flex items-center justify-center border border-transparent hover:border-border"
+                  class="p-1 hover:bg-muted/50 rounded-md transition-colors w-12 h-12 flex items-center justify-center border border-transparent hover:border-border"
                   @click.stop="openPreview(car.appointmentId)"
                 >
-                  <Icon name="i-lucide-file-text" class="size-4 text-red-500" />
+                  <Icon name="i-lucide-file-text" class="!size-8 text-red-500 shrink-0" />
                 </Button>
                 <span v-else class="text-xs text-muted-foreground">—</span>
               </div>
             </TableCell>
             <TableCell v-if="!['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '')" class="whitespace-nowrap text-xs">
-              <Badge v-if="car.auctionStatus === 'live' && car.auctionEndTime" variant="outline" class="font-bold tracking-wide bg-[#333] text-white border-transparent">
+              <Badge v-if="car.auctionStatus === 'live' && car.auctionEndTime" variant="outline" class="font-bold tracking-wide bg-[#333] text-white border-transparent uppercase text-[10px]">
                 <span class="size-1.5 rounded-full mr-1.5 bg-red-500 animate-pulse" />
                 {{ formatCountdown(car.auctionEndTime) }}
               </Badge>
-              <Badge v-else variant="outline" class="font-normal">{{ car.auctionStatus || '—' }}</Badge>
+              <Badge v-else variant="outline" class="font-bold uppercase tracking-wider text-[10px]" :class="getAuctionStatusColor(car.auctionStatus)">
+                {{ car.auctionStatus || '—' }}
+              </Badge>
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap font-medium">
               {{ car.priceDiscovery ? formatCurrency(car.priceDiscovery) : '—' }}
             </TableCell>
-            <TableCell class="text-xs whitespace-nowrap font-medium" title="Inflated CEP">
-              {{ formatCurrency(getInflatedCep(car)) }}
+            <TableCell class="text-xs whitespace-nowrap font-medium" title="Actual CEP">
+              {{ car.customerExpectedPrice ? formatCurrency(car.customerExpectedPrice) : '—' }}
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
               {{ formatCurrency(car.oneClickPrice) }}
@@ -591,7 +604,7 @@ const pageNumbers = computed(() => {
         </div>
         
         <Table v-else>
-           <TableHeader class="sticky top-0 z-10 bg-muted border-b border-border">
+           <TableHeader class="sticky top-0 z-20 bg-background border-b border-border shadow-sm">
              <TableRow>
                <TableHead class="w-16 text-center">#</TableHead>
                <TableHead>Execution Time</TableHead>

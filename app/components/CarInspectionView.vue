@@ -179,14 +179,14 @@ function getConditionStyle(val: string) {
   const infoKeys = ['repair', 'replace', 'changed', 'service', 'dry']
 
   if (successKeys.some(k => lower.includes(k)))
-    return { bg: 'bg-green-500/15 border-green-500/30 text-green-700 dark:text-green-400', icon: 'i-lucide-check-circle' }
+    return { bg: 'bg-green-500/15 border-green-500/30 text-green-700 dark:text-green-400', icon: 'i-lucide-check-circle', emoji: '🟢' }
   if (errorKeys.some(k => lower.includes(k)))
-    return { bg: 'bg-red-500/15 border-red-500/30 text-red-700 dark:text-red-400', icon: 'i-lucide-alert-triangle' }
+    return { bg: 'bg-red-500/15 border-red-500/30 text-red-700 dark:text-red-400', icon: 'i-lucide-alert-triangle', emoji: '🔴' }
   if (warningKeys.some(k => lower.includes(k)))
-    return { bg: 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400', icon: 'i-lucide-info' }
+    return { bg: 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-400', icon: 'i-lucide-info', emoji: '🟠' }
   if (infoKeys.some(k => lower.includes(k)))
-    return { bg: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-700 dark:text-indigo-400', icon: 'i-lucide-wrench' }
-  return { bg: 'bg-slate-500/15 border-slate-500/30 text-slate-700 dark:text-slate-400', icon: 'i-lucide-tag' }
+    return { bg: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-700 dark:text-indigo-400', icon: 'i-lucide-wrench', emoji: '🔵' }
+  return { bg: 'bg-slate-500/15 border-slate-500/30 text-slate-700 dark:text-slate-400', icon: 'i-lucide-tag', emoji: '🔘' }
 }
 
 function getValuesArray(val: string | string[] | undefined | null) {
@@ -2857,9 +2857,12 @@ watch(editForm, () => {
                             {{ part.label }}
                           </div>
                           <div class="p-1 px-1.5 flex flex-wrap gap-1 mt-auto mb-auto">
-                            <template v-if="getDisplayValues(car, (part as any).dropdownName || part.key, (part as any).oldKey).length">
+                            <template v-if="(part as any).isImageOnly">
+                              <div class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">Images Only Section</div>
+                            </template>
+                            <template v-else-if="getDisplayValues(car, (part as any).dropdownName || part.key, (part as any).oldKey).length">
                               <div v-for="val in getDisplayValues(car, (part as any).dropdownName || part.key, (part as any).oldKey)" :key="val" class="border px-1 py-0.5 rounded flex items-center gap-1 shadow-sm" :class="getConditionStyle(val).bg">
-                                <Icon :name="getConditionStyle(val).icon" class="size-2.5 shrink-0" />
+                                <span class="text-[8px]">{{ getConditionStyle(val).emoji }}</span>
                                 <span class="text-[7.5px] font-bold leading-none">{{ val }}</span>
                               </div>
                             </template>
@@ -2881,9 +2884,12 @@ watch(editForm, () => {
                               {{ spart.label }}
                             </div>
                             <div class="p-1 px-1.5 flex flex-wrap gap-1 mt-auto mb-auto">
-                              <template v-if="getDisplayValues(car, spart.dropdownName || spart.key, spart.oldKey).length">
+                              <template v-if="(spart as any).isImageOnly">
+                                <div class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">Images Only Section</div>
+                              </template>
+                              <template v-else-if="getDisplayValues(car, spart.dropdownName || spart.key, spart.oldKey).length">
                                 <div v-for="val in getDisplayValues(car, spart.dropdownName || spart.key, spart.oldKey)" :key="val" class="border px-1 py-0.5 rounded flex items-center gap-1 shadow-sm" :class="getConditionStyle(val).bg">
-                                  <Icon :name="getConditionStyle(val).icon" class="size-2.5 shrink-0" />
+                                  <span class="text-[8px]">{{ getConditionStyle(val).emoji }}</span>
                                   <span class="text-[7.5px] font-bold leading-none">{{ val }}</span>
                                 </div>
                               </template>
