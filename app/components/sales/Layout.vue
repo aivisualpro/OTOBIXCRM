@@ -9,6 +9,7 @@ const currentActiveId = computed(() => {
 
 const ALL_SALES_TABS = [
   { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/sales/all' },
+  { id: 'upcoming', title: 'Upcoming', icon: 'i-lucide-calendar-clock', link: '/sales/upcoming' },
   { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/sales/live' },
   { id: 'otobuy', title: 'Otobuy', icon: 'i-lucide-tag', link: '/sales/otobuy' },
   { id: 'customer-activity', title: 'Customer Activity', icon: 'i-lucide-activity', link: '/sales/customer-activity' },
@@ -58,6 +59,7 @@ function getTabCount(filterId: string) {
     }
 
     const statusMap: Record<string, string> = {
+      upcoming: 'upcoming',
       live: 'live',
       otobuy: 'otobuy',
       ended: 'liveAuctionEnded',
@@ -101,6 +103,7 @@ watch(globalSearch, (newVal) => {
         return
 
       const statusMapRevealed: Record<string, string> = {
+        upcoming: 'upcoming',
         live: 'live',
         otobuy: 'otobuy',
         liveAuctionEnded: 'ended',

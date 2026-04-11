@@ -12,6 +12,18 @@ const props = defineProps<{
 const { setHeader } = usePageHeader()
 setHeader({ title: props.title, description: props.description, icon: props.icon })
 
+// ─── Logged-in user ID (from auth cookie) ───
+const _userCookie = useCookie('userData')
+const loggedInUserId = computed(() => {
+  try {
+    const parsed = typeof _userCookie.value === 'string' ? JSON.parse(_userCookie.value) : _userCookie.value
+    return parsed?._id || parsed?.id || ''
+  }
+  catch {
+    return ''
+  }
+})
+
 const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars, globalSearch } = useAuctionsApi()
 const { dropdowns, fetchDropdowns, getOptions } = useDropdowns()
 
@@ -548,11 +560,128 @@ function resetSimulation(car: any) {
   stopEdit(car, 'marginSimulation')
 }
 
+// ─── Re-Set Var. Margin ───
+const OTOBIX_API_BASE = 'https://ob-dealerapp-kong.onrender.com/api'
+const resetVarEditing = ref<Record<string, boolean>>({})
+const resetVarValue = ref<Record<string, string>>({})
+const resetVarSaving = ref<Record<string, boolean>>({})
+
+function openResetVar(car: any) {
+  const key = car._id || car.id
+  const currentVar = Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, ''))
+  resetVarValue.value[key] = currentVar > 0 ? String(Math.max(0, currentVar - 0.5).toFixed(2)) : ''
+  resetVarEditing.value[key] = true
+}
+
+function closeResetVar(car: any) {
+  const key = car._id || car.id
+  resetVarEditing.value[key] = false
+  resetVarValue.value[key] = ''
+}
+
+async function confirmResetVar(car: any) {
+  const key = car._id || car.id
+  const newMargin = Number(resetVarValue.value[key])
+  const currentVar = Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, ''))
+  const rawId = car._id?.$oid || car._id || car.id
+
+  if (newMargin <= 0) {
+    toast.error('Variable margin must be greater than 0')
+    return
+  }
+  if (newMargin >= currentVar) {
+    toast.error(`New margin must be less than current variable margin (${currentVar}%)`)
+    return
+  }
+  if (!loggedInUserId.value) {
+    toast.error('Cannot determine logged-in user')
+    return
+  }
+
+  resetVarSaving.value[key] = true
+  try {
+    await $fetch(`${OTOBIX_API_BASE}/otobix/set-variable-margin`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer QmFwR0RjLjJmMzkyMjJw98UNpMGFqpgGJV6BXgQ1ye12d100f5c`,
+      },
+      body: {
+        carId: rawId,
+        userId: loggedInUserId.value,
+        variableMargin: newMargin,
+        bidAmount: Number(car.highestBid || 0),
+      },
+    })
+    // Update locally so UI reflects immediately
+    car.variableMargin = String(newMargin)
+    toast.success(`Variable margin updated to ${newMargin}%`)
+    closeResetVar(car)
+  }
+  catch (err: any) {
+    toast.error(err?.data?.message || err?.message || 'Failed to update variable margin')
+  }
+  finally {
+    resetVarSaving.value[key] = false
+  }
+}
+
+// ─── Act. CEP ───
+const cepEditing = ref<Record<string, boolean>>({})
+const cepValue = ref<Record<string, string>>({})
+const cepSaving = ref<Record<string, boolean>>({})
+
+function openCep(car: any) {
+  const key = car._id || car.id
+  cepValue.value[key] = String(Number(car.customerExpectedPrice || 0))
+  cepEditing.value[key] = true
+}
+
+function closeCep(car: any) {
+  const key = car._id || car.id
+  cepEditing.value[key] = false
+  cepValue.value[key] = ''
+}
+
+async function confirmCep(car: any) {
+  const key = car._id || car.id
+  const newCep = Number(cepValue.value[key])
+  const rawId = car._id?.$oid || car._id || car.id
+
+  if (isNaN(newCep) || newCep < 0) {
+    toast.error('Invalid price')
+    return
+  }
+
+  cepSaving.value[key] = true
+  try {
+    await $fetch(`${OTOBIX_API_BASE}/otobix/set-customer-expected-price`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer QmFwR0RjLjJmMzkyMjJw98UNpMGFqpgGJV6BXgQ1ye12d100f5c`,
+      },
+      body: {
+        carId: rawId,
+        customerExpectedPrice: newCep,
+      },
+    })
+    car.customerExpectedPrice = newCep
+    toast.success(`Act. CEP updated to ${formatCurrency(newCep)}`)
+    closeCep(car)
+  }
+  catch (err: any) {
+    toast.error(err?.data?.message || err?.message || 'Failed to update Act. CEP')
+  }
+  finally {
+    cepSaving.value[key] = false
+  }
+}
+
 function getAuctionStatusColor(status: string) {
   if (!status)
     return 'bg-muted text-muted-foreground'
   switch (status.toLowerCase()) {
     case 'inspected': return 'bg-orange-600 text-white border-transparent'
+    case 'upcoming': return 'bg-amber-500 text-white border-transparent'
     case 'liveauctionended': return 'bg-gray-600 text-white border-transparent'
     case 'otobuy': return 'bg-blue-600 text-white border-transparent'
     case 'sold': return 'bg-green-600 text-white border-transparent'
@@ -697,8 +826,8 @@ const pageNumbers = computed(() => {
     </div>
 
     <!-- Table -->
-    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-auto">
-      <Table>
+    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-hidden flex flex-col">
+      <Table container-class="h-full pb-10">
         <TableHeader class="sticky top-0 z-20 bg-background border-b border-border shadow-sm">
           <TableRow>
             <TableHead class="whitespace-nowrap">
@@ -728,43 +857,43 @@ const pageNumbers = computed(() => {
             <TableHead class="whitespace-nowrap">
               OtoBuy
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               Deal Price
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               HB
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               Auto Bid
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               GAP
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               Overall Bids
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               Current Margin
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               Margin Simulation
             </TableHead>
-            <TableHead class="whitespace-nowrap">
-              Re-Set Margin
+            <TableHead class="whitespace-nowrap text-center">
+              Re-Set Var. Margin
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               Retail Quality
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               Sale Reason
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               Deal Status
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               Tentative Handover Date
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap text-center">
               Remarks
             </TableHead>
             <TableHead class="w-10 text-center">
@@ -846,8 +975,43 @@ const pageNumbers = computed(() => {
             <TableCell class="text-xs whitespace-nowrap font-medium">
               {{ car.priceDiscovery ? formatCurrency(car.priceDiscovery) : '—' }}
             </TableCell>
-            <TableCell class="text-xs whitespace-nowrap font-medium" title="Actual CEP">
-              {{ car.customerExpectedPrice ? formatCurrency(car.customerExpectedPrice) : '—' }}
+            <!-- Act. CEP Edit Workflow -->
+            <TableCell class="text-xs whitespace-nowrap align-middle px-2">
+              <div class="min-h-[36px] flex flex-col items-center justify-center gap-1 group rounded relative" :class="cepEditing[car._id || car.id] ? '' : 'hover:bg-muted/30 cursor-pointer'" @click="!cepEditing[car._id || car.id] && openCep(car)">
+                
+                <template v-if="!cepEditing[car._id || car.id]">
+                  <div class="flex items-center gap-1.5 font-medium" title="Actual CEP">
+                    <span>{{ car.customerExpectedPrice ? formatCurrency(car.customerExpectedPrice) : '—' }}</span>
+                    <Icon name="i-lucide-pencil" class="size-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </template>
+
+                <template v-else>
+                  <div class="flex items-center gap-1">
+                    <div class="relative bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-full flex items-center px-2 py-0.5 shadow-sm transition-all shadow-teal-500/10">
+                      <span class="text-teal-600 dark:text-teal-400 font-bold text-[10px] mr-1">₹</span>
+                      <input
+                        v-model="cepValue[car._id || car.id]"
+                        type="number"
+                        class="w-20 bg-transparent text-teal-700 dark:text-teal-300 font-bold tabular-nums text-xs border-none outline-none focus:ring-0 p-0 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder-teal-600/30"
+                        placeholder="Price"
+                        @keydown.enter="confirmCep(car)"
+                        @click.stop
+                      >
+                    </div>
+                    <div class="flex flex-col gap-0.5 bg-muted/30 p-0.5 rounded-full border shadow-sm" @click.stop>
+                      <button class="size-[18px] flex items-center justify-center rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors shadow-sm border border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800" @click.stop="confirmCep(car)">
+                        <Icon v-if="cepSaving[car._id || car.id]" name="i-lucide-loader-2" class="size-2.5 animate-spin" />
+                        <Icon v-else name="i-lucide-check" class="size-2.5" />
+                      </button>
+                      <button class="size-[18px] flex items-center justify-center rounded-full bg-background hover:bg-muted text-muted-foreground transition-colors shadow-sm border border-border" @click.stop="closeCep(car)">
+                        <Icon name="i-lucide-x" class="size-2.5" />
+                      </button>
+                    </div>
+                  </div>
+                </template>
+
+              </div>
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
               {{ formatCurrency(car.oneClickPrice) }}
@@ -867,23 +1031,24 @@ const pageNumbers = computed(() => {
               —
             </TableCell>
 
-            <TableCell class="text-xs whitespace-nowrap font-medium tabular-nums relative" :class="Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
-              <div class="flex flex-col items-center gap-1 w-full justify-center min-h-[40px] pt-1">
-                <span class="shadow-sm transition-all">
-                  {{ (Number(car.customerExpectedPrice || 0) && car.highestBid) ? formatCurrency(Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car)) : '—' }}
+            <TableCell class="text-xs align-middle">
+              <div class="flex flex-col items-center gap-1 w-full justify-center min-h-[44px] relative">
+                <span v-if="(Number(car.customerExpectedPrice || 0) && car.highestBid)" class="text-[11px] px-2 py-0.5 min-w-[75px] max-w-fit text-center rounded-md bg-background border border-border/70 shadow-sm font-bold tabular-nums whitespace-nowrap transition-all" :class="Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
+                  {{ formatCurrency(Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car)) }}
                 </span>
+                <span v-else class="text-muted-foreground/50">—</span>
                 
                 <Transition
-                  enter-active-class="transition-all duration-300 ease-out"
+                  enter-active-class="transition-all duration-300 ease-out z-10"
                   enter-from-class="opacity-0 -translate-y-2 scale-95"
                   enter-to-class="opacity-100 translate-y-0 scale-100"
-                  leave-active-class="transition-all duration-200 ease-in absolute"
+                  leave-active-class="transition-all duration-200 ease-in absolute z-0"
                   leave-from-class="opacity-100 translate-y-0 scale-100"
                   leave-to-class="opacity-0 -translate-y-2 scale-95"
                 >
                   <div
                     v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''"
-                    class="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 shadow-sm flex items-center gap-1 font-bold whitespace-nowrap"
+                    class="text-[11px] px-2 py-0.5 min-w-[75px] max-w-fit justify-center rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 shadow-sm flex items-center gap-1 font-bold tabular-nums whitespace-nowrap"
                   >
                     <Icon name="i-lucide-activity" class="size-3" />
                     {{ formatCurrency(Number(car.customerExpectedPrice || 0) - getSimulatedNetBid(car)) }}
@@ -925,43 +1090,117 @@ const pageNumbers = computed(() => {
             <!-- Margin Simulation -->
             <TableCell class="text-xs text-center px-1">
               <div class="min-h-[32px] min-w-[70px] flex items-center justify-center p-1 rounded group transition-colors relative" :class="isEditing(car, 'marginSimulation') ? '' : 'hover:bg-muted/30'">
-                
+
                 <!-- Not Editing State -->
                 <div v-if="!isEditing(car, 'marginSimulation')" class="flex items-center gap-1.5 cursor-pointer w-full justify-center" @click="startSimulation(car)">
-                  <span v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''" class="font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                  <span v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''" class="font-bold text-primary bg-primary/10 px-2.5 py-0.5 tabular-nums rounded">
                     {{ Number(car.marginSimulation).toFixed(1) }}%
                   </span>
                   <span v-else class="text-muted-foreground/40">—</span>
-                  <Icon v-if="car.marginSimulation === undefined || car.marginSimulation === null || car.marginSimulation === ''" name="i-lucide-activity" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Icon name="i-lucide-activity" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
 
                 <!-- Editing / Stepper State -->
-                <div v-else class="flex items-center gap-1 bg-muted/30 p-0.5 rounded-full border shadow-sm">
-                      <button class="size-6 flex items-center justify-center rounded-full bg-background hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm border border-border/50 text-muted-foreground" @click.stop="stepSimulation(car, -0.5)">
-                        <Icon name="i-lucide-minus" class="size-3" />
-                      </button>
-                      
-                      <div class="font-bold tabular-nums text-[11px] text-primary min-w-[36px] text-center cursor-pointer" @click.stop="stopEdit(car, 'marginSimulation')">
-                        {{ Number(car.marginSimulation).toFixed(1) }}%
-                      </div>
+                <div v-else class="flex items-center gap-1.5">
+                  <!-- Stepper pill -->
+                  <div class="flex items-center gap-1 bg-muted/30 p-0.5 rounded-full border shadow-sm">
+                    <button class="size-6 flex items-center justify-center rounded-full bg-background hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm border border-border/50 text-muted-foreground" @click.stop="stepSimulation(car, -0.5)">
+                      <Icon name="i-lucide-minus" class="size-3" />
+                    </button>
 
-                      <button class="size-6 flex items-center justify-center rounded-full bg-background hover:bg-emerald-50 hover:text-emerald-600 transition-colors shadow-sm border border-border/50 text-muted-foreground" @click.stop="stepSimulation(car, 0.5)">
-                        <Icon name="i-lucide-plus" class="size-3" />
-                      </button>
-                      
-                      <button class="absolute -top-1.5 -right-1.5 size-4 bg-muted border border-border text-muted-foreground rounded-full hover:bg-destructive hover:text-destructive-foreground hover:border-destructive flex items-center justify-center shadow-sm z-10" @click.stop="resetSimulation(car)">
-                        <Icon name="i-lucide-x" class="size-2.5" />
-                      </button>
+                    <div class="font-bold tabular-nums text-[11px] text-primary min-w-[36px] text-center">
+                      {{ Number(car.marginSimulation).toFixed(1) }}%
+                    </div>
+
+                    <button class="size-6 flex items-center justify-center rounded-full bg-background hover:bg-emerald-50 hover:text-emerald-600 transition-colors shadow-sm border border-border/50 text-muted-foreground" @click.stop="stepSimulation(car, 0.5)">
+                      <Icon name="i-lucide-plus" class="size-3" />
+                    </button>
+                  </div>
+
+                  <!-- Save / Reset action buttons stacked vertically -->
+                  <div class="flex flex-col gap-1">
+                    <!-- Save (checkmark) -->
+                    <button
+                      class="size-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center shadow-sm transition-colors"
+                      title="Save simulation"
+                      @click.stop="stopEdit(car, 'marginSimulation')"
+                    >
+                      <Icon name="i-lucide-check" class="size-3" />
+                    </button>
+                    <!-- Reset (X) -->
+                    <button
+                      class="size-5 rounded-full bg-muted border border-border text-muted-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive flex items-center justify-center shadow-sm transition-colors"
+                      title="Clear simulation"
+                      @click.stop="resetSimulation(car)"
+                    >
+                      <Icon name="i-lucide-x" class="size-2.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </TableCell>
 
-            <!-- Re-Set Margin -->
+            <!-- Re-Set Var. Margin -->
             <TableCell class="text-xs text-center px-1">
-              <div class="min-h-[28px] min-w-[60px] flex items-center justify-center cursor-pointer group rounded hover:bg-muted/50 transition-colors" @click="startEdit(car, 'reSetMargin')">
-                <Input v-if="isEditing(car, 'reSetMargin')" v-model="car.reSetMargin" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'reSetMargin')" @keydown.enter="stopEdit(car, 'reSetMargin')" @keydown.esc="cancelEdit(car, 'reSetMargin')" />
-                <span v-else-if="car.reSetMargin">{{ car.reSetMargin }}</span>
-                <Icon v-else name="i-lucide-pencil" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div class="min-h-[36px] min-w-[80px] flex flex-col items-center justify-center gap-1 p-1 group rounded relative" :class="resetVarEditing[car._id || car.id] ? '' : 'hover:bg-muted/30 cursor-pointer'" @click="!resetVarEditing[car._id || car.id] && openResetVar(car)">
+
+                <!-- Display: current variableMargin -->
+                <template v-if="!resetVarEditing[car._id || car.id]">
+                  <div class="flex flex-row items-center justify-center gap-1.5 w-full">
+                    <span v-if="Number(String(car.variableMargin || '').replace(/[^0-9.-]/g, ''))" class="font-bold text-xs tabular-nums text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 px-2.5 py-0.5 rounded border border-violet-200 dark:border-violet-800">
+                      {{ Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')) }}%
+                    </span>
+                    <span v-else class="text-muted-foreground/40">—</span>
+                    <Icon name="i-lucide-arrow-down-to-dot" class="size-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </template>
+
+                <!-- Edit mode: inline input + confirm -->
+                <template v-else>
+                  <div class="flex flex-col items-center gap-1 w-full">
+                    <div class="text-[9px] text-muted-foreground font-medium">
+                      Max: {{ Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')) }}%
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <!-- Input pill wrapper -->
+                      <div class="flex items-center bg-violet-50 dark:bg-violet-950/20 px-1 py-0.5 rounded-md border" :class="Number(resetVarValue[car._id || car.id]) <= 0 || Number(resetVarValue[car._id || car.id]) >= Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')) ? 'border-red-300 dark:border-red-800' : 'border-violet-200 dark:border-violet-800'">
+                        <input
+                          v-model="resetVarValue[car._id || car.id]"
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          :max="Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')) - 0.01"
+                          class="h-6 w-16 text-[12px] font-bold text-center font-mono bg-transparent outline-none text-violet-700 dark:text-violet-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          autofocus
+                          @keydown.enter.stop="confirmResetVar(car)"
+                          @keydown.esc.stop="closeResetVar(car)"
+                          @click.stop
+                        />
+                      </div>
+                      
+                      <!-- Action buttons -->
+                      <div class="flex items-center gap-1">
+                        <button
+                          class="size-6 rounded-md flex items-center justify-center shadow-sm transition-colors"
+                          :class="resetVarSaving[car._id || car.id] || Number(resetVarValue[car._id || car.id]) <= 0 || Number(resetVarValue[car._id || car.id]) >= Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')) ? 'bg-muted text-muted-foreground' : 'bg-violet-600 hover:bg-violet-700 text-white'"
+                          title="Save variable margin"
+                          :disabled="resetVarSaving[car._id || car.id] || Number(resetVarValue[car._id || car.id]) <= 0 || Number(resetVarValue[car._id || car.id]) >= Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, ''))"
+                          @click.stop="confirmResetVar(car)"
+                        >
+                          <Icon v-if="resetVarSaving[car._id || car.id]" name="i-lucide-loader-2" class="size-3 animate-spin" />
+                          <Icon v-else name="i-lucide-check" class="size-3.5" />
+                        </button>
+                        <button
+                          class="size-6 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground transition-colors border border-transparent hover:border-border"
+                          title="Cancel"
+                          @click.stop="closeResetVar(car)"
+                        >
+                          <Icon name="i-lucide-x" class="size-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </template>
               </div>
             </TableCell>
 
