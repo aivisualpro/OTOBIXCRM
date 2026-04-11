@@ -90,11 +90,19 @@ export default defineEventHandler(async (event) => {
     // Fetch all cars descending from newest, with slim projection
     const cars = await db.collection('cars').find({}, { projection }).sort({ createdAt: -1 }).toArray()
 
-    const mappedCars = cars.map(car => ({
-      ...car,
-      id: car._id.toString(),
-      _id: car._id.toString(),
-    }))
+    // NEW: Fetch all auto-bids to satisfy Sales/Retail auto-bid requirements
+    const autoBids = await db.collection('autoBidsForLiveSection').find({}).toArray()
+
+    const mappedCars = cars.map((car) => {
+      const carIdStr = car._id.toString()
+      return {
+        ...car,
+        id: carIdStr,
+        _id: carIdStr,
+        // Filter auto-bids matching this specific car
+        autoBidsForLiveSection: autoBids.filter(b => String(b.carId) === carIdStr),
+      }
+    })
 
     return mappedCars
   }

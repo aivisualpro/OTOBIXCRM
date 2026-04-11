@@ -35,6 +35,7 @@ export interface AuctionCar {
   soldToName: string
   customerExpectedPrice: number
   imageUrls: { title: string, url: string }[]
+  autoBidsForLiveSection?: any[]
 }
 
 export function useAuctionsApi() {

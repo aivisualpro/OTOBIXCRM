@@ -273,7 +273,9 @@ function getInflatedCep(car: any): number {
 
 function getSalesOneClickPrice(car: any): number {
   const basePrice = Number(car.oneClickPrice || 0)
-  if (!basePrice) return 0
+  if (!basePrice) {
+    return 0
+  }
 
   const fixedMarginPct = Number(car.fixedMargin || 0)
   const varMarginStr = String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')
@@ -284,12 +286,16 @@ function getSalesOneClickPrice(car: any): number {
 }
 
 function getHighestAutoBid(car: any): number {
-  if (!car || !Array.isArray(car.autoBidsForLiveSection)) return 0
+  if (!car || !Array.isArray(car.autoBidsForLiveSection)) {
+    return 0
+  }
   const relevantBids = car.autoBidsForLiveSection.filter((b: any) => {
     const cid = String(b.carId)
     return cid === String(car._id) || cid === String(car.id)
   })
-  if (!relevantBids.length) return 0
+  if (!relevantBids.length) {
+    return 0
+  }
   return Math.max(...relevantBids.map((b: any) => Number(b.maxAmount) || 0))
 }
 
@@ -604,7 +610,7 @@ const pageNumbers = computed(() => {
               {{ getHighestAutoBid(car) ? formatCurrency(getHighestAutoBid(car)) : '—' }}
             </TableCell>
 
-            <TableCell class="text-xs whitespace-nowrap font-medium tabular-nums shadow-sm" :class="getInflatedCep(car) - Number(car.highestBid || 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
+            <TableCell class="text-xs whitespace-nowrap font-bold tabular-nums text-center" :class="getInflatedCep(car) - Number(car.highestBid || 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
               {{ (getInflatedCep(car) && car.highestBid) ? formatCurrency(getInflatedCep(car) - Number(car.highestBid)) : '—' }}
             </TableCell>
 

@@ -19,6 +19,7 @@ const { carDetails: car, isLoading, error, fetchCarDetails } = useCarDetails()
 const { fetchDropdowns, getOptions } = useDropdowns()
 const { fetchCarDropdowns, makes, getModels, getVariants } = useCarDropdowns()
 const { allUsers, fetchAllUsers } = usePeopleApi()
+const retailers = computed(() => allUsers.value.filter(u => u.userRole === 'Retailer'))
 
 const allocatedToName = computed(() => {
   const emailOrName = car.value?.allocatedTo
@@ -258,10 +259,12 @@ const qcForm = ref({
   auctionMode: 'makeLiveNow',
   auctionDuration: 24,
   auctionStartTime: '',
+  retailAssociate: '',
 })
 
 function openQCModal() {
   qcForm.value.priceDiscovery = editForm.value.priceDiscovery || car.value?.priceDiscovery || ''
+  qcForm.value.retailAssociate = editForm.value.retailAssociate || car.value?.retailAssociate || ''
   showQCModal.value = true
 }
 
@@ -276,6 +279,7 @@ async function confirmQCApproval() {
   }
 
   editForm.value.priceDiscovery = qcForm.value.priceDiscovery
+  editForm.value.retailAssociate = qcForm.value.retailAssociate
 
   const loadingToast = toast.loading('Scheduling auction and completing QC...')
   try {
@@ -1059,6 +1063,7 @@ const exteriorSections = [
   },
 ]
 
+const pdfSections = exteriorSections
 const activeExteriorSection = computed(() => exteriorSections.find(s => s.title.toLowerCase().replace(/[^a-z]+/g, '').startsWith(activeTab.value.toLowerCase().replace(/[^a-z]+/g, ''))))
 
 // ─── Auto-save: debounced deep watch on editForm ───
@@ -1156,6 +1161,20 @@ const documentImageKeys = [
   { new: 'pucImages', old: 'puc' },
   { new: 'roadTaxImages', old: 'roadTax' },
 ]
+
+const allPdfImages = computed(() => {
+  const imgs: { url: string, label: string }[] = []
+  // 1. Documents
+  imgs.push(...sectionImages(documentImageKeys))
+  // 2. All Exterior/Technical sections
+  for (const sec of pdfSections) {
+    if (sec.imageKeys) {
+      imgs.push(...sectionImages(sec.imageKeys))
+    }
+  }
+  // Deduplicate by URL
+  return imgs.filter((v, i, a) => a.findIndex(t => t.url === v.url) === i)
+})
 
 // ─── Document Details field mapping (spreadsheet-driven) ───
 const documentDetailFields: any[] = [
@@ -1288,7 +1307,7 @@ onMounted(() => window.addEventListener('keydown', onLightboxKeydown))
 onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown))
 
 // Collect all images for a section — supports both string keys and { new, old } fallback objects
-function sectionImages(keys: (string | { new: string, old: string })[]) {
+function sectionImages(keys: (string | { new: string, old: string | undefined })[]) {
   const obj = editForm.value && Object.keys(editForm.value).length ? editForm.value : car.value
   if (!obj)
     return []
@@ -1368,6 +1387,19 @@ watch(editForm, () => {
           <div class="space-y-2">
             <label class="text-sm font-medium">Price Discovery (Required)</label>
             <Input v-model="qcForm.priceDiscovery" type="number" placeholder="Enter Price Amount" class="font-bold text-lg" required />
+          </div>
+
+          <!-- Retail Associate Dropdown -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Retail Associate</label>
+            <select v-model="qcForm.retailAssociate" class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+              <option value="">
+                Select Associate
+              </option>
+              <option v-for="r in retailers" :key="r.email" :value="r.email">
+                {{ r.userName }}
+              </option>
+            </select>
           </div>
 
           <!-- Auction Mode -->

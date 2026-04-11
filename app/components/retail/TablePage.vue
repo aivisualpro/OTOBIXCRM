@@ -529,7 +529,9 @@ function getNetBidAmount(rawValue: any, sourceInfo?: any, fallbackCar?: any): nu
 
 function getRetailOtobuyOffer(car: any): number {
   const baseOffer = Number(car.otobuyOffer) || 0
-  if (!baseOffer) return 0
+  if (!baseOffer) {
+    return 0
+  }
 
   const fixedMarginPct = Number(car.fixedMargin || 0)
   const varMarginStr = String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')
@@ -537,7 +539,9 @@ function getRetailOtobuyOffer(car: any): number {
 
   const totalMargin = (fixedMarginPct + varMarginPct) / 100.0
   const factor = 1 + totalMargin
-  if (factor <= 0) return 0
+  if (factor <= 0) {
+    return 0
+  }
 
   const netOffer = baseOffer / factor
   return Math.floor(netOffer / 1000) * 1000
@@ -1065,10 +1069,9 @@ const pageNumbers = computed(() => {
             </TableCell>
 
 
-
             <TableCell class="text-xs align-middle">
               <div class="flex flex-col items-center gap-1 w-full justify-center min-h-[44px] relative">
-                <span v-if="(Number(car.customerExpectedPrice || 0) && car.highestBid)" class="text-[11px] px-2 py-0.5 min-w-[75px] max-w-fit text-center rounded-md bg-background border border-border/70 shadow-sm font-bold tabular-nums whitespace-nowrap transition-all" :class="Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
+                <span v-if="(Number(car.customerExpectedPrice || 0) && car.highestBid)" class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap transition-all" :class="Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
                   {{ formatCurrency(Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car)) }}
                 </span>
                 <span v-else class="text-muted-foreground/50">—</span>
@@ -1083,7 +1086,7 @@ const pageNumbers = computed(() => {
                 >
                   <div
                     v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''"
-                    class="text-[11px] px-2 py-0.5 min-w-[75px] max-w-fit justify-center rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800 shadow-sm flex items-center gap-1 font-bold tabular-nums whitespace-nowrap"
+                    class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap flex items-center gap-1 text-emerald-700 dark:text-emerald-400"
                   >
                     <Icon name="i-lucide-activity" class="size-3" />
                     {{ formatCurrency(Number(car.customerExpectedPrice || 0) - getSimulatedNetBid(car)) }}
