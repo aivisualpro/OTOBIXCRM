@@ -39,9 +39,9 @@ function handleSelect(val: string) {
         :class="cn('w-full justify-between font-normal h-9 px-3', !modelValue && 'text-muted-foreground', className)"
       >
         <span v-if="!selectedLabel" class="truncate opacity-70">{{ placeholder || 'Select option...' }}</span>
-        <div v-else class="flex items-center gap-1.5 px-2 py-0.5 rounded shadow-sm border truncate" :class="getConditionStyle(selectedLabel).bg">
+        <div v-else class="flex items-center gap-1.5 px-2 py-0.5 rounded shadow-sm border min-w-0 flex-1 max-w-full" :class="getConditionStyle(selectedLabel).bg">
           <Icon :name="getConditionStyle(selectedLabel).icon" class="size-3.5 shrink-0" />
-          <span class="text-[12px] font-bold leading-tight">{{ selectedLabel }}</span>
+          <span class="text-[12px] font-bold leading-tight truncate flex-1 text-left">{{ selectedLabel }}</span>
         </div>
         <Icon name="i-lucide-chevrons-up-down" class="ml-2 size-4 shrink-0 opacity-50" />
       </Button>

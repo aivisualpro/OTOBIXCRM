@@ -1648,10 +1648,10 @@ watch(editForm, () => {
                       <p class="text-xs text-muted-foreground mb-1 font-medium">
                         MFG Year
                       </p>
-                      <div v-if="props.readonly" class="text-2xl font-black text-foreground mt-auto">
-                        {{ car.yearMonthOfManufacture ? new Date(car.yearMonthOfManufacture).getFullYear() : '—' }}
+                      <div v-if="props.readonly" class="text-2xl font-black text-foreground mt-auto tracking-tight truncate">
+                        {{ car.yearMonthOfManufacture ? String(new Date(car.yearMonthOfManufacture).getMonth() + 1).padStart(2, '0') + ' / ' + new Date(car.yearMonthOfManufacture).getFullYear() : '—' }}
                       </div>
-                      <Input v-else v-model="editForm.yearOfManufacture" type="number" class="h-8 mt-auto text-2xl font-black border-none bg-transparent p-0 focus-visible:ring-0 shadow-none w-24 text-foreground" placeholder="e.g. 2019" />
+                      <Input v-else :model-value="editForm.yearMonthOfManufacture ? new Date(editForm.yearMonthOfManufacture).toISOString().slice(0, 7) : ''" type="month" class="h-8 mt-auto text-lg font-black border-none bg-transparent p-0 focus-visible:ring-0 shadow-none w-full text-foreground" @update:model-value="editForm.yearMonthOfManufacture = $event ? new Date($event).toISOString() : ''" />
                     </div>
                   </div>
 
@@ -1887,7 +1887,7 @@ watch(editForm, () => {
                                 <div class="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[8px] text-white font-medium tracking-wider uppercase pointer-events-none">
                                   {{ field.label }} Image {{ idx + 1 }}
                                 </div>
-                                <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity z-10">
+                                <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-100 lg:opacity-0 group-hover/item:opacity-100 transition-opacity z-10">
                                   <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(field.key, idx, field.oldKey)">
                                     <Icon name="i-lucide-refresh-cw" class="size-3.5" />
                                   </Button>
@@ -2132,7 +2132,7 @@ watch(editForm, () => {
                                       <Icon name="i-lucide-external-link" class="size-3.5 text-white" />
                                     </a>
                                     <!-- Edit overlay (non-readonly) -->
-                                    <div v-if="!props.readonly" class="absolute top-2 right-10 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                    <div v-if="!props.readonly" class="absolute top-2 right-10 flex flex-col gap-1.5 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity z-20">
                                       <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(vk.key, vIdx, vk.oldKey)">
                                         <Icon name="i-lucide-refresh-cw" class="size-3.5" />
                                       </Button>
@@ -2298,7 +2298,7 @@ watch(editForm, () => {
                                   {{ group.label }} Image {{ idx + 1 }}
                                 </div>
                                 <!-- Overlay Actions -->
-                                <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-100 lg:opacity-0 group-hover/item:opacity-100 transition-opacity">
                                   <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(group.key, idx, group.oldKey)">
                                     <Icon name="i-lucide-refresh-cw" class="size-3.5" />
                                   </Button>

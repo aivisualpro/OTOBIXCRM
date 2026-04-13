@@ -31,7 +31,7 @@ const showModalTheme = ref(false)
 </script>
 
 <template>
-  <div class="px-2 pb-1 text-[10px] text-muted-foreground/60 font-medium">version b.0.97</div>
+  <div class="px-2 pb-1 text-[10px] text-muted-foreground/60 font-medium">version b.1.00</div>
   <SidebarMenu>
     <SidebarMenuItem>
       <DropdownMenu>
