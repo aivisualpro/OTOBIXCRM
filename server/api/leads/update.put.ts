@@ -162,7 +162,6 @@ export default defineEventHandler(async (event) => {
       await db.collection('cars').updateOne(
         { appointmentId: apptId },
         carsUpdateQuery,
-        { upsert: true },
       )
     }
 

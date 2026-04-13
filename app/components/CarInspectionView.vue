@@ -288,7 +288,7 @@ async function confirmQCApproval() {
 
     // 2. Local State - Only set to 'Approved' IF auction was successful
     editForm.value.approvalStatus = 'Approved'
-    editForm.value.auctionStatus = qcForm.value.auctionMode === 'makeLiveNow' ? 'live' : 'scheduled'
+    editForm.value.auctionStatus = qcForm.value.auctionMode === 'makeLiveNow' ? 'live' : 'upcoming'
 
     // 3. Database DB Save - This will hit /api/leads/update which updates BOTH cars & telecalling collections
     await saveQC(true)
@@ -424,31 +424,8 @@ async function scheduleAuctionFromModal() {
   }
 }
 
-function extractPublicId(url: string) {
-  try {
-    const parts = url.split('/upload/')
-    if (parts.length < 2)
-      return null
-    let afterUpload = parts[1]!.replace(/^v\d+\//, '')
-    const hashIndex = afterUpload.indexOf('#')
-    if (hashIndex !== -1)
-      afterUpload = afterUpload.substring(0, hashIndex)
-    const queryIndex = afterUpload.indexOf('?')
-    if (queryIndex !== -1)
-      afterUpload = afterUpload.substring(0, queryIndex)
-    const lastDot = afterUpload.lastIndexOf('.')
-    if (lastDot !== -1)
-      afterUpload = afterUpload.substring(0, lastDot)
-    return afterUpload
-  }
-  catch {
-    return null
-  }
-}
-
 async function deleteCloudinaryFile(url: string) {
-  const publicId = extractPublicId(url)
-  if (!publicId)
+  if (!url)
     return
   const isVideo = url.match(/\.(mp4|webm|ogg)$/i)
   const endpoint = isVideo ? `${UPLOAD_BASE}/delete-video-from-cloudinary` : `${UPLOAD_BASE}/delete-image-from-cloudinary`
@@ -456,7 +433,7 @@ async function deleteCloudinaryFile(url: string) {
   try {
     await $fetch(endpoint, {
       method: 'DELETE',
-      body: { publicId },
+      body: { publicId: url },
       headers: { Authorization: `Bearer ${KONG_TOKEN}`, token: KONG_TOKEN },
     })
   }
@@ -539,6 +516,8 @@ async function removeImage(key: string, idx: number, oldKey?: string) {
   else if (oldKey && Array.isArray(editForm.value[oldKey])) {
     urlToDelete = editForm.value[oldKey][idx]
     editForm.value[oldKey].splice(idx, 1)
+    // Promote the modified fallback array to the primary key so saveQC persists it correctly
+    editForm.value[key] = [...editForm.value[oldKey]]
   }
 
   if (urlToDelete) {
@@ -575,21 +554,25 @@ async function replaceImage(key: string, idx: number, oldKey?: string) {
       return
 
     let urlToDelete = null
+    let usingOldKey = false
     if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
       urlToDelete = editForm.value[key][idx]
     }
     else if (oldKey && Array.isArray(editForm.value[oldKey])) {
       urlToDelete = editForm.value[oldKey][idx]
+      usingOldKey = true
     }
 
     const urls = await uploadCloudinaryFile([file])
     if (urls.length > 0) {
       const newUrl = urls[0]
-      if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
+      if (!usingOldKey && Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
         editForm.value[key][idx] = newUrl
       }
-      else if (oldKey && Array.isArray(editForm.value[oldKey])) {
+      else if (usingOldKey && oldKey && Array.isArray(editForm.value[oldKey])) {
         editForm.value[oldKey][idx] = newUrl
+        // Promote the modified fallback array to the primary key so saveQC persists it correctly
+        editForm.value[key] = [...editForm.value[oldKey]]
       }
 
       if (urlToDelete) {
