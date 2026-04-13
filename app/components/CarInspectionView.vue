@@ -508,22 +508,28 @@ async function uploadCloudinaryFile(files: File[]) {
 }
 
 async function removeImage(key: string, idx: number, oldKey?: string) {
-  let urlToDelete = null
-  if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
-    urlToDelete = editForm.value[key][idx]
-    editForm.value[key].splice(idx, 1)
-  }
-  else if (oldKey && Array.isArray(editForm.value[oldKey])) {
-    urlToDelete = editForm.value[oldKey][idx]
-    editForm.value[oldKey].splice(idx, 1)
-    // Promote the modified fallback array to the primary key so saveQC persists it correctly
-    editForm.value[key] = [...editForm.value[oldKey]]
-  }
+  toast.warning('Are you sure you want to delete this image? This action cannot be undone.', {
+    action: {
+      label: 'Delete',
+      onClick: async () => {
+        let urlToDelete = null
+        if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
+          urlToDelete = editForm.value[key][idx]
+          editForm.value[key].splice(idx, 1)
+        }
+        else if (oldKey && Array.isArray(editForm.value[oldKey])) {
+          urlToDelete = editForm.value[oldKey][idx]
+          editForm.value[oldKey].splice(idx, 1)
+          editForm.value[key] = [...editForm.value[oldKey]]
+        }
 
-  if (urlToDelete) {
-    await deleteCloudinaryFile(urlToDelete)
-  }
-  await saveQC(true)
+        if (urlToDelete) {
+          await deleteCloudinaryFile(urlToDelete)
+        }
+        await saveQC(true)
+      }
+    }
+  })
 }
 
 async function addImage(key: string) {
@@ -749,18 +755,28 @@ const electricalParts = [
 ]
 
 const interiorParts = [
+  // Legacy Unified Airbags
+  {
+    key: 'legacyAirbagsImagesBox',
+    label: 'Legacy Airbags',
+    isImageOnly: true,
+    isLegacyFallback: true,
+    imageGroups: [
+      { key: 'driverAirbagImages', oldKey: 'airbags', label: 'Generic Airbags' },
+    ],
+  },
   // Airbags
   { key: 'noOfAirBags', oldKey: 'noOfAirBags', label: 'Number of Airbags', dropdownName: 'Number of Airbags', hasNoImages: true },
-  { key: 'driverAirbagDropdownList', oldKey: 'airbagFeaturesDriverSide', imageKey: 'driverAirbagImages', oldImageKey: 'airbags', label: 'Driver Airbag', dropdownName: 'Driver Airbag' },
-  { key: 'coDriverAirbagDropdownList', oldKey: 'airbagFeaturesCoDriverSide', imageKey: 'coDriverAirbagImages', oldImageKey: 'airbags', label: 'Co-Driver Airbag', dropdownName: 'Co-Driver Airbag' },
-  { key: 'driverSeatAirbagDropdownList', oldKey: 'airbagFeaturesRhsAPillarCurtain', imageKey: 'driverSeatAirbagImages', oldImageKey: 'airbags', label: 'Driver Seat Airbag', dropdownName: 'Driver Seat Airbag' },
-  { key: 'coDriverSeatAirbagDropdownList', oldKey: 'airbagFeaturesLhsAPillarCurtain', imageKey: 'coDriverSeatAirbagImages', oldImageKey: 'airbags', label: 'Co-Driver Seat Airbag', dropdownName: 'Co-Driver Seat Airbag' },
-  { key: 'rhsCurtainAirbagDropdownList', oldKey: 'airbagFeaturesRhsBPillarCurtain', imageKey: 'rhsCurtainAirbagImages', oldImageKey: 'airbags', label: 'RHS Curtain Airbag', dropdownName: 'RHS Curtain Airbag' },
-  { key: 'lhsCurtainAirbagDropdownList', oldKey: 'airbagFeaturesLhsBPillarCurtain', imageKey: 'lhsCurtainAirbagImages', oldImageKey: 'airbags', label: 'LHS Curtain Airbag', dropdownName: 'LHS Curtain Airbag' },
-  { key: 'driverSideKneeAirbagDropdownList', oldKey: 'new', imageKey: 'driverSideKneeAirbagImages', oldImageKey: 'airbags', label: 'Driver Knee Airbag', dropdownName: 'Driver Knee Airbag' },
-  { key: 'coDriverKneeSeatAirbagDropdownList', oldKey: 'new', imageKey: 'coDriverKneeSeatAirbagImages', oldImageKey: 'airbags', label: 'Co-Driver Knee Airbag', dropdownName: 'Co-Driver Knee Airbag' },
-  { key: 'rhsRearSideAirbagDropdownList', oldKey: 'airbagFeaturesRhsCPillarCurtain', imageKey: 'rhsRearSideAirbagImages', oldImageKey: 'airbags', label: 'RHS Rear Side Airbag', dropdownName: 'RHS Rear Side Airbags' },
-  { key: 'lhsRearSideAirbagDropdownList', oldKey: 'airbagFeaturesLhsCPillarCurtain', imageKey: 'lhsRearSideAirbagImages', oldImageKey: 'airbags', label: 'LHS Rear Side Airbag', dropdownName: 'LHS Rear Side Airbag' },
+  { key: 'driverAirbagDropdownList', oldKey: 'airbagFeaturesDriverSide', imageKey: 'driverAirbagImages', label: 'Driver Airbag', dropdownName: 'Driver Airbag' },
+  { key: 'coDriverAirbagDropdownList', oldKey: 'airbagFeaturesCoDriverSide', imageKey: 'coDriverAirbagImages', label: 'Co-Driver Airbag', dropdownName: 'Co-Driver Airbag' },
+  { key: 'driverSeatAirbagDropdownList', oldKey: 'airbagFeaturesRhsAPillarCurtain', imageKey: 'driverSeatAirbagImages', label: 'Driver Seat Airbag', dropdownName: 'Driver Seat Airbag' },
+  { key: 'coDriverSeatAirbagDropdownList', oldKey: 'airbagFeaturesLhsAPillarCurtain', imageKey: 'coDriverSeatAirbagImages', label: 'Co-Driver Seat Airbag', dropdownName: 'Co-Driver Seat Airbag' },
+  { key: 'rhsCurtainAirbagDropdownList', oldKey: 'airbagFeaturesRhsBPillarCurtain', imageKey: 'rhsCurtainAirbagImages', label: 'RHS Curtain Airbag', dropdownName: 'RHS Curtain Airbag' },
+  { key: 'lhsCurtainAirbagDropdownList', oldKey: 'airbagFeaturesLhsBPillarCurtain', imageKey: 'lhsCurtainAirbagImages', label: 'LHS Curtain Airbag', dropdownName: 'LHS Curtain Airbag' },
+  { key: 'driverSideKneeAirbagDropdownList', oldKey: 'new', imageKey: 'driverSideKneeAirbagImages', label: 'Driver Knee Airbag', dropdownName: 'Driver Knee Airbag' },
+  { key: 'coDriverKneeSeatAirbagDropdownList', oldKey: 'new', imageKey: 'coDriverKneeSeatAirbagImages', label: 'Co-Driver Knee Airbag', dropdownName: 'Co-Driver Knee Airbag' },
+  { key: 'rhsRearSideAirbagDropdownList', oldKey: 'airbagFeaturesRhsCPillarCurtain', imageKey: 'rhsRearSideAirbagImages', label: 'RHS Rear Side Airbag', dropdownName: 'RHS Rear Side Airbags' },
+  { key: 'lhsRearSideAirbagDropdownList', oldKey: 'airbagFeaturesLhsCPillarCurtain', imageKey: 'lhsRearSideAirbagImages', label: 'LHS Rear Side Airbag', dropdownName: 'LHS Rear Side Airbag' },
 
   // Seats & Upholstery
   { key: 'split_i1', hasNoImages: true, splitParts: [
@@ -1308,12 +1324,17 @@ function sectionImages(keys: (string | { new: string, old: string | undefined })
   if (!obj)
     return []
   const imgs: { url: string, label: string }[] = []
+  const seenUrls = new Set<string>()
   for (const entry of keys) {
     const newKey = typeof entry === 'string' ? entry : entry.new
     const oldKey = typeof entry === 'string' ? undefined : entry.old
     const urls = getImages(obj, newKey, oldKey)
     for (let i = 0; i < urls.length; i++) {
-      imgs.push({ url: urls[i] as string, label: `${humanize(newKey)} Image ${i + 1}` })
+      const urlObject = urls[i] as string
+      if (!seenUrls.has(urlObject)) {
+        seenUrls.add(urlObject)
+        imgs.push({ url: urlObject, label: `${humanize(newKey)} Image ${i + 1}` })
+      }
     }
   }
   return imgs
@@ -2079,6 +2100,7 @@ watch(editForm, () => {
                     <div
                       v-for="part in activeExteriorSection.parts"
                       :key="part.key"
+                      v-show="!(part as any).isLegacyFallback || getImages(editForm, (part as any).imageGroups?.[0]?.key || (part as any).imageKey, (part as any).imageGroups?.[0]?.oldKey || (part as any).oldImageKey).length > 0"
                       class="rounded-xl border bg-card shadow-sm flex flex-row overflow-hidden"
                       :class="[
                         (part as any).hasNoImages && !(part as any).isVideoBox ? 'min-h-[100px]' : 'min-h-[160px]',

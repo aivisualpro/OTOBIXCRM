@@ -2,9 +2,11 @@
 const route = useRoute()
 const { headerState, clearHeader } = usePageHeader()
 
-// Clear header state on route change so pages without setHeader() don't show stale info
-watch(() => route.fullPath, () => {
-  clearHeader()
+const router = useRouter()
+// Clear header state BEFORE route changes so deep pages with setHeader() don't get cleared post-mount
+router.beforeEach((to, from, next) => {
+  if (to.path !== from.path) clearHeader()
+  next()
 })
 
 // Derive fallback title from route when no explicit title is set
