@@ -4,13 +4,15 @@ import { toast } from 'vue-sonner'
 
 const props = defineProps<{
   title: string
-  description: string
+  description?: string
   icon: string
   entityName?: string
   columns: CrudColumn[]
   formFields: CrudFormField[]
   filters?: Record<string, string>
   clickable?: boolean
+  defaultSortKey?: string
+  defaultSortDir?: 'asc' | 'desc'
 }>()
 const inspectionStatuses = ['Pending', 'Scheduled', 'Re-Scheduled', 'Re-Inspection', 'Cancelled']
 const approvalStatuses = ['Pending', 'Under Review', 'Approved', 'Quality Rejected']
@@ -402,9 +404,9 @@ watch(() => formData.value.model, (newModel, oldModel) => {
   }
 })
 
-// ─── Sort state (default: appointmentId descending) ───
-const sortKey = ref('appointmentId')
-const sortDir = ref<'asc' | 'desc'>('desc')
+// ─── Sort state (default: appointmentId descending or from props) ───
+const sortKey = ref(props.defaultSortKey || 'appointmentId')
+const sortDir = ref<'asc' | 'desc'>(props.defaultSortDir || 'desc')
 
 function toggleSort(key: string) {
   if (sortKey.value === key) {

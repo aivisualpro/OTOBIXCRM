@@ -25,7 +25,6 @@ const filter = routeFilters.leads
 <template>
   <LeadsApiCrudPage
     :title="filter.label"
-    :description="`Viewing leads: Inspection ${filter.inspectionStatus}, Approval ${filter.approvalStatus}`"
     icon="i-lucide-magnet"
     entity-name="Lead"
     :columns="leadsColumns"

@@ -11,13 +11,14 @@ const activeColumns = computed(() => routeColumnsMap[statusKey.value] || leadsCo
   <LeadsApiCrudPage
     v-if="filter"
     :title="`Leads - ${filter.label}`"
-    :description="`Viewing leads: Inspection ${filter.inspectionStatus}, Approval ${filter.approvalStatus}`"
     icon="i-lucide-magnet"
     entity-name="Lead"
     :columns="activeColumns"
     :form-fields="leadsFormFields"
     :filters="{ inspectionStatus: filter.inspectionStatus, approvalStatus: filter.approvalStatus }"
     :clickable="statusKey === 'inspected'"
+    :default-sort-key="statusKey === 'inspected' ? 'createdAt' : 'appointmentId'"
+    default-sort-dir="desc"
   />
   <div v-else class="flex items-center justify-center h-64 text-muted-foreground">
     <p>Unknown status: {{ statusKey }}</p>
