@@ -1604,13 +1604,13 @@ watch(editForm, () => {
                 <!-- Stats Grid Layout -->
                 <div class="flex flex-col gap-3 m-auto w-full">
                   <!-- Row 1: Make, Model, Variant, MFG Year -->
-                  <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
                     <!-- Make -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-3">
                       <p class="text-xs text-muted-foreground mb-2 font-medium">
                         Make
                       </p>
-                      <div class="mt-auto relative z-10 w-full pr-8">
+                      <div class="mt-auto relative z-10 w-full">
                         <div v-if="props.readonly" class="text-lg font-black text-foreground truncate" :title="car.make">
                           {{ car.make || '—' }}
                         </div>
@@ -1619,11 +1619,11 @@ watch(editForm, () => {
                     </div>
 
                     <!-- Model -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-4">
                       <p class="text-xs text-muted-foreground mb-2 font-medium">
                         Model
                       </p>
-                      <div class="mt-auto relative z-10 w-full pr-8">
+                      <div class="mt-auto relative z-10 w-full">
                         <div v-if="props.readonly" class="text-lg font-black text-foreground truncate" :title="car.model">
                           {{ car.model || '—' }}
                         </div>
@@ -1632,7 +1632,7 @@ watch(editForm, () => {
                     </div>
 
                     <!-- Variant -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-3">
                       <p class="text-xs text-muted-foreground mb-2 font-medium">
                         Variant
                       </p>
@@ -1644,7 +1644,7 @@ watch(editForm, () => {
                       </div>
                     </div>
                     <!-- MFG Year -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-2">
                       <p class="text-xs text-muted-foreground mb-1 font-medium">
                         MFG Year
                       </p>

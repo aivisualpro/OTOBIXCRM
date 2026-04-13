@@ -27,13 +27,18 @@ onMounted(async () => {
 
       newWorker.addEventListener('statechange', () => {
         if (newWorker.state === 'activated') {
-          // New version installed & activated — on next navigation it'll be used
-          // silently activated
+          // New version installed & activated
         }
       })
     })
 
-    // registered
+    // Force page refresh automatically when new SW activates over existing SW
+    let refreshing = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return
+      refreshing = true
+      window.location.reload()
+    })
   }
   catch {
     // registration failed silently

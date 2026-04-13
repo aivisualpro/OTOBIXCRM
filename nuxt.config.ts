@@ -97,9 +97,22 @@ export default defineNuxtConfig({
   },
 
   imports: {
-    dirs: [
-      './lib',
-    ],
+    dirs: ['./lib'],
+  },
+
+  nitro: {
+    hooks: {
+      'compiled': (nitro) => {
+        const fs = require('node:fs')
+        const path = require('node:path')
+        const swPath = path.resolve(nitro.options.output.publicDir, 'sw.js')
+        if (fs.existsSync(swPath)) {
+          let swCode = fs.readFileSync(swPath, 'utf8')
+          swCode += `\n// Build version: ${Date.now()}`
+          fs.writeFileSync(swPath, swCode)
+        }
+      }
+    }
   },
 
   compatibilityDate: '2024-12-14',

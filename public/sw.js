@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 // OTOBIX CRM Service Worker
-const CACHE_NAME = 'otobix-crm-v1'
+const CACHE_NAME = 'otobix-crm-v2'
 const OFFLINE_URL = '/login'
 
 // Assets to pre-cache on install
