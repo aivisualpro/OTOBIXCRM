@@ -29,7 +29,7 @@
     "pnpm": ">=9"
   },
   "scripts": {
-    "build": "nuxt build && mkdir -p dist",
+    "build": "nuxt build && mkdir -p dist && echo '<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"0\"></head></html>' > dist/index.html",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
