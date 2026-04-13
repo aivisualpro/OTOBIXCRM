@@ -83,6 +83,7 @@ export default defineEventHandler(async (event) => {
       'createdAt',
       'otherSource',
       'inspectionDateTime',
+      'qcBy',
       'approvalStatus',
       'updatedAt',
     ])

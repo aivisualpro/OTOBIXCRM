@@ -10,7 +10,7 @@ const props = defineProps<{
 const emit = defineEmits(['pdfBlobReady'])
 const route = useRoute()
 const router = useRouter()
-const carId = computed(() => (props.appointmentId || route.params.id) as string)
+const carId = computed(() => String(props.appointmentId || route.params.id || '').replace(/\s+/g, '-'))
 
 const { setHeader } = usePageHeader()
 // Header is set dynamically based on active tab below
@@ -638,6 +638,19 @@ function _conditionColor(val: string) {
   if (v.includes('not applicable'))
     return 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'
   return 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20'
+}
+
+function downloadImageFile(url: string, label: string) {
+  if (!url) return
+  const isCloudinary = url.includes('res.cloudinary.com')
+  const downloadUrl = isCloudinary ? url.replace('/upload/', `/upload/fl_attachment:${encodeURIComponent(label).replace(/%20/g, '_')}/`) : url
+  
+  const a = document.createElement('a')
+  a.href = downloadUrl
+  a.download = `${label || 'image'}.jpg`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
 }
 function formatDate(d: string) {
   if (!d)
@@ -1878,6 +1891,9 @@ watch(editForm, () => {
                                   <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(field.key, idx, field.oldKey)">
                                     <Icon name="i-lucide-refresh-cw" class="size-3.5" />
                                   </Button>
+                                  <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-blue-500/90 hover:bg-blue-600 focus:outline-none" @click.stop="downloadImageFile(imgUrl, field.label || '')">
+                                    <Icon name="i-lucide-download" class="size-3.5 text-white" />
+                                  </Button>
                                   <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage(field.key, idx, field.oldKey)">
                                     <Icon name="i-lucide-trash" class="size-3.5 text-white" />
                                   </Button>
@@ -2120,6 +2136,9 @@ watch(editForm, () => {
                                       <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(vk.key, vIdx, vk.oldKey)">
                                         <Icon name="i-lucide-refresh-cw" class="size-3.5" />
                                       </Button>
+                                      <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-blue-500/90 hover:bg-blue-600 focus:outline-none" @click.stop="downloadImageFile(videoUrl, vk.label || '')">
+                                        <Icon name="i-lucide-download" class="size-3.5 text-white" />
+                                      </Button>
                                       <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage(vk.key, vIdx, vk.oldKey)">
                                         <Icon name="i-lucide-trash" class="size-3.5 text-white" />
                                       </Button>
@@ -2282,6 +2301,9 @@ watch(editForm, () => {
                                 <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
                                   <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(group.key, idx, group.oldKey)">
                                     <Icon name="i-lucide-refresh-cw" class="size-3.5" />
+                                  </Button>
+                                  <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-blue-500/90 hover:bg-blue-600 focus:outline-none" @click.stop="downloadImageFile(imgUrl, group.label || '')">
+                                    <Icon name="i-lucide-download" class="size-3.5 text-white" />
                                   </Button>
                                   <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage(group.key, idx, group.oldKey)">
                                     <Icon name="i-lucide-trash" class="size-3.5 text-white" />

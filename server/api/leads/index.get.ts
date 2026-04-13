@@ -140,6 +140,23 @@ export default defineEventHandler(async (event) => {
       { $skip: skip },
       { $limit: limit },
       { $unset: '_sortDate' },
+      // Fetch fallback qcBy from cars if missing natively on telecallings
+      {
+        $lookup: {
+          from: 'cars',
+          localField: 'appointmentId',
+          foreignField: 'appointmentId',
+          as: 'carDoc',
+        },
+      },
+      {
+        $addFields: {
+          qcBy: {
+            $ifNull: ['$qcBy', { $arrayElemAt: ['$carDoc.qcBy', 0] }],
+          },
+        },
+      },
+      { $unset: 'carDoc' },
       // Lookup the creator name inside strictly linked `users` instance
       {
         $lookup: {
