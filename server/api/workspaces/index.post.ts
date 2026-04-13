@@ -1,25 +1,3 @@
-import { MongoClient } from 'mongodb'
-
-let _client: MongoClient | null = null
-
-async function getDb(event: any) {
-  const config = useRuntimeConfig(event)
-  const uri = (config.mongodbUri as string) || ''
-
-  if (!uri) {
-    throw createError({ statusCode: 500, message: 'MONGODB_URI not configured' })
-  }
-
-  const dbName = (config.productionMongodbDbName as string) || 'otobix_auction_app'
-
-  if (!_client) {
-    _client = new MongoClient(uri)
-    await _client.connect()
-  }
-
-  return _client.db(dbName)
-}
-
 // POST /api/workspaces — create a new workspace
 export default defineEventHandler(async (event) => {
   try {
@@ -29,7 +7,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: 'Workspace name is required' })
     }
 
-    const db = await getDb(event)
+    const db = await getLeadsDb(event)
     const collection = db.collection('workspaces')
 
     // Generate workspaceId from name
@@ -70,7 +48,6 @@ export default defineEventHandler(async (event) => {
   catch (err: any) {
     if (err.statusCode)
       throw err
-    _client = null
     console.error('[API:workspaces] POST failed:', err.message)
     throw createError({ statusCode: 500, message: err.message || 'Failed to create workspace' })
   }

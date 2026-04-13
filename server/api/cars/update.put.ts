@@ -1,14 +1,6 @@
-import { MongoClient, ObjectId } from 'mongodb'
-
-let _client: MongoClient | null = null
+import { ObjectId } from 'mongodb'
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig(event)
-  const uri = (config.mongodbUri as string) || ''
-  if (!uri)
-    throw createError({ statusCode: 500, message: 'MONGODB_URI not configured' })
-
-  const dbName = (config.productionMongodbDbName as string) || 'otobix_auction_app'
   const body = await readBody(event)
 
   if (!body._id && !body.id) {
@@ -16,11 +8,7 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    if (!_client) {
-      _client = new MongoClient(uri)
-      await _client.connect()
-    }
-    const db = _client.db(dbName)
+    const db = await getLeadsDb(event)
     const { _id, id, _push, ...updateFields } = body
     const objectId = new ObjectId(_id || id)
 

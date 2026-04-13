@@ -2,8 +2,20 @@
 import type { PeopleUser } from '~/composables/usePeopleApi'
 
 const props = defineProps<{ user: PeopleUser }>()
+const emit = defineEmits<{
+  edit: []
+  delete: []
+}>()
 
 const router = useRouter()
+
+const userCookie = useCookie('userData')
+const currentUserRole = computed(() => {
+  const cUser = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
+  return cUser?.userType || cUser?.userRole || cUser?.role || ''
+})
+const canViewPassword = computed(() => currentUserRole.value === 'Admin' || currentUserRole.value === 'Super Admin')
+const showPassword = ref(false)
 
 // ─── KAM lookup ───
 const { allKams, fetchKams } = useKamsApi()
@@ -82,6 +94,15 @@ const wishlist = computed(() => props.user?.wishlist || [])
       <Button variant="ghost" size="sm" class="h-8" @click="router.push('/people/dealer')">
         <Icon name="i-lucide-arrow-left" class="mr-1.5 size-3.5" />
         Back
+      </Button>
+      <Separator orientation="vertical" class="h-5" />
+      <Button size="sm" class="h-8" @click="emit('edit')">
+        <Icon name="i-lucide-pencil" class="mr-1.5 size-3.5" />
+        Edit
+      </Button>
+      <Button variant="destructive" size="sm" class="h-8" @click="emit('delete')">
+        <Icon name="i-lucide-trash-2" class="mr-1.5 size-3.5" />
+        Delete
       </Button>
     </HeaderActions>
   </ClientOnly>
@@ -178,6 +199,47 @@ const wishlist = computed(() => props.user?.wishlist || [])
 
       <!-- DEALER INFO -->
       <template v-if="activeTab === 'info'">
+        <!-- Login Credentials Grid -->
+        <div v-if="canViewPassword" class="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-4 mb-4">
+          <h3 class="text-sm font-semibold flex items-center gap-2 text-primary">
+            <Icon name="i-lucide-key-round" class="size-4" />
+            Login Credentials
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
+              <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Username</span>
+              <p class="text-sm font-medium">
+                <span class="uppercase">{{ user.userName || '—' }}</span>
+              </p>
+            </div>
+            <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
+              <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Phone Number</span>
+              <p class="text-sm font-medium font-mono">
+                {{ user.phoneNumber || '—' }}
+              </p>
+            </div>
+            <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Password</span>
+                <button v-if="user.password" type="button" class="text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded" @click="showPassword = !showPassword">
+                  <Icon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-3.5" />
+                </button>
+              </div>
+              <p class="text-sm font-medium font-mono tracking-widest mt-0.5">
+                <template v-if="!user.password">
+                  <span class="text-muted-foreground/50 text-xs italic tracking-normal">Password not set</span>
+                </template>
+                <template v-else-if="showPassword">
+                  <span class="tracking-normal break-all">{{ user.password }}</span>
+                </template>
+                <template v-else>
+                  ••••••••
+                </template>
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Primary Contact -->
           <div class="rounded-xl border bg-card p-5 space-y-3">

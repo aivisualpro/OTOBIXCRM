@@ -1,44 +1,6 @@
-import { MongoClient } from 'mongodb'
-
-let _client: MongoClient | null = null
-
-async function getClient(uri: string): Promise<MongoClient> {
-  if (_client) {
-    try {
-      // Ping to verify the connection is still alive (1s timeout)
-      await _client.db('admin').command({ ping: 1 })
-      return _client
-    }
-    catch {
-      // Connection is stale/dead — tear it down
-      try { await _client.close() }
-      catch {}
-      _client = null
-    }
-  }
-
-  _client = new MongoClient(uri, {
-    serverSelectionTimeoutMS: 10000,
-    connectTimeoutMS: 10000,
-    socketTimeoutMS: 30000,
-  })
-  await _client.connect()
-  return _client
-}
-
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig(event)
-  const uri = (config.mongodbUri as string) || ''
-
-  if (!uri) {
-    throw createError({ statusCode: 500, message: 'MONGODB_URI not configured' })
-  }
-
-  const dbName = (config.productionMongodbDbName as string) || 'otobix_auction_app'
-
   try {
-    const client = await getClient(uri)
-    const db = client.db(dbName)
+    const db = await getLeadsDb(event)
     // Projection: only include fields used by Sales/Retail table views.
     // This avoids pulling large embedded image arrays & inspection data on every load.
     const projection = {
@@ -107,7 +69,6 @@ export default defineEventHandler(async (event) => {
     return mappedCars
   }
   catch (err: any) {
-    _client = null
     console.error('[API:cars] Failed to fetch cars:', err.message)
     throw createError({
       statusCode: 500,

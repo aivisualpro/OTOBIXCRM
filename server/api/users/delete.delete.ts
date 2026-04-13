@@ -1,16 +1,7 @@
 // DELETE /api/users/delete — remove a user by ID directly from MongoDB
-import { MongoClient, ObjectId } from 'mongodb'
-
-let _client: MongoClient | null = null
+import { ObjectId } from 'mongodb'
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig(event)
-  const uri = (config.mongodbUri as string) || ''
-
-  if (!uri) {
-    throw createError({ statusCode: 500, message: 'MONGODB_URI not configured' })
-  }
-
   const body = await readBody(event)
   const userId = body?.userId
 
@@ -23,23 +14,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: `Invalid userId: "${userId}"` })
   }
 
-  const dbName = String(config.productionMongodbDbName || 'otobix_auction_app')
-
   try {
-    if (!_client) {
-      _client = new MongoClient(uri)
-      await _client.connect()
-      console.info(`[API:users/delete] Connected to MongoDB → DB: ${dbName}`)
-    }
-
-    const db = _client.db(dbName)
+    const db = await getLeadsDb(event)
     const result = await db.collection('users').deleteOne({ _id: new ObjectId(userId) })
 
     if (result.deletedCount === 0) {
       throw createError({ statusCode: 404, message: `User not found with id "${userId}"` })
     }
 
-    console.warn(`[API:users/delete] Deleted user ${userId} from "${dbName}"`)
+    console.warn(`[API:users/delete] Deleted user ${userId}`)
 
     return {
       success: true,
@@ -49,7 +32,6 @@ export default defineEventHandler(async (event) => {
   catch (err: any) {
     if (err.statusCode)
       throw err
-    _client = null
     console.error('[API:users/delete] Failed:', err.message)
     throw createError({ statusCode: 500, message: err.message || 'Failed to delete user' })
   }

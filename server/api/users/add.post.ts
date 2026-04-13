@@ -1,32 +1,15 @@
 import bcrypt from 'bcryptjs'
 // POST /api/users/add — create a new user directly in MongoDB
-import { MongoClient } from 'mongodb'
-
-let _client: MongoClient | null = null
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig(event)
-  const uri = (config.mongodbUri as string) || ''
-
-  if (!uri) {
-    throw createError({ statusCode: 500, message: 'MONGODB_URI not configured' })
-  }
-
   const body = await readBody(event)
 
   if (!body?.userName || !body?.email || (body?.userRole !== 'Telecaller' && !body?.phoneNumber) || !body?.userRole) {
     throw createError({ statusCode: 400, message: 'userName, email, Role and conditionally Phone are strictly required' })
   }
 
-  const dbName = String(config.productionMongodbDbName || 'otobix_auction_app')
   try {
-    if (!_client) {
-      _client = new MongoClient(uri)
-      await _client.connect()
-      console.info(`[API:users/add] Connected to MongoDB → DB: ${dbName}`)
-    }
-
-    const db = _client.db(dbName)
+    const db = await getLeadsDb(event)
     const now = new Date().toISOString()
 
     // Check for duplicate email
@@ -81,7 +64,7 @@ export default defineEventHandler(async (event) => {
 
     const result = await db.collection('users').insertOne(doc)
 
-    console.warn(`[API:users/add] Created user "${body.userName}" in "${dbName}" → _id: ${result.insertedId}`)
+    console.warn(`[API:users/add] Created user "${body.userName}" → _id: ${result.insertedId}`)
 
     return {
       success: true,
@@ -92,7 +75,6 @@ export default defineEventHandler(async (event) => {
   catch (err: any) {
     if (err.statusCode)
       throw err
-    _client = null
     console.error('[API:users/add] MongoDB insert failed:', err.message)
     throw createError({
       statusCode: 500,

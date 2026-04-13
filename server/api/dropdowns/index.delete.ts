@@ -1,24 +1,4 @@
-import { MongoClient, ObjectId } from 'mongodb'
-
-let _client: MongoClient | null = null
-
-async function getDb(event: any) {
-  const config = useRuntimeConfig(event)
-  const uri = (config.mongodbUri as string) || ''
-
-  if (!uri) {
-    throw createError({ statusCode: 500, message: 'MONGODB_URI not configured' })
-  }
-
-  const dbName = (config.productionMongodbDbName as string) || 'otobix_auction_app'
-
-  if (!_client) {
-    _client = new MongoClient(uri)
-    await _client.connect()
-  }
-
-  return _client.db(dbName)
-}
+import { ObjectId } from 'mongodb'
 
 // DELETE /api/dropdowns — delete a dropdown by _id
 export default defineEventHandler(async (event) => {
@@ -29,7 +9,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, message: '_id is required' })
     }
 
-    const db = await getDb(event)
+    const db = await getLeadsDb(event)
 
     let filter: any
     try {
@@ -53,7 +33,6 @@ export default defineEventHandler(async (event) => {
   catch (err: any) {
     if (err.statusCode)
       throw err
-    _client = null
     console.error('[API:dropdowns] DELETE failed:', err.message)
     throw createError({ statusCode: 500, message: err.message || 'Failed to delete dropdown' })
   }

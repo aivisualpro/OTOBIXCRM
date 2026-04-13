@@ -1,29 +1,6 @@
-import { MongoClient } from 'mongodb'
-
-let _client: MongoClient | null = null
-
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig(event)
-
-  // NUXT_MONGODB_URI  → config.mongodbUri
-  // NODE_ENV is injected by Nuxt at build/runtime automatically
-  const uri = (config.mongodbUri as string) || ''
-
-  if (!uri) {
-    console.error('[API:staff-users] mongodbUri is not configured. Check NUXT_MONGODB_URI in .env')
-    throw createError({ statusCode: 500, message: 'MONGODB_URI not configured' })
-  }
-
-  const dbName = (config.productionMongodbDbName as string) || 'otobix_auction_app'
-
   try {
-    if (!_client) {
-      _client = new MongoClient(uri)
-      await _client.connect()
-      console.info(`[API:staff-users] Connected to MongoDB → DB: ${dbName}`)
-    }
-
-    const db = _client.db(dbName)
+    const db = await getLeadsDb(event)
 
     const staffUsers = await db
       .collection('users')
@@ -34,12 +11,10 @@ export default defineEventHandler(async (event) => {
       })
       .toArray()
 
-    console.warn(`[API:staff-users] Found ${staffUsers.length} staff users in "${dbName}"`)
+    console.warn(`[API:staff-users] Found ${staffUsers.length} staff users`)
     return { users: staffUsers }
   }
   catch (err: any) {
-    // If the connection dropped, reset so the next request reconnects
-    _client = null
     console.error('[API:staff-users] MongoDB query failed:', err.message)
     throw createError({
       statusCode: 500,

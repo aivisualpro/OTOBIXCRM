@@ -1,18 +1,8 @@
 import crypto from 'node:crypto' // standard node crypto
 import bcrypt from 'bcryptjs'
 // POST /api/users/login — authenticate user directly against MongoDB
-import { MongoClient } from 'mongodb'
-
-let _client: MongoClient | null = null
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig(event)
-  const uri = (config.mongodbUri as string) || ''
-
-  if (!uri) {
-    throw createError({ statusCode: 500, message: 'MONGODB_URI not configured' })
-  }
-
   const body = await readBody(event)
   const incomingUserStr = (body.userName || body.username || body.email || '').trim()
 
@@ -20,17 +10,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Username/Email and Password are required' })
   }
 
-  // Always use Production as requested
-  const dbName = (config.productionMongodbDbName as string) || 'otobix_auction_app'
-
   try {
-    if (!_client) {
-      _client = new MongoClient(uri)
-      await _client.connect()
-      console.info(`[API:login] Connected to MongoDB → DB: ${dbName}`)
-    }
-
-    const db = _client.db(dbName)
+    const db = await getLeadsDb(event)
 
     // Authenticate user natively against DB payload (Case Insensitive to support mobile apps)
     // Checks userName OR email OR phoneNumber fallback 
@@ -78,7 +59,6 @@ export default defineEventHandler(async (event) => {
     return { token, user: safeUser, message: 'Login successful' }
   }
   catch (err: any) {
-    _client = null
     if (err.statusCode)
       throw err
 

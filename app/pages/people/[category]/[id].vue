@@ -9,6 +9,13 @@ const isDealer = computed(() => categoryKey.value === 'dealer')
 
 const { setHeader } = usePageHeader()
 
+const userCookie = useCookie('userData')
+const currentUserRole = computed(() => {
+  const cUser = typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value
+  return cUser?.userType || cUser?.userRole || cUser?.role || ''
+})
+const canViewPassword = computed(() => currentUserRole.value === 'Admin' || currentUserRole.value === 'Super Admin')
+
 const {
   fetchAllUsers,
   updateUser,
@@ -292,7 +299,7 @@ const addresses = computed(() => {
     </div>
 
     <!-- Dealer detail view -->
-    <PeopleDealerDetailPage v-else-if="isDealer" :user="user" />
+    <PeopleDealerDetailPage v-else-if="isDealer && !isEditing" :user="user" @edit="startEdit" @delete="showDeleteDialog = true" />
 
     <!-- Generic profile view -->
     <div v-else>
@@ -395,7 +402,7 @@ const addresses = computed(() => {
                 <div class="rounded-lg bg-background border border-primary/10 p-3 space-y-1 relative shadow-sm">
                   <div class="flex items-center justify-between">
                     <span class="text-[10px] font-semibold text-primary/70 uppercase tracking-wide">Password</span>
-                    <button v-if="user.password" type="button" class="text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded" @click="showPassword = !showPassword">
+                    <button v-if="user.password && canViewPassword" type="button" class="text-muted-foreground hover:text-primary transition-colors cursor-pointer rounded" @click="showPassword = !showPassword">
                       <Icon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-3.5" />
                     </button>
                   </div>
@@ -403,8 +410,8 @@ const addresses = computed(() => {
                     <template v-if="!user.password">
                       <span class="text-muted-foreground/50 text-xs italic tracking-normal">Password not set</span>
                     </template>
-                    <template v-else-if="showPassword">
-                      <span class="tracking-normal">{{ user.password }}</span>
+                    <template v-else-if="showPassword && canViewPassword">
+                      <span class="tracking-normal break-all">{{ user.password }}</span>
                     </template>
                     <template v-else>
                       ••••••••
@@ -588,8 +595,7 @@ const addresses = computed(() => {
                 </div>
               </div>
 
-              <!-- Password -->
-              <div class="space-y-1.5">
+              <div v-if="canViewPassword" class="space-y-1.5">
                 <Label for="edit-password">Password</Label>
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <div class="relative flex-1">
