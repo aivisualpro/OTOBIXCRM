@@ -101,6 +101,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    preset: process.env.VERCEL ? 'vercel' : undefined,
     hooks: {
       'compiled': (nitro) => {
         const fs = require('node:fs')
