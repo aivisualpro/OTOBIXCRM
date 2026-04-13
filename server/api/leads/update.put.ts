@@ -170,36 +170,66 @@ export default defineEventHandler(async (event) => {
         // priceDiscoveryBy = the user who approved the QC
         const priceDiscoveryBy = changedBy || ''
 
+        // ── Calculate margins from carMargins collection ──
+        const existingCar = await db.collection('cars').findOne({ appointmentId: apptId })
+        const priceDiscovery = Number(updates.priceDiscovery || existingCar?.priceDiscovery) || 0
+        const priceInLacs = priceDiscovery / 100000
+
+        let calculatedFixedMargin = 0
+        let calculatedVariableMargin = 0
+
+        try {
+          const marginSchemes = await db.collection('carMargins').find({}).sort({ fixedMargin: 1 }).toArray()
+          if (marginSchemes.length > 0) {
+            // Use the first (global) scheme
+            const scheme = marginSchemes[0]
+            calculatedFixedMargin = Number(scheme.fixedMargin) || 0
+
+            // Find the matching variable range based on priceDiscovery in lacs
+            const ranges = scheme.variableRanges || []
+            for (const range of ranges) {
+              const min = Number(range.min) || 0
+              const max = Number(range.max) || Infinity
+              if (priceInLacs >= min && priceInLacs <= max) {
+                calculatedVariableMargin = Number(range.margin) || 0
+                break
+              }
+            }
+          }
+        }
+        catch (marginErr: any) {
+          console.warn('[API:leads] Failed to fetch margin scheme, using defaults:', marginErr.message)
+        }
+
         // All fields that MUST exist on the car document (even if empty)
         const QC_REQUIRED_FIELDS: Record<string, any> = {
           contactNumber,
           customerContactNumber: contactNumber,
           priceDiscoveryBy,
-          highestBid: '',
+          highestBid: 0,
           highestBidder: '',
           auctionStartTime: '',
-          auctionDuration: '',
+          auctionDuration: 0,
           auctionEndTime: '',
           auctionStatus: '',
           upcomingTime: '',
           upcomingUntil: '',
           liveAt: '',
           movedToOtobuyAt: '',
-          oneClickPrice: '',
-          otobuyOffer: '',
+          oneClickPrice: 0,
+          otobuyOffer: 0,
           soldAt: '',
           soldTo: '',
           reasonOfRemoval: '',
           removedBy: '',
-          customerExpectedPrice: '',
-          fixedMargin: '',
-          variableMargin: '',
+          customerExpectedPrice: 0,
+          fixedMargin: calculatedFixedMargin,
+          variableMargin: calculatedVariableMargin,
           sendToAuctionApk: '',
           appointmentId: apptId,
         }
 
         // Only set fields that don't already exist on the car document
-        const existingCar = await db.collection('cars').findOne({ appointmentId: apptId })
         for (const [field, defaultVal] of Object.entries(QC_REQUIRED_FIELDS)) {
           if (!existingCar || existingCar[field] === undefined || existingCar[field] === null) {
             carsUpdateQuery.$set[field] = defaultVal
@@ -209,6 +239,8 @@ export default defineEventHandler(async (event) => {
         carsUpdateQuery.$set.priceDiscoveryBy = priceDiscoveryBy
         carsUpdateQuery.$set.contactNumber = contactNumber
         carsUpdateQuery.$set.customerContactNumber = contactNumber
+        carsUpdateQuery.$set.fixedMargin = calculatedFixedMargin
+        carsUpdateQuery.$set.variableMargin = calculatedVariableMargin
       }
 
       await db.collection('cars').updateOne(

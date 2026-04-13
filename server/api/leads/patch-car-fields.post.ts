@@ -23,29 +23,57 @@ export default defineEventHandler(async (event) => {
       contactNumber = teleDoc?.customerContactNumber || ''
     }
 
+    // ── Calculate margins from carMargins collection ──
+    const priceDiscovery = Number(existingCar.priceDiscovery) || 0
+    const priceInLacs = priceDiscovery / 100000
+
+    let calculatedFixedMargin = 0
+    let calculatedVariableMargin = 0
+
+    try {
+      const marginSchemes = await db.collection('carMargins').find({}).sort({ fixedMargin: 1 }).toArray()
+      if (marginSchemes.length > 0) {
+        const scheme = marginSchemes[0]
+        calculatedFixedMargin = Number(scheme.fixedMargin) || 0
+
+        const ranges = scheme.variableRanges || []
+        for (const range of ranges) {
+          const min = Number(range.min) || 0
+          const max = Number(range.max) || Infinity
+          if (priceInLacs >= min && priceInLacs <= max) {
+            calculatedVariableMargin = Number(range.margin) || 0
+            break
+          }
+        }
+      }
+    }
+    catch (marginErr: any) {
+      console.warn('[API:leads] Margin calc failed, using 0:', marginErr.message)
+    }
+
     const QC_REQUIRED_FIELDS: Record<string, any> = {
       contactNumber,
       customerContactNumber: contactNumber,
       priceDiscoveryBy: body.priceDiscoveryBy || '',
-      highestBid: '',
+      highestBid: 0,
       highestBidder: '',
       auctionStartTime: '',
-      auctionDuration: '',
+      auctionDuration: 0,
       auctionEndTime: '',
       auctionStatus: '',
       upcomingTime: '',
       upcomingUntil: '',
       liveAt: '',
       movedToOtobuyAt: '',
-      oneClickPrice: '',
-      otobuyOffer: '',
+      oneClickPrice: 0,
+      otobuyOffer: 0,
       soldAt: '',
       soldTo: '',
       reasonOfRemoval: '',
       removedBy: '',
-      customerExpectedPrice: '',
-      fixedMargin: '',
-      variableMargin: '',
+      customerExpectedPrice: 0,
+      fixedMargin: calculatedFixedMargin,
+      variableMargin: calculatedVariableMargin,
       sendToAuctionApk: '',
       appointmentId: existingCar.appointmentId || '',
     }
@@ -65,6 +93,12 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // Always overwrite margins with calculated values (as numbers)
+    $set.fixedMargin = calculatedFixedMargin
+    $set.variableMargin = calculatedVariableMargin
+    if (!seeded.includes('fixedMargin')) seeded.push('fixedMargin (overwrite)')
+    if (!seeded.includes('variableMargin')) seeded.push('variableMargin (overwrite)')
+
     if (Object.keys($set).length > 0) {
       await db.collection('cars').updateOne(
         { _id: new ObjectId(carId) },
@@ -75,6 +109,10 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       message: `Patched ${seeded.length} fields, skipped ${skipped.length} existing fields`,
+      priceDiscovery,
+      priceInLacs,
+      calculatedFixedMargin,
+      calculatedVariableMargin,
       seeded,
       skipped,
     }
