@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite'
 
 process.env.BROWSERSLIST_IGNORE_OLD_DATA = 'true'
-// https://nuxt.com/docs/api/configuration/nuxt-config
+
 export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: false,
@@ -23,7 +23,6 @@ export default defineNuxtConfig({
     productionMongodbDbName: 'otobix_auction_app',
     developmentMongodbDbName: 'otobix_auction_app_development',
     public: {
-      // Defaults — overridden by NUXT_PUBLIC_API_BASE_URL_* in .env
       apiBaseUrlProduction: '',
       apiBaseUrlDevelopment: '',
       apiBaseUrlStaging: '',
@@ -33,10 +32,9 @@ export default defineNuxtConfig({
   watch: ['~/app.config.ts'],
 
   css: ['~/assets/css/tailwind.css'],
+
   vite: {
-    plugins: [
-      tailwindcss(),
-    ],
+    plugins: [tailwindcss()],
     server: {
       watch: {
         usePolling: true,
@@ -64,14 +62,7 @@ export default defineNuxtConfig({
   ],
 
   shadcn: {
-    /**
-     * Prefix for all the imported component
-     */
     prefix: '',
-    /**
-     * Directory that the component lives in.
-     * @default "~/components/ui"
-     */
     componentDir: '~/components/ui',
   },
 
@@ -98,21 +89,6 @@ export default defineNuxtConfig({
 
   imports: {
     dirs: ['./lib'],
-  },
-
-  nitro: {
-    hooks: {
-      'compiled': (nitro) => {
-        const fs = require('node:fs')
-        const path = require('node:path')
-        const swPath = path.resolve(nitro.options.output.publicDir, 'sw.js')
-        if (fs.existsSync(swPath)) {
-          let swCode = fs.readFileSync(swPath, 'utf8')
-          swCode += `\n// Build version: ${Date.now()}`
-          fs.writeFileSync(swPath, swCode)
-        }
-      }
-    }
   },
 
   compatibilityDate: '2024-12-14',
