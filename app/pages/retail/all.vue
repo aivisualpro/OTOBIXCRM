@@ -1,7 +1,7 @@
 <template>
   <RetailTablePage
-    title="All Sales"
-    description="Review all approved inspections and evaluate auction metrics globally before closing sales deals."
+    title="Retail / All"
+    description=""
     icon="i-lucide-list"
   />
 </template>

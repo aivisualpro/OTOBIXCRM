@@ -10,10 +10,7 @@ async function getDb(event: any) {
     throw createError({ statusCode: 500, message: 'MONGODB_URI not configured' })
   }
 
-  const envCookie = getCookie(event, 'apiEnvironment') || 'production'
-  const dbName = envCookie === 'development'
-    ? ((config.developmentMongodbDbName as string) || 'otobix_auction_app_development')
-    : ((config.productionMongodbDbName as string) || 'otobix_auction_app')
+  const dbName = (config.productionMongodbDbName as string) || 'otobix_auction_app'
 
   if (!_client) {
     _client = new MongoClient(uri)

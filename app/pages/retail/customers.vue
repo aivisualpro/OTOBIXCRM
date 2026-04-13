@@ -39,5 +39,5 @@ const seedData = [
 </script>
 
 <template>
-  <ErpCrudPage store-key="sales-customers" title="Customers" description="360-degree customer profiles with purchase history and lifetime value analytics." icon="i-lucide-users" entity-name="Customer" :columns="columns" :form-fields="formFields" :initial-data="seedData" />
+  <ErpCrudPage store-key="sales-customers" title="Retail / Customers" description="" icon="i-lucide-users" entity-name="Customer" :columns="columns" :form-fields="formFields" :initial-data="seedData" />
 </template>

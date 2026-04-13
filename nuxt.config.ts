@@ -21,10 +21,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     mongodbUri: '',
     productionMongodbDbName: 'otobix_auction_app',
-    developmentMongodbDbName: 'otobix_auction_app_development',
     public: {
       apiBaseUrlProduction: '',
-      apiBaseUrlDevelopment: '',
       apiBaseUrlStaging: '',
     },
   },

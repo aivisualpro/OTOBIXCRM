@@ -1,7 +1,7 @@
 <template>
   <SalesTablePage
-    title="Otobuy Sales"
-    description="Review vehicles actively listed under priority Otobuy status."
+    title="Sales / Otobuy"
+    description=""
     icon="i-lucide-tag"
     filter-status="otobuy"
   />

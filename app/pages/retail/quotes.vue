@@ -159,8 +159,8 @@ const seedData: SalesDocument[] = [
   <RetailDocumentPage
     store-key="sales-quotes-v2"
     doc-type="Quote"
-    title="Quotes & Estimates"
-    description="Create professional quotes with configurable line items"
+    title="Retail / Quotes & Estimates"
+    description=""
     icon="i-lucide-file-text"
     :status-options="statusOptions"
     :extra-fields="extraFields"

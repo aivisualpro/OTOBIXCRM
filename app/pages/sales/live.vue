@@ -1,7 +1,7 @@
 <template>
   <SalesTablePage
-    title="Live Sales"
-    description="Review currently live vehicles actively receiving bids."
+    title="Sales / Live"
+    description=""
     icon="i-lucide-radio"
     filter-status="live"
   />

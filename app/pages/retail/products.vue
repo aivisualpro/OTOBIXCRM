@@ -45,5 +45,5 @@ const seedData = [
 </script>
 
 <template>
-  <ErpCrudPage store-key="sales-products" title="Products" description="Comprehensive product catalog with variants, pricing, and categories." icon="i-lucide-package" entity-name="Product" :columns="columns" :form-fields="formFields" :initial-data="seedData" />
+  <ErpCrudPage store-key="sales-products" title="Retail / Products" description="" icon="i-lucide-package" entity-name="Product" :columns="columns" :form-fields="formFields" :initial-data="seedData" />
 </template>

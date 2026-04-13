@@ -9,8 +9,8 @@ const filter = computed(() => auctionRouteFilters[statusKey.value])
 <template>
   <AuctionsTablePage
     v-if="filter"
-    :title="filter.label"
-    :description="`${filter.label} auctions`"
+    :title="`Auctions / ${filter.label}`"
+    :description="''"
     :icon="filter.icon"
     :columns="auctionColumns"
     :filter-fn="filter.filterFn"

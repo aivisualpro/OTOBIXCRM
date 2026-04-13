@@ -1,7 +1,7 @@
 <template>
   <RetailTablePage
-    title="Upcoming Retail"
-    description="Review vehicles that are scheduled for upcoming retail auctions."
+    title="Retail / Upcoming"
+    description=""
     icon="i-lucide-calendar-clock"
     filter-status="upcoming"
   />

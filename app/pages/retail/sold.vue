@@ -1,7 +1,7 @@
 <template>
   <RetailTablePage
-    title="Sold Sales"
-    description="Review vehicles that have successfully completed the sales process."
+    title="Retail / Sold"
+    description=""
     icon="i-lucide-badge-check"
     filter-status="sold"
   />

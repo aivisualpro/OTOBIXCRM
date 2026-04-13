@@ -211,8 +211,8 @@ const seedData: SalesDocument[] = [
   <RetailDocumentPage
     store-key="sales-invoices-v2"
     doc-type="Invoice"
-    title="Invoices"
-    description="Generate, send, and track invoices with payment reminders"
+    title="Retail / Invoices"
+    description=""
     icon="i-lucide-receipt"
     :status-options="statusOptions"
     :extra-fields="extraFields"

@@ -199,8 +199,8 @@ const seedData: SalesDocument[] = [
   <RetailDocumentPage
     store-key="sales-orders-v2"
     doc-type="Order"
-    title="Sales Orders"
-    description="End-to-end order management from creation to fulfillment"
+    title="Retail / Sales Orders"
+    description=""
     icon="i-lucide-shopping-cart"
     :status-options="statusOptions"
     :extra-fields="extraFields"

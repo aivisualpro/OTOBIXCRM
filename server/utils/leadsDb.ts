@@ -16,10 +16,7 @@ export function getLeadsDb(event: any): Promise<Db> {
     throw createError({ statusCode: 500, message: 'MONGODB_URI not configured' })
   }
 
-  const envCookie = getCookie(event, 'apiEnvironment') || 'production'
-  const dbName = envCookie === 'development'
-    ? ((config.developmentMongodbDbName as string) || 'otobix_auction_app_development')
-    : ((config.productionMongodbDbName as string) || 'otobix_auction_app')
+  const dbName = (config.productionMongodbDbName as string) || 'otobix_auction_app'
 
   // If already connecting or connected, hook the same shared Promise to avoid duplicate pool overlapping!
   if (!_dbPromises[dbName]) {
@@ -30,7 +27,7 @@ export function getLeadsDb(event: any): Promise<Db> {
       })
       await client.connect()
       _clients[dbName] = client
-      console.info(`[API:leads] Connected to MongoDB → DB: ${dbName} (${envCookie})`)
+      console.info(`[API:leads] Connected to MongoDB → DB: ${dbName}`)
       return client.db(dbName)
     })()
   }
