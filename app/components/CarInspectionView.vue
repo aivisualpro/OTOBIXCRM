@@ -1265,6 +1265,56 @@ const lightboxImages = ref<{ url: string, label: string }[]>([])
 const lightboxIndex = ref(0)
 const showLightbox = ref(false)
 
+// ── QC Audit Log Value Formatting Helpers ──
+function qcLogIsImageField(field: string, value: any): boolean {
+  if (!value) return false
+  const f = String(field).toUpperCase()
+  if (f.includes('IMAGE')) return true
+  const v = String(value)
+  if (v.includes('cloudinary.com') || v.includes('/image/upload/')) return true
+  if (/\.(jpg|jpeg|png|webp|gif|svg|avif)/i.test(v)) return true
+  return false
+}
+
+function qcLogExtractUrls(value: any): string[] {
+  if (!value) return []
+  const v = String(value).trim()
+  // Handle JSON arrays like ["url1","url2"]
+  if (v.startsWith('[')) {
+    try {
+      const arr = JSON.parse(v.replace(/'/g, '"'))
+      if (Array.isArray(arr)) return arr.filter((u: string) => u && typeof u === 'string' && (u.startsWith('http') || u.includes('cloudinary')))
+    }
+    catch { /* not JSON, fallback */ }
+  }
+  // Single URL
+  if (v.startsWith('http')) return [v]
+  return []
+}
+
+function qcLogIsDate(value: any): boolean {
+  if (!value) return false
+  const v = String(value).trim()
+  // ISO 8601 format: 2021-09-01T00:00:00.0002 or 2024-12-14
+  return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?/.test(v)
+}
+
+function qcLogFormatDate(value: any): string {
+  try {
+    const d = new Date(String(value))
+    if (Number.isNaN(d.getTime())) return String(value)
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  }
+  catch { return String(value) }
+}
+
+function qcLogIsNumber(field: string, value: any): boolean {
+  if (value === null || value === undefined || value === '') return false
+  const f = String(field).toUpperCase()
+  if (f.includes('PRICE') || f.includes('KMS') || f.includes('ODOMETER') || f.includes('READING') || f.includes('NUMBER') || f.includes('NOOFAIRBAGS') || f.includes('SEATS') || f.includes('COST')) return true
+  return !Number.isNaN(Number(value)) && String(value).trim() !== '' && /^\d+(\.\d+)?$/.test(String(value).trim())
+}
+
 function openLightbox(images: { url: string, label: string }[], index: number) {
   lightboxImages.value = images
   lightboxIndex.value = index
@@ -2426,14 +2476,64 @@ watch(editForm, () => {
                           <div class="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-1">
                             {{ change.field }}
                           </div>
-                          <div class="flex flex-col xl:flex-row xl:items-center gap-2 xl:gap-4">
-                            <div class="flex-1 bg-red-500/10 text-red-700 dark:text-red-400 rounded p-1.5 line-clamp-3 text-xs opacity-80" :title="String(change.oldValue)">
-                              <span class="line-through">{{ change.oldValue || '—' }}</span>
+                          <div class="flex flex-col xl:flex-row xl:items-start gap-2 xl:gap-4">
+                            <!-- Old Value -->
+                            <div class="flex-1 bg-red-500/10 text-red-700 dark:text-red-400 rounded p-1.5 text-xs opacity-80">
+                              <template v-if="!change.oldValue && change.oldValue !== 0">
+                                <span class="line-through">—</span>
+                              </template>
+                              <template v-else-if="qcLogIsImageField(change.field, change.oldValue)">
+                                <div class="flex flex-wrap gap-1.5">
+                                  <img
+                                    v-for="(imgUrl, imgIdx) in qcLogExtractUrls(change.oldValue)"
+                                    :key="imgIdx"
+                                    :src="imgUrl"
+                                    class="h-14 w-14 object-cover rounded border border-red-300/40 cursor-pointer hover:opacity-80 transition-opacity"
+                                    loading="lazy"
+                                    @click="openLightboxUrls(qcLogExtractUrls(change.oldValue), imgIdx, change.field)"
+                                  >
+                                  <span v-if="qcLogExtractUrls(change.oldValue).length === 0" class="line-through">—</span>
+                                </div>
+                              </template>
+                              <template v-else-if="qcLogIsDate(change.oldValue)">
+                                <span class="line-through font-mono">{{ qcLogFormatDate(change.oldValue) }}</span>
+                              </template>
+                              <template v-else-if="qcLogIsNumber(change.field, change.oldValue)">
+                                <span class="line-through font-mono">{{ change.oldValue }}</span>
+                              </template>
+                              <template v-else>
+                                <span class="line-through">{{ change.oldValue }}</span>
+                              </template>
                             </div>
-                            <Icon name="i-lucide-arrow-right" class="size-3 text-muted-foreground hidden xl:block shrink-0" />
+                            <Icon name="i-lucide-arrow-right" class="size-3 text-muted-foreground hidden xl:block shrink-0 mt-2" />
                             <Icon name="i-lucide-arrow-down" class="size-3 text-muted-foreground xl:hidden shrink-0 ml-1.5" />
-                            <div class="flex-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded p-1.5 line-clamp-3 text-xs font-medium" :title="String(change.newValue)">
-                              {{ change.newValue || '—' }}
+                            <!-- New Value -->
+                            <div class="flex-1 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded p-1.5 text-xs font-medium">
+                              <template v-if="!change.newValue && change.newValue !== 0">
+                                —
+                              </template>
+                              <template v-else-if="qcLogIsImageField(change.field, change.newValue)">
+                                <div class="flex flex-wrap gap-1.5">
+                                  <img
+                                    v-for="(imgUrl, imgIdx) in qcLogExtractUrls(change.newValue)"
+                                    :key="imgIdx"
+                                    :src="imgUrl"
+                                    class="h-14 w-14 object-cover rounded border border-emerald-300/40 cursor-pointer hover:opacity-80 transition-opacity"
+                                    loading="lazy"
+                                    @click="openLightboxUrls(qcLogExtractUrls(change.newValue), imgIdx, change.field)"
+                                  >
+                                  <span v-if="qcLogExtractUrls(change.newValue).length === 0">—</span>
+                                </div>
+                              </template>
+                              <template v-else-if="qcLogIsDate(change.newValue)">
+                                <span class="font-mono">{{ qcLogFormatDate(change.newValue) }}</span>
+                              </template>
+                              <template v-else-if="qcLogIsNumber(change.field, change.newValue)">
+                                <span class="font-mono">{{ change.newValue }}</span>
+                              </template>
+                              <template v-else>
+                                {{ change.newValue }}
+                              </template>
                             </div>
                           </div>
                         </div>

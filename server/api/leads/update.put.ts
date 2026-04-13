@@ -131,8 +131,8 @@ export default defineEventHandler(async (event) => {
       }
       carsUpdateQuery.$push = {
         qcLog: { timestamp: updates.updatedAt, changedBy, changes },
-        qcLogs: { timestamp: updates.updatedAt, changedBy, changes },
       }
+      carsUpdateQuery.$unset = { qcLogs: 1 }
     }
 
     const hasTelecallingSet = telecallingUpdateQuery.$set && Object.keys(telecallingUpdateQuery.$set).length > 0
