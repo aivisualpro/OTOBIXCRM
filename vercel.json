@@ -1,5 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "nuxt build && echo '=== DEBUG ===' && ls -la .vercel/output/ && echo '=== config.json ===' && cat .vercel/output/config.json 2>/dev/null || echo 'NO config.json FOUND'",
-  "outputDirectory": ".vercel/output/static"
-}
