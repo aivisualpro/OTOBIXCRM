@@ -68,6 +68,9 @@ export default defineEventHandler(async (event) => {
     // Sync to AppSheet in background (non-blocking)
     syncLeadToAppSheet('Add', doc, db)
 
+    // Broadcast real-time change to all connected clients
+    broadcastChange('leads', 'create', doc.appointmentId, doc.addedBy)
+
     return {
       success: true,
       message: 'Lead created successfully',

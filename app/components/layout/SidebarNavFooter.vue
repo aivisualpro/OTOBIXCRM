@@ -28,10 +28,23 @@ function handleLogout() {
 }
 
 const showModalTheme = ref(false)
+const { isConnected: liveSyncConnected } = useLiveSync()
 </script>
 
 <template>
-  <div class="px-2 pb-1 text-[10px] text-muted-foreground/60 font-medium">version b.1.04</div>
+  <div class="px-2 pb-1 text-[10px] text-muted-foreground/60 font-medium flex items-center gap-1.5">
+    <span class="relative flex size-1.5">
+      <span
+        class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+        :class="liveSyncConnected ? 'bg-emerald-400' : 'bg-red-400'"
+      />
+      <span
+        class="relative inline-flex rounded-full size-1.5"
+        :class="liveSyncConnected ? 'bg-emerald-500' : 'bg-red-500'"
+      />
+    </span>
+    version b.1.05
+  </div>
   <SidebarMenu>
     <SidebarMenuItem>
       <DropdownMenu>

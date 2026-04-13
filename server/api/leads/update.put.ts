@@ -171,6 +171,9 @@ export default defineEventHandler(async (event) => {
       syncLeadToAppSheet('Edit', result, db)
     }
 
+    // Broadcast real-time change to all connected clients
+    broadcastChange('leads', 'update', apptId || telecallingId, changedBy)
+
     return {
       success: true,
       message: 'Lead updated successfully',

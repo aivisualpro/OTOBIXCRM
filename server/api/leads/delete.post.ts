@@ -26,6 +26,9 @@ export default defineEventHandler(async (event) => {
     // Sync deletion to AppSheet (uses Appointment ID as key)
     syncLeadToAppSheet('Delete', result, db)
 
+    // Broadcast real-time change to all connected clients
+    broadcastChange('leads', 'delete', telecallingId)
+
     return {
       success: true,
       message: 'Lead deleted successfully',

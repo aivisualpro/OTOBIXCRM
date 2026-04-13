@@ -11,9 +11,16 @@ const { currentEnv: _currentEnv } = useApiEnvironment()
 // ─── Smart Prefetch Engine ───
 // Eagerly load leads + people + car data in background after app boot
 const { bootPrefetch } = usePrefetch()
+
+// ─── Live Sync Engine ───
+// Real-time data sync across all connected browsers via SSE
+const { startLiveSync } = useLiveSync()
+
 onMounted(() => {
   // Kick off data prefetch silently — zero loading screens when user navigates
   bootPrefetch()
+  // Start listening for real-time changes from other users
+  startLiveSync()
 })
 
 useHead({
