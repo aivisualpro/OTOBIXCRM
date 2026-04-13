@@ -160,6 +160,57 @@ export default defineEventHandler(async (event) => {
     const apptId = actualDoc.appointmentId || oldDoc.appointmentId
     if (apptId) {
       carsUpdateQuery.$set.appointmentId = apptId
+
+      // ── QC Approval: Seed all required fields on the cars document ──
+      if (updates.approvalStatus === 'Approved') {
+        // Pull contactNumber from telecallings → cars
+        const teleDoc = await db.collection('telecallings').findOne({ appointmentId: apptId })
+        const contactNumber = teleDoc?.customerContactNumber || ''
+
+        // priceDiscoveryBy = the user who approved the QC
+        const priceDiscoveryBy = changedBy || ''
+
+        // All fields that MUST exist on the car document (even if empty)
+        const QC_REQUIRED_FIELDS: Record<string, any> = {
+          contactNumber,
+          customerContactNumber: contactNumber,
+          priceDiscoveryBy,
+          highestBid: '',
+          highestBidder: '',
+          auctionStartTime: '',
+          auctionDuration: '',
+          auctionEndTime: '',
+          auctionStatus: '',
+          upcomingTime: '',
+          upcomingUntil: '',
+          liveAt: '',
+          movedToOtobuyAt: '',
+          oneClickPrice: '',
+          otobuyOffer: '',
+          soldAt: '',
+          soldTo: '',
+          reasonOfRemoval: '',
+          removedBy: '',
+          customerExpectedPrice: '',
+          fixedMargin: '',
+          variableMargin: '',
+          sendToAuctionApk: '',
+          appointmentId: apptId,
+        }
+
+        // Only set fields that don't already exist on the car document
+        const existingCar = await db.collection('cars').findOne({ appointmentId: apptId })
+        for (const [field, defaultVal] of Object.entries(QC_REQUIRED_FIELDS)) {
+          if (!existingCar || existingCar[field] === undefined || existingCar[field] === null) {
+            carsUpdateQuery.$set[field] = defaultVal
+          }
+        }
+        // Always overwrite these specific fields on approval
+        carsUpdateQuery.$set.priceDiscoveryBy = priceDiscoveryBy
+        carsUpdateQuery.$set.contactNumber = contactNumber
+        carsUpdateQuery.$set.customerContactNumber = contactNumber
+      }
+
       await db.collection('cars').updateOne(
         { appointmentId: apptId },
         carsUpdateQuery,
