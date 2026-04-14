@@ -238,8 +238,8 @@ async function saveQC(silent = false) {
     // The get API merges them. We send updates using the appointmentId as telecallingId for the update API fallback in server
     await $fetch('/api/leads/update', {
       method: 'PUT',
-      retry: 0,
-      timeout: 15000,
+      retry: 1,
+      timeout: 60000,
       body: {
         telecallingId: editForm.value.appointmentId || editForm.value._id,
         changedBy: currentUser?.userName || currentUser?.email || 'QC',

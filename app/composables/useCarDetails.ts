@@ -20,8 +20,8 @@ export function useCarDetails() {
     try {
       const ts = Date.now()
       const response = await $fetch<CarDetailsResponse>(`/api/leads/${carId}?t=${ts}`, {
-        retry: 0,
-        timeout: 15000,
+        retry: 1,
+        timeout: 60000,
       })
 
       carDetails.value = response.carDetails || response
