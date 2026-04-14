@@ -137,9 +137,31 @@ const filteredItems = computed(() => {
 const ITEMS_PER_PAGE = 30
 const visibleCount = ref(ITEMS_PER_PAGE)
 
-watch(globalSearch, () => {
+watch(globalSearch, (newVal) => {
   visibleCount.value = ITEMS_PER_PAGE
   expandedCarId.value = null
+
+  if (newVal && newVal.trim().length > 4) {
+    const q = newVal.trim().toLowerCase()
+    
+    // Check if there is an exact match for appointmentId
+    const exactMatch = allCars.value.find((c: any) => 
+      String(c.appointmentId || '').toLowerCase() === q 
+      || String(c.registrationNumber || '').toLowerCase() === q
+    )
+    
+    // If exact match found, but it's not in the current tab's items...
+    if (exactMatch && !baseFilteredItems.value.some(c => (c.id || c._id) === (exactMatch.id || exactMatch._id))) {
+       let targetStatus = exactMatch.auctionStatus || ''
+       if (targetStatus === 'liveAuctionEnded') targetStatus = 'ended'
+       
+       if (['upcoming', 'live', 'otobuy', 'ended', 'sold', 'removed'].includes(targetStatus)) {
+          toast.success(`Found in ${targetStatus}, navigating...`)
+          sessionStorage.setItem('auction_last_viewed', String(exactMatch.id || exactMatch._id || ''))
+          router.push(`/auctions/${targetStatus}`)
+       }
+    }
+  }
 })
 
 function focusGlobalSearch() {
