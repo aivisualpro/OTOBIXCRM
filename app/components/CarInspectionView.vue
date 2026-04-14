@@ -158,7 +158,13 @@ async function saveQC(silent = false) {
     const syncFallbacks = (item: any) => {
       if (!item) return
       if (item.oldKey && item.oldKey !== 'new' && item.key && item.key in edited) {
-        const val = edited[item.key]
+        let val = edited[item.key]
+        
+        // Ensure dropdown arrays flatten into comma-separated strings for legacy fields
+        if (Array.isArray(val)) {
+          val = val.join(', ')
+        }
+        
         if (JSON.stringify(val) !== JSON.stringify(edited[item.oldKey])) {
           edited[item.oldKey] = val === undefined ? undefined : JSON.parse(JSON.stringify(val))
         }
