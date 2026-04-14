@@ -115,6 +115,13 @@ export default defineEventHandler(async (event) => {
       'cngCylinderTestedDate',
       'cngRegistrationDate',
       'batteryReplacedDate',
+      'auctionStartTime',
+      'auctionEndTime',
+      'upcomingUntil',
+      'liveAt',
+      'movedToOtobuyAt',
+      'sendToAuctionApk',
+      'roadTaxValidity',
       'createdAt',
       'updatedAt',
     ])
@@ -122,9 +129,13 @@ export default defineEventHandler(async (event) => {
     for (const k of Object.keys(updates)) {
       if (DATE_FIELDS.has(k) && typeof updates[k] === 'string') {
         const val = updates[k]
-        // If it looks like a valid date format and isn't a text placeholder like "Not Applicable"
-        if (val && !Number.isNaN(Date.parse(val)) && !val.toLowerCase().includes('applicable')) {
+        // Convert explicitly empty strings to null so they don't break BSON typing
+        if (!val || val.toLowerCase().includes('applicable')) {
+          updates[k] = null
+        } else if (!Number.isNaN(Date.parse(val))) {
           updates[k] = new Date(val)
+        } else {
+          updates[k] = null
         }
       }
     }
@@ -245,13 +256,13 @@ export default defineEventHandler(async (event) => {
           priceDiscoveryBy,
           highestBid: 0,
           highestBidder: '',
-          auctionStartTime: rawAuctionStartTime ? new Date(rawAuctionStartTime) : '',
+          auctionStartTime: rawAuctionStartTime ? new Date(rawAuctionStartTime) : null,
           auctionDuration: rawAuctionDuration,
-          auctionEndTime: computedAuctionEndTime,
+          auctionEndTime: computedAuctionEndTime || null,
           auctionStatus: rawAuctionStatus,
-          upcomingUntil: computedUpcomingUntil,
-          liveAt: computedLiveAt,
-          movedToOtobuyAt: '',
+          upcomingUntil: computedUpcomingUntil || null,
+          liveAt: computedLiveAt || null,
+          movedToOtobuyAt: existingCar?.movedToOtobuyAt || null,
           oneClickPrice: 0,
           otobuyOffer: 0,
           soldAt: 0,
@@ -261,23 +272,23 @@ export default defineEventHandler(async (event) => {
           customerExpectedPrice: 0,
           fixedMargin: calculatedFixedMargin,
           variableMargin: calculatedVariableMargin,
-          sendToAuctionApk: existingCar?.sendToAuctionApk || '',
+          sendToAuctionApk: existingCar?.sendToAuctionApk || null,
           appointmentId: apptId,
           frontMain,
           make: updates.make || existingCar?.make || '',
           model: updates.model || existingCar?.model || '',
           variant: updates.variant || existingCar?.variant || '',
-          yearMonthOfManufacture: updates.yearMonthOfManufacture || existingCar?.yearMonthOfManufacture || '',
+          yearMonthOfManufacture: updates.yearMonthOfManufacture || existingCar?.yearMonthOfManufacture || null,
           odometerReadingInKms: Number(updates.odometerReadingInKms || existingCar?.odometerReadingInKms) || 0,
           ownerSerialNumber: Number(updates.ownerSerialNumber || existingCar?.ownerSerialNumber) || 0,
           fuelType: updates.fuelType || existingCar?.fuelType || '',
           commentsOnTransmission: updates.commentsOnTransmission || existingCar?.commentsOnTransmission || '',
-          roadTaxValidity: updates.roadTaxValidity || existingCar?.roadTaxValidity || '',
-          taxValidTill: updates.taxValidTill || existingCar?.taxValidTill || '',
+          roadTaxValidity: updates.roadTaxValidity || existingCar?.roadTaxValidity || null,
+          taxValidTill: updates.taxValidTill || existingCar?.taxValidTill || null,
           registrationNumber: updates.registrationNumber || existingCar?.registrationNumber || '',
           registeredRto: updates.registeredRto || existingCar?.registeredRto || '',
           registrationState: updates.registrationState || existingCar?.registrationState || '',
-          registrationDate: updates.registrationDate || existingCar?.registrationDate || '',
+          registrationDate: updates.registrationDate || existingCar?.registrationDate || null,
           city: updates.city || existingCar?.city || '',
           approvalStatus: 'Approved',
           cubicCapacity: Number(updates.cubicCapacity || existingCar?.cubicCapacity) || 0,

@@ -95,7 +95,7 @@ onMounted(() => {
   if (!props.headlessPdf)
     fetchAllUsers()
 })
-
+  
 watch(carId, (newVal) => {
   if (newVal)
     fetchCarDetails(newVal)
@@ -125,6 +125,13 @@ const allQcLogFields = computed(() => {
     })
   })
   return Array.from(fields).sort()
+})
+
+const qcLogSearchOptions = computed(() => {
+  return [
+    { label: 'All Fields', value: 'all' },
+    ...allQcLogFields.value.map(cf => ({ label: cf, value: cf }))
+  ]
 })
 
 const filteredQcLogs = computed(() => {
@@ -3085,10 +3092,14 @@ watch(editForm, () => {
                   </div>
                   <div v-if="allQcLogFields.length > 0" class="flex items-center gap-2">
                     <span class="text-xs text-muted-foreground whitespace-nowrap">Filter by field:</span>
-                    <select v-model="qcLogSearchField" class="h-7 text-xs rounded-md border-border bg-muted/30 w-44 focus:ring-1 focus:ring-primary">
-                      <option value="all">All Fields</option>
-                      <option v-for="cf in allQcLogFields" :key="cf" :value="cf">{{ cf }}</option>
-                    </select>
+                    <div class="w-56">
+                      <SearchableSelect
+                        v-model="qcLogSearchField"
+                        :options="qcLogSearchOptions"
+                        placeholder="Search field..."
+                        class-name="h-8 text-xs font-medium w-full"
+                      />
+                    </div>
                   </div>
                 </CardTitle>
               </CardHeader>

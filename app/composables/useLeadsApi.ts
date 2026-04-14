@@ -115,6 +115,7 @@ export function useLeadsApi() {
           params.inspectionStatus = _advancedFilters.value.inspectionStatus
       }
 
+      params.t = String(Date.now())
       const res = await $fetch<CountsResponse>('/api/leads/counts', { params })
       _counts.value = res.counts || {}
       _countsTotal.value = res.totalCount || 0
@@ -174,6 +175,7 @@ export function useLeadsApi() {
       if (_advancedFilters.value.inspectionStatus)
         params.inspectionStatus = _advancedFilters.value.inspectionStatus
 
+      params.t = String(Date.now())
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
 
       // Bail if a newer fetch was initiated while we were waiting
@@ -241,6 +243,7 @@ export function useLeadsApi() {
       if (_advancedFilters.value.inspectionStatus)
         params.inspectionStatus = _advancedFilters.value.inspectionStatus
 
+      params.t = String(Date.now())
       const response = await $fetch<LocalApiResponse>('/api/leads', { params })
       const newItems = normalize(response.data || [])
 
@@ -300,6 +303,7 @@ export function useLeadsApi() {
         if (_advancedFilters.value.inspectionStatus)
           params.inspectionStatus = _advancedFilters.value.inspectionStatus
 
+        params.t = String(Date.now())
         const response = await $fetch<LocalApiResponse>('/api/leads', { params })
         _leads.value = normalize(response.data || [])
         _totalCount.value = response.totalCount

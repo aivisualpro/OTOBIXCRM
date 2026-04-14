@@ -59,7 +59,8 @@ export function useAuctionsApi() {
     _fetchError.value = null
 
     try {
-      const response = await $fetch<any>('/api/cars', { method: 'GET' })
+      const ts = Date.now()
+      const response = await $fetch<any>(`/api/cars?t=${ts}`, { method: 'GET' })
 
       // Extract cars array from response
       const carsArray = Array.isArray(response)

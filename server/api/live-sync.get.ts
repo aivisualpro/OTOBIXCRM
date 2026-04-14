@@ -9,6 +9,12 @@
  * The client listens via EventSource and auto-refetches stale data.
  */
 export default defineEventHandler(async (event) => {
+  // Prevent Node.js from tearing down the long-lived SSE socket
+  if (event.node.req.socket) {
+    event.node.req.socket.setTimeout(0)
+    event.node.req.socket.setKeepAlive(true)
+  }
+
   // Set SSE headers
   setResponseHeaders(event, {
     'Content-Type': 'text/event-stream',
