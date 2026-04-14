@@ -32,7 +32,7 @@ const { isConnected: liveSyncConnected } = useLiveSync()
 </script>
 
 <template>
-  <div class="px-2 pb-1 text-[10px] text-muted-foreground/60 font-medium flex items-center gap-1.5">
+  <div class="px-2 pb-1 text-[11px] text-muted-foreground/90 font-bold flex items-center gap-1.5 opacity-90">
     <span class="relative flex size-1.5">
       <span
         class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
