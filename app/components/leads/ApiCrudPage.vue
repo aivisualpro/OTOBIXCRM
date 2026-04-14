@@ -732,11 +732,11 @@ function validateCurrentTab(): boolean {
       }
     }
 
-    // Strict 10-digit validation for new leads
-    if (!editingItem.value && field.key === 'customerContactNumber') {
+    // Strict 10-digit validation for all records
+    if (field.key === 'customerContactNumber') {
       const value = String(formData.value[field.key] || '')
       if (value.length !== 10 || !/^\d{10}$/.test(value)) {
-        tabValidationErrors.value[field.key] = `Contact number must be exactly 10 digits`
+        tabValidationErrors.value[field.key] = `Contact number must be exactly 10 digits (without country code)`
         valid = false
       }
     }
@@ -790,6 +790,13 @@ function openEdit(item: any) {
       }
     }
   })
+  
+  if (cloned.customerContactNumber) {
+    let num = String(cloned.customerContactNumber).replace(/\D/g, '')
+    if (num.length > 10 && num.startsWith('91')) num = num.slice(2)
+    cloned.customerContactNumber = num.slice(0, 10)
+  }
+  
   formData.value = cloned
   activeTab.value = 'owner'
   tabValidationErrors.value = {}
@@ -849,10 +856,7 @@ async function handleSave() {
         payload.createdByFullName = currentUser?.userName || ''
       }
 
-      // Ensure +91 prefix on new leads
-      if (payload.customerContactNumber && !payload.customerContactNumber.startsWith('+91')) {
-        payload.customerContactNumber = `+91 ${payload.customerContactNumber}`
-      }
+      // Removed +91 insertion logic
 
       const response = await $fetch<any>('/api/leads/add', {
         method: 'POST',
@@ -1542,11 +1546,8 @@ function getInitials(name: string): string {
                   :search-placeholder="`Search ${field.label.toLowerCase()}...`"
                   :class="{ 'ring-1 ring-destructive rounded-md': tabValidationErrors[field.key] }"
                 />
-                <!-- Special Phone Field for New Leads -->
-                <div v-else-if="field.key === 'customerContactNumber' && !editingItem" class="flex items-center">
-                  <span class="flex items-center justify-center px-3 border border-r-0 rounded-l-md bg-muted font-semibold text-muted-foreground text-sm h-9 w-[3.5rem] shrink-0">
-                    +91
-                  </span>
+                <!-- Phone Field (Max 10 digits) -->
+                <div v-else-if="field.key === 'customerContactNumber'" class="w-full">
                   <Input
                     :id="field.key"
                     :model-value="formData[field.key]"
@@ -1554,7 +1555,7 @@ function getInitials(name: string): string {
                     maxlength="10"
                     placeholder="9999999999"
                     :required="field.required"
-                    class="rounded-l-none pl-3 font-medium tabular-nums shadow-none"
+                    class="font-medium tabular-nums shadow-none"
                     :class="{ 'ring-1 ring-destructive': tabValidationErrors[field.key] }"
                     @update:model-value="(v) => formData[field.key] = String(v).replace(/\D/g, '').slice(0, 10)"
                   />

@@ -189,12 +189,23 @@ async function saveQC(silent = false) {
       }
     })
     documentDetailFields.forEach(syncFallbacks)
+    
+    const changedFields: Record<string, any> = {}
+    const original = car.value || {}
+    
+    // Explicit array merge for Apron fallback
+    if (Array.isArray(edited.lhsApronImages) || Array.isArray(edited.rhsApronImages)) {
+      const combinedApron = []
+      if (Array.isArray(edited.lhsApronImages)) combinedApron.push(...edited.lhsApronImages)
+      if (Array.isArray(edited.rhsApronImages)) combinedApron.push(...edited.rhsApronImages)
+      
+      if (JSON.stringify(combinedApron) !== JSON.stringify(original.apronLhsRhs || [])) {
+        edited.apronLhsRhs = combinedApron
+      }
+    }
 
     // Build the payload: only send fields that actually changed from the original car data
     // This prevents image uploads from sending ALL car info to telecallings/AppSheet
-    const changedFields: Record<string, any> = {}
-    const original = car.value || {}
-
     for (const key of Object.keys(edited)) {
       if (key === '_id' || key === 'id' || key === 'qcLogs' || key === 'logs' || key === 'qcLog')
         continue
@@ -1206,7 +1217,7 @@ const steeringSuspensionBrakesParts = [
   ] },
   { key: 'split_ssb4', hasNoImages: true, splitParts: [
     { key: 'driveTrainDropdownList', oldKey: 'new', label: 'Drive Train', dropdownName: 'Drive Train' },
-    { key: 'commentsOnTransmissionDropdownList', oldKey: 'commentsOnTransmission', label: 'Comment on Transmission', dropdownName: 'Comments On Transmission' },
+    { key: 'commentsOnTransmission', oldKey: 'commentsOnTransmission', label: 'Comment on Transmission', inputType: 'text' },
   ] },
 
   { key: 'odometerReadingAfterTestDriveInKms', oldKey: 'new', imageKey: 'odometerReadingAfterTestDriveImages', oldImageKey: 'new', label: 'Odometer Reading after Test Drive', inputType: 'number' },
