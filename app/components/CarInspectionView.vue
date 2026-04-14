@@ -332,7 +332,12 @@ function formatDateMMDDYYYY(val: any) {
   const d = new Date(val)
   if (Number.isNaN(d.getTime()))
     return String(val)
-  return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()}`
+  const formatter = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', month: '2-digit', day: '2-digit', year: 'numeric' })
+  const parts = formatter.formatToParts(d)
+  const m = parts.find(p => p.type === 'month')?.value
+  const day = parts.find(p => p.type === 'day')?.value
+  const y = parts.find(p => p.type === 'year')?.value
+  return `${m}/${day}/${y}`
 }
 
 function formatDateYYYYMMDD(val: any) {
@@ -341,7 +346,12 @@ function formatDateYYYYMMDD(val: any) {
   const d = new Date(val)
   if (Number.isNaN(d.getTime()))
     return ''
-  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`
+  const formatter = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', month: '2-digit', day: '2-digit', year: 'numeric' })
+  const parts = formatter.formatToParts(d)
+  const m = parts.find(p => p.type === 'month')?.value
+  const day = parts.find(p => p.type === 'day')?.value
+  const y = parts.find(p => p.type === 'year')?.value
+  return `${y}-${m}-${day}`
 }
 
 async function approveLead() {
@@ -349,7 +359,7 @@ async function approveLead() {
   await saveQC()
   // Note: approveLead() without inline usually doesn't prompt for auction, 
   // but if needed we can trigger the modal here too.
-  router.push('/leads/approved')
+  router.push(`/inspection/${carId.value}`)
 }
 
 const showQCModal = ref(false)
@@ -566,7 +576,7 @@ async function confirmQCApproval() {
     showQCModal.value = false
     toast.dismiss(loadingToast)
     toast.success('Vehicle successfully marked as QC Approved and Auction Scheduled!')
-    await fetchCarDetails(carId.value)
+    router.push(`/inspection/${carId.value}`)
   }
   catch (err: any) {
     toast.dismiss(loadingToast)
@@ -1295,7 +1305,6 @@ const exteriorSections = [
       { new: 'lhsRunningBorderImages', old: 'lhsRunningBorderImages' },
       { new: 'lhsRearWheelImages', old: 'lhsRearAlloyImages' },
       { new: 'lhsRearTyreImages', old: 'lhsRearTyreImages' },
-      { new: 'lhsQuarterPanelImages', old: 'lhsQuarterPanelImages' },
       { new: 'lhsQuarterPanelWithRearDoorOpenImages', old: 'lhsQuarterPanelImages' },
     ],
     parts: [
@@ -1316,10 +1325,8 @@ const exteriorSections = [
         key: 'lhsQuarterPanelDropdownList',
         oldKey: 'lhsQuarterPanel',
         label: 'LHS Quarter Panel',
-        imageGroups: [
-          { key: 'lhsQuarterPanelImages', oldKey: 'lhsQuarterPanelImages', label: 'LHS Quarter Panel Image' },
-          { key: 'lhsQuarterPanelWithRearDoorOpenImages', oldKey: 'lhsQuarterPanelImages', label: 'LHS Qtr Panel W/ Boot Open' },
-        ],
+        imageKey: 'lhsQuarterPanelWithRearDoorOpenImages',
+        oldImageKey: 'lhsQuarterPanelImages'
       },
     ],
   },
@@ -1378,7 +1385,6 @@ const exteriorSections = [
     imageKeys: [
       { new: 'rhsFullViewImages', old: 'rhsRear45Degree' },
       { new: 'rhsQuarterPanelWithRearDoorOpenImages', old: 'rhsQuarterPanelImages' },
-      { new: 'rhsQuarterPanelImages', old: 'rhsQuarterPanelImages' },
       { new: 'rhsRearWheelImages', old: 'rhsRearAlloyImages' },
       { new: 'rhsRearTyreImages', old: 'rhsRearTyreImages' },
       { new: 'rhsRunningBorderImages', old: 'rhsRunningBorderImages' },
@@ -1398,10 +1404,8 @@ const exteriorSections = [
         key: 'rhsQuarterPanelDropdownList',
         oldKey: 'rhsQuarterPanel',
         label: 'RHS Quarter Panel',
-        imageGroups: [
-          { key: 'rhsQuarterPanelWithRearDoorOpenImages', oldKey: 'rhsQuarterPanelImages', label: 'RHS Quarter Panel With Boot Door Open' },
-          { key: 'rhsQuarterPanelImages', oldKey: 'rhsQuarterPanelImages', label: 'RHS Quarter Panel Image' },
-        ],
+        imageKey: 'rhsQuarterPanelWithRearDoorOpenImages',
+        oldImageKey: 'rhsQuarterPanelImages'
       },
       { key: 'rhsRearWheelDropdownList', oldKey: 'rhsRearAlloy', imageKey: 'rhsRearWheelImages', oldImageKey: 'rhsRearAlloyImages', label: 'RHS Rear Wheel' },
       { key: 'rhsRearTyreDropdownList', oldKey: 'rhsRearTyre', imageKey: 'rhsRearTyreImages', oldImageKey: 'rhsRearTyreImages', label: 'RHS Rear Tyre' },
@@ -1501,7 +1505,7 @@ const _exteriorImageKeys = [
   'lhsFrontDoorImages',
   'lhsRearDoorImages',
   'lhsRearTyreImages',
-  'lhsQuarterPanelImages',
+  'lhsQuarterPanelWithRearDoorOpenImages',
   'rearMain',
   'rearWithBootDoorOpen',
   'rearBumperImages',
@@ -1510,7 +1514,7 @@ const _exteriorImageKeys = [
   'spareTyreImages',
   'bootFloorImages',
   'rhsRear45Degree',
-  'rhsQuarterPanelImages',
+  'rhsQuarterPanelWithRearDoorOpenImages',
   'rhsRearDoorImages',
   'rhsFrontDoorImages',
   'rhsRunningBorderImages',
