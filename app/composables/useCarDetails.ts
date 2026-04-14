@@ -13,8 +13,8 @@ export function useCarDetails() {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  async function fetchCarDetails(carId: string) {
-    isLoading.value = true
+  async function fetchCarDetails(carId: string, silent = false) {
+    if (!silent) isLoading.value = true
     error.value = null
 
     try {

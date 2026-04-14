@@ -43,7 +43,7 @@ const { isConnected: liveSyncConnected } = useLiveSync()
         :class="liveSyncConnected ? 'bg-emerald-500' : 'bg-red-500'"
       />
     </span>
-    version b.1.05
+    version V. b.1.08
   </div>
   <SidebarMenu>
     <SidebarMenuItem>

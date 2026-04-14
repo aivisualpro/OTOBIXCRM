@@ -100,6 +100,17 @@ watch(carId, (newVal) => {
   if (newVal)
     fetchCarDetails(newVal)
 })
+
+// ─── Live Sync Interceptor ───
+const { lastEvent } = useLiveSync()
+watch(lastEvent, (evt) => {
+  if (evt && (evt.collection === 'cars' || evt.collection === 'telecallings' || evt.collection === 'leads') && evt.recordId) {
+    if (car.value && (car.value.id === evt.recordId || car.value._id === evt.recordId || car.value.appointmentId === evt.recordId)) { // note: update.put.ts fires sync with car _id
+      fetchCarDetails(carId.value, true)
+    }
+  }
+})
+
 const isSaving = ref(false)
 
 // ─── QC Logs Search State ───
@@ -894,6 +905,18 @@ function setTab(tabId: string) {
   const basePath = props.readonly ? '/inspection' : '/qc'
   router.push(`${basePath}/${carId.value}/${tabId}`)
 }
+
+// ─── Auto-Scroll on Tab Navigation ───
+watch(activeTab, () => {
+  if (import.meta.client) {
+    // Small delay to ensure the DOM unmount/remount paints the new activeTab first
+    setTimeout(() => {
+      const el = document.getElementById('app-main-content-scroll')
+      if (el) el.scrollTop = 0
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    }, 10)
+  }
+})
 
 // ─── Helpers ───
 function _conditionColor(val: string) {
@@ -2079,7 +2102,7 @@ watch(editForm, () => {
       </div>
 
       <!-- Tab Content (scrollable) -->
-      <div class="flex-1 min-h-0 overflow-auto bg-muted/10">
+      <div id="app-main-content-scroll" class="flex-1 min-h-0 overflow-auto bg-muted/10 auto-scroll-container">
         <div class="p-4 lg:p-6">
           <div v-if="activeTab === 'details'" class="animate-in fade-in duration-300 space-y-6">
             <!-- Hero Section — Card Architecture -->
