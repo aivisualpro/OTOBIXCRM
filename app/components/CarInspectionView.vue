@@ -194,13 +194,15 @@ function getConditionStyle(val: string) {
   return { bg: 'bg-slate-500/15 border-slate-500/30 text-slate-700 dark:text-slate-400', icon: 'i-lucide-tag', emoji: '🔘' }
 }
 
-function getValuesArray(val: string | string[] | undefined | null) {
+function getValuesArray(val: string | string[] | number | undefined | null) {
   let v: string[] = []
   if (Array.isArray(val))
-    v = val
+    v = val.map(String)
+  else if (typeof val === 'number' && !isNaN(val))
+    v = [String(val)]
   else if (typeof val === 'string' && val)
     v = [val]
-  return v.flatMap(s => typeof s === 'string' ? s.split(',') : String(s)).map(s => s.trim()).filter(Boolean)
+  return v.flatMap(s => typeof s === 'string' ? s.split(',') : [String(s)]).map(s => s.trim()).filter(Boolean)
 }
 
 function getDisplayValues(form: any, key: string, oldKey?: string) {
@@ -332,6 +334,21 @@ async function confirmReject() {
   catch (err: any) {
     toast.dismiss(loadingToast)
     toast.error(err?.message || 'Failed to reject.')
+  }
+}
+
+async function revertToUnderReview() {
+  const loadingToast = toast.loading('Reverting to Under Review...')
+  try {
+    editForm.value.approvalStatus = 'Under Review'
+    await saveQC(true)
+    toast.dismiss(loadingToast)
+    toast.success('Status successfully reverted back to Under Review!')
+    router.push(`/qc/${carId.value}/${activeTab.value}`)
+  }
+  catch (err: any) {
+    toast.dismiss(loadingToast)
+    toast.error(err?.message || 'Failed to revert status.')
   }
 }
 
@@ -507,20 +524,28 @@ async function uploadCloudinaryFile(files: File[]) {
   }
 }
 
-async function removeImage(key: string, idx: number, oldKey?: string) {
+async function removeImage(key: string, idx: number, oldKey?: string, imageIndex?: number) {
   toast.warning('Are you sure you want to delete this image? This action cannot be undone.', {
     action: {
       label: 'Delete',
       onClick: async () => {
         let urlToDelete = null
         if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
-          urlToDelete = editForm.value[key][idx]
-          editForm.value[key].splice(idx, 1)
+          const actualIndex = imageIndex !== undefined ? imageIndex : idx
+          urlToDelete = editForm.value[key][actualIndex]
+          const newArr = [...editForm.value[key]]
+          if (imageIndex !== undefined) newArr[actualIndex] = ''
+          else newArr.splice(idx, 1)
+          editForm.value[key] = newArr
         }
         else if (oldKey && Array.isArray(editForm.value[oldKey])) {
-          urlToDelete = editForm.value[oldKey][idx]
-          editForm.value[oldKey].splice(idx, 1)
-          editForm.value[key] = [...editForm.value[oldKey]]
+          const actualIndex = imageIndex !== undefined ? imageIndex : idx
+          urlToDelete = editForm.value[oldKey][actualIndex]
+          const newArr = [...editForm.value[oldKey]]
+          if (imageIndex !== undefined) newArr[actualIndex] = ''
+          else newArr.splice(idx, 1)
+          editForm.value[oldKey] = newArr
+          editForm.value[key] = [...newArr]
         }
 
         if (urlToDelete) {
@@ -532,25 +557,31 @@ async function removeImage(key: string, idx: number, oldKey?: string) {
   })
 }
 
-async function addImage(key: string) {
+async function addImage(key: string, imageIndex?: number) {
   const input = document.createElement('input')
   input.type = 'file'
-  input.multiple = true
+  input.multiple = (imageIndex === undefined)
   input.accept = 'image/*,video/*'
   input.onchange = async (e: any) => {
     const files = Array.from(e.target.files) as File[]
     const urls = await uploadCloudinaryFile(files)
     if (urls.length > 0) {
-      if (!Array.isArray(editForm.value[key]))
-        editForm.value[key] = []
-      editForm.value[key].push(...urls)
+      const currentArr = Array.isArray(editForm.value[key]) ? editForm.value[key] : []
+      if (imageIndex !== undefined) {
+        const newArr = [...currentArr]
+        while (newArr.length <= imageIndex) newArr.push('')
+        newArr[imageIndex] = urls[0]
+        editForm.value[key] = newArr
+      } else {
+        editForm.value[key] = [...currentArr, ...urls]
+      }
       await saveQC(true)
     }
   }
   input.click()
 }
 
-async function replaceImage(key: string, idx: number, oldKey?: string) {
+async function replaceImage(key: string, idx: number, oldKey?: string, imageIndex?: number) {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*,video/*'
@@ -561,11 +592,12 @@ async function replaceImage(key: string, idx: number, oldKey?: string) {
 
     let urlToDelete = null
     let usingOldKey = false
+    const actualIndex = imageIndex !== undefined ? imageIndex : idx
     if (Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
-      urlToDelete = editForm.value[key][idx]
+      urlToDelete = editForm.value[key][actualIndex]
     }
     else if (oldKey && Array.isArray(editForm.value[oldKey])) {
-      urlToDelete = editForm.value[oldKey][idx]
+      urlToDelete = editForm.value[oldKey][actualIndex]
       usingOldKey = true
     }
 
@@ -573,12 +605,15 @@ async function replaceImage(key: string, idx: number, oldKey?: string) {
     if (urls.length > 0) {
       const newUrl = urls[0]
       if (!usingOldKey && Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
-        editForm.value[key][idx] = newUrl
+        const newArr = [...editForm.value[key]]
+        newArr[actualIndex] = newUrl
+        editForm.value[key] = newArr
       }
       else if (usingOldKey && oldKey && Array.isArray(editForm.value[oldKey])) {
-        editForm.value[oldKey][idx] = newUrl
-        // Promote the modified fallback array to the primary key so saveQC persists it correctly
-        editForm.value[key] = [...editForm.value[oldKey]]
+        const newArr = [...editForm.value[oldKey]]
+        newArr[actualIndex] = newUrl
+        editForm.value[oldKey] = newArr
+        editForm.value[key] = [...newArr]
       }
 
       if (urlToDelete) {
@@ -591,7 +626,7 @@ async function replaceImage(key: string, idx: number, oldKey?: string) {
 }
 
 const tabs = [
-  { id: 'details', label: 'Document & Registration Details', icon: 'i-lucide-file-text' },
+  { id: 'details', label: 'Doc & Reg Details', icon: 'i-lucide-file-text' },
   { id: 'front', label: 'Front', icon: 'i-lucide-arrow-up' },
   { id: 'left', label: 'Left', icon: 'i-lucide-arrow-left' },
   { id: 'rear', label: 'Rear', icon: 'i-lucide-arrow-down' },
@@ -616,7 +651,6 @@ watchEffect(() => {
   if (currentTab && !props.headlessPdf) {
     setHeader({
       title: props.readonly ? `Inspection: ${carId.value} / ${currentTab.label}` : `Quality Control: ${carId.value} / ${currentTab.label}`,
-      description: 'Vehicle inspection details',
       icon: currentTab.icon || 'i-lucide-scan-eye',
       showBackButton: true,
     })
@@ -664,15 +698,23 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function getImages(obj: Record<string, any> | null, key: string, fallbackKey?: string): string[] {
+function getImages(obj: Record<string, any> | null, key: string, fallbackKey?: string, imageIndex?: number): string[] {
   let val = obj?.[key]
   // If new key is empty, try fallback (old) key
   if ((!val || (Array.isArray(val) && val.length === 0)) && fallbackKey)
     val = obj?.[fallbackKey]
   if (!val)
     return []
-  if (Array.isArray(val))
-    return val.filter((u: string) => u && typeof u === 'string').map(u => u.startsWith('http') ? u : `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.value?.appointmentId}/${u}`)
+  if (Array.isArray(val)) {
+    if (imageIndex !== undefined) {
+      const u = val[imageIndex]
+      if (typeof u === 'string' && u.trim() !== '') {
+        return [u.startsWith('http') ? u : `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.value?.appointmentId}/${u}`]
+      }
+      return []
+    }
+    return val.filter((u: string) => u && typeof u === 'string' && u.trim() !== '').map((u: string) => u.startsWith('http') ? u : `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.value?.appointmentId}/${u}`)
+  }
   if (typeof val === 'string' && val.startsWith('http'))
     return [val]
   return []
@@ -755,24 +797,50 @@ const electricalParts = [
 ]
 
 const interiorParts = [
-  // Legacy Unified Airbags
+  // Airbags — left column: noOfAirBags only
   {
-    key: 'legacyAirbagsImagesBox',
-    label: 'Legacy Airbags',
-    isImageOnly: true,
-    isLegacyFallback: true,
-    imageGroups: [
-      { key: 'driverAirbagImages', oldKey: 'airbags', label: 'Generic Airbags' },
+    key: 'noOfAirBagsBox',
+    hasNoImages: true,
+    splitParts: [
+      { key: 'noOfAirBags', oldKey: 'noOfAirBags', label: 'Number of Airbags', dropdownName: 'Number of Airbags' }
     ],
   },
-  // Airbags
-  { key: 'noOfAirBags', oldKey: 'noOfAirBags', label: 'Number of Airbags', dropdownName: 'Number of Airbags', hasNoImages: true },
-  { key: 'driverAirbagDropdownList', oldKey: 'airbagFeaturesDriverSide', imageKey: 'driverAirbagImages', label: 'Driver Airbag', dropdownName: 'Driver Airbag' },
-  { key: 'coDriverAirbagDropdownList', oldKey: 'airbagFeaturesCoDriverSide', imageKey: 'coDriverAirbagImages', label: 'Co-Driver Airbag', dropdownName: 'Co-Driver Airbag' },
-  { key: 'driverSeatAirbagDropdownList', oldKey: 'airbagFeaturesRhsAPillarCurtain', imageKey: 'driverSeatAirbagImages', label: 'Driver Seat Airbag', dropdownName: 'Driver Seat Airbag' },
-  { key: 'coDriverSeatAirbagDropdownList', oldKey: 'airbagFeaturesLhsAPillarCurtain', imageKey: 'coDriverSeatAirbagImages', label: 'Co-Driver Seat Airbag', dropdownName: 'Co-Driver Seat Airbag' },
-  { key: 'rhsCurtainAirbagDropdownList', oldKey: 'airbagFeaturesRhsBPillarCurtain', imageKey: 'rhsCurtainAirbagImages', label: 'RHS Curtain Airbag', dropdownName: 'RHS Curtain Airbag' },
-  { key: 'lhsCurtainAirbagDropdownList', oldKey: 'airbagFeaturesLhsBPillarCurtain', imageKey: 'lhsCurtainAirbagImages', label: 'LHS Curtain Airbag', dropdownName: 'LHS Curtain Airbag' },
+  // Airbags — right column: 4-panel horizontal grid
+  {
+    key: 'airbagDetailsBox',
+    hasNoImages: true,
+    isFourPanel: true,
+    fourPanels: [
+      { key: 'driverAirbagDropdownList', oldKey: 'airbagFeaturesDriverSide', label: 'Driver Airbag', type: 'dropdown', dropdownName: 'Driver Airbag' },
+      { key: 'airbagImages', oldKey: 'airbags', label: 'Driver Airbag Image', type: 'imageSlot', imageIndex: 0 },
+      { key: 'coDriverAirbagDropdownList', oldKey: 'airbagFeaturesCoDriverSide', label: 'Co-Driver Airbag', type: 'dropdown', dropdownName: 'Co-Driver Airbag' },
+      { key: 'airbagImages', oldKey: 'airbags', label: 'Co-Driver Airbag Image', type: 'imageSlot', imageIndex: 1 },
+    ]
+  },
+  // Airbags — row 2: left column (seat airbags)
+  {
+    key: 'seatAirbagDetailsBox',
+    hasNoImages: true,
+    isFourPanel: true,
+    fourPanels: [
+      { key: 'driverSeatAirbagDropdownList', oldKey: 'airbagFeaturesRhsAPillarCurtain', label: 'Driver Seat Airbag', type: 'dropdown', dropdownName: 'Driver Seat Airbag' },
+      { key: 'airbagImages', oldKey: 'driverSeatAirbagImages', label: 'Driver Seat Airbag Image', type: 'imageSlot', imageIndex: 2 },
+      { key: 'coDriverSeatAirbagDropdownList', oldKey: 'airbagFeaturesLhsAPillarCurtain', label: 'Co-Driver Seat Airbag', type: 'dropdown', dropdownName: 'Co-Driver Seat Airbag' },
+      { key: 'airbagImages', oldKey: 'coDriverSeatAirbagImages', label: 'Co-Driver Seat Airbag Image', type: 'imageSlot', imageIndex: 3 },
+    ]
+  },
+  // Airbags — row 2: right column (curtain airbags)
+  {
+    key: 'curtainAirbagDetailsBox',
+    hasNoImages: true,
+    isFourPanel: true,
+    fourPanels: [
+      { key: 'rhsCurtainAirbagDropdownList', oldKey: 'airbagFeaturesRhsBPillarCurtain', label: 'RHS Curtain Airbag', type: 'dropdown', dropdownName: 'RHS Curtain Airbag' },
+      { key: 'airbagImages', oldKey: 'rhsCurtainAirbagImages', label: 'RHS Curtain Airbag Image', type: 'imageSlot', imageIndex: 4 },
+      { key: 'lhsCurtainAirbagDropdownList', oldKey: 'airbagFeaturesLhsBPillarCurtain', label: 'LHS Curtain Airbag', type: 'dropdown', dropdownName: 'LHS Curtain Airbag' },
+      { key: 'airbagImages', oldKey: 'lhsCurtainAirbagImages', label: 'LHS Curtain Airbag Image', type: 'imageSlot', imageIndex: 5 },
+    ]
+  },
   { key: 'driverSideKneeAirbagDropdownList', oldKey: 'new', imageKey: 'driverSideKneeAirbagImages', label: 'Driver Knee Airbag', dropdownName: 'Driver Knee Airbag' },
   { key: 'coDriverKneeSeatAirbagDropdownList', oldKey: 'new', imageKey: 'coDriverKneeSeatAirbagImages', label: 'Co-Driver Knee Airbag', dropdownName: 'Co-Driver Knee Airbag' },
   { key: 'rhsRearSideAirbagDropdownList', oldKey: 'airbagFeaturesRhsCPillarCurtain', imageKey: 'rhsRearSideAirbagImages', label: 'RHS Rear Side Airbag', dropdownName: 'RHS Rear Side Airbags' },
@@ -1048,8 +1116,7 @@ const exteriorSections = [
     title: 'Interior',
     icon: 'i-lucide-armchair',
     imageKeys: [
-      { new: 'driverAirbagImages', old: 'airbags' },
-      { new: 'coDriverAirbagImages', old: 'airbags' },
+      { new: 'airbagImages', old: 'airbags' },
       { new: 'driverSeatAirbagImages', old: 'airbags' },
       { new: 'coDriverSeatAirbagImages', old: 'airbags' },
       { new: 'rhsCurtainAirbagImages', old: 'airbags' },
@@ -1278,18 +1345,26 @@ function qcLogIsImageField(field: string, value: any): boolean {
 
 function qcLogExtractUrls(value: any): string[] {
   if (!value) return []
-  const v = String(value).trim()
-  // Handle JSON arrays like ["url1","url2"]
-  if (v.startsWith('[')) {
-    try {
-      const arr = JSON.parse(v.replace(/'/g, '"'))
-      if (Array.isArray(arr)) return arr.filter((u: string) => u && typeof u === 'string' && (u.startsWith('http') || u.includes('cloudinary')))
+  let arr: string[] = []
+  if (Array.isArray(value)) {
+    arr = value
+  } else {
+    const v = String(value).trim()
+    if (v.startsWith('[')) {
+      try { arr = JSON.parse(v.replace(/'/g, '"')) } catch { /* ignore */ }
+    } else {
+      arr = [v]
     }
-    catch { /* not JSON, fallback */ }
   }
-  // Single URL
-  if (v.startsWith('http')) return [v]
-  return []
+
+  if (!Array.isArray(arr)) return []
+
+  return arr
+    .filter((u: any) => u && typeof u === 'string' && u.trim() !== '')
+    .map((u: string) => {
+      if (u.startsWith('http')) return u
+      return `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.value?.appointmentId}/${u}`
+    })
 }
 
 function qcLogIsDate(value: any): boolean {
@@ -1612,13 +1687,20 @@ watch(editForm, () => {
               <Icon name="i-lucide-check-circle-2" class="mr-1.5 size-4" />
               Approve Inspection
             </Button>
-            <div
-              v-else-if="car.approvalStatus === 'Approved'"
-              class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 rounded-lg flex items-center justify-center font-bold px-3 h-8 text-xs shrink-0"
-            >
-              <Icon name="i-lucide-shield-check" class="mr-1.5 size-4" />
-              Approve Inspection
-            </div>
+            <template v-else-if="car.approvalStatus === 'Approved'">
+              <Button
+                class="mr-2 h-8 text-xs font-bold shrink-0 border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-900/20 shadow-sm"
+                variant="outline"
+                @click="revertToUnderReview"
+              >
+                <Icon name="i-lucide-refresh-ccw" class="mr-1.5 size-4" />
+                Re-QC
+              </Button>
+              <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 rounded-lg flex items-center justify-center font-bold px-3 h-8 text-xs shrink-0">
+                <Icon name="i-lucide-shield-check" class="mr-1.5 size-4" />
+                Approve Inspection
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -1916,8 +1998,41 @@ watch(editForm, () => {
                         </div>
                         <!-- Right: Image Strip OR Alternate Config -->
                         <div v-if="field.hideImages" class="flex-1 flex flex-col overflow-y-auto bg-muted/5 dark:bg-muted/10">
-                          <template v-for="partItem in (field.rightParts || [])" :key="partItem.key">
-                            <div class="flex-1 px-3 py-2 border-b border-border/50 last:border-b-0 flex flex-col justify-center gap-1.5 overflow-hidden bg-white/40 dark:bg-black/20">
+                          <template v-for="partItem in (field.rightParts || [])" :key="partItem.key + (partItem.imageIndex ?? '')">
+                            <!-- IMAGE SLOT type: inline image thumbnail for indexed arrays -->
+                            <div v-if="partItem.type === 'imageSlot'" class="flex-1 px-2 py-1.5 border-b border-border/50 last:border-b-0 flex items-center gap-2 overflow-hidden bg-zinc-950/5 dark:bg-black/30 min-h-[48px]">
+                              <template v-if="getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex).length">
+                                <div class="relative shrink-0 h-10 w-14 rounded overflow-hidden cursor-pointer group/imgslot border border-border/50 shadow-sm"
+                                  @click="openLightboxUrls(getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex), 0, partItem.label)">
+                                  <img :src="getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex)[0]" :alt="partItem.label" class="w-full h-full object-cover select-none" loading="lazy">
+                                </div>
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground truncate flex-1">{{ partItem.label }}</span>
+                                <div v-if="!props.readonly" class="flex items-center gap-1 shrink-0">
+                                  <Button variant="secondary" size="icon" class="size-6 rounded-full bg-white/80 hover:bg-white shadow-sm" @click.stop="replaceImage(partItem.key, 0, partItem.oldKey, partItem.imageIndex)">
+                                    <Icon name="i-lucide-refresh-cw" class="size-3 text-primary" />
+                                  </Button>
+                                  <Button variant="destructive" size="icon" class="size-6 rounded-full bg-red-500/80 hover:bg-red-600 shadow-sm" @click.stop="removeImage(partItem.key, 0, partItem.oldKey, partItem.imageIndex)">
+                                    <Icon name="i-lucide-trash" class="size-3 text-white" />
+                                  </Button>
+                                </div>
+                              </template>
+                              <template v-else>
+                                <div v-if="!props.readonly" class="flex items-center gap-2 w-full cursor-pointer hover:bg-muted/20 rounded px-1 py-1 transition-colors" @click.stop="addImage(partItem.key, partItem.imageIndex)">
+                                  <div class="size-10 w-14 rounded border-2 border-dashed border-border/60 flex items-center justify-center shrink-0 bg-muted/20">
+                                    <Icon name="i-lucide-image-plus" class="size-4 text-muted-foreground/50" />
+                                  </div>
+                                  <span class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60 truncate">Add {{ partItem.label }}</span>
+                                </div>
+                                <div v-else class="flex items-center gap-2 w-full px-1 py-1">
+                                  <div class="size-10 w-14 rounded border border-border/30 flex items-center justify-center shrink-0 bg-muted/10">
+                                    <Icon name="i-lucide-image-off" class="size-4 text-muted-foreground/30" />
+                                  </div>
+                                  <span class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/40 truncate">{{ partItem.label }}</span>
+                                </div>
+                              </template>
+                            </div>
+                            <!-- Standard form field (dropdown/text/date) -->
+                            <div v-else class="flex-1 px-3 py-2 border-b border-border/50 last:border-b-0 flex flex-col justify-center gap-1.5 overflow-hidden bg-white/40 dark:bg-black/20">
                               <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 truncate w-full" :title="partItem.label">{{ partItem.label }}</span>
                               <div class="w-full min-w-0 pointer-events-auto flex items-center">
                                 <template v-if="props.readonly">
@@ -1946,26 +2061,26 @@ watch(editForm, () => {
                           </template>
                         </div>
                         <div v-else class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
-                          <div v-if="getImages(editForm, field.key, field.oldKey).length" class="flex-1 h-full w-full">
+                          <div v-if="getImages(editForm, field.imageKey || field.key, field.oldImageKey || field.oldKey, field.imageIndex).length" class="flex-1 h-full w-full">
                             <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch">
                               <div
-                                v-for="(imgUrl, idx) in getImages(editForm, field.key, field.oldKey)"
+                                v-for="(imgUrl, idx) in getImages(editForm, field.imageKey || field.key, field.oldImageKey || field.oldKey, field.imageIndex)"
                                 :key="idx"
                                 class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer group/item transition-all duration-300 border-r border-border/20 last:border-r-0"
-                                @click="openLightboxUrls(getImages(editForm, field.key, field.oldKey), idx, field.label)"
+                                @click="openLightboxUrls(getImages(editForm, field.imageKey || field.key, field.oldImageKey || field.oldKey, field.imageIndex), idx, field.label)"
                               >
                                 <img :src="imgUrl" :alt="field.label" class="w-full h-full object-cover select-none" loading="lazy">
                                 <div class="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[8px] text-white font-medium tracking-wider uppercase pointer-events-none">
-                                  {{ field.label }} Image {{ idx + 1 }}
+                                  {{ field.label }} Image {{ field.imageIndex !== undefined ? field.imageIndex + 1 : idx + 1 }}
                                 </div>
                                 <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-100 lg:opacity-0 group-hover/item:opacity-100 transition-opacity z-10">
-                                  <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(field.key, idx, field.oldKey)">
+                                  <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(field.imageKey || field.key, idx, field.oldImageKey || field.oldKey, field.imageIndex)">
                                     <Icon name="i-lucide-refresh-cw" class="size-3.5" />
                                   </Button>
                                   <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-blue-500/90 hover:bg-blue-600 focus:outline-none" @click.stop="downloadImageFile(imgUrl, field.label || '')">
                                     <Icon name="i-lucide-download" class="size-3.5 text-white" />
                                   </Button>
-                                  <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage(field.key, idx, field.oldKey)">
+                                  <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage(field.imageKey || field.key, idx, field.oldImageKey || field.oldKey, field.imageIndex)">
                                     <Icon name="i-lucide-trash" class="size-3.5 text-white" />
                                   </Button>
                                 </div>
@@ -1974,7 +2089,7 @@ watch(editForm, () => {
                               <div
                                 v-if="!props.readonly"
                                 class="relative shrink-0 h-full aspect-[4/3] snap-center cursor-pointer bg-muted/30 border-r border-border/20 last:border-r-0 flex flex-col items-center justify-center hover:bg-muted/50 transition-colors group/add p-3 text-center"
-                                @click.stop="addImage(field.key)"
+                                @click.stop="addImage(field.imageKey || field.key, field.imageIndex)"
                               >
                                 <div class="size-10 rounded-full bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center mb-2 group-hover/add:scale-110 transition-transform">
                                   <Icon name="i-lucide-plus" class="size-5 text-primary" />
@@ -1982,25 +2097,25 @@ watch(editForm, () => {
                                 <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider leading-tight">
                                   Add<br>
                                   <span v-if="field.type === 'combinedBox' || field.type === 'multiple'" class="text-[9px] font-black text-primary/70">
-                                    {{ field.label }}<br>Image {{ getImages(editForm, field.key, field.oldKey).length + 1 }}
+                                    {{ field.label }}<br>Image {{ field.imageIndex !== undefined ? field.imageIndex + 1 : getImages(editForm, field.imageKey || field.key, field.oldImageKey || field.oldKey).length + 1 }}
                                   </span>
                                   <span v-else>Photo</span>
                                 </span>
                               </div>
                             </div>
-                            <div v-if="getImages(editForm, field.key, field.oldKey).length > 1" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md text-[8px] text-white font-medium tracking-wider pointer-events-none">
+                            <div v-if="getImages(editForm, field.imageKey || field.key, field.oldImageKey || field.oldKey, field.imageIndex).length > 1" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md text-[8px] text-white font-medium tracking-wider pointer-events-none">
                               SWIPE
                             </div>
                           </div>
                           <!-- Empty State -->
-                          <div v-else-if="!props.readonly" class="flex h-full w-full flex-col items-center justify-center bg-transparent gap-3 relative cursor-pointer hover:bg-muted/10 transition-colors" @click.stop="addImage(field.key)">
+                          <div v-else-if="!props.readonly" class="flex h-full w-full flex-col items-center justify-center bg-transparent gap-3 relative cursor-pointer hover:bg-muted/10 transition-colors" @click.stop="addImage(field.imageKey || field.key, field.imageIndex)">
                             <div class="size-12 rounded-full bg-muted/30 flex items-center justify-center">
                               <Icon name="i-lucide-image-plus" class="size-5 text-muted-foreground/50" />
                             </div>
                             <span class="text-[11px] text-muted-foreground/60 font-bold tracking-widest uppercase text-center leading-relaxed">
                               Click to add
                               <template v-if="field.type === 'combinedBox' || field.type === 'multiple'">
-                                <br><span class="text-primary/70">{{ field.label }} Image 1</span>
+                                <br><span class="text-primary/70">{{ field.label }} Image {{ field.imageIndex !== undefined ? field.imageIndex + 1 : 1 }}</span>
                               </template>
                               <template v-else>Photo</template>
                             </span>
@@ -2153,11 +2268,73 @@ watch(editForm, () => {
                       v-show="!(part as any).isLegacyFallback || getImages(editForm, (part as any).imageGroups?.[0]?.key || (part as any).imageKey, (part as any).imageGroups?.[0]?.oldKey || (part as any).oldImageKey).length > 0"
                       class="rounded-xl border bg-card shadow-sm flex flex-row overflow-hidden"
                       :class="[
-                        (part as any).hasNoImages && !(part as any).isVideoBox ? 'min-h-[100px]' : 'min-h-[160px]',
-                        (part as any).isVideoBox ? 'row-span-2 h-auto min-h-[336px]' : 'h-[160px]',
+                        (part as any).hasNoImages && !(part as any).isVideoBox && !(part as any).rightParts && !(part as any).isFourPanel ? 'min-h-[100px]' : 'min-h-[160px]',
+                        (part as any).isVideoBox ? 'row-span-2 h-auto min-h-[336px]' : ((part as any).rightParts || (part as any).isFourPanel ? 'h-full' : 'h-full'),
                       ]"
                     >
-                      <template v-if="(part as any).isVideoBox">
+                      <!-- ─── FOUR-PANEL horizontal layout ─── -->
+                      <template v-if="(part as any).isFourPanel">
+                        <div class="w-full flex divide-x divide-border/50 overflow-hidden">
+                          <template v-for="panel in ((part as any).fourPanels || [])" :key="panel.key + (panel.imageIndex ?? '')">
+                            <!-- Image slot panel -->
+                            <div v-if="panel.type === 'imageSlot'" class="flex-1 flex flex-col min-w-0 min-h-[160px]">
+                              <div class="px-2 py-1.5 bg-muted/30 border-b border-border/50 shrink-0">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate block">{{ panel.label }}</span>
+                              </div>
+                              <div class="flex-1 relative overflow-hidden flex flex-col items-center justify-center bg-zinc-950/5 dark:bg-black/30 p-1.5 gap-1.5">
+                                <template v-if="getImages(editForm, panel.key, panel.oldKey, panel.imageIndex).length">
+                                  <div
+                                    class="relative w-full flex-1 rounded overflow-hidden cursor-pointer border border-border/50 shadow-sm group/imgpanel"
+                                    @click="openLightboxUrls(getImages(editForm, panel.key, panel.oldKey, panel.imageIndex), 0, panel.label)"
+                                  >
+                                    <img :src="getImages(editForm, panel.key, panel.oldKey, panel.imageIndex)[0]" :alt="panel.label" class="w-full h-full object-cover select-none" loading="lazy">
+                                    <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-100 lg:opacity-0 group-hover/imgpanel:opacity-100 transition-opacity z-10">
+                                      <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(panel.key, 0, panel.oldKey, panel.imageIndex)">
+                                        <Icon name="i-lucide-refresh-cw" class="size-3.5" />
+                                      </Button>
+                                      <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage(panel.key, 0, panel.oldKey, panel.imageIndex)">
+                                        <Icon name="i-lucide-trash" class="size-3.5 text-white" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </template>
+                                <template v-else>
+                                  <div v-if="!props.readonly" class="flex flex-col items-center justify-center gap-1.5 cursor-pointer w-full h-full hover:bg-muted/20 rounded transition-colors p-2" @click.stop="addImage(panel.key, panel.imageIndex)">
+                                    <div class="size-8 rounded-full border-2 border-dashed border-border/60 flex items-center justify-center bg-muted/20">
+                                      <Icon name="i-lucide-image-plus" class="size-4 text-muted-foreground/50" />
+                                    </div>
+                                    <span class="text-[9px] text-muted-foreground/50 uppercase tracking-wider text-center">Add</span>
+                                  </div>
+                                  <div v-else class="flex flex-col items-center justify-center gap-1 w-full h-full p-2">
+                                    <Icon name="i-lucide-image-off" class="size-5 text-muted-foreground/30" />
+                                  </div>
+                                </template>
+                              </div>
+                            </div>
+                            <!-- Dropdown panel -->
+                            <div v-else class="flex-1 flex flex-col min-w-0 min-h-[160px]">
+                              <div class="px-2 py-1.5 bg-muted/30 border-b border-border/50 shrink-0">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate block">{{ panel.label }}</span>
+                              </div>
+                              <div class="flex-1 p-2 flex flex-col justify-center bg-white/40 dark:bg-black/20">
+                                <template v-if="props.readonly">
+                                  <div v-if="getDisplayValues(editForm, panel.key, panel.oldKey).length" class="flex flex-col gap-1">
+                                    <div v-for="val in getDisplayValues(editForm, panel.key, panel.oldKey)" :key="val" class="px-1.5 py-1 rounded text-[10px] font-bold flex items-center gap-1 shadow-sm border border-border/50 truncate" :class="getConditionStyle(val).bg">
+                                      <Icon :name="getConditionStyle(val).icon" class="size-3 shrink-0" />
+                                      <span class="truncate">{{ val }}</span>
+                                    </div>
+                                  </div>
+                                  <p v-else class="text-[10px] text-muted-foreground/50 px-1">—</p>
+                                </template>
+                                <template v-else>
+                                  <SearchableSelect v-model="editForm[panel.key]" :options="getOptions(panel.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background border-border/80" />
+                                </template>
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                      </template>
+                      <template v-else-if="(part as any).isVideoBox">
                         <div class="w-full h-full flex flex-col p-3 bg-muted/5 relative overflow-hidden">
                           <div class="grid grid-cols-2 gap-3 flex-1 h-full w-full">
                             <template v-for="vk in engineVideoKeys" :key="vk.key">
@@ -2238,14 +2415,14 @@ watch(editForm, () => {
                         </div>
                       </template>
                       <template v-else>
-                        <!-- Left Side: Controls & Condition -->
-                        <div class="flex overflow-hidden h-full" :class="[(part as any).isVerticalSplit ? 'flex-col' : 'flex-row', (part as any).hasNoImages ? 'flex-1' : 'shrink-0']">
+                        <!-- Left Side: Controls & Condition (hidden when rightParts-only) -->
+                        <div v-if="(part as any).splitParts || !(part as any).rightParts" class="flex overflow-hidden h-full" :class="[(part as any).isVerticalSplit ? 'flex-col' : 'flex-row', ((part as any).hasNoImages && !(part as any).rightParts) ? 'flex-1' : 'shrink-0']">
                           <template v-for="(renderPart, rIdx) in ((part as any).splitParts || [part])" :key="renderPart.key">
                             <div
-                              class="flex flex-col shrink-0 bg-muted/10 relative"
+                                class="flex flex-col shrink-0 bg-muted/10 relative"
                               :class="[
-                                (part as any).isVerticalSplit ? 'h-1/2 w-[200px] xl:w-[240px]' : (part as any).splitParts ? ((part as any).hasNoImages ? 'h-full w-1/2' : 'h-full w-[240px] xl:w-[280px]') : (renderPart as any).hasNoImages ? 'h-full w-full' : 'h-full w-[200px] xl:w-[240px]',
-                                rIdx === 0 && (part as any).splitParts && !(part as any).isVerticalSplit ? 'border-r border-border/50' : '',
+                                (part as any).isVerticalSplit ? 'h-1/2 w-[200px] xl:w-[240px]' : (part as any).splitParts ? (((part as any).hasNoImages && !(part as any).rightParts) ? ((part as any).splitParts.length === 1 ? 'h-full w-full' : 'h-full w-1/2') : 'h-full w-[240px] xl:w-[280px]') : (renderPart as any).hasNoImages ? 'h-full w-full' : 'h-full w-[200px] xl:w-[240px]',
+                                rIdx === 0 && (part as any).splitParts && !(part as any).isVerticalSplit && (part as any).splitParts.length > 1 ? 'border-r border-border/50' : '',
                                 rIdx === 0 && (part as any).isVerticalSplit ? 'border-b border-border/50' : '',
                                 !((part as any).splitParts) && !(renderPart as any).hasNoImages ? 'border-r border-border/50' : '',
                               ]"
@@ -2350,6 +2527,67 @@ watch(editForm, () => {
                                   <Input v-else v-model="editForm[renderPart.key]" :type="(renderPart as any).inputType || 'text'" class="shadow-sm border-border text-sm focus-visible:ring-1 bg-white dark:bg-zinc-900" placeholder="e.g. Scratched, Rust" />
                                 </div>
                               </template>
+                            </div>
+                          </template>
+                        </div>
+
+                        <!-- Right Side: hideImages rightParts panel (form fields + imageSlots) -->
+                        <div v-if="(part as any).hideImages && (part as any).rightParts" class="flex-1 flex flex-col overflow-y-auto bg-muted/5 dark:bg-muted/10">
+                          <template v-for="partItem in ((part as any).rightParts || [])" :key="partItem.key + (partItem.imageIndex ?? '')">
+                            <!-- IMAGE SLOT type -->
+                            <div v-if="partItem.type === 'imageSlot'" class="flex-1 px-2 py-1.5 border-b border-border/50 last:border-b-0 flex items-center gap-2 overflow-hidden bg-zinc-950/5 dark:bg-black/30 min-h-[48px]">
+                              <template v-if="getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex).length">
+                                <div class="relative shrink-0 h-10 w-14 rounded overflow-hidden cursor-pointer group/imgslot border border-border/50 shadow-sm"
+                                  @click="openLightboxUrls(getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex), 0, partItem.label)">
+                                  <img :src="getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex)[0]" :alt="partItem.label" class="w-full h-full object-cover select-none" loading="lazy">
+                                </div>
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground truncate flex-1">{{ partItem.label }}</span>
+                                <div v-if="!props.readonly" class="flex items-center gap-1 shrink-0">
+                                  <Button variant="secondary" size="icon" class="size-6 rounded-full bg-white/80 hover:bg-white shadow-sm" @click.stop="replaceImage(partItem.key, 0, partItem.oldKey, partItem.imageIndex)">
+                                    <Icon name="i-lucide-refresh-cw" class="size-3 text-primary" />
+                                  </Button>
+                                  <Button variant="destructive" size="icon" class="size-6 rounded-full bg-red-500/80 hover:bg-red-600 shadow-sm" @click.stop="removeImage(partItem.key, 0, partItem.oldKey, partItem.imageIndex)">
+                                    <Icon name="i-lucide-trash" class="size-3 text-white" />
+                                  </Button>
+                                </div>
+                              </template>
+                              <template v-else>
+                                <div v-if="!props.readonly" class="flex items-center gap-2 w-full cursor-pointer hover:bg-muted/20 rounded px-1 py-1 transition-colors" @click.stop="addImage(partItem.key, partItem.imageIndex)">
+                                  <div class="size-10 w-14 rounded border-2 border-dashed border-border/60 flex items-center justify-center shrink-0 bg-muted/20">
+                                    <Icon name="i-lucide-image-plus" class="size-4 text-muted-foreground/50" />
+                                  </div>
+                                  <span class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60 truncate">Add {{ partItem.label }}</span>
+                                </div>
+                                <div v-else class="flex items-center gap-2 w-full px-1 py-1">
+                                  <div class="size-10 w-14 rounded border border-border/30 flex items-center justify-center shrink-0 bg-muted/10">
+                                    <Icon name="i-lucide-image-off" class="size-4 text-muted-foreground/30" />
+                                  </div>
+                                  <span class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/40 truncate">{{ partItem.label }}</span>
+                                </div>
+                              </template>
+                            </div>
+                            <!-- Standard form field -->
+                            <div v-else class="flex-1 px-3 py-2 border-b border-border/50 last:border-b-0 flex flex-col justify-center gap-1.5 overflow-hidden bg-white/40 dark:bg-black/20">
+                              <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 truncate w-full" :title="partItem.label">{{ partItem.label }}</span>
+                              <div class="w-full min-w-0 pointer-events-auto flex items-center">
+                                <template v-if="props.readonly">
+                                  <div v-if="getDisplayValues(editForm, partItem.key, partItem.oldKey).length" class="flex flex-wrap gap-1.5 w-full">
+                                    <div
+                                      v-for="val in getDisplayValues(editForm, partItem.key, partItem.oldKey)"
+                                      :key="val"
+                                      class="px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1.5 shadow-sm border border-border/50 truncate w-max"
+                                      :class="getConditionStyle(val).bg"
+                                    >
+                                      <Icon :name="getConditionStyle(val).icon" class="size-3 shrink-0" />
+                                      <span class="truncate max-w-[180px]">{{ val }}</span>
+                                    </div>
+                                  </div>
+                                  <p v-else class="text-xs font-medium px-2 py-1.5 bg-muted/50 rounded border border-border/50 truncate w-full text-muted-foreground">—</p>
+                                </template>
+                                <template v-else>
+                                  <SearchableSelect v-model="editForm[partItem.key]" :options="partItem.staticOptions || getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />
+                                </template>
+                              </div>
                             </div>
                           </template>
                         </div>

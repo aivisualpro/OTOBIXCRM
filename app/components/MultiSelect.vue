@@ -4,7 +4,7 @@ import { cn } from '~/lib/utils'
 
 const props = defineProps<{
   options: { label: string, value: string }[]
-  modelValue?: string | string[]
+  modelValue?: string | string[] | number
   placeholder?: string
   className?: string
 }>()
@@ -19,11 +19,13 @@ const selectedValues = computed({
   get: () => {
     let vals: string[] = []
     if (Array.isArray(props.modelValue))
-      vals = props.modelValue
+      vals = props.modelValue.map(String)
     else if (typeof props.modelValue === 'string' && props.modelValue)
       vals = [props.modelValue]
+    else if (typeof props.modelValue === 'number' && !isNaN(props.modelValue))
+      vals = [String(props.modelValue)]
 
-    return vals.flatMap(v => typeof v === 'string' ? v.split(',') : String(v)).map(s => s.trim()).filter(Boolean)
+    return vals.flatMap(v => typeof v === 'string' ? v.split(',') : [String(v)]).map(s => s.trim()).filter(Boolean)
   },
   set: (val: string[]) => {
     if (Array.isArray(props.modelValue))
