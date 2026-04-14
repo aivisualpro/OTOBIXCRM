@@ -1,4 +1,4 @@
-export default defineEventHandler(async (event) => {(config.mongodbUri as string) || process.env.NUXT_MONGODB_URI || ''
+export default defineEventHandler(async (event) => {
 
   try {
     const db = await getLeadsDb(event)

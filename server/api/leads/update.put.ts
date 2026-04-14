@@ -224,9 +224,9 @@ export default defineEventHandler(async (event) => {
 
         // ── Auction Lifecycle Fields ──
         // auctionStartTime, auctionDuration come from the frontend payload
-        const rawAuctionStartTime = updates.auctionStartTime || existingCar?.auctionStartTime || ''
-        const rawAuctionDuration = Number(updates.auctionDuration || existingCar?.auctionDuration) || 0
-        const rawAuctionStatus = updates.auctionStatus || ''
+        const rawAuctionStartTime = updates.auctionStartTime !== undefined ? updates.auctionStartTime : (existingCar?.auctionStartTime || '')
+        const rawAuctionDuration = Number(updates.auctionDuration !== undefined ? updates.auctionDuration : existingCar?.auctionDuration) || 0
+        const rawAuctionStatus = updates.auctionStatus !== undefined ? updates.auctionStatus : (existingCar?.auctionStatus || '')
 
         let computedAuctionEndTime: Date | string = ''
         let computedUpcomingUntil: Date | string = ''
