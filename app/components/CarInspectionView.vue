@@ -150,13 +150,13 @@ async function saveQC(silent = false) {
 
     const syncFallbacks = (item: any) => {
       if (!item) return
-      if (item.oldKey && item.key && item.key in edited) {
+      if (item.oldKey && item.oldKey !== 'new' && item.key && item.key in edited) {
         const val = edited[item.key]
         if (JSON.stringify(val) !== JSON.stringify(edited[item.oldKey])) {
           edited[item.oldKey] = val === undefined ? undefined : JSON.parse(JSON.stringify(val))
         }
       }
-      if (item.oldImageKey && item.imageKey && item.imageKey in edited) {
+      if (item.oldImageKey && item.oldImageKey !== 'new' && item.imageKey && item.imageKey in edited) {
         const val = edited[item.imageKey]
         if (JSON.stringify(val) !== JSON.stringify(edited[item.oldImageKey])) {
           edited[item.oldImageKey] = val === undefined ? undefined : JSON.parse(JSON.stringify(val))
@@ -957,7 +957,7 @@ function formatDate(d: string) {
 function getImages(obj: Record<string, any> | null, key: string, fallbackKey?: string, imageIndex?: number): string[] {
   let val = obj?.[key]
   // If new key is empty, try fallback (old) key
-  if ((!val || (Array.isArray(val) && val.length === 0)) && fallbackKey)
+  if ((!val || (Array.isArray(val) && val.length === 0)) && fallbackKey && fallbackKey !== 'new')
     val = obj?.[fallbackKey]
   if (!val)
     return []
@@ -1784,7 +1784,7 @@ watch(() => car.value, (newVal) => {
     const applyFallback = (item: any) => {
       if (!item)
         return
-      if (item.oldKey && isFieldEmpty(clone[item.key]) && clone[item.oldKey]) {
+      if (item.oldKey && item.oldKey !== 'new' && isFieldEmpty(clone[item.key]) && clone[item.oldKey]) {
         clone[item.key] = clone[item.oldKey]
       }
       if (item.splitParts)
