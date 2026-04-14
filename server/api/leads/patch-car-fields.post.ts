@@ -16,11 +16,14 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: 'Car not found' })
     }
 
-    // Pull contactNumber from telecallings
+    // Pull contactNumber from telecallings, strip +91 prefix
     let contactNumber = existingCar.customerContactNumber || ''
     if (!contactNumber && existingCar.appointmentId) {
       const teleDoc = await db.collection('telecallings').findOne({ appointmentId: existingCar.appointmentId })
       contactNumber = teleDoc?.customerContactNumber || ''
+    }
+    if (typeof contactNumber === 'string') {
+      contactNumber = contactNumber.replace(/^\+91\s*/, '').trim()
     }
 
     // ── Calculate margins from carMargins collection ──
@@ -51,9 +54,12 @@ export default defineEventHandler(async (event) => {
       console.warn('[API:leads] Margin calc failed, using 0:', marginErr.message)
     }
 
+    // ── frontMain: sync from frontMainImages ──
+    const frontMainImages = existingCar.frontMainImages || []
+    const frontMain = Array.isArray(frontMainImages) ? [...frontMainImages] : []
+
     const QC_REQUIRED_FIELDS: Record<string, any> = {
       contactNumber,
-      customerContactNumber: contactNumber,
       priceDiscoveryBy: body.priceDiscoveryBy || '',
       highestBid: 0,
       highestBidder: '',
@@ -67,7 +73,7 @@ export default defineEventHandler(async (event) => {
       movedToOtobuyAt: '',
       oneClickPrice: 0,
       otobuyOffer: 0,
-      soldAt: '',
+      soldAt: 0,
       soldTo: '',
       reasonOfRemoval: '',
       removedBy: '',
@@ -76,6 +82,7 @@ export default defineEventHandler(async (event) => {
       variableMargin: calculatedVariableMargin,
       sendToAuctionApk: '',
       appointmentId: existingCar.appointmentId || '',
+      frontMain,
     }
 
     // Only set fields that don't already exist

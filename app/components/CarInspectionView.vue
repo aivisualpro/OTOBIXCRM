@@ -109,11 +109,48 @@ async function saveQC(silent = false) {
     const userCookie = useCookie('userData')
     const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
 
+    // ── GENERIC FALLBACK SYNC: forward changes from new keys to fallback (old) keys ──
+    const edited = editForm.value || {}
+
+    const syncFallbacks = (item: any) => {
+      if (!item) return
+      if (item.oldKey && item.key && item.key in edited) {
+        const val = edited[item.key]
+        if (JSON.stringify(val) !== JSON.stringify(edited[item.oldKey])) {
+          edited[item.oldKey] = val === undefined ? undefined : JSON.parse(JSON.stringify(val))
+        }
+      }
+      if (item.oldImageKey && item.imageKey && item.imageKey in edited) {
+        const val = edited[item.imageKey]
+        if (JSON.stringify(val) !== JSON.stringify(edited[item.oldImageKey])) {
+          edited[item.oldImageKey] = val === undefined ? undefined : JSON.parse(JSON.stringify(val))
+        }
+      }
+      if (item.splitParts) item.splitParts.forEach(syncFallbacks)
+      if (item.rightParts) item.rightParts.forEach(syncFallbacks)
+      if (item.imageGroups) item.imageGroups.forEach(syncFallbacks)
+      if (item.parts) item.parts.forEach(syncFallbacks)
+    }
+
+    exteriorSections.forEach(section => {
+      if (section.parts) section.parts.forEach(syncFallbacks)
+      if (section.imageKeys) {
+        section.imageKeys.forEach((entry: any) => {
+          if (typeof entry !== 'string' && entry.old && entry.new && entry.new in edited) {
+            const val = edited[entry.new]
+            if (JSON.stringify(val) !== JSON.stringify(edited[entry.old])) {
+              edited[entry.old] = val === undefined ? undefined : JSON.parse(JSON.stringify(val))
+            }
+          }
+        })
+      }
+    })
+    documentDetailFields.forEach(syncFallbacks)
+
     // Build the payload: only send fields that actually changed from the original car data
     // This prevents image uploads from sending ALL car info to telecallings/AppSheet
     const changedFields: Record<string, any> = {}
     const original = car.value || {}
-    const edited = editForm.value || {}
 
     for (const key of Object.keys(edited)) {
       if (key === '_id' || key === 'id' || key === 'qcLogs' || key === 'logs' || key === 'qcLog')
@@ -264,6 +301,75 @@ const qcForm = ref({
   retailAssociate: '',
 })
 
+// ─── Pre-Approval Validation ───
+interface ValidationWarning {
+  field: string
+  label: string
+  type: 'error' | 'warning'
+}
+
+const approvalWarnings = computed<ValidationWarning[]>(() => {
+  const warnings: ValidationWarning[] = []
+  const data = editForm.value || car.value || {}
+
+  // Helper to check emptiness
+  const isEmpty = (val: any) => val === undefined || val === null || val === '' || (Array.isArray(val) && val.filter(Boolean).length === 0)
+
+  // ── Critical fields that MUST exist ──
+  const requiredFields: { key: string, label: string, type?: string }[] = [
+    { key: 'make', label: 'Make' },
+    { key: 'model', label: 'Model' },
+    { key: 'variant', label: 'Variant' },
+    { key: 'yearMonthOfManufacture', label: 'Year/Month of Manufacture' },
+    { key: 'registrationNumber', label: 'Registration Number' },
+    { key: 'registrationDate', label: 'Registration Date' },
+    { key: 'registrationState', label: 'Registration State' },
+    { key: 'registeredRto', label: 'Registered RTO' },
+    { key: 'fuelType', label: 'Fuel Type' },
+    { key: 'ownerSerialNumber', label: 'Owner Serial Number', type: 'number' },
+    { key: 'odometerReadingInKms', label: 'Odometer Reading (KMs)', type: 'number' },
+    { key: 'cubicCapacity', label: 'Cubic Capacity', type: 'number' },
+    { key: 'inspectionLocation', label: 'Inspection Location' },
+  ]
+
+  for (const f of requiredFields) {
+    const val = data[f.key]
+    if (f.type === 'number') {
+      if (!val && val !== 0) warnings.push({ field: f.key, label: f.label, type: 'error' })
+    } else {
+      if (isEmpty(val)) warnings.push({ field: f.key, label: f.label, type: 'error' })
+    }
+  }
+
+  // ── sendToAuctionApk — must not be empty ──
+  if (isEmpty(data.sendToAuctionApk)) {
+    warnings.push({ field: 'sendToAuctionApk', label: 'Send To Auction APK (timestamp)', type: 'error' })
+  }
+
+  // ── frontMain / frontMainImages — at least one image ──
+  const frontImgs = data.frontMainImages || data.frontMain || []
+  if (isEmpty(frontImgs)) {
+    warnings.push({ field: 'frontMain', label: 'Front Main Image', type: 'error' })
+  }
+
+  // ── contactNumber from telecalling ──
+  const contact = data.customerContactNumber || data.contactNumber || ''
+  if (isEmpty(contact)) {
+    warnings.push({ field: 'contactNumber', label: 'Contact Number (from Telecalling)', type: 'error' })
+  }
+
+  // Optional warnings (non-blocking but informational)
+  if (isEmpty(data.roadTaxValidity)) warnings.push({ field: 'roadTaxValidity', label: 'Road Tax Validity', type: 'warning' })
+  if (isEmpty(data.taxValidTill)) warnings.push({ field: 'taxValidTill', label: 'Tax Valid Till', type: 'warning' })
+  if (isEmpty(data.commentsOnTransmission)) warnings.push({ field: 'commentsOnTransmission', label: 'Comments on Transmission', type: 'warning' })
+
+  return warnings
+})
+
+const hasBlockingWarnings = computed(() => approvalWarnings.value.some(w => w.type === 'error'))
+const blockingWarnings = computed(() => approvalWarnings.value.filter(w => w.type === 'error'))
+const softWarnings = computed(() => approvalWarnings.value.filter(w => w.type === 'warning'))
+
 function openQCModal() {
   qcForm.value.priceDiscovery = editForm.value.priceDiscovery || car.value?.priceDiscovery || ''
   qcForm.value.retailAssociate = editForm.value.retailAssociate || car.value?.retailAssociate || ''
@@ -271,6 +377,11 @@ function openQCModal() {
 }
 
 async function confirmQCApproval() {
+  // ── Block if critical fields are missing ──
+  if (hasBlockingWarnings.value) {
+    toast.error(`Cannot approve: ${blockingWarnings.value.length} required field(s) are missing. Please fix them first.`)
+    return
+  }
   if (!qcForm.value.priceDiscovery) {
     toast.error('Price Discovery is required')
     return
@@ -283,6 +394,38 @@ async function confirmQCApproval() {
   editForm.value.priceDiscovery = qcForm.value.priceDiscovery
   editForm.value.retailAssociate = qcForm.value.retailAssociate
 
+  // ── Compute auction lifecycle fields ──
+  let startTimeDate: Date
+  if (qcForm.value.auctionMode === 'makeLiveNow') {
+    startTimeDate = new Date()
+  } else {
+    startTimeDate = new Date(qcForm.value.auctionStartTime)
+  }
+
+  const durationMs = Number(qcForm.value.auctionDuration) * 60 * 60 * 1000
+  const endTimeDate = new Date(startTimeDate.getTime() + durationMs)
+  const auctionStatus = qcForm.value.auctionMode === 'makeLiveNow' ? 'live' : 'upcoming'
+
+  editForm.value.auctionStartTime = startTimeDate.toISOString()
+  editForm.value.auctionDuration = Number(qcForm.value.auctionDuration)
+  editForm.value.auctionEndTime = endTimeDate.toISOString()
+  editForm.value.auctionStatus = auctionStatus
+  editForm.value.upcomingUntil = startTimeDate.toISOString()
+  editForm.value.liveAt = startTimeDate.toISOString()
+
+  // ── Sync frontMain from frontMainImages ──
+  const frontImgs = editForm.value.frontMainImages || editForm.value.frontMain || []
+  if (Array.isArray(frontImgs) && frontImgs.length > 0) {
+    editForm.value.frontMain = [...frontImgs]
+  }
+
+  // ── Strip +91 from contactNumber for the cars collection ──
+  let rawContact = editForm.value.customerContactNumber || editForm.value.contactNumber || ''
+  if (typeof rawContact === 'string') {
+    rawContact = rawContact.replace(/^\+91\s*/, '').trim()
+  }
+  editForm.value.contactNumber = rawContact
+
   const loadingToast = toast.loading('Scheduling auction and completing QC...')
   try {
     // 1. External Integration - Create/schedule auction
@@ -290,7 +433,6 @@ async function confirmQCApproval() {
 
     // 2. Local State - Only set to 'Approved' IF auction was successful
     editForm.value.approvalStatus = 'Approved'
-    editForm.value.auctionStatus = qcForm.value.auctionMode === 'makeLiveNow' ? 'live' : 'upcoming'
 
     // 3. Database DB Save - This will hit /api/leads/update which updates BOTH cars & telecalling collections
     await saveQC(true)
@@ -1365,7 +1507,7 @@ const documentDetailFields: any[] = [
   // Status & Compliance
   { key: 'statusCompliance', type: 'combinedBox', label: 'Status & Compliance', hideImages: true, splitParts: [
     { label: 'RC Status', key: 'rcStatus', oldKey: undefined, type: 'dropdown', dropdownName: 'RC Status' },
-    { label: 'Blacklist Status', key: 'blacklistStatus', oldKey: undefined, type: 'dropdown', staticOptions: [{ label: 'YES', value: 'YES' }, { label: 'NO', value: 'NO' }] },
+    { label: 'Blacklist Status', key: 'blacklistStatus', oldKey: undefined, type: 'dropdown', staticOptions: [{ label: 'YES', value: 'YES' }, { label: 'NO', value: 'NO' }, { label: 'fetching data', value: 'fetching data' }] },
     { label: 'RTO NOC Details', key: 'rtoNoc', oldKey: 'rtoNoc', type: 'multiselect', dropdownName: 'RTO NOC' },
   ], rightParts: [
     { label: 'RTO Form 28 (2 Copies)', key: 'rtoForm28', oldKey: 'rtoForm28', type: 'multiselect', dropdownName: 'RTO Form 28 (2 copies)' },
@@ -1555,6 +1697,7 @@ watch(() => car.value, (newVal) => {
 watch(editForm, () => {
   if (_skipAutoSave || props.readonly)
     return
+
   // Debounce: wait 1.5s after last change before saving
   if (_autoSaveTimer)
     clearTimeout(_autoSaveTimer)
@@ -1568,66 +1711,149 @@ watch(editForm, () => {
   <div class="flex-1 min-h-0 flex flex-col overflow-hidden -m-4 lg:-m-6">
     <!-- QC Approval Modal -->
     <Dialog :open="showQCModal" @update:open="showQCModal = $event">
-      <DialogContent class="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Approve & Schedule Auction</DialogTitle>
-          <DialogDescription>
-            Please provide the required details before finalizing this vehicle approval.
-          </DialogDescription>
+          <DialogTitle class="flex items-center gap-2.5">
+            <div class="size-9 rounded-xl flex items-center justify-center" :class="hasBlockingWarnings ? 'bg-red-500/10 border border-red-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'">
+              <Icon :name="hasBlockingWarnings ? 'i-lucide-shield-alert' : 'i-lucide-shield-check'" class="size-5" :class="hasBlockingWarnings ? 'text-red-500' : 'text-emerald-500'" />
+            </div>
+            <div>
+              <span>Approve & Schedule Auction</span>
+              <p class="text-xs font-normal text-muted-foreground mt-0.5">
+                {{ hasBlockingWarnings ? `${blockingWarnings.length} issue(s) must be resolved before approval` : 'All checks passed — ready to approve' }}
+              </p>
+            </div>
+          </DialogTitle>
         </DialogHeader>
 
-        <div class="space-y-4 py-4">
-          <!-- Price Discovery -->
-          <div class="space-y-2">
-            <label class="text-sm font-medium">Price Discovery (Required)</label>
-            <Input v-model="qcForm.priceDiscovery" type="number" placeholder="Enter Price Amount" class="font-bold text-lg" required />
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 py-4">
+          <!-- LEFT COLUMN: Form Fields -->
+          <div class="space-y-4">
+            <!-- Price Discovery -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Price Discovery *</label>
+              <Input v-model="qcForm.priceDiscovery" type="number" placeholder="Enter Price Amount" class="font-bold text-lg h-11" required />
+            </div>
+
+            <!-- Retail Associate Dropdown -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Retail Associate</label>
+              <select v-model="qcForm.retailAssociate" class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                <option value="">
+                  Select Associate
+                </option>
+                <option v-for="r in retailers" :key="r.email" :value="r.email">
+                  {{ r.userName }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Auction Mode -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Auction Mode</label>
+              <select v-model="qcForm.auctionMode" class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                <option value="makeLiveNow">
+                  Make Live Now
+                </option>
+                <option value="scheduledForLater">
+                  Scheduled For Later
+                </option>
+              </select>
+            </div>
+
+            <!-- Auction Start Time (If scheduled) -->
+            <div v-if="qcForm.auctionMode === 'scheduledForLater'" class="space-y-1.5">
+              <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Start Date & Time *</label>
+              <Input v-model="qcForm.auctionStartTime" type="datetime-local" class="font-medium h-10" required />
+            </div>
+
+            <!-- Auction Duration -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Auction Duration (Hours)</label>
+              <Input v-model="qcForm.auctionDuration" type="number" min="1" placeholder="Duration in hours" class="font-medium h-10" />
+            </div>
           </div>
 
-          <!-- Retail Associate Dropdown -->
-          <div class="space-y-2">
-            <label class="text-sm font-medium">Retail Associate</label>
-            <select v-model="qcForm.retailAssociate" class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-              <option value="">
-                Select Associate
-              </option>
-              <option v-for="r in retailers" :key="r.email" :value="r.email">
-                {{ r.userName }}
-              </option>
-            </select>
-          </div>
+          <!-- RIGHT COLUMN: Validation Checklist -->
+          <div class="space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+              <Icon name="i-lucide-clipboard-check" class="size-3.5" />
+              Pre-Flight Checklist
+            </h4>
 
-          <!-- Auction Mode -->
-          <div class="space-y-2">
-            <label class="text-sm font-medium">Auction Mode</label>
-            <select v-model="qcForm.auctionMode" class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-              <option value="makeLiveNow">
-                Make Live Now
-              </option>
-              <option value="scheduledForLater">
-                Scheduled For Later
-              </option>
-            </select>
-          </div>
+            <!-- Blocking Warnings (Red) -->
+            <div v-if="blockingWarnings.length > 0" class="rounded-xl border border-red-500/20 bg-red-500/5 p-3 space-y-1.5">
+              <div class="flex items-center gap-1.5 text-red-600 dark:text-red-400 mb-2">
+                <Icon name="i-lucide-x-circle" class="size-3.5 shrink-0" />
+                <span class="text-[11px] font-bold uppercase tracking-widest">Missing Required ({{ blockingWarnings.length }})</span>
+              </div>
+              <div
+                v-for="w in blockingWarnings"
+                :key="w.field"
+                class="flex items-center gap-2 text-xs py-1 px-2 rounded-md bg-red-500/10 text-red-700 dark:text-red-300"
+              >
+                <Icon name="i-lucide-alert-triangle" class="size-3 shrink-0 text-red-500" />
+                <span class="font-medium truncate">{{ w.label }}</span>
+              </div>
+            </div>
 
-          <!-- Auction Start Time (If scheduled) -->
-          <div v-if="qcForm.auctionMode === 'scheduledForLater'" class="space-y-2">
-            <label class="text-sm font-medium">Start Date & Time (Required)</label>
-            <Input v-model="qcForm.auctionStartTime" type="datetime-local" class="font-medium" required />
-          </div>
+            <!-- All Clear -->
+            <div v-if="blockingWarnings.length === 0" class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 flex items-center gap-2.5">
+              <div class="size-8 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                <Icon name="i-lucide-check-circle-2" class="size-4 text-emerald-500" />
+              </div>
+              <div>
+                <p class="text-xs font-bold text-emerald-700 dark:text-emerald-400">All Checks Passed</p>
+                <p class="text-[11px] text-emerald-600/80 dark:text-emerald-400/70">Required fields verified. Ready to approve.</p>
+              </div>
+            </div>
 
-          <!-- Auction Duration -->
-          <div class="space-y-2">
-            <label class="text-sm font-medium">Auction Duration (Hours)</label>
-            <Input v-model="qcForm.auctionDuration" type="number" min="1" placeholder="Duration in hours" class="font-medium" />
+            <!-- Soft Warnings (Amber) -->
+            <div v-if="softWarnings.length > 0" class="rounded-xl border border-amber-500/15 bg-amber-500/5 p-3 space-y-1.5">
+              <div class="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 mb-2">
+                <Icon name="i-lucide-info" class="size-3.5 shrink-0" />
+                <span class="text-[11px] font-bold uppercase tracking-widest">Optional ({{ softWarnings.length }})</span>
+              </div>
+              <div
+                v-for="w in softWarnings"
+                :key="w.field"
+                class="flex items-center gap-2 text-xs py-1 px-2 rounded-md text-amber-700 dark:text-amber-300"
+              >
+                <Icon name="i-lucide-minus-circle" class="size-3 shrink-0 text-amber-400" />
+                <span class="font-medium truncate">{{ w.label }}</span>
+              </div>
+            </div>
+
+            <!-- Computed Preview -->
+            <div v-if="qcForm.priceDiscovery" class="rounded-xl border bg-muted/30 p-3 space-y-2 mt-2">
+              <h4 class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Computed Preview</h4>
+              <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                <span class="text-muted-foreground">Auction Status</span>
+                <span class="font-bold" :class="qcForm.auctionMode === 'makeLiveNow' ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'">
+                  {{ qcForm.auctionMode === 'makeLiveNow' ? 'LIVE' : 'UPCOMING' }}
+                </span>
+                <span class="text-muted-foreground">Duration</span>
+                <span class="font-semibold">{{ qcForm.auctionDuration }}h</span>
+                <span class="text-muted-foreground">Contact #</span>
+                <span class="font-mono font-semibold text-[11px]">{{ (editForm?.customerContactNumber || editForm?.contactNumber || '—').replace(/^\+91\s*/, '') }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <DialogFooter class="sm:justify-end">
+        <DialogFooter class="sm:justify-end border-t pt-4">
           <Button variant="outline" @click="showQCModal = false">
             Cancel
           </Button>
-          <Button class="bg-emerald-500 hover:bg-emerald-600 focus:ring-emerald-500 text-white font-bold" @click="confirmQCApproval">
-            Confirm & Approve
+          <Button
+            :disabled="hasBlockingWarnings"
+            :class="hasBlockingWarnings
+              ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
+              : 'bg-emerald-500 hover:bg-emerald-600 focus:ring-emerald-500 text-white font-bold shadow-md'"
+            @click="confirmQCApproval"
+          >
+            <Icon :name="hasBlockingWarnings ? 'i-lucide-shield-alert' : 'i-lucide-check-circle-2'" class="mr-1.5 size-4" />
+            {{ hasBlockingWarnings ? `Fix ${blockingWarnings.length} Issue(s)` : 'Confirm & Approve' }}
           </Button>
         </DialogFooter>
       </DialogContent>

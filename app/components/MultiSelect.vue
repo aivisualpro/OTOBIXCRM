@@ -87,7 +87,7 @@ const selectedLabels = computed(() => {
               :key="opt.value"
               :value="opt.value"
               class="w-full flex"
-              @select="toggleOption(String(opt.value))"
+              @select="(e: Event) => { e.preventDefault(); toggleOption(String(opt.value)) }"
             >
               <slot name="option" :option="opt" :selected="selectedValues.includes(String(opt.value)) || isSelected(String(opt.value))">
                 <Icon

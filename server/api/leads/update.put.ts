@@ -163,9 +163,13 @@ export default defineEventHandler(async (event) => {
 
       // ── QC Approval: Seed all required fields on the cars document ──
       if (updates.approvalStatus === 'Approved') {
-        // Pull contactNumber from telecallings → cars
+        // Pull contactNumber from telecallings → cars, strip +91 prefix
         const teleDoc = await db.collection('telecallings').findOne({ appointmentId: apptId })
-        const contactNumber = teleDoc?.customerContactNumber || ''
+        let rawContact = teleDoc?.customerContactNumber || ''
+        if (typeof rawContact === 'string') {
+          rawContact = rawContact.replace(/^\+91\s*/, '').trim()
+        }
+        const contactNumber = rawContact
 
         // priceDiscoveryBy = the user who approved the QC
         const priceDiscoveryBy = changedBy || ''
@@ -181,11 +185,9 @@ export default defineEventHandler(async (event) => {
         try {
           const marginSchemes = await db.collection('carMargins').find({}).sort({ fixedMargin: 1 }).toArray()
           if (marginSchemes.length > 0) {
-            // Use the first (global) scheme
             const scheme = marginSchemes[0]
             calculatedFixedMargin = Number(scheme.fixedMargin) || 0
 
-            // Find the matching variable range based on priceDiscovery in lacs
             const ranges = scheme.variableRanges || []
             for (const range of ranges) {
               const min = Number(range.min) || 0
@@ -201,32 +203,76 @@ export default defineEventHandler(async (event) => {
           console.warn('[API:leads] Failed to fetch margin scheme, using defaults:', marginErr.message)
         }
 
+        // ── Auction Lifecycle Fields ──
+        // auctionStartTime, auctionDuration come from the frontend payload
+        const rawAuctionStartTime = updates.auctionStartTime || existingCar?.auctionStartTime || ''
+        const rawAuctionDuration = Number(updates.auctionDuration || existingCar?.auctionDuration) || 0
+        const rawAuctionStatus = updates.auctionStatus || ''
+
+        let computedAuctionEndTime: Date | string = ''
+        let computedUpcomingUntil: Date | string = ''
+        let computedLiveAt: Date | string = ''
+
+        if (rawAuctionStartTime) {
+          const startDate = new Date(rawAuctionStartTime)
+          if (!Number.isNaN(startDate.getTime())) {
+            // auctionEndTime = auctionStartTime + auctionDuration (hours)
+            const durationMs = rawAuctionDuration * 60 * 60 * 1000
+            computedAuctionEndTime = new Date(startDate.getTime() + durationMs)
+            // upcomingUntil = auctionStartTime
+            computedUpcomingUntil = startDate
+            // liveAt = auctionStartTime
+            computedLiveAt = startDate
+          }
+        }
+
+        // ── frontMain: sync from frontMainImages on the car doc ──
+        const frontMainImages = updates.frontMainImages || existingCar?.frontMainImages || []
+        const frontMain = Array.isArray(frontMainImages) ? [...frontMainImages] : []
+
         // All fields that MUST exist on the car document (even if empty)
         const QC_REQUIRED_FIELDS: Record<string, any> = {
           contactNumber,
-          customerContactNumber: contactNumber,
+          priceDiscovery: Number(priceDiscovery) || 0,
           priceDiscoveryBy,
           highestBid: 0,
           highestBidder: '',
-          auctionStartTime: '',
-          auctionDuration: 0,
-          auctionEndTime: '',
-          auctionStatus: '',
-          upcomingTime: '',
-          upcomingUntil: '',
-          liveAt: '',
+          auctionStartTime: rawAuctionStartTime ? new Date(rawAuctionStartTime) : '',
+          auctionDuration: rawAuctionDuration,
+          auctionEndTime: computedAuctionEndTime,
+          auctionStatus: rawAuctionStatus,
+          upcomingUntil: computedUpcomingUntil,
+          liveAt: computedLiveAt,
           movedToOtobuyAt: '',
           oneClickPrice: 0,
           otobuyOffer: 0,
-          soldAt: '',
+          soldAt: 0,
           soldTo: '',
           reasonOfRemoval: '',
           removedBy: '',
           customerExpectedPrice: 0,
           fixedMargin: calculatedFixedMargin,
           variableMargin: calculatedVariableMargin,
-          sendToAuctionApk: '',
+          sendToAuctionApk: existingCar?.sendToAuctionApk || '',
           appointmentId: apptId,
+          frontMain,
+          make: updates.make || existingCar?.make || '',
+          model: updates.model || existingCar?.model || '',
+          variant: updates.variant || existingCar?.variant || '',
+          yearMonthOfManufacture: updates.yearMonthOfManufacture || existingCar?.yearMonthOfManufacture || '',
+          odometerReadingInKms: Number(updates.odometerReadingInKms || existingCar?.odometerReadingInKms) || 0,
+          ownerSerialNumber: Number(updates.ownerSerialNumber || existingCar?.ownerSerialNumber) || 0,
+          fuelType: updates.fuelType || existingCar?.fuelType || '',
+          commentsOnTransmission: updates.commentsOnTransmission || existingCar?.commentsOnTransmission || '',
+          roadTaxValidity: updates.roadTaxValidity || existingCar?.roadTaxValidity || '',
+          taxValidTill: updates.taxValidTill || existingCar?.taxValidTill || '',
+          registrationNumber: updates.registrationNumber || existingCar?.registrationNumber || '',
+          registeredRto: updates.registeredRto || existingCar?.registeredRto || '',
+          registrationState: updates.registrationState || existingCar?.registrationState || '',
+          registrationDate: updates.registrationDate || existingCar?.registrationDate || '',
+          inspectionLocation: updates.inspectionLocation || existingCar?.inspectionLocation || '',
+          approvalStatus: 'Approved',
+          cubicCapacity: Number(updates.cubicCapacity || existingCar?.cubicCapacity) || 0,
         }
 
         // Only set fields that don't already exist on the car document
@@ -235,12 +281,25 @@ export default defineEventHandler(async (event) => {
             carsUpdateQuery.$set[field] = defaultVal
           }
         }
-        // Always overwrite these specific fields on approval
+
+        // Always overwrite these specific fields on approval (authoritative)
         carsUpdateQuery.$set.priceDiscoveryBy = priceDiscoveryBy
         carsUpdateQuery.$set.contactNumber = contactNumber
-        carsUpdateQuery.$set.customerContactNumber = contactNumber
         carsUpdateQuery.$set.fixedMargin = calculatedFixedMargin
         carsUpdateQuery.$set.variableMargin = calculatedVariableMargin
+        carsUpdateQuery.$set.priceDiscovery = Number(priceDiscovery) || 0
+        carsUpdateQuery.$set.approvalStatus = 'Approved'
+        carsUpdateQuery.$set.frontMain = frontMain
+
+        // Always overwrite auction lifecycle when provided
+        if (rawAuctionStartTime) {
+          carsUpdateQuery.$set.auctionStartTime = new Date(rawAuctionStartTime)
+          carsUpdateQuery.$set.auctionDuration = rawAuctionDuration
+          carsUpdateQuery.$set.auctionEndTime = computedAuctionEndTime
+          carsUpdateQuery.$set.auctionStatus = rawAuctionStatus
+          carsUpdateQuery.$set.upcomingUntil = computedUpcomingUntil
+          carsUpdateQuery.$set.liveAt = computedLiveAt
+        }
       }
 
       await db.collection('cars').updateOne(
