@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
       registrationState: 1,
       roadTaxValidity: 1,
       taxValidTill: 1,
-      inspectionLocation: 1,
+      city: 1,
       auctionStatus: 1,
       auctionStartTime: 1,
       auctionEndTime: 1,

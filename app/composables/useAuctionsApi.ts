@@ -16,7 +16,7 @@ export interface AuctionCar {
   registeredRto: string
   registrationState: string
   registrationDate: string
-  inspectionLocation: string
+  city: string
   isInspected: boolean
   cubicCapacity: number
   oneClickPrice: number

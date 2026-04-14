@@ -102,6 +102,31 @@ watch(carId, (newVal) => {
 })
 const isSaving = ref(false)
 
+// ─── QC Logs Search State ───
+const qcLogSearchField = ref('all')
+
+const allQcLogFields = computed(() => {
+  if (!car.value?.qcLog) return []
+  const fields = new Set<string>()
+  car.value.qcLog.forEach((log: any) => {
+    log.changes.forEach((change: any) => {
+      fields.add(change.field)
+    })
+  })
+  return Array.from(fields).sort()
+})
+
+const filteredQcLogs = computed(() => {
+  if (!car.value?.qcLog) return []
+  let logs = [...car.value.qcLog].reverse()
+  if (qcLogSearchField.value !== 'all') {
+    logs = logs.map(log => ({
+      ...log,
+      changes: log.changes.filter((c: any) => c.field === qcLogSearchField.value)
+    })).filter(log => log.changes.length > 0)
+  }
+  return logs
+})
 async function saveQC(silent = false) {
   if (!silent)
     isSaving.value = true
@@ -329,7 +354,7 @@ const approvalWarnings = computed<ValidationWarning[]>(() => {
     { key: 'ownerSerialNumber', label: 'Owner Serial Number', type: 'number' },
     { key: 'odometerReadingInKms', label: 'Odometer Reading (KMs)', type: 'number' },
     { key: 'cubicCapacity', label: 'Cubic Capacity', type: 'number' },
-    { key: 'inspectionLocation', label: 'Inspection Location' },
+    { key: 'city', label: 'City' },
   ]
 
   for (const f of requiredFields) {
@@ -361,7 +386,7 @@ const approvalWarnings = computed<ValidationWarning[]>(() => {
   // Optional warnings (non-blocking but informational)
   if (isEmpty(data.roadTaxValidity)) warnings.push({ field: 'roadTaxValidity', label: 'Road Tax Validity', type: 'warning' })
   if (isEmpty(data.taxValidTill)) warnings.push({ field: 'taxValidTill', label: 'Tax Valid Till', type: 'warning' })
-  if (isEmpty(data.commentsOnTransmission)) warnings.push({ field: 'commentsOnTransmission', label: 'Comments on Transmission', type: 'warning' })
+  if (isEmpty(data.transmissionTypeDropdownList)) warnings.push({ field: 'transmissionTypeDropdownList', label: 'Transmission Type', type: 'warning' })
 
   return warnings
 })
@@ -369,6 +394,72 @@ const approvalWarnings = computed<ValidationWarning[]>(() => {
 const hasBlockingWarnings = computed(() => approvalWarnings.value.some(w => w.type === 'error'))
 const blockingWarnings = computed(() => approvalWarnings.value.filter(w => w.type === 'error'))
 const softWarnings = computed(() => approvalWarnings.value.filter(w => w.type === 'warning'))
+
+function findTabForField(fieldKey: string) {
+  const detailsFields = ['make', 'model', 'variant', 'yearMonthOfManufacture', 'registrationNumber', 'registrationDate', 'registrationState', 'registeredRto', 'fuelType', 'ownerSerialNumber', 'odometerReadingInKms', 'cubicCapacity', 'city', 'sendToAuctionApk', 'contactNumber', 'roadTaxValidity', 'taxValidTill']
+  if (detailsFields.includes(fieldKey)) return 'details'
+
+  let foundDoc = false
+  const checkDoc = (items: any[]) => items.forEach(i => {
+    if (i.key === fieldKey || i.imageKey === fieldKey) foundDoc = true
+    if (i.splitParts) checkDoc(i.splitParts)
+    if (i.rightParts) checkDoc(i.rightParts)
+    if (i.parts) checkDoc(i.parts)
+  })
+  checkDoc(documentDetailFields)
+  if (foundDoc) return 'details'
+
+  for (const g of exteriorSections) {
+    let found = false
+    const cg = (items: any[]) => items.forEach(i => {
+      if (i.key === fieldKey || i.imageKey === fieldKey) found = true
+      if (i.splitParts) cg(i.splitParts)
+      if (i.rightParts) cg(i.rightParts)
+      if (i.parts) cg(i.parts)
+      if (i.imageGroups) cg(i.imageGroups)
+    })
+    if (g.parts) cg(g.parts)
+    if (g.imageKeys) {
+      for (const req of g.imageKeys as any[]) {
+        if (typeof req === 'string' && req === fieldKey) found = true
+        else if (typeof req !== 'string' && req.new === fieldKey) found = true
+      }
+    }
+    if (found) {
+      if (g.title === 'Front') return 'front'
+      if (g.title === 'Left (LHS)' || g.title === 'Left') return 'left'
+      if (g.title === 'Rear') return 'rear'
+      if (g.title === 'Right (RHS)' || g.title === 'Right') return 'right'
+      if (g.title === 'Engine Bay') return 'engine-bay'
+      if (g.title === 'Electricals') return 'electricals'
+      if (g.title === 'Interior') return 'interior'
+      if (g.title === 'Steering, Suspension & Brakes' || g.title === 'Steering, Suspension, Brakes') return 'steering-suspension-brakes'
+    }
+  }
+  return 'details'
+}
+
+function scrollToField(fieldKey: string) {
+  const targetTab = findTabForField(fieldKey)
+  if (activeTab.value !== targetTab) {
+    setTab(targetTab)
+  }
+  showQCModal.value = false
+  
+  setTimeout(() => {
+    let el = document.getElementById('field-' + fieldKey)
+    if (!el && fieldKey === 'frontMain') el = document.getElementById('field-frontMainImages')
+    if (!el && fieldKey === 'sendToAuctionApk') el = document.getElementById('field-sendToAuctionApk')
+    
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('ring-4', 'ring-red-500', 'ring-offset-2', 'ring-offset-background', '!border-red-500', 'shadow-[0_0_20px_rgba(239,68,68,0.4)]', 'scale-[1.02]', 'z-50', 'transition-all', 'duration-500')
+      setTimeout(() => {
+        el?.classList.remove('ring-4', 'ring-red-500', 'ring-offset-2', 'ring-offset-background', '!border-red-500', 'shadow-[0_0_20px_rgba(239,68,68,0.4)]', 'scale-[1.02]', 'z-50')
+      }, 5000)
+    }
+  }, 250)
+}
 
 function openQCModal() {
   qcForm.value.priceDiscovery = editForm.value.priceDiscovery || car.value?.priceDiscovery || ''
@@ -1790,10 +1881,12 @@ watch(editForm, () => {
               <div
                 v-for="w in blockingWarnings"
                 :key="w.field"
-                class="flex items-center gap-2 text-xs py-1 px-2 rounded-md bg-red-500/10 text-red-700 dark:text-red-300"
+                class="flex items-center gap-2 text-xs py-1.5 px-2 rounded-md bg-red-500/10 text-red-700 dark:text-red-300 cursor-pointer hover:bg-red-500/20 active:scale-95 transition-all group border border-transparent hover:border-red-500/30 shadow-sm"
+                @click="scrollToField(w.field)"
               >
-                <Icon name="i-lucide-alert-triangle" class="size-3 shrink-0 text-red-500" />
-                <span class="font-medium truncate">{{ w.label }}</span>
+                <Icon name="i-lucide-alert-triangle" class="size-3.5 shrink-0 text-red-500 group-hover:scale-110 transition-transform" />
+                <span class="font-bold truncate">{{ w.label }}</span>
+                <Icon name="i-lucide-arrow-right" class="size-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-red-500" />
               </div>
             </div>
 
@@ -1817,10 +1910,12 @@ watch(editForm, () => {
               <div
                 v-for="w in softWarnings"
                 :key="w.field"
-                class="flex items-center gap-2 text-xs py-1 px-2 rounded-md text-amber-700 dark:text-amber-300"
+                class="flex items-center gap-2 text-xs py-1.5 px-2 rounded-md text-amber-700 dark:text-amber-300 cursor-pointer hover:bg-amber-500/10 active:scale-95 transition-all group border border-transparent hover:border-amber-500/30 shadow-sm"
+                @click="scrollToField(w.field)"
               >
-                <Icon name="i-lucide-minus-circle" class="size-3 shrink-0 text-amber-400" />
-                <span class="font-medium truncate">{{ w.label }}</span>
+                <Icon name="i-lucide-minus-circle" class="size-3 shrink-0 text-amber-500 group-hover:scale-110 transition-transform" />
+                <span class="font-bold truncate">{{ w.label }}</span>
+                <Icon name="i-lucide-arrow-right" class="size-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-amber-500" />
               </div>
             </div>
 
@@ -2036,8 +2131,9 @@ watch(editForm, () => {
                 <div class="flex flex-col gap-3 m-auto w-full">
                   <!-- Row 1: Make, Model, Variant, MFG Year -->
                   <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+
                     <!-- Make -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-3">
+                    <div id="field-make" class="transition-all duration-500 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-3">
                       <p class="text-xs text-muted-foreground mb-2 font-medium">
                         Make
                       </p>
@@ -2050,7 +2146,7 @@ watch(editForm, () => {
                     </div>
 
                     <!-- Model -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-4">
+                    <div id="field-model" class="transition-all duration-500 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-4">
                       <p class="text-xs text-muted-foreground mb-2 font-medium">
                         Model
                       </p>
@@ -2063,7 +2159,7 @@ watch(editForm, () => {
                     </div>
 
                     <!-- Variant -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-3">
+                    <div id="field-variant" class="transition-all duration-500 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-3">
                       <p class="text-xs text-muted-foreground mb-2 font-medium">
                         Variant
                       </p>
@@ -2075,7 +2171,7 @@ watch(editForm, () => {
                       </div>
                     </div>
                     <!-- MFG Year -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-2">
+                    <div id="field-yearMonthOfManufacture" class="transition-all duration-500 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-2">
                       <p class="text-xs text-muted-foreground mb-1 font-medium">
                         MFG Year
                       </p>
@@ -2089,7 +2185,7 @@ watch(editForm, () => {
                   <!-- Bottom Row: Registration, Ownership & City -->
                   <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
                     <!-- Registration Number -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <div id="field-registrationNumber" class="transition-all duration-500 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
                       <p class="text-xs text-muted-foreground mb-1 font-medium">
                         Registration
                       </p>
@@ -2102,7 +2198,7 @@ watch(editForm, () => {
                     </div>
 
                     <!-- Registration Date -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <div id="field-registrationDate" class="transition-all duration-500 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
                       <p class="text-xs text-muted-foreground mb-1 font-medium">
                         Reg. Date
                       </p>
@@ -2115,7 +2211,7 @@ watch(editForm, () => {
                     </div>
 
                     <!-- Ownership & Registered Owner -->
-                    <div class="md:col-span-2 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between overflow-hidden relative group">
+                    <div id="field-ownerSerialNumber" class="transition-all duration-500 md:col-span-2 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between overflow-hidden relative group">
                       <p class="text-[11px] text-muted-foreground mb-1.5 font-bold uppercase tracking-widest leading-none">
                         Ownership
                       </p>
@@ -2165,7 +2261,7 @@ watch(editForm, () => {
                     </div>
 
                     <!-- City -->
-                    <div class="rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
+                    <div id="field-city" class="transition-all duration-500 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
                       <p class="text-xs text-muted-foreground mb-1 font-medium">
                         City
                       </p>
@@ -2408,7 +2504,7 @@ watch(editForm, () => {
                       </div>
                     </div>
                     <!-- DROPDOWN field -->
-                    <div v-else-if="field.type === 'dropdown'" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
+                    <div v-else-if="field.type === 'dropdown'" :id="'field-' + field.key" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
                       <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                         {{ field.label }}
                       </p>
@@ -2431,7 +2527,7 @@ watch(editForm, () => {
                       <SearchableSelect v-else v-model="editForm[field.key]" :options="field.staticOptions || getOptions(field.dropdownName || '')" class-name="w-2/3 h-8 shadow-sm text-sm" />
                     </div>
                     <!-- MULTISELECT field -->
-                    <div v-else-if="field.type === 'multiselect'" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
+                    <div v-else-if="field.type === 'multiselect'" :id="'field-' + field.key" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
                       <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                         {{ field.label }}
                       </p>
@@ -2477,7 +2573,7 @@ watch(editForm, () => {
                       </div>
                     </div>
                     <!-- DATE field -->
-                    <div v-else-if="field.type === 'date'" class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
+                    <div v-else-if="field.type === 'date'" :id="'field-' + field.key" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
                       <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                         {{ field.label }}
                       </p>
@@ -2493,7 +2589,7 @@ watch(editForm, () => {
                       />
                     </div>
                     <!-- SINGLE (text) field -->
-                    <div v-else class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0">
+                    <div v-else :id="'field-' + field.key" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
                       <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                         {{ field.label }}
                       </p>
@@ -2542,9 +2638,10 @@ watch(editForm, () => {
                   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 xl:gap-6">
                     <div
                       v-for="part in activeExteriorSection.parts"
+                      :id="'field-' + part.key"
                       :key="part.key"
                       v-show="!(part as any).isLegacyFallback || getImages(editForm, (part as any).imageGroups?.[0]?.key || (part as any).imageKey, (part as any).imageGroups?.[0]?.oldKey || (part as any).oldImageKey).length > 0"
-                      class="rounded-xl border bg-card shadow-sm flex flex-col md:flex-row overflow-hidden"
+                      class="transition-all duration-500 rounded-xl border bg-card shadow-sm flex flex-col md:flex-row overflow-hidden"
                       :class="[
                         (part as any).hasNoImages && !(part as any).isVideoBox && !(part as any).rightParts && !(part as any).isFourPanel ? 'min-h-[100px]' : 'min-h-[160px]',
                         (part as any).isVideoBox ? 'row-span-2 h-auto min-h-[336px]' : 'h-auto md:h-[160px]',
@@ -2958,9 +3055,18 @@ watch(editForm, () => {
           <div v-else-if="activeTab === 'qc-logs'" class="space-y-6">
             <Card class="!py-0 !gap-0 overflow-hidden">
               <CardHeader class="pt-5 pb-3">
-                <CardTitle class="text-base flex items-center gap-2">
-                  <Icon name="i-lucide-history" class="size-4 text-primary" />
-                  Modification History Log
+                <CardTitle class="text-base flex items-center justify-between gap-4 w-full">
+                  <div class="flex items-center gap-2">
+                    <Icon name="i-lucide-history" class="size-4 text-primary" />
+                    Modification History Log
+                  </div>
+                  <div v-if="allQcLogFields.length > 0" class="flex items-center gap-2">
+                    <span class="text-xs text-muted-foreground whitespace-nowrap">Filter by field:</span>
+                    <select v-model="qcLogSearchField" class="h-7 text-xs rounded-md border-border bg-muted/30 w-44 focus:ring-1 focus:ring-primary">
+                      <option value="all">All Fields</option>
+                      <option v-for="cf in allQcLogFields" :key="cf" :value="cf">{{ cf }}</option>
+                    </select>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <Separator />
@@ -2977,7 +3083,7 @@ watch(editForm, () => {
                   </p>
                 </div>
                 <div v-else class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
-                  <div v-for="(log, idx) in [...(car.qcLog || [])].reverse()" :key="idx" class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                  <div v-for="(log, idx) in filteredQcLogs" :key="idx" class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
                     <div class="flex items-center justify-center w-10 h-10 rounded-full border border-primary/30 bg-background shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
                       <Icon name="i-lucide-user-cog" class="size-4 text-primary" />
                     </div>

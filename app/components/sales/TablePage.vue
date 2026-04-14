@@ -132,7 +132,7 @@ const filteredItems = computed(() => {
   if (globalSearch && globalSearch.value) {
     const q = globalSearch.value.toLowerCase()
     result = result.filter(item =>
-      ['make', 'model', 'variant', 'registrationNumber', 'inspectionLocation', 'fuelType', 'appointmentId'].some(key =>
+      ['make', 'model', 'variant', 'registrationNumber', 'city', 'fuelType', 'appointmentId'].some(key =>
         String(item[key] ?? '').toLowerCase().includes(q),
       ),
     )

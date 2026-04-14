@@ -125,7 +125,7 @@ const filteredItems = computed(() => {
   if (globalSearch.value) {
     const q = globalSearch.value.toLowerCase()
     result = result.filter(item =>
-      ['make', 'model', 'variant', 'registrationNumber', 'inspectionLocation', 'fuelType', 'appointmentId'].some(key =>
+      ['make', 'model', 'variant', 'registrationNumber', 'city', 'fuelType', 'appointmentId'].some(key =>
         String(item[key] ?? '').toLowerCase().includes(q),
       ),
     )
@@ -577,7 +577,7 @@ async function confirmCep(car: any) {
                   </div>
                   <div class="flex flex-col gap-0.5 col-span-2 mt-2 pt-4 border-t border-border/50">
                     <span class="text-xs text-muted-foreground font-medium flex items-center gap-1.5"><Icon name="i-lucide-map-pin" class="size-3.5" /> Location</span>
-                    <span class="text-sm font-semibold text-foreground pl-5">{{ car.inspectionLocation || 'Location Unavailable' }}</span>
+                    <span class="text-sm font-semibold text-foreground pl-5">{{ car.city || 'Location Unavailable' }}</span>
                   </div>
                 </div>
               </div>

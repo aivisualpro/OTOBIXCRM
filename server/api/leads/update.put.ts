@@ -30,6 +30,9 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: 'Lead not found' })
     }
 
+    const apptIdForDiff = oldDoc.appointmentId || telecallingId
+    const oldCarDoc: Record<string, any> = (await db.collection('cars').findOne({ appointmentId: apptIdForDiff })) || {}
+
     // Identify changes
     const changes: any[] = []
     const changedBy = updates.changedBy || 'System'
@@ -39,7 +42,12 @@ export default defineEventHandler(async (event) => {
       if (key === 'updatedAt' || key === 'id' || key === '_id')
         continue
 
-      const oldVal = oldDoc[key]
+      // For inspection fields, the cars collection usually holds the exact old value
+      let oldVal = oldCarDoc[key]
+      if (oldVal === undefined) {
+        oldVal = oldDoc[key]
+      }
+
       const newVal = updates[key]
 
       const oldStr = JSON.stringify(oldVal) ?? '""'
@@ -270,7 +278,7 @@ export default defineEventHandler(async (event) => {
           registeredRto: updates.registeredRto || existingCar?.registeredRto || '',
           registrationState: updates.registrationState || existingCar?.registrationState || '',
           registrationDate: updates.registrationDate || existingCar?.registrationDate || '',
-          inspectionLocation: updates.inspectionLocation || existingCar?.inspectionLocation || '',
+          city: updates.city || existingCar?.city || '',
           approvalStatus: 'Approved',
           cubicCapacity: Number(updates.cubicCapacity || existingCar?.cubicCapacity) || 0,
         }

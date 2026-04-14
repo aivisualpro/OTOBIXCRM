@@ -9,7 +9,7 @@ export const auctionColumns: CrudColumn[] = [
   { key: 'fuelType', label: 'Fuel' },
   { key: 'odometerReadingInKms', label: 'Odometer (KM)', type: 'number' },
   { key: 'highestBid', label: 'Highest Bid', type: 'currency' },
-  { key: 'inspectionLocation', label: 'Location' },
+  { key: 'city', label: 'Location' },
   { key: 'auctionStatus', label: 'Status', type: 'badge' },
   { key: 'auctionEndTime', label: 'Ends At', type: 'date' },
 ]
