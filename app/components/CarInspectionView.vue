@@ -797,13 +797,15 @@ const electricalParts = [
 ]
 
 const interiorParts = [
-  // Airbags — left column: noOfAirBags only
+  // Airbags — left column: Config (Airbags + Comment)
   {
     key: 'noOfAirBagsBox',
     hasNoImages: true,
-    splitParts: [
-      { key: 'noOfAirBags', oldKey: 'noOfAirBags', label: 'Number of Airbags', dropdownName: 'Number of Airbags' }
-    ],
+    isFourPanel: true,
+    fourPanels: [
+      { key: 'noOfAirBags', oldKey: 'noOfAirBags', label: 'Number of Airbags', type: 'dropdown', dropdownName: 'Number of Airbags' },
+      { key: 'commentOnInterior', oldKey: 'commentOnInterior', label: 'Comment on Interior', type: 'dropdown', dropdownName: 'Comment on Interior' }
+    ]
   },
   // Airbags — right column: 4-panel horizontal grid
   {
@@ -841,39 +843,89 @@ const interiorParts = [
       { key: 'airbagImages', oldKey: 'lhsCurtainAirbagImages', label: 'LHS Curtain Airbag Image', type: 'imageSlot', imageIndex: 5 },
     ]
   },
-  { key: 'driverSideKneeAirbagDropdownList', oldKey: 'new', imageKey: 'driverSideKneeAirbagImages', label: 'Driver Knee Airbag', dropdownName: 'Driver Knee Airbag' },
-  { key: 'coDriverKneeSeatAirbagDropdownList', oldKey: 'new', imageKey: 'coDriverKneeSeatAirbagImages', label: 'Co-Driver Knee Airbag', dropdownName: 'Co-Driver Knee Airbag' },
-  { key: 'rhsRearSideAirbagDropdownList', oldKey: 'airbagFeaturesRhsCPillarCurtain', imageKey: 'rhsRearSideAirbagImages', label: 'RHS Rear Side Airbag', dropdownName: 'RHS Rear Side Airbags' },
-  { key: 'lhsRearSideAirbagDropdownList', oldKey: 'airbagFeaturesLhsCPillarCurtain', imageKey: 'lhsRearSideAirbagImages', label: 'LHS Rear Side Airbag', dropdownName: 'LHS Rear Side Airbag' },
-
-  // Seats & Upholstery
-  { key: 'split_i1', hasNoImages: true, splitParts: [
-    { key: 'seatsUpholstery', oldKey: 'leatherSeats/fabricSeats', label: 'Seat Upholsry', dropdownName: 'seatsUpholstery' },
-    { key: 'driverSeatDropdownList', oldKey: 'new', label: 'Driver Seat', dropdownName: 'Driver Seat' },
-  ] },
-  { key: 'split_i2', hasNoImages: true, splitParts: [
-    { key: 'coDriverSeatDropdownList', oldKey: 'new', label: 'Co-Driver Seat', dropdownName: 'Co-Driver Seat' },
-    { key: 'frontCentreArmRestDropdownList', oldKey: 'new', label: 'Front Centre Arm Rest', dropdownName: 'Front Centre Arm Rest' },
-  ] },
-  { key: 'split_i3', hasNoImages: true, splitParts: [
-    { key: 'rearSeatsDropdownList', oldKey: 'new', label: 'Rear Seats', dropdownName: 'Rear Seats' },
-    { key: 'thirdRowSeatsDropdownList', oldKey: 'new', label: 'Third Row Seats', dropdownName: 'Third Row Seats' },
-  ] },
-
-  // Image-only parts
+  // Airbags — row 3: left column (knee airbags)
   {
-    key: 'doorOpenSeatsImagesBox',
-    label: 'Seats (Door Open)',
-    isImageOnly: true,
-    imageGroups: [
-      { key: 'frontSeatsFromDriverSideImages', oldKey: 'frontSeatsFromDriverSideDoor', label: 'Front Seat from Driver Side (Door Open)' },
-      { key: 'rearSeatsFromRightSideImages', oldKey: 'rearSeatsFromRightSideDoor', label: 'Rear Seat from Right Side (Door Open)' },
-    ],
+    key: 'kneeAirbagDetailsBox',
+    hasNoImages: true,
+    isFourPanel: true,
+    fourPanels: [
+      { key: 'driverSideKneeAirbag', oldKey: 'new', label: 'Driver Knee Airbag', type: 'dropdown', dropdownName: 'Driver Knee Airbag' },
+      { key: 'airbagImages', oldKey: 'driverSideKneeAirbagImages', label: 'Driver Knee Airbag Image', type: 'imageSlot', imageIndex: 6 },
+      { key: 'coDriverKneeSeatAirbag', oldKey: 'new', label: 'Co-Driver Knee Airbag', type: 'dropdown', dropdownName: 'Co-Driver Knee Airbag' },
+      { key: 'airbagImages', oldKey: 'coDriverKneeSeatAirbagImages', label: 'Co-Driver Knee Airbag Image', type: 'imageSlot', imageIndex: 7 },
+    ]
   },
-  { key: 'dashboardImages', oldKey: 'dashboardFromRearSeat', imageKey: 'dashboardImages', oldImageKey: 'dashboardFromRearSeat', label: 'Dashboard from Rear Seat', isImageOnly: true },
+  // Airbags — row 3: right column (rear side airbags)
+  {
+    key: 'rearSideAirbagDetailsBox',
+    hasNoImages: true,
+    isFourPanel: true,
+    fourPanels: [
+      { key: 'rhsRearSideAirbag', oldKey: 'airbagFeaturesRhsCPillarCurtain', label: 'RHS Rear Side Airbag', type: 'dropdown', dropdownName: 'RHS Rear Side Airbags' },
+      { key: 'airbagImages', oldKey: 'rhsRearSideAirbagImages', label: 'RHS Rear Side Airbag Image', type: 'imageSlot', imageIndex: 8 },
+      { key: 'lhsRearSideAirbag', oldKey: 'airbagFeaturesLhsCPillarCurtain', label: 'LHS Rear Side Airbag', type: 'dropdown', dropdownName: 'LHS Rear Side Airbag' },
+      { key: 'airbagImages', oldKey: 'lhsRearSideAirbagImages', label: 'LHS Rear Side Airbag Image', type: 'imageSlot', imageIndex: 9 },
+    ]
+  },
 
-  // Additional
-  { key: 'commentOnInteriorDropdownList', oldKey: 'commentOnInterior', label: 'Comment on Interior', dropdownName: 'Comment on Interior', hasNoImages: true },
+  // Seats & Upholstery — row 4: left column
+  {
+    key: 'seatsLeftBox',
+    hasNoImages: true,
+    isFourPanel: true,
+    fourPanels: [
+      { key: 'seatsUpholstery', oldKey: 'leatherSeats/fabricSeats', label: 'Seat Upholstery', type: 'dropdown', dropdownName: 'seatsUpholstery' },
+      { key: 'driverSeatDropdownList', oldKey: 'new', label: 'Driver Seat', type: 'dropdown', dropdownName: 'Driver Seat' },
+    ]
+  },
+  // Seats & Upholstery — row 4: right column
+  {
+    key: 'seatsRightBox',
+    hasNoImages: true,
+    isFourPanel: true,
+    fourPanels: [
+      { key: 'coDriverSeatDropdownList', oldKey: 'new', label: 'Co-Driver Seat', type: 'dropdown', dropdownName: 'Co-Driver Seat' },
+      { key: 'frontCentreArmRestDropdownList', oldKey: 'new', label: 'Front Centre Arm Rest', type: 'dropdown', dropdownName: 'Front Centre Arm Rest' },
+    ]
+  },
+  // Row 5: left column
+  {
+    key: 'rearSeatsConfigBox',
+    hasNoImages: true,
+    isFourPanel: true,
+    fourPanels: [
+      { key: 'rearSeatsDropdownList', oldKey: 'new', label: 'Rear Seats', type: 'dropdown', dropdownName: 'Rear Seats' },
+      { key: 'thirdRowSeatsDropdownList', oldKey: 'new', label: 'Third Row Seats', type: 'dropdown', dropdownName: 'Third Row Seats' },
+    ]
+  },
+  // Standalone Image Boxes (Seats)
+  {
+    key: 'frontSeatsFromDriverSideImagesBox',
+    oldKey: 'frontSeatsFromDriverSideDoor',
+    imageKey: 'frontSeatsFromDriverSideImages',
+    oldImageKey: 'frontSeatsFromDriverSideDoor',
+    label: 'Front Seats (Driver Side)',
+    isImageOnly: true
+  },
+  {
+    key: 'rearSeatsFromRightSideImagesBox',
+    oldKey: 'rearSeatsFromRightSideDoor',
+    imageKey: 'rearSeatsFromRightSideImages',
+    oldImageKey: 'rearSeatsFromRightSideDoor',
+    label: 'Rear Seats (Right Side)',
+    isImageOnly: true
+  },
+
+  // Row 6: left side (Dashboard Images)
+  { 
+    key: 'dashboardImages', 
+    oldKey: 'dashboardFromRearSeat', 
+    imageKey: 'dashboardImages', 
+    oldImageKey: 'dashboardFromRearSeat', 
+    label: 'Dashboard from Rear Seat', 
+    isImageOnly: true 
+  },
+
 ]
 
 const steeringSuspensionBrakesParts = [
@@ -2266,15 +2318,15 @@ watch(editForm, () => {
                       v-for="part in activeExteriorSection.parts"
                       :key="part.key"
                       v-show="!(part as any).isLegacyFallback || getImages(editForm, (part as any).imageGroups?.[0]?.key || (part as any).imageKey, (part as any).imageGroups?.[0]?.oldKey || (part as any).oldImageKey).length > 0"
-                      class="rounded-xl border bg-card shadow-sm flex flex-row overflow-hidden"
+                      class="rounded-xl border bg-card shadow-sm flex flex-col md:flex-row overflow-hidden"
                       :class="[
                         (part as any).hasNoImages && !(part as any).isVideoBox && !(part as any).rightParts && !(part as any).isFourPanel ? 'min-h-[100px]' : 'min-h-[160px]',
-                        (part as any).isVideoBox ? 'row-span-2 h-auto min-h-[336px]' : ((part as any).rightParts || (part as any).isFourPanel ? 'h-full' : 'h-full'),
+                        (part as any).isVideoBox ? 'row-span-2 h-auto min-h-[336px]' : 'h-auto md:h-[160px]',
                       ]"
                     >
                       <!-- ─── FOUR-PANEL horizontal layout ─── -->
                       <template v-if="(part as any).isFourPanel">
-                        <div class="w-full flex divide-x divide-border/50 overflow-hidden">
+                        <div class="w-full flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-border/50 overflow-hidden">
                           <template v-for="panel in ((part as any).fourPanels || [])" :key="panel.key + (panel.imageIndex ?? '')">
                             <!-- Image slot panel -->
                             <div v-if="panel.type === 'imageSlot'" class="flex-1 flex flex-col min-w-0 min-h-[160px]">
@@ -2291,6 +2343,9 @@ watch(editForm, () => {
                                     <div v-if="!props.readonly" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-100 lg:opacity-0 group-hover/imgpanel:opacity-100 transition-opacity z-10">
                                       <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage(panel.key, 0, panel.oldKey, panel.imageIndex)">
                                         <Icon name="i-lucide-refresh-cw" class="size-3.5" />
+                                      </Button>
+                                      <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-blue-500/90 hover:bg-blue-600 focus:outline-none" @click.stop="downloadImageFile(getImages(editForm, panel.key, panel.oldKey, panel.imageIndex)[0] || '', panel.label || '')">
+                                        <Icon name="i-lucide-download" class="size-3.5 text-white" />
                                       </Button>
                                       <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage(panel.key, 0, panel.oldKey, panel.imageIndex)">
                                         <Icon name="i-lucide-trash" class="size-3.5 text-white" />
