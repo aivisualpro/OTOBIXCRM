@@ -178,6 +178,7 @@ async function saveQC(silent = false) {
       if (item.splitParts) item.splitParts.forEach(syncFallbacks)
       if (item.rightParts) item.rightParts.forEach(syncFallbacks)
       if (item.imageGroups) item.imageGroups.forEach(syncFallbacks)
+      if (item.fourPanels) item.fourPanels.forEach(syncFallbacks)
       if (item.parts) item.parts.forEach(syncFallbacks)
     }
 
@@ -449,6 +450,7 @@ function findTabForField(fieldKey: string) {
     if (i.key === fieldKey || i.imageKey === fieldKey) foundDoc = true
     if (i.splitParts) checkDoc(i.splitParts)
     if (i.rightParts) checkDoc(i.rightParts)
+    if (i.fourPanels) checkDoc(i.fourPanels)
     if (i.parts) checkDoc(i.parts)
   })
   checkDoc(documentDetailFields)
@@ -462,6 +464,7 @@ function findTabForField(fieldKey: string) {
       if (i.rightParts) cg(i.rightParts)
       if (i.parts) cg(i.parts)
       if (i.imageGroups) cg(i.imageGroups)
+      if (i.fourPanels) cg(i.fourPanels)
     })
     if (g.parts) cg(g.parts)
     if (g.imageKeys) {
@@ -1821,6 +1824,10 @@ watch(() => car.value, (newVal) => {
         item.rightParts.forEach(applyFallback)
       if (item.imageGroups)
         item.imageGroups.forEach(applyFallback)
+      if (item.fourPanels)
+        item.fourPanels.forEach(applyFallback)
+      if (item.parts)
+        item.parts.forEach(applyFallback)
     }
 
     exteriorSections.forEach(section => section.parts.forEach(applyFallback))
