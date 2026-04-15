@@ -170,9 +170,9 @@ async function saveQC(silent = false) {
       if (!item) return
       if (item.oldKey && item.oldKey !== 'new' && item.key && item.key in edited) {
         let val = edited[item.key]
-        
         // Ensure dropdown arrays flatten into comma-separated strings for legacy fields
-        if (Array.isArray(val)) {
+        // IMPORTANT: Skip joining for array fields like videos/images that must remain arrays
+        if (Array.isArray(val) && !['engineVideo', 'exhaustSmokeVideo'].includes(item.key)) {
           val = val.join(', ')
         }
         

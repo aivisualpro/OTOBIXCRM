@@ -58,19 +58,22 @@ const rejectedCount = computed(() => baseFilteredItems.value.filter(u => u.appro
 
 // ─── Client-side filtering ───
 const filteredItems = computed(() => {
-  let result = baseFilteredItems.value
-
-  // Apply search across visible columns
+  // Apply search globally across all users if there is a search term
   if (search.value) {
     const q = search.value.toLowerCase()
-    result = result.filter(item =>
+    return allUsers.value.filter(item =>
+      String(item.userName ?? '').toLowerCase().includes(q) ||
+      String(item.email ?? '').toLowerCase().includes(q) ||
+      String(item.phoneNumber ?? '').toLowerCase().includes(q) ||
+      String(item.userRole ?? '').toLowerCase().includes(q) ||
       props.columns.some(col =>
         String(item[col.key] ?? '').toLowerCase().includes(q),
-      ),
+      )
     )
   }
 
-  return result
+  // If no search, filter by the current tab's category
+  return baseFilteredItems.value
 })
 
 // ─── Client-side infinite scroll (load more on scroll) ───
@@ -204,9 +207,21 @@ async function handleRefresh() {
 // ─── Navigate to profile ───
 const router = useRouter()
 
+const ROLE_CATEGORY_MAP: Record<string, string> = {
+  'Dealer': 'dealer',
+  'Customer': 'customer',
+  'Inspection Engineer': 'inspection-engineer',
+  'Admin': 'admin',
+  'Retailer': 'retailer',
+  'Sales Manager': 'sales-manager',
+  'Telecaller': 'telecaller',
+  'QC': 'qc',
+}
+
 function openProfile(user: any) {
   const userId = user._id || user.id
-  router.push(`/people/${props.categoryKey}/${userId}`)
+  const targetCategory = ROLE_CATEGORY_MAP[user.userRole] || props.categoryKey
+  router.push(`/people/${targetCategory}/${userId}`)
 }
 
 // ─── Add User Dialog ───

@@ -227,6 +227,14 @@ function localToggleSalesTab(tabId: string) {
 // ─── Retail Tabs Sub-Config ───
 const RETAIL_TABS = [
   { id: 'all', title: 'All Vehicles', route: '/retail/all' },
+  { id: 'upcoming', title: 'Upcoming', route: '/retail/upcoming' },
+  { id: 'live', title: 'Live', route: '/retail/live' },
+  { id: 'otobuy', title: 'Otobuy', route: '/retail/otobuy' },
+  { id: 'customer-activity', title: 'Customer Activity', route: '/retail/customer-activity' },
+  { id: 'dealer-activity', title: 'Dealer Activity', route: '/retail/dealer-activity' },
+  { id: 'ended', title: 'Ended', route: '/retail/ended' },
+  { id: 'sold', title: 'Sold', route: '/retail/sold' },
+  { id: 'removed', title: 'Removed', route: '/retail/removed' },
 ]
 
 function localToggleRetailTab(tabId: string) {

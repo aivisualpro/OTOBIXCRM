@@ -7,7 +7,7 @@ const currentActiveId = computed(() => {
   return path.split('/').pop() || 'all'
 })
 
-const ALL_SALES_TABS = [
+const ALL_RETAIL_TABS = [
   { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/retail/all' },
   { id: 'upcoming', title: 'Upcoming', icon: 'i-lucide-calendar-clock', link: '/retail/upcoming' },
   { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/retail/live' },
@@ -20,11 +20,11 @@ const ALL_SALES_TABS = [
 ]
 
 const navItems = computed(() => {
-  const allowed = activeWorkspace.value?.salesTabs
+  const allowed = activeWorkspace.value?.retailTabs
   if (allowed && allowed.length > 0) {
-    return ALL_SALES_TABS.filter(item => allowed.includes(item.id))
+    return ALL_RETAIL_TABS.filter(item => allowed.includes(item.id))
   }
-  return ALL_SALES_TABS
+  return ALL_RETAIL_TABS
 })
 
 // ─── Live counts per tab ───
