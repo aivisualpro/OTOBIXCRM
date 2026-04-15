@@ -2707,10 +2707,10 @@ watch(editForm, () => {
                               <div class="px-2 py-1.5 bg-muted/30 border-b border-border/50 shrink-0">
                                 <span class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate block">{{ panel.label }}</span>
                               </div>
-                              <div class="flex-1 relative overflow-hidden flex flex-col items-center justify-center bg-zinc-950/5 dark:bg-black/30 p-1.5 gap-1.5">
+                              <div class="flex-1 relative overflow-hidden flex flex-col items-center justify-center bg-zinc-950/5 dark:bg-black/30 p-1.5 gap-1.5 min-w-0 min-h-0">
                                 <template v-if="getImages(editForm, panel.key, panel.oldKey, panel.imageIndex).length">
                                   <div
-                                    class="relative w-full flex-1 rounded overflow-hidden cursor-pointer border border-border/50 shadow-sm group/imgpanel"
+                                    class="relative w-full flex-1 rounded overflow-hidden cursor-pointer border border-border/50 shadow-sm group/imgpanel min-h-0"
                                     @click="openLightboxUrls(getImages(editForm, panel.key, panel.oldKey, panel.imageIndex), 0, panel.label)"
                                   >
                                     <img :src="getImages(editForm, panel.key, panel.oldKey, panel.imageIndex)[0]" :alt="panel.label" class="w-full h-full object-cover select-none" loading="lazy">
@@ -2845,10 +2845,10 @@ watch(editForm, () => {
                       </template>
                       <template v-else>
                         <!-- Left Side: Controls & Condition (hidden when rightParts-only) -->
-                        <div v-if="(part as any).splitParts || !(part as any).rightParts" class="flex overflow-hidden h-full" :class="[(part as any).isVerticalSplit ? 'flex-col' : 'flex-row', ((part as any).hasNoImages && !(part as any).rightParts) ? 'flex-1' : 'shrink-0']">
+                        <div v-if="(part as any).splitParts || !(part as any).rightParts" class="flex overflow-hidden h-full min-h-0 min-w-0" :class="[(part as any).isVerticalSplit ? 'flex-col' : 'flex-row', ((part as any).hasNoImages && !(part as any).rightParts) ? 'flex-1' : 'shrink-0']">
                           <template v-for="(renderPart, rIdx) in ((part as any).splitParts || [part])" :key="renderPart.key">
                             <div
-                                class="flex flex-col shrink-0 bg-muted/10 relative"
+                                class="flex flex-col shrink-0 bg-muted/10 relative min-h-0 min-w-0"
                               :class="[
                                 (part as any).isVerticalSplit ? 'h-1/2 w-[200px] xl:w-[240px]' : (part as any).splitParts ? (((part as any).hasNoImages && !(part as any).rightParts) ? ((part as any).splitParts.length === 1 ? 'h-full w-full' : 'h-full w-1/2') : 'h-full w-[240px] xl:w-[280px]') : (renderPart as any).hasNoImages ? 'h-full w-full' : 'h-full w-[200px] xl:w-[240px]',
                                 rIdx === 0 && (part as any).splitParts && !(part as any).isVerticalSplit && (part as any).splitParts.length > 1 ? 'border-r border-border/50' : '',
@@ -2961,7 +2961,7 @@ watch(editForm, () => {
                         </div>
 
                         <!-- Right Side: hideImages rightParts panel (form fields + imageSlots) -->
-                        <div v-if="(part as any).hideImages && (part as any).rightParts" class="flex-1 flex flex-col overflow-y-auto bg-muted/5 dark:bg-muted/10">
+                        <div v-if="(part as any).hideImages && (part as any).rightParts" class="flex-1 flex flex-col overflow-y-auto bg-muted/5 dark:bg-muted/10 min-w-0 min-h-0">
                           <template v-for="partItem in ((part as any).rightParts || [])" :key="partItem.key + (partItem.imageIndex ?? '')">
                             <!-- IMAGE SLOT type -->
                             <div v-if="partItem.type === 'imageSlot'" class="flex-1 px-2 py-1.5 border-b border-border/50 last:border-b-0 flex items-center gap-2 overflow-hidden bg-zinc-950/5 dark:bg-black/30 min-h-[48px]">
@@ -3022,8 +3022,8 @@ watch(editForm, () => {
                         </div>
 
                         <!-- Right Side: Horizontal Image Strip -->
-                        <div v-if="!(part as any).hasNoImages" class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
-                          <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch">
+                        <div v-if="!(part as any).hasNoImages" class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col min-w-0 min-h-0">
+                          <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch min-w-0 min-h-0">
                             <template v-for="group in ((part as any).imageGroups || [{ key: (part as any).imageKey || `${part.key}Images`, oldKey: (part as any).oldImageKey, label: part.label }])" :key="group.key">
                               <!-- Filled Images for this group -->
                               <div
