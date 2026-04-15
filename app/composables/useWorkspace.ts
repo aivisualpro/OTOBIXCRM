@@ -32,6 +32,7 @@ export interface Workspace {
   leadTabs?: string[]
   salesTabs?: string[]
   retailTabs?: string[]
+  peopleTabs?: string[]
   dashboardWidgets?: string[]
   systemSettings?: string[]
   defaultRoutes?: Record<string, string>
@@ -215,6 +216,11 @@ export function useWorkspace() {
       // Dynamic Sidebar Redirect fallback for retail
       if (item.id === 'retail' && ws.retailTabs && ws.retailTabs.length > 0) {
         link = ws.defaultRoutes?.[item.id] || `/retail/${ws.retailTabs[0]}`
+      }
+
+      // Dynamic Sidebar Redirect fallback for people
+      if (item.id === 'people' && ws.peopleTabs && ws.peopleTabs.length > 0) {
+        link = ws.defaultRoutes?.[item.id] || `/people/${ws.peopleTabs[0]}`
       }
 
       group.push({

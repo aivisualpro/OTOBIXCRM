@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 
-const navItems = [
+const ALL_PEOPLE_TABS = [
   { id: 'dealer', title: 'Dealer', icon: 'i-lucide-store', color: 'text-amber-500', link: '/people/dealer' },
   { id: 'customer', title: 'Customer', icon: 'i-lucide-user-round', color: 'text-emerald-500', link: '/people/customer' },
   { id: 'inspection-engineer', title: 'Inspection Engineer', icon: 'i-lucide-clipboard-check', color: 'text-purple-500', link: '/people/inspection-engineer' },
@@ -11,6 +11,16 @@ const navItems = [
   { id: 'telecaller', title: 'Telecaller', icon: 'i-lucide-phone-call', color: 'text-pink-500', link: '/people/telecaller' },
   { id: 'qc', title: 'QC', icon: 'i-lucide-badge-check', color: 'text-orange-500', link: '/people/qc' },
 ]
+
+const { activeWorkspace } = useWorkspace()
+
+const navItems = computed(() => {
+  const allowed = activeWorkspace.value?.peopleTabs
+  if (allowed && allowed.length > 0) {
+    return ALL_PEOPLE_TABS.filter(item => allowed.includes(item.id))
+  }
+  return ALL_PEOPLE_TABS
+})
 
 const currentActiveId = computed(() => {
   const segments = route.path.split('/').filter(Boolean)

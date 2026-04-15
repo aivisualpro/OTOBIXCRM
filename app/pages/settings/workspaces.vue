@@ -251,6 +251,32 @@ function localToggleRetailTab(tabId: string) {
   isDirty.value = true
 }
 
+// ─── People Tabs Sub-Config ───
+const PEOPLE_TABS = [
+  { id: 'dealer', title: 'Dealer', route: '/people/dealer' },
+  { id: 'customer', title: 'Customer', route: '/people/customer' },
+  { id: 'inspection-engineer', title: 'Inspection Engineer', route: '/people/inspection-engineer' },
+  { id: 'admin', title: 'Admin', route: '/people/admin' },
+  { id: 'retailer', title: 'Retailer', route: '/people/retailer' },
+  { id: 'sales-manager', title: 'Sales Manager', route: '/people/sales-manager' },
+  { id: 'telecaller', title: 'Telecaller', route: '/people/telecaller' },
+  { id: 'qc', title: 'QC', route: '/people/qc' },
+]
+
+function localTogglePeopleTab(tabId: string) {
+  const ws = editingWorkspace.value
+  if (!ws)
+    return
+  if (!ws.peopleTabs)
+    ws.peopleTabs = PEOPLE_TABS.map(t => t.id)
+  const current = [...ws.peopleTabs]
+  const idx = current.indexOf(tabId)
+  if (idx >= 0) { current.splice(idx, 1) }
+  else { current.push(tabId) }
+  ws.peopleTabs = current
+  isDirty.value = true
+}
+
 // ─── Leads Tabs Sub-Config ───
 const LEADS_TABS = [
   { id: 'leads', title: 'Leads' },
@@ -398,6 +424,8 @@ async function saveMenuConfig() {
       updates.salesTabs = [...ws.salesTabs]
     if (ws.retailTabs)
       updates.retailTabs = [...ws.retailTabs]
+    if (ws.peopleTabs)
+      updates.peopleTabs = [...ws.peopleTabs]
     if (ws.leadTabs)
       updates.leadTabs = [...ws.leadTabs]
     if (ws.dashboardWidgets)
@@ -458,8 +486,8 @@ async function saveMenuConfig() {
             >
               <Icon :name="ws.icon || 'i-lucide-briefcase'" class="size-4" />
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="font-semibold text-sm truncate">
+            <div class="flex-1 min-w-0 pr-2">
+              <p class="font-semibold text-sm leading-tight">
                 {{ ws.name }}
               </p>
               <p class="text-[11px] text-muted-foreground">
@@ -763,6 +791,46 @@ async function saveMenuConfig() {
                         class="size-3.5"
                         :style="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
                         :class="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- People Sub-Tabs Options -->
+                  <div
+                    v-if="item.id === 'people' && editingWorkspace!.menuIds.includes('people')"
+                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+                  >
+                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                      Visible People Tabs
+                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                    </p>
+                    <div
+                      v-for="subTab in PEOPLE_TABS"
+                      :key="subTab.id"
+                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                      @click="localTogglePeopleTab(subTab.id)"
+                    >
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <button
+                          v-if="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id)"
+                          title="Set as Default Route"
+                          class="transition-opacity p-0.5 mt-0.5"
+                          :class="safeGetDefaultRoute(editingWorkspace!, 'people') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
+                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'people', subTab.route)"
+                        >
+                          <Icon
+                            name="i-lucide-star"
+                            class="size-3 block transition-colors"
+                            :class="safeGetDefaultRoute(editingWorkspace!, 'people') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
+                          />
+                        </button>
+                        <span class="text-[11px] truncate" :class="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
+                      </div>
+                      <Icon
+                        :name="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                        class="size-3.5"
+                        :style="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
                       />
                     </div>
                   </div>

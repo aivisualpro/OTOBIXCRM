@@ -307,6 +307,30 @@ async function handleUpdateStatus(user: any, newStatus: string) {
   }
 }
 
+async function handleUpdateWorkspaces(user: any, workspaceId: string) {
+  if (!user) return
+  const id = user.id || user._id
+  const currentWorkspaces = Array.isArray(user.workspaces) ? [...user.workspaces] : []
+  const idx = currentWorkspaces.indexOf(workspaceId)
+  
+  if (idx >= 0) {
+    currentWorkspaces.splice(idx, 1)
+  } else {
+    currentWorkspaces.push(workspaceId)
+  }
+
+  // Optimistic update
+  user.workspaces = currentWorkspaces
+
+  try {
+    await updateUser(id, { workspaces: currentWorkspaces })
+    toast.success('Workspaces updated')
+  }
+  catch (_err: any) {
+    toast.error('Failed to update workspaces')
+  }
+}
+
 const roleOptions = ['Dealer', 'Customer', 'Inspection Engineer', 'Admin', 'Retailer', 'Sales Manager', 'Telecaller', 'QC']
 const statusOptions = ['Approved', 'Pending', 'Rejected']
 const locationOptions = ['SILIGURI', 'BHUBANESWAR', 'PATNA', 'GAYA', 'DURGAPUR', 'KOLKATA', 'KRISHNANAGAR', 'CUTTACK', 'ASANSOL', 'RANCHI']
@@ -469,6 +493,46 @@ function toggleSelectAllWorkspaces() {
                     <DropdownMenuItem v-for="s in ['Pending', 'Approved', 'Rejected']" :key="s" @click="handleUpdateStatus(item, s)">
                       {{ s }}
                     </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu v-else-if="col.key === 'workspaces'">
+                  <DropdownMenuTrigger as-child>
+                    <div class="flex flex-wrap gap-1 items-center cursor-pointer max-w-[200px] hover:opacity-80 transition-opacity">
+                      <template v-if="(item.workspaces?.length || 0) === 0">
+                        <Badge variant="outline" class="whitespace-nowrap">
+                          None <Icon name="i-lucide-chevron-down" class="ml-1 size-3 opacity-50" />
+                        </Badge>
+                      </template>
+                      <template v-else>
+                        <Badge 
+                          v-for="wsId in item.workspaces" 
+                          :key="wsId" 
+                          variant="secondary" 
+                          class="text-xs font-normal truncate max-w-[120px]"
+                        >
+                          {{ allWorkspaces.find(w => w.workspaceId === wsId)?.name || wsId }}
+                        </Badge>
+                        <Badge variant="outline" class="px-1 shadow-sm">
+                          <Icon name="i-lucide-plus" class="size-3 opacity-60" />
+                        </Badge>
+                      </template>
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" class="w-56" @click.stop>
+                    <DropdownMenuLabel>Allocated Workspaces</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuCheckboxItem
+                      v-for="ws in allWorkspaces"
+                      :key="ws.workspaceId"
+                      :checked="(item.workspaces || []).includes(ws.workspaceId)"
+                      @select.prevent="handleUpdateWorkspaces(item, ws.workspaceId)"
+                      :class="[(item.workspaces || []).includes(ws.workspaceId) ? 'bg-primary/5 font-medium' : '']"
+                    >
+                      <div class="flex items-center gap-2">
+                        <Icon :name="ws.icon || 'i-lucide-briefcase'" class="size-4 shrink-0" :style="{ color: ws.color || '#6366f1' }" />
+                        <span class="truncate">{{ ws.name }}</span>
+                      </div>
+                    </DropdownMenuCheckboxItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <Badge v-else variant="outline" :class="getBadgeClass(item[col.key])">
