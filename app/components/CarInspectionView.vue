@@ -113,6 +113,17 @@ watch(lastEvent, (evt) => {
 
 const isSaving = ref(false)
 
+// ─── Upload Progress Tracking ───
+const uploadProgress = ref<Record<string, { progress: number, status: 'uploading' | 'processing' | 'done' | 'error' }>>({})
+function setUploadProgress(key: string, progress: number, status: 'uploading' | 'processing' | 'done' | 'error' = 'uploading') {
+  uploadProgress.value = { ...uploadProgress.value, [key]: { progress, status } }
+}
+function clearUploadProgress(key: string) {
+  const copy = { ...uploadProgress.value }
+  delete copy[key]
+  uploadProgress.value = copy
+}
+
 // ─── QC Logs Search State ───
 const qcLogSearchField = ref('all')
 
@@ -196,6 +207,7 @@ async function saveQC(silent = false) {
       }
     })
     documentDetailFields.forEach(syncFallbacks)
+    engineVideoKeys.forEach(syncFallbacks)
     
     const changedFields: Record<string, any> = {}
     const original = car.value || {}
@@ -725,7 +737,7 @@ async function scheduleAuctionFromModal() {
 async function deleteCloudinaryFile(url: string) {
   if (!url)
     return
-  const isVideo = url.match(/\.(mp4|webm|ogg)$/i)
+  const isVideo = url.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)
   const endpoint = isVideo ? `${UPLOAD_BASE}/delete-video-from-cloudinary` : `${UPLOAD_BASE}/delete-image-from-cloudinary`
 
   try {
@@ -740,11 +752,11 @@ async function deleteCloudinaryFile(url: string) {
   }
 }
 
-async function uploadCloudinaryFile(files: File[]) {
+async function uploadCloudinaryFile(files: File[], progressKey?: string) {
   if (files.length === 0)
     return []
 
-  const isVideo = files[0]!.type.startsWith('video/')
+  const isVideo = files[0]!.type.startsWith('video/') || !!files[0]!.name.match(/\.(mp4|mov|avi|wmv|flv|mkv|webm)$/i)
   const endpoint = isVideo ? `${UPLOAD_BASE}/upload-car-video-to-cloudinary` : `${UPLOAD_BASE}/upload-car-images-to-cloudinary`
 
   const formData = new FormData()
@@ -752,56 +764,102 @@ async function uploadCloudinaryFile(files: File[]) {
 
   if (isVideo) {
     formData.append('video', files[0]!)
-  }
-  else {
+  } else {
     for (const file of files) {
-      if (!file.type.startsWith('video/')) {
-        formData.append('imagesList', file)
-      }
+      formData.append('imagesList', file)
     }
   }
 
   try {
-    const res: any = await $fetch(endpoint, {
-      method: 'POST',
-      body: formData,
-      headers: { Authorization: `Bearer ${KONG_TOKEN}`, token: KONG_TOKEN },
+    // Use XMLHttpRequest for real upload progress tracking
+    const res: any = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', endpoint)
+      xhr.setRequestHeader('token', KONG_TOKEN)
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && progressKey) {
+          const pct = Math.round((e.loaded / e.total) * 100)
+          setUploadProgress(progressKey, pct, 'uploading')
+        }
+      }
+
+      xhr.upload.onload = () => {
+        if (progressKey) setUploadProgress(progressKey, 100, 'processing')
+      }
+
+      xhr.onload = () => {
+        try {
+          const data = JSON.parse(xhr.responseText)
+          resolve(data)
+        } catch {
+          reject(new Error('Invalid JSON response'))
+        }
+      }
+
+      xhr.onerror = () => reject(new Error('Network error during upload'))
+      xhr.ontimeout = () => reject(new Error('Upload timed out'))
+      xhr.timeout = 300000 // 5 min timeout for large videos
+      xhr.send(formData)
     })
 
-    // Parse defensive multi-format responses
-    if (res?.cloudinaryUrls && Array.isArray(res.cloudinaryUrls))
+    // Check server-side success flag first
+    if (res?.success === false) {
+      throw new Error(res.message || 'Server rejected the upload')
+    }
+
+    // Parse defensive multi-format responses (only non-empty arrays)
+    if (res?.cloudinaryUrls && Array.isArray(res.cloudinaryUrls) && res.cloudinaryUrls.length > 0)
       return res.cloudinaryUrls
     if (res?.cloudinaryUrl)
       return [res.cloudinaryUrl]
     if (res?.cloudinaryVideoUrl)
       return [res.cloudinaryVideoUrl]
-    if (Array.isArray(res))
+    if (Array.isArray(res) && res.length > 0)
       return res
-    if (res?.data && Array.isArray(res.data))
+    if (res?.data && Array.isArray(res.data) && res.data.length > 0)
       return res.data
     if (res?.data?.url)
       return [res.data.url]
     if (res?.data?.videoUrl)
       return [res.data.videoUrl]
-    if (res?.data?.imagesList)
+    if (res?.data?.imagesList && res.data.imagesList.length > 0)
       return res.data.imagesList
-    if (res?.images && Array.isArray(res.images))
+    if (res?.images && Array.isArray(res.images) && res.images.length > 0)
       return res.images
-    if (res?.urls && Array.isArray(res.urls))
+    if (res?.urls && Array.isArray(res.urls) && res.urls.length > 0)
       return res.urls
     if (res?.url)
       return [res.url]
     if (res?.videoUrl)
       return [res.videoUrl]
-    if (res?.imagesList)
+    if (res?.imagesList && res.imagesList.length > 0)
       return res.imagesList
-    if (typeof res === 'string')
-      return [res]
+    // Try to extract a URL from the message field (video upload API embeds it there)
+    if (res?.message && typeof res.message === 'string') {
+      const urlMatch = res.message.match(/(https?:\/\/[^\s"',]+)/)
+      if (urlMatch) return [urlMatch[1]]
+    }
+
+    // If the upload succeeded but no URL found anywhere, try to deep-scan all response values
+    if (res && typeof res === 'object') {
+      for (const val of Object.values(res)) {
+        if (typeof val === 'string' && val.startsWith('http') && val.includes('cloudinary'))
+          return [val]
+      }
+    }
+
+    // Log full response for debugging if we reach here with success:true but no URL extracted
+    if (res?.success === true) {
+      console.warn('[UPLOAD] Success but no URL found in response:', JSON.stringify(res))
+    }
+
     return []
   }
-  catch (e) {
+  catch (e: any) {
     console.error('Upload failed:', e)
-    return []
+    if (progressKey) setUploadProgress(progressKey, 0, 'error')
+    throw e
   }
 }
 
@@ -839,30 +897,45 @@ async function removeImage(key: string, idx: number, oldKey?: string, imageIndex
 }
 
 async function addImage(key: string, imageIndex?: number) {
+  const progressKey = imageIndex !== undefined ? `${key}__${imageIndex}` : key
   const input = document.createElement('input')
   input.type = 'file'
   input.multiple = (imageIndex === undefined)
   input.accept = 'image/*,video/*'
   input.onchange = async (e: any) => {
-    const files = Array.from(e.target.files) as File[]
-    const urls = await uploadCloudinaryFile(files)
-    if (urls.length > 0) {
-      const currentArr = Array.isArray(editForm.value[key]) ? editForm.value[key] : []
-      if (imageIndex !== undefined) {
-        const newArr = [...currentArr]
-        while (newArr.length <= imageIndex) newArr.push('')
-        newArr[imageIndex] = urls[0]
-        editForm.value[key] = newArr
+    isSaving.value = true
+    setUploadProgress(progressKey, 0, 'uploading')
+    try {
+      const files = Array.from(e.target.files) as File[]
+      const urls = await uploadCloudinaryFile(files, progressKey)
+      setUploadProgress(progressKey, 100, 'done')
+      if (urls.length > 0) {
+        const currentArr = Array.isArray(editForm.value[key]) ? editForm.value[key] : []
+        if (imageIndex !== undefined) {
+          const newArr = [...currentArr]
+          while (newArr.length <= imageIndex) newArr.push('')
+          newArr[imageIndex] = urls[0]
+          editForm.value[key] = newArr
+        } else {
+          editForm.value[key] = [...currentArr, ...urls]
+        }
+        await saveQC(true)
+        toast.success('Uploaded successfully')
       } else {
-        editForm.value[key] = [...currentArr, ...urls]
+        toast.error('Upload rejected: server returned no file URL.')
       }
-      await saveQC(true)
+    } catch (e: any) {
+      toast.error(`Upload error: ${e.data?.message || e.message || 'Unknown error'}`)
+    } finally {
+      setTimeout(() => clearUploadProgress(progressKey), 800)
+      isSaving.value = false
     }
   }
   input.click()
 }
 
 async function replaceImage(key: string, idx: number, oldKey?: string, imageIndex?: number) {
+  const progressKey = imageIndex !== undefined ? `${key}__${imageIndex}` : `${key}__${idx}`
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*,video/*'
@@ -882,25 +955,42 @@ async function replaceImage(key: string, idx: number, oldKey?: string, imageInde
       usingOldKey = true
     }
 
-    const urls = await uploadCloudinaryFile([file])
-    if (urls.length > 0) {
-      const newUrl = urls[0]
-      if (!usingOldKey && Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
-        const newArr = [...editForm.value[key]]
-        newArr[actualIndex] = newUrl
-        editForm.value[key] = newArr
-      }
-      else if (usingOldKey && oldKey && Array.isArray(editForm.value[oldKey])) {
-        const newArr = [...editForm.value[oldKey]]
-        newArr[actualIndex] = newUrl
-        editForm.value[oldKey] = newArr
-        editForm.value[key] = [...newArr]
-      }
+    isSaving.value = true
+    setUploadProgress(progressKey, 0, 'uploading')
+    try {
+      const urls = await uploadCloudinaryFile([file], progressKey)
+      setUploadProgress(progressKey, 100, 'done')
+      if (urls.length > 0) {
+        const newUrl = urls[0]
+        if (!usingOldKey && Array.isArray(editForm.value[key]) && editForm.value[key].length > 0) {
+          const newArr = [...editForm.value[key]]
+          newArr[actualIndex] = newUrl
+          editForm.value[key] = newArr
+        }
+        else if (usingOldKey && oldKey && Array.isArray(editForm.value[oldKey])) {
+          const newArr = [...editForm.value[oldKey]]
+          newArr[actualIndex] = newUrl
+          editForm.value[oldKey] = newArr
+          editForm.value[key] = [...newArr]
+        }
+        else {
+          // No pre-existing array — create one with the new URL
+          editForm.value[key] = [newUrl]
+        }
 
-      if (urlToDelete) {
-        await deleteCloudinaryFile(urlToDelete)
+        if (urlToDelete) {
+          await deleteCloudinaryFile(urlToDelete)
+        }
+        await saveQC(true)
+        toast.success('Replaced successfully')
+      } else {
+        toast.error('Upload rejected: server returned no file URL.')
       }
-      await saveQC(true)
+    } catch (e: any) {
+      toast.error(`Upload error: ${e.data?.message || e.message || 'Unknown error'}`)
+    } finally {
+      setTimeout(() => clearUploadProgress(progressKey), 800)
+      isSaving.value = false
     }
   }
   input.click()
@@ -1832,6 +1922,7 @@ watch(() => car.value, (newVal) => {
 
     exteriorSections.forEach(section => section.parts.forEach(applyFallback))
     documentDetailFields.forEach(applyFallback)
+    engineVideoKeys.forEach(applyFallback)
 
     // Extract year from yearMonthOfManufacture for editing
     if (clone.yearMonthOfManufacture && !clone.yearOfManufacture) {
@@ -2419,7 +2510,7 @@ watch(editForm, () => {
                                     </template>
                                     <template v-else>
                                       <Input v-if="partItem.type === 'date'" :model-value="formatDateYYYYMMDD(editForm[partItem.key])" type="date" class="h-8 text-xs font-medium w-full bg-background" @update:model-value="editForm[partItem.key] = $event" />
-                                      <Input v-else-if="partItem.type === 'single'" v-model="editForm[partItem.key]" class="h-8 text-xs font-medium w-full bg-background" />
+                                      <Input v-else-if="partItem.type === 'single'" :model-value="editForm[partItem.key]" @change="editForm[partItem.key] = $event.target.value" class="h-8 text-xs font-medium w-full bg-background" />
                                       <SearchableSelect v-else v-model="editForm[partItem.key]" :options="partItem.staticOptions || getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />
                                     </template>
                                   </div>
@@ -2485,7 +2576,7 @@ watch(editForm, () => {
                                 </template>
                                 <template v-else>
                                   <Input v-if="partItem.type === 'date'" :model-value="formatDateYYYYMMDD(editForm[partItem.key])" type="date" class="h-8 text-xs font-medium w-full bg-background" @update:model-value="editForm[partItem.key] = $event" />
-                                  <Input v-else-if="partItem.type === 'single'" v-model="editForm[partItem.key]" class="h-8 text-xs font-medium w-full bg-background" />
+                                  <Input v-else-if="partItem.type === 'single'" :model-value="editForm[partItem.key]" @change="editForm[partItem.key] = $event.target.value" class="h-8 text-xs font-medium w-full bg-background" />
                                   <SearchableSelect v-else v-model="editForm[partItem.key]" :options="partItem.staticOptions || getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />
                                 </template>
                               </div>
@@ -2493,6 +2584,28 @@ watch(editForm, () => {
                           </template>
                         </div>
                         <div v-else class="flex-1 relative group bg-zinc-950/5 dark:bg-black/50 overflow-hidden flex flex-col">
+                          <!-- Upload Progress Overlay -->
+                          <Transition name="fade">
+                            <div v-if="uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]" class="absolute inset-0 z-30 flex items-center justify-center bg-black/70 backdrop-blur-md">
+                              <div class="flex flex-col items-center gap-3">
+                                <div class="relative size-16">
+                                  <svg class="size-16 -rotate-90" viewBox="0 0 64 64">
+                                    <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width="3" class="text-white/10" />
+                                    <circle cx="32" cy="32" r="28" fill="none" stroke="url(#uploadGrad)" stroke-width="3" stroke-linecap="round" :stroke-dasharray="175.93" :stroke-dashoffset="175.93 - (175.93 * (uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.progress || 0) / 100)" class="transition-all duration-300 ease-out" />
+                                    <defs><linearGradient id="uploadGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#818cf8" /><stop offset="100%" stop-color="#6366f1" /></linearGradient></defs>
+                                  </svg>
+                                  <div class="absolute inset-0 flex items-center justify-center">
+                                    <Icon v-if="uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.status === 'processing'" name="i-lucide-loader-2" class="size-5 text-indigo-300 animate-spin" />
+                                    <Icon v-else-if="uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.status === 'done'" name="i-lucide-check" class="size-5 text-emerald-400" />
+                                    <span v-else class="text-sm font-black text-white tabular-nums">{{ uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.progress || 0 }}%</span>
+                                  </div>
+                                </div>
+                                <span class="text-[10px] font-bold uppercase tracking-widest" :class="uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.status === 'done' ? 'text-emerald-400' : uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.status === 'processing' ? 'text-indigo-300' : 'text-white/60'">
+                                  {{ uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.status === 'done' ? 'Complete' : uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.status === 'processing' ? 'Processing...' : 'Uploading...' }}
+                                </span>
+                              </div>
+                            </div>
+                          </Transition>
                           <div v-if="getImages(editForm, field.imageKey || field.key, field.oldImageKey || field.oldKey, field.imageIndex).length" class="flex-1 h-full w-full">
                             <div class="flex overflow-x-auto snap-x snap-mandatory h-full w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch">
                               <div
@@ -2541,6 +2654,28 @@ watch(editForm, () => {
                           </div>
                           <!-- Empty State -->
                           <div v-else-if="!props.readonly" class="flex h-full w-full flex-col items-center justify-center bg-transparent gap-3 relative cursor-pointer hover:bg-muted/10 transition-colors" @click.stop="addImage(field.imageKey || field.key, field.imageIndex)">
+                            <!-- Upload Progress in Empty State -->
+                            <Transition name="fade">
+                              <div v-if="uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]" class="absolute inset-0 z-30 flex items-center justify-center bg-background/90 dark:bg-black/80 backdrop-blur-sm">
+                                <div class="flex flex-col items-center gap-3">
+                                  <div class="relative size-16">
+                                    <svg class="size-16 -rotate-90" viewBox="0 0 64 64">
+                                      <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width="3" class="text-muted/30" />
+                                      <circle cx="32" cy="32" r="28" fill="none" stroke="url(#uploadGradEmpty)" stroke-width="3" stroke-linecap="round" :stroke-dasharray="175.93" :stroke-dashoffset="175.93 - (175.93 * (uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.progress || 0) / 100)" class="transition-all duration-300 ease-out" />
+                                      <defs><linearGradient id="uploadGradEmpty" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#818cf8" /><stop offset="100%" stop-color="#6366f1" /></linearGradient></defs>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                      <Icon v-if="uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.status === 'processing'" name="i-lucide-loader-2" class="size-5 text-indigo-500 animate-spin" />
+                                      <Icon v-else-if="uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.status === 'done'" name="i-lucide-check" class="size-5 text-emerald-500" />
+                                      <span v-else class="text-sm font-black text-foreground tabular-nums">{{ uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.progress || 0 }}%</span>
+                                    </div>
+                                  </div>
+                                  <span class="text-[10px] font-bold uppercase tracking-widest" :class="uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.status === 'done' ? 'text-emerald-500' : 'text-muted-foreground'">
+                                    {{ uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.status === 'done' ? 'Complete' : uploadProgress[field.imageIndex !== undefined ? `${field.imageKey || field.key}__${field.imageIndex}` : (field.imageKey || field.key)]?.status === 'processing' ? 'Processing...' : 'Uploading...' }}
+                                  </span>
+                                </div>
+                              </div>
+                            </Transition>
                             <div class="size-12 rounded-full bg-muted/30 flex items-center justify-center">
                               <Icon name="i-lucide-image-plus" class="size-5 text-muted-foreground/50" />
                             </div>
@@ -2775,12 +2910,13 @@ watch(editForm, () => {
                           <div class="grid grid-cols-2 gap-3 flex-1 h-full w-full">
                             <template v-for="vk in engineVideoKeys" :key="vk.key">
                               <div class="flex flex-col gap-1.5 h-full relative">
-                                <div class="flex items-center gap-1.5 px-2 py-1 bg-black/50 rounded absolute top-2 left-2 z-10 pointer-events-none backdrop-blur-sm">
-                                  <Icon name="i-lucide-video" class="size-3 text-white/80" />
-                                  <span class="text-[9px] font-bold uppercase tracking-wider text-white/90">{{ vk.label }}</span>
-                                </div>
                                 <template v-if="getVideos(editForm, vk.key).length || (vk.oldKey && getVideos(editForm, vk.oldKey).length)">
                                   <div v-for="(videoUrl, vIdx) in (getVideos(editForm, vk.key).length ? getVideos(editForm, vk.key) : getVideos(editForm, vk.oldKey!))" :key="`${vk.key}-${vIdx}`" class="rounded-lg overflow-hidden border bg-black relative h-full flex-1 group">
+                                    <!-- Label chip -->
+                                    <div class="flex items-center gap-1.5 px-2 py-1 bg-black/70 rounded absolute top-2 left-2 z-20 pointer-events-none backdrop-blur-md">
+                                      <Icon name="i-lucide-video" class="size-3 text-white/80" />
+                                      <span class="text-[8px] font-bold uppercase tracking-wider text-white/90">{{ vk.label }}</span>
+                                    </div>
                                     <!-- Loading spinner behind iframe -->
                                     <div class="absolute inset-0 flex items-center justify-center bg-black/80 pointer-events-none z-0">
                                       <Icon name="i-lucide-loader-2" class="size-6 text-white/30 animate-spin" />
@@ -2832,10 +2968,32 @@ watch(editForm, () => {
                                 </template>
                                 <template v-else>
                                   <div
-                                    class="rounded-lg border border-dashed border-border flex flex-col items-center justify-center transition-colors relative h-full flex-1 min-h-[80px]"
+                                    class="rounded-lg border border-dashed border-border flex flex-col items-center justify-center transition-colors relative h-full flex-1 min-h-[80px] overflow-hidden"
                                     :class="!props.readonly ? 'cursor-pointer bg-muted/20 hover:bg-muted/50 group/add' : 'bg-muted/10'"
                                     @click="!props.readonly && addImage(vk.key)"
                                   >
+                                    <!-- Video Upload Progress Overlay -->
+                                    <Transition name="fade">
+                                      <div v-if="uploadProgress[vk.key]" class="absolute inset-0 z-30 flex items-center justify-center bg-black/70 backdrop-blur-md rounded-lg">
+                                        <div class="flex flex-col items-center gap-2">
+                                          <div class="relative size-14">
+                                            <svg class="size-14 -rotate-90" viewBox="0 0 64 64">
+                                              <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width="3" class="text-white/10" />
+                                              <circle cx="32" cy="32" r="28" fill="none" stroke="url(#uploadGradVid)" stroke-width="3" stroke-linecap="round" :stroke-dasharray="175.93" :stroke-dashoffset="175.93 - (175.93 * (uploadProgress[vk.key]?.progress || 0) / 100)" class="transition-all duration-300 ease-out" />
+                                              <defs><linearGradient id="uploadGradVid" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#818cf8" /><stop offset="100%" stop-color="#6366f1" /></linearGradient></defs>
+                                            </svg>
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                              <Icon v-if="uploadProgress[vk.key]?.status === 'processing'" name="i-lucide-loader-2" class="size-4 text-indigo-300 animate-spin" />
+                                              <Icon v-else-if="uploadProgress[vk.key]?.status === 'done'" name="i-lucide-check" class="size-4 text-emerald-400" />
+                                              <span v-else class="text-xs font-black text-white tabular-nums">{{ uploadProgress[vk.key]?.progress || 0 }}%</span>
+                                            </div>
+                                          </div>
+                                          <span class="text-[8px] font-bold uppercase tracking-widest" :class="uploadProgress[vk.key]?.status === 'done' ? 'text-emerald-400' : 'text-white/60'">
+                                            {{ uploadProgress[vk.key]?.status === 'done' ? 'Done' : uploadProgress[vk.key]?.status === 'processing' ? 'Processing...' : 'Uploading...' }}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </Transition>
                                     <div v-if="!props.readonly" class="size-10 rounded-full bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center mb-2 group-hover/add:scale-110 transition-transform">
                                       <Icon name="i-lucide-plus" class="size-5 text-primary" />
                                     </div>
@@ -3713,4 +3871,14 @@ watch(editForm, () => {
 #pdf-container .bg-slate-500\/15 { background-color: rgba(100, 116, 139, 0.15) !important; }
 #pdf-container .border-slate-500\/30 { border-color: rgba(100, 116, 139, 0.3) !important; }
 #pdf-container .text-slate-700 { color: #334155 !important; }
+
+/* Upload progress overlay transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>

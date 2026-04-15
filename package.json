@@ -1,7 +1,7 @@
 {
   "name": "Otobix-CRM",
   "type": "module",
-  "version": "1.0.2",
+  "version": "beta.1.2.1",
   "packageManager": "pnpm@10.10.0",
   "description": "Otobix CRM",
   "author": "Adeel Jabbar <[EMAIL_ADDRESS]>",
