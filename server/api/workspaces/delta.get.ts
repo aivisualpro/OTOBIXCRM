@@ -14,9 +14,11 @@ export default defineEventHandler(async (event) => {
     }
 
     const workspaces = await db.collection('workspaces')
-      .find(filter)
-      .sort({ updatedAt: -1 })
-      .limit(since > 0 ? 100 : 0)
+      .aggregate([
+        { $match: filter },
+        { $sort: { updatedAt: -1 } },
+        { $limit: since > 0 ? 100 : 99999999 }
+      ], { allowDiskUse: true })
       .toArray()
 
     const normalized = workspaces.map((w: any) => ({

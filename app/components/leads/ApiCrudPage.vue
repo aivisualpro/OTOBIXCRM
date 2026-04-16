@@ -600,10 +600,10 @@ const filteredItems = computed(() => {
   return result
 })
 
-const frontendDisplayLimit = ref(50)
+const frontendDisplayLimit = ref(100)
 
 watch(() => props.filters, () => {
-  frontendDisplayLimit.value = 50
+  frontendDisplayLimit.value = 100
 }, { deep: true })
 
 const displayedItems = computed(() => {
@@ -624,36 +624,36 @@ watch(search, (q) => {
     _localSearchDebounce = null
   }
 
-  // Update the global serverSearch state immediately
-  serverSearch.value = trimmed
-
   if (trimmed) {
-    // If not already on search-results, navigate there.
+    // Navigate to search-results tab (if not already there)
+    // searchLeads() will be called from the search-results page's onMounted/route watch
     if (router.currentRoute.value.path !== '/leads/search-results') {
-      router.push('/leads/search-results')
+      serverSearch.value = trimmed
+      router.push({ path: '/leads/search-results', query: { search: trimmed } })
     }
     else {
       // Already on search-results — debounce then hit server
+      serverSearch.value = trimmed
+      router.replace({ query: { ...router.currentRoute.value.query, search: trimmed } })
       _localSearchDebounce = setTimeout(() => {
+        frontendDisplayLimit.value = 100
         searchLeads(trimmed)
-      }, 300)
+      }, 400)
     }
   }
   else {
-    // Search cleared — kill all pending debounces and force-reset
+    // Search cleared
     cancelSearch()
     serverSearch.value = ''
+    router.replace({ query: { ...router.currentRoute.value.query, search: undefined } })
 
     if (router.currentRoute.value.path === '/leads/search-results' && activeFilterCount.value === 0) {
-      // Go back to main leads tab and let it re-fetch with its own filters
-      router.push('/leads')
+      router.push('/leads/all')
     }
     else if (router.currentRoute.value.path === '/leads/search-results') {
-      // Still has advanced filters — reload search-results without search text
       searchLeads('')
     }
     else {
-      // User cleared search on a normal tab — force refresh with tab's filters
       refreshLeads()
       if (props.filters) {
         nextTick(() => setFilters(props.filters!))
@@ -667,17 +667,31 @@ const scrollSentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 onMounted(() => {
+  // On the search-results tab: read URL query and fire server search once
+  const routeSearch = String(useRoute().query.search || '').trim()
+  if (routeSearch && router.currentRoute.value.path === '/leads/search-results') {
+    // Only set + fire if not already loaded for this search
+    if (serverSearch.value !== routeSearch) {
+      serverSearch.value = routeSearch
+      search.value = routeSearch
+      // Fire search after a tick to avoid double-trigger with setFilters
+      nextTick(() => searchLeads(routeSearch))
+    }
+  }
+
   observer = new IntersectionObserver(
     (entries) => {
       if (entries[0]?.isIntersecting) {
         if (frontendDisplayLimit.value < filteredItems.value.length) {
-          frontendDisplayLimit.value += 50
-        } else if (serverHasMore.value) {
+          // Load 100 more from in-memory cache
+          frontendDisplayLimit.value += 100
+        }
+        else if (serverHasMore.value) {
           loadMoreFromServer()
         }
       }
     },
-    { rootMargin: '200px' },
+    { rootMargin: '400px' },
   )
 })
 
@@ -1435,7 +1449,7 @@ function getInitials(name: string): string {
         </TableBody>
       </Table>
       <!-- Scroll Sentinel for infinite loading from server -->
-      <div v-if="serverHasMore" ref="scrollSentinel" class="h-1 w-full" />
+      <div v-if="serverHasMore || frontendDisplayLimit < filteredItems.length" ref="scrollSentinel" class="h-1 w-full" />
     </div>
 
     <!-- Footer info bar -->

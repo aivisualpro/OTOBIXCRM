@@ -22,7 +22,7 @@ export function getLeadsDb(event: any): Promise<Db> {
   if (!_dbPromises[dbName]) {
     _dbPromises[dbName] = (async () => {
       const client = new MongoClient(uri, {
-        maxPoolSize: 2, // Vercel heavily parallelizes functions; keep pool tiny per instance!
+        maxPoolSize: 20, // Free up parallel loads now that Appsheet webhook polling is deleted!
         minPoolSize: 0,
         serverSelectionTimeoutMS: 15000,
         socketTimeoutMS: 45000,

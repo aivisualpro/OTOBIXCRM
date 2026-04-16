@@ -14,9 +14,11 @@ export default defineEventHandler(async (event) => {
     }
 
     const users = await db.collection('users')
-      .find(filter)
-      .sort({ updatedAt: -1 })
-      .limit(since > 0 ? 200 : 0)
+      .aggregate([
+        { $match: filter },
+        { $sort: { updatedAt: -1 } },
+        { $limit: since > 0 ? 200 : 99999999 }
+      ], { allowDiskUse: true })
       .toArray()
 
     const normalized = users.map((u: any) => ({

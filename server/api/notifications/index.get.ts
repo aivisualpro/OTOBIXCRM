@@ -26,10 +26,12 @@ export default defineEventHandler(async (event) => {
 
     const [notifications, total] = await Promise.all([
       collection
-        .find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
+        .aggregate([
+          { $match: filter },
+          { $sort: { _id: -1 } },
+          { $skip: skip },
+          { $limit: limit }
+        ])
         .toArray(),
       collection.countDocuments(filter),
     ])

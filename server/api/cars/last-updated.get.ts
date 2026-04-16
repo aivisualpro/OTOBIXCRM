@@ -12,9 +12,11 @@ export default defineEventHandler(async (event) => {
     const db = await getLeadsDb(event)
 
     const latest = await db.collection('cars')
-      .find({}, { projection: { updatedAt: 1, _id: 0 } })
-      .sort({ updatedAt: -1 })
-      .limit(1)
+      .aggregate([
+        { $sort: { updatedAt: -1 } },
+        { $limit: 1 },
+        { $project: { updatedAt: 1, _id: 0 } }
+      ], { allowDiskUse: true })
       .toArray()
 
     const ts = latest[0]?.updatedAt

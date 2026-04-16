@@ -19,9 +19,11 @@ export default defineEventHandler(async (event) => {
     }
 
     const leads = await db.collection('telecallings')
-      .find(filter)
-      .sort({ updatedAt: -1 })
-      .limit(since > 0 ? 200 : 0)
+      .aggregate([
+        { $match: filter },
+        { $sort: { updatedAt: -1 } },
+        { $limit: since > 0 ? 200 : 99999999 }
+      ], { allowDiskUse: true })
       .toArray()
 
     const normalized = leads.map((lead: any) => ({

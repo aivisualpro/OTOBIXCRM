@@ -23,9 +23,11 @@ export default defineEventHandler(async (event) => {
     }
 
     const cars = await db.collection('cars')
-      .find(filter)
-      .sort({ updatedAt: -1 })
-      .limit(since > 0 ? 200 : 0) // Cap delta to 200 records
+      .aggregate([
+        { $match: filter },
+        { $sort: { updatedAt: -1 } },
+        { $limit: since > 0 ? 200 : 99999999 }
+      ], { allowDiskUse: true })
       .toArray()
 
     // Normalize _id to string

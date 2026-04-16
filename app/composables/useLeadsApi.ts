@@ -57,6 +57,22 @@ interface CountsResponse {
 // ─── Shared state key (PAGE_SIZE is safe at module level - just a constant) ───
 const PAGE_SIZE = 2000
 
+// ─── Module-level abort controller to cancel previous in-flight fetches ───
+let _activeAbortController: AbortController | null = null
+
+function _cancelActiveFetch() {
+  if (_activeAbortController) {
+    _activeAbortController.abort()
+    _activeAbortController = null
+  }
+}
+
+function _newFetchSignal(): AbortSignal {
+  _cancelActiveFetch()
+  _activeAbortController = new AbortController()
+  return _activeAbortController.signal
+}
+
 export function useLeadsApi() {
   // useState keyed calls — safe inside composable, shared across all callers via key
   const _leads = useState<TelecallingLead[]>('leads_data', () => [])
@@ -125,7 +141,7 @@ export function useLeadsApi() {
     }
   }
 
-  // ─── Initial load: first 100 leads ───
+  // ─── Initial load: all leads ───
   async function fetchLeads(force = false) {
     // If env changed, force reload
     if (_fetchedForEnv.value && _fetchedForEnv.value !== currentEnv.value) {
@@ -133,14 +149,15 @@ export function useLeadsApi() {
     }
     if (_isInitialized.value && !force)
       return
-    if (_isLoading.value && !force)
-      return
+    if (_isLoading.value)
+      return // Block concurrent fetches
 
     _isLoading.value = true
     _fetchError.value = null
 
     _fetchSeq.value++
     const currentSeq = _fetchSeq.value
+    const signal = _newFetchSignal()
 
     try {
       const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
@@ -171,7 +188,7 @@ export function useLeadsApi() {
         params.inspectionStatus = _advancedFilters.value.inspectionStatus
 
       params.t = String(Date.now())
-      const response = await $fetch<LocalApiResponse>('/api/leads', { params })
+      const response = await $fetch<LocalApiResponse>('/api/leads', { params, signal })
 
       // Bail if a newer fetch was initiated while we were waiting
       if (_fetchSeq.value !== currentSeq)
@@ -187,6 +204,8 @@ export function useLeadsApi() {
       fetchCounts()
     }
     catch (err: any) {
+      if (err?.name === 'AbortError' || signal.aborted)
+        return // Silently ignore cancelled requests
       console.error('Failed to fetch leads:', err)
       _fetchError.value = err?.data?.message || err?.message || 'Failed to fetch leads'
       _leads.value = []
@@ -255,10 +274,12 @@ export function useLeadsApi() {
   function searchLeads(query: string) {
     if (_searchDebounce)
       clearTimeout(_searchDebounce)
+
     _serverSearch.value = query.trim()
 
-    // Debounce 300ms before hitting server
+    // Debounce 400ms before hitting server
     _searchDebounce = setTimeout(async () => {
+      const signal = _newFetchSignal() // Cancel any previous in-flight fetch
       _isLoading.value = true
       _fetchError.value = null
       try {
@@ -289,19 +310,23 @@ export function useLeadsApi() {
           params.inspectionStatus = _advancedFilters.value.inspectionStatus
 
         params.t = String(Date.now())
-        const response = await $fetch<LocalApiResponse>('/api/leads', { params })
+        const response = await $fetch<LocalApiResponse>('/api/leads', { params, signal })
+        if (signal.aborted) return
         _leads.value = normalize(response.data || [])
         _totalCount.value = response.totalCount
         _currentPage.value = 1
+        _isInitialized.value = true
       }
       catch (err: any) {
+        if (err?.name === 'AbortError' || signal.aborted)
+          return
         console.error('Search failed:', err)
         _fetchError.value = err?.data?.message || err?.message || 'Search failed'
       }
       finally {
         _isLoading.value = false
       }
-    }, 300)
+    }, 400)
   }
 
   // ─── Force refresh ───

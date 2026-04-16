@@ -3,7 +3,7 @@
 export default defineEventHandler(async (event) => {
   try {
     const db = await getLeadsDb(event)
-    const users = await db.collection('users').find({}).sort({ createdAt: -1 }).toArray()
+    const users = await db.collection('users').find({}).sort({ _id: -1 }).toArray()
 
     // Map `_id` to `id` for frontend consistency, keeping all fields including password
     const mappedUsers = users.map((user) => {

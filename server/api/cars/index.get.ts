@@ -49,11 +49,18 @@ export default defineEventHandler(async (event) => {
       updatedAt: 1,
     }
 
-    // Fetch all cars descending from newest, with slim projection
-    const cars = await db.collection('cars').find({}, { projection }).sort({ createdAt: -1 }).toArray()
+    // Fetch all cars descending from newest leveraging the native _id index to bypass sort memory limits entirely O(1)
+    const tId = Math.random().toString(36).substring(7)
+    console.time(`[API:cars:${tId}] find() execution`)
+    const cars = await db.collection('cars').find({}, { projection }).sort({ _id: -1 }).limit(3000).toArray()
+    console.timeEnd(`[API:cars:${tId}] find() execution`)
 
     // NEW: Fetch all auto-bids to satisfy Sales/Retail auto-bid requirements
+    console.time(`[API:cars:${tId}] autoBids fetch execution`)
     const autoBids = await db.collection('autoBidsForLiveSection').find({}).toArray()
+    console.timeEnd(`[API:cars:${tId}] autoBids fetch execution`)
+
+    console.time(`[API:cars:${tId}] mappedCars mapping execution`)
 
     const mappedCars = cars.map((car) => {
       const carIdStr = car._id.toString()
@@ -65,6 +72,7 @@ export default defineEventHandler(async (event) => {
         autoBidsForLiveSection: autoBids.filter(b => String(b.carId) === carIdStr),
       }
     })
+    console.timeEnd(`[API:cars:${tId}] mappedCars mapping execution`)
 
     return mappedCars
   }

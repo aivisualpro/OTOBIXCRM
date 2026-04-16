@@ -1,4 +1,4 @@
-// GET /api/leads — list telecallings sorted by createdAt desc
+// GET /api/leads — list telecallings sorted by _id desc (newest first)
 export default defineEventHandler(async (event) => {
   try {
     const db = await getLeadsDb(event)
@@ -54,7 +54,6 @@ export default defineEventHandler(async (event) => {
         lteDate = new Date(endStr)
       }
 
-      // Evaluates generic erratic strings like "03/27/2026 10:00 AM" uniformly as verifiable timestamps dynamically at runtime without crashing limits
       const buildDateExpr = (fieldKey: string) => {
         const fieldSelector = `$${fieldKey}`
         const dateParserObj = { $convert: { input: fieldSelector, to: 'date', onError: null, onNull: null } }
@@ -123,69 +122,25 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Use aggregation to sort by createdAt OR timeStamp (older records may not have createdAt)
-    const pipeline: any[] = [
-      { $match: filter },
-      {
-        $addFields: {
-          _sortDate: {
-            $ifNull: [
-              '$createdAt',
-              { $ifNull: ['$timeStamp', '$_id'] },
-            ],
-          },
-        },
-      },
-      { $sort: { _sortDate: -1 } },
-      { $skip: skip },
-      { $limit: limit },
-      { $unset: '_sortDate' },
-      // Fetch fallback qcBy from cars if missing natively on telecallings
-      {
-        $lookup: {
-          from: 'cars',
-          localField: 'appointmentId',
-          foreignField: 'appointmentId',
-          as: 'carDoc',
-        },
-      },
-      {
-        $addFields: {
-          qcBy: {
-            $ifNull: ['$qcBy', { $arrayElemAt: ['$carDoc.qcBy', 0] }],
-          },
-        },
-      },
-      { $unset: 'carDoc' },
-      // Lookup the creator name inside strictly linked `users` instance
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'emailAddress',
-          foreignField: 'email',
-          as: 'creatorPopulated',
-        },
-      },
-      {
-        $addFields: {
-          createdByFullName: {
-            $ifNull: [
-              { $arrayElemAt: ['$creatorPopulated.userName', 0] },
-              '$emailAddress', // fallback correctly naturally to strictly raw email if not fully found matching legacy behavior requested
-            ],
-          },
-        },
-      },
-      { $unset: 'creatorPopulated' },
-    ]
-
+    // Use find() with _id sort — _id is ALWAYS indexed, always fast
     const [data, totalCount] = await Promise.all([
-      db.collection('telecallings').aggregate(pipeline).toArray(),
+      db.collection('telecallings')
+        .find(filter)
+        .sort({ _id: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
       db.collection('telecallings').countDocuments(filter),
     ])
 
+    // Map _id to string id for frontend hydration
+    const finalData = data.map((doc) => {
+      const docId = doc._id?.toString()
+      return { ...doc, _id: docId, id: docId }
+    })
+
     return {
-      data,
+      data: finalData,
       totalCount,
       page,
       limit,
