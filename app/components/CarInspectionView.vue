@@ -145,6 +145,13 @@ onMounted(() => {
     fetchCarDetails(carId.value)
   if (!props.headlessPdf)
     fetchAllUsers()
+
+  // ESC to close attester panel
+  const onKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') showAttesterModal.value = false
+  }
+  window.addEventListener('keydown', onKeydown)
+  onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 })
   
 watch(carId, (newVal) => {
@@ -438,6 +445,7 @@ async function approveLead() {
 }
 
 const showQCModal = ref(false)
+const showAttesterModal = ref(false)
 const qcForm = ref({
   priceDiscovery: '',
   auctionMode: 'makeLiveNow',
@@ -2370,7 +2378,16 @@ watch(editForm, () => {
             {{ tab.label }}
           </button>
 
-          <div class="ml-auto flex items-center shrink-0">
+          <div class="ml-auto flex items-center shrink-0 gap-2">
+            <Button
+              v-if="car.attesterRawCarDetails"
+              class="h-8 text-xs font-bold shrink-0 border-violet-500/30 text-violet-600 dark:text-violet-400 bg-violet-50/50 dark:bg-violet-900/20 shadow-sm"
+              variant="outline"
+              @click="showAttesterModal = true"
+            >
+              <Icon name="i-lucide-scan-text" class="mr-1.5 size-3.5" />
+              Attester Raw Car Details
+            </Button>
             <Button
               v-if="car.approvalStatus === 'Approved'"
               class="mr-2 h-8 text-xs font-bold shrink-0 border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20 shadow-sm"
@@ -2660,6 +2677,63 @@ watch(editForm, () => {
                 </div>
               </div>
             </div>
+
+            <!-- Attester Raw Car Details Inline Panel -->
+            <Transition
+              enter-active-class="transition-all duration-300 ease-out"
+              enter-from-class="opacity-0 -translate-y-3 max-h-0"
+              enter-to-class="opacity-100 translate-y-0 max-h-[600px]"
+              leave-active-class="transition-all duration-200 ease-in"
+              leave-from-class="opacity-100 translate-y-0 max-h-[600px]"
+              leave-to-class="opacity-0 -translate-y-3 max-h-0"
+            >
+              <div
+                v-if="showAttesterModal && car.attesterRawCarDetails"
+                class="overflow-hidden rounded-xl border border-violet-500/30 bg-violet-50/40 dark:bg-violet-950/20 shadow-sm"
+              >
+                <!-- Panel Header -->
+                <div class="flex items-center gap-2.5 px-4 py-3 border-b border-violet-500/20 bg-violet-500/5">
+                  <div class="size-7 rounded-lg flex items-center justify-center bg-violet-500/10 border border-violet-500/20">
+                    <Icon name="i-lucide-scan-text" class="size-3.5 text-violet-500" />
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-xs font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wider">Attester Raw Car Details</p>
+                    <p class="text-[10px] text-muted-foreground">{{ car.appointmentId }} · Press <kbd class="px-1 py-0.5 rounded border border-border text-[9px] font-mono">Esc</kbd> to close</p>
+                  </div>
+                  <button
+                    class="size-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-violet-500/10 hover:text-violet-600 transition-colors"
+                    @click="showAttesterModal = false"
+                  >
+                    <Icon name="i-lucide-x" class="size-3.5" />
+                  </button>
+                </div>
+                <!-- Panel Body -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-0 divide-x divide-y divide-violet-500/10 max-h-[300px] overflow-y-auto">
+                  <div
+                    v-for="(value, key) in car.attesterRawCarDetails"
+                    :key="key"
+                    class="px-3 py-2 flex flex-col gap-0.5"
+                  >
+                    <span class="text-[9px] font-bold text-violet-500/70 uppercase tracking-widest truncate">
+                      {{ String(key).replace(/([A-Z])/g, ' $1').trim() }}
+                    </span>
+                    <span
+                      v-if="value === null || value === undefined"
+                      class="text-[11px] text-muted-foreground/50 italic"
+                    >—</span>
+                    <span
+                      v-else-if="typeof value === 'boolean'"
+                      class="text-[11px] font-bold"
+                      :class="value ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'"
+                    >{{ value ? 'Yes' : 'No' }}</span>
+                    <span
+                      v-else
+                      class="text-[11px] text-foreground font-medium leading-tight break-all"
+                    >{{ value }}</span>
+                  </div>
+                </div>
+              </div>
+            </Transition>
 
             <!-- All Document Details (spreadsheet-driven new→old field mapping) -->
             <Card class="!py-0 !gap-0 overflow-hidden">

@@ -89,6 +89,9 @@ export function useLeadsApi() {
   const _statusFilters = useState<Record<string, string>>('leads_statusFilters', () => ({}))
   const _counts = useState<Record<string, number>>('leads_counts', () => ({}))
   const _countsTotal = useState('leads_countsTotal', () => 0)
+  // Cache of leads before a search — restored instantly on clear
+  const _preSearchLeads = useState<TelecallingLead[] | null>('leads_preSearchCache', () => null)
+  const _preSearchTotalCount = useState('leads_preSearchTotalCount', () => 0)
 
   const { currentEnv } = useApiEnvironment()
 
@@ -285,6 +288,12 @@ export function useLeadsApi() {
       _isLoading.value = true
       _fetchError.value = null
       try {
+        // ── Snapshot current leads before overwriting with search results ──
+        if (!_preSearchLeads.value && _leads.value.length > 0) {
+          _preSearchLeads.value = [..._leads.value]
+          _preSearchTotalCount.value = _totalCount.value
+        }
+
         const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
         if (_serverSearch.value) {
           params.search = _serverSearch.value
@@ -344,6 +353,19 @@ export function useLeadsApi() {
   async function refreshLeads() {
     cancelSearch()
     _serverSearch.value = ''
+
+    // ── Instant restore from pre-search cache ──
+    if (_preSearchLeads.value) {
+      _leads.value = _preSearchLeads.value
+      _totalCount.value = _preSearchTotalCount.value
+      _isInitialized.value = true
+      _preSearchLeads.value = null
+      _preSearchTotalCount.value = 0
+      // Silently refresh in background to pick up any changes made during search
+      fetchLeads(true).catch(() => {})
+      return
+    }
+
     _isInitialized.value = false
     await fetchLeads(true)
   }

@@ -142,6 +142,10 @@ watch(isFetched, (fetched) => {
       }
     })
   }
+  else if (!fetched) {
+    // Reset reveal so the animation re-fires after refresh (e.g. clearing search)
+    isRevealed.value = false
+  }
 }, { immediate: true })
 
 // ─── Status Change + Inspector Assignment ───
