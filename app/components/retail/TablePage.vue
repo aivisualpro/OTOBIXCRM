@@ -44,11 +44,27 @@ async function fetchBidStats() {
   }
 }
 
+const frontendDisplayLimit = ref(50)
+const scrollSentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
 onMounted(() => {
   if (!isFetched.value)
     fetchAllCars()
   fetchBidStats()
   fetchDropdowns()
+
+  observer = new IntersectionObserver((entries) => {
+    if (entries[0]?.isIntersecting) {
+      if (frontendDisplayLimit.value < filteredItems.value.length) {
+        frontendDisplayLimit.value += 50
+      }
+    }
+  }, { rootMargin: '200px' })
+
+  if (scrollSentinel.value) {
+    observer.observe(scrollSentinel.value)
+  }
 })
 
 function buildLog(fieldKey: string, newValue: any, oldValue: any) {
@@ -381,25 +397,14 @@ const filteredItems = computed(() => {
   return result
 })
 
-const PER_PAGE = 30
-const currentPage = ref(1)
-watch(globalSearch, () => { currentPage.value = 1 })
+watch(globalSearch, () => { frontendDisplayLimit.value = 50 })
+watch(quickFilterStatus, () => { frontendDisplayLimit.value = 50 })
 
 const totalFiltered = computed(() => filteredItems.value.length)
-const totalPages = computed(() => Math.max(1, Math.ceil(totalFiltered.value / PER_PAGE)))
 
-const paginatedItems = computed(() => {
-  const start = (currentPage.value - 1) * PER_PAGE
-  return filteredItems.value.slice(start, start + PER_PAGE)
+const displayedItems = computed(() => {
+  return filteredItems.value.slice(0, frontendDisplayLimit.value)
 })
-
-function goToPage(page: number) {
-  if (page >= 1 && page <= totalPages.value)
-    currentPage.value = page
-}
-
-const showingFrom = computed(() => totalFiltered.value === 0 ? 0 : ((currentPage.value - 1) * PER_PAGE) + 1)
-const showingTo = computed(() => Math.min(currentPage.value * PER_PAGE, totalFiltered.value))
 
 function formatCurrency(value: any): string {
   if (!value || isNaN(Number(value)))
@@ -452,6 +457,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (timerInterval)
     clearInterval(timerInterval)
+  if (observer) observer.disconnect()
 })
 
 function getFirstImage(car: any): string | null {
@@ -787,23 +793,7 @@ async function fetchAndShowBids(car: any) {
   }
 }
 
-const pageNumbers = computed(() => {
-  const total = totalPages.value
-  const current = currentPage.value
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
-  const pages: (number | string)[] = [1]
-  if (current > 3)
-    pages.push('...')
-  for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-    pages.push(i)
-  }
-  if (current < total - 2)
-    pages.push('...')
-  pages.push(total)
-  return pages
-})
+
 </script>
 
 <template>
@@ -944,8 +934,8 @@ const pageNumbers = computed(() => {
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="car in paginatedItems"
-            :key="car.id"
+            v-for="car in displayedItems"
+            :key="car.id || car._id"
             class="group hover:bg-muted/50 transition-all duration-300"
           >
             <TableCell class="whitespace-nowrap text-xs text-muted-foreground">
@@ -1064,8 +1054,29 @@ const pageNumbers = computed(() => {
               </Button>
             </TableCell>
 
-            <TableCell class="text-xs font-bold text-emerald-600 tabular-nums">
-              {{ formatCurrency(getNetBidAmount(car.highestBid, car, car)) }}
+            <TableCell class="text-xs align-middle">
+              <div class="flex flex-col items-center gap-1 w-full justify-center min-h-[44px] relative">
+                <span class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap transition-all text-emerald-600">
+                  {{ formatCurrency(getNetBidAmount(car.highestBid, car, car)) }}
+                </span>
+
+                <Transition
+                  enter-active-class="transition-all duration-300 ease-out z-10"
+                  enter-from-class="opacity-0 -translate-y-2 scale-95"
+                  enter-to-class="opacity-100 translate-y-0 scale-100"
+                  leave-active-class="transition-all duration-200 ease-in absolute z-0"
+                  leave-from-class="opacity-100 translate-y-0 scale-100"
+                  leave-to-class="opacity-0 -translate-y-2 scale-95"
+                >
+                  <div
+                    v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''"
+                    class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20 rounded-md"
+                  >
+                    <Icon name="i-lucide-activity" class="size-3" />
+                    {{ formatCurrency(getSimulatedNetBid(car)) }}
+                  </div>
+                </Transition>
+              </div>
             </TableCell>
 
 
@@ -1086,7 +1097,7 @@ const pageNumbers = computed(() => {
                 >
                   <div
                     v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''"
-                    class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap flex items-center gap-1 text-emerald-700 dark:text-emerald-400"
+                    class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20 rounded-md"
                   >
                     <Icon name="i-lucide-activity" class="size-3" />
                     {{ formatCurrency(Number(car.customerExpectedPrice || 0) - getSimulatedNetBid(car)) }}
@@ -1395,40 +1406,22 @@ const pageNumbers = computed(() => {
               </Button>
             </TableCell>
           </TableRow>
-          <TableRow v-if="paginatedItems.length === 0">
+          <TableRow v-if="displayedItems.length === 0">
             <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 21 : 22" class="h-32 text-center text-muted-foreground bg-muted/10">
               No matching records found
             </TableCell>
           </TableRow>
         </TableBody>
       </Table>
+      <!-- Scroll Sentinel for infinite loading from server -->
+      <div v-if="frontendDisplayLimit < totalFiltered" ref="scrollSentinel" class="h-1 w-full" />
     </div>
 
-    <!-- Pagination -->
-    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex flex-wrap items-center justify-between gap-2">
+    <!-- Info bar -->
+    <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex items-center justify-between">
       <p class="text-xs text-muted-foreground tabular-nums">
-        Showing {{ showingFrom }} to {{ showingTo }} out of {{ totalFiltered }} records
+        Showing {{ displayedItems.length }} of {{ totalFiltered }} records
       </p>
-      <div v-if="totalPages > 1" class="flex items-center gap-1">
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
-          <Icon name="i-lucide-chevron-left" class="size-3.5" />
-        </Button>
-        <template v-for="pg in pageNumbers" :key="pg">
-          <Button
-            v-if="pg !== '...'"
-            :variant="pg === currentPage ? 'default' : 'outline'"
-            size="icon"
-            class="size-7 text-xs"
-            @click="goToPage(pg as number)"
-          >
-            {{ pg }}
-          </Button>
-          <span v-else class="px-1 text-xs text-muted-foreground">…</span>
-        </template>
-        <Button variant="outline" size="icon" class="size-7" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
-          <Icon name="i-lucide-chevron-right" class="size-3.5" />
-        </Button>
-      </div>
     </div>
   </div>
 
