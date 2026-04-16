@@ -54,17 +54,20 @@ onMounted(() => {
   fetchBidStats()
   fetchDropdowns()
 
+  const scrollRoot = document.querySelector('[data-slot="table-container"]') as HTMLElement | null
+
   observer = new IntersectionObserver((entries) => {
     if (entries[0]?.isIntersecting) {
       if (frontendDisplayLimit.value < filteredItems.value.length) {
         frontendDisplayLimit.value += 50
       }
     }
-  }, { rootMargin: '200px' })
+  }, { root: scrollRoot, rootMargin: '400px' })
+})
 
-  if (scrollSentinel.value) {
-    observer.observe(scrollSentinel.value)
-  }
+watch(scrollSentinel, (el) => {
+  observer?.disconnect()
+  if (el) observer?.observe(el)
 })
 
 function buildLog(fieldKey: string, newValue: any, oldValue: any) {
@@ -1442,10 +1445,14 @@ async function fetchAndShowBids(car: any) {
               No matching records found
             </TableCell>
           </TableRow>
+          <!-- Scroll Sentinel — MUST be inside the table's overflow-auto container -->
+          <TableRow v-if="frontendDisplayLimit < totalFiltered">
+            <TableCell :colspan="(['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 22 : 23) + (filterStatus === 'followup' ? 1 : 0)" class="p-0 h-1">
+              <div ref="scrollSentinel" class="h-1 w-full" />
+            </TableCell>
+          </TableRow>
         </TableBody>
       </Table>
-      <!-- Scroll Sentinel for infinite loading from server -->
-      <div v-if="frontendDisplayLimit < totalFiltered" ref="scrollSentinel" class="h-1 w-full" />
     </div>
 
     <!-- Info bar -->
