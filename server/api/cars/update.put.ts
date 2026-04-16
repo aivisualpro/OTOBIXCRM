@@ -12,6 +12,9 @@ export default defineEventHandler(async (event) => {
     const { _id, id, _push, ...updateFields } = body
     const objectId = new ObjectId(_id || id)
 
+    // Always stamp updatedAt so Quick Sync polling can detect changes
+    updateFields.updatedAt = new Date()
+
     const updateQuery: any = { $set: updateFields }
     if (_push) {
       updateQuery.$push = _push

@@ -89,6 +89,43 @@ export function useAuctionsApi() {
     await fetchAllCars(true)
   }
 
+  // ─── Quick Sync Engine ───
+  // Polls a lightweight timestamp endpoint every 15s.
+  // If any user on any device changed a car record, silently refetch.
+  const _lastKnownTs = useState('auctions_lastKnownTs', () => 0)
+  let _quickSyncInterval: ReturnType<typeof setInterval> | null = null
+
+  async function _checkForUpdates() {
+    try {
+      const res = await $fetch<{ ts: number }>(`/api/cars/last-updated?t=${Date.now()}`)
+      if (res.ts && _lastKnownTs.value > 0 && res.ts > _lastKnownTs.value) {
+        // Something changed — silently refetch
+        await fetchAllCars(true)
+      }
+      if (res.ts) {
+        _lastKnownTs.value = res.ts
+      }
+    }
+    catch {
+      // Silent fail — will retry next interval
+    }
+  }
+
+  function startQuickSync() {
+    if (_quickSyncInterval) return
+    // Set initial timestamp
+    _checkForUpdates()
+    // Poll every 15 seconds
+    _quickSyncInterval = setInterval(_checkForUpdates, 15000)
+  }
+
+  function stopQuickSync() {
+    if (_quickSyncInterval) {
+      clearInterval(_quickSyncInterval)
+      _quickSyncInterval = null
+    }
+  }
+
   return {
     allCars: _allCars,
     isLoading: _isFetching,
@@ -97,5 +134,7 @@ export function useAuctionsApi() {
     fetchAllCars,
     refreshCars,
     globalSearch,
+    startQuickSync,
+    stopQuickSync,
   }
 }
