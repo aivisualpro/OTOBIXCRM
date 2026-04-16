@@ -22,8 +22,10 @@ export function getLeadsDb(event: any): Promise<Db> {
   if (!_dbPromises[dbName]) {
     _dbPromises[dbName] = (async () => {
       const client = new MongoClient(uri, {
-        maxPoolSize: 10, // Restrict to keep Vercel/Nitro safe
-        minPoolSize: 1,
+        maxPoolSize: 2, // Vercel heavily parallelizes functions; keep pool tiny per instance!
+        minPoolSize: 0,
+        serverSelectionTimeoutMS: 15000,
+        socketTimeoutMS: 45000,
       })
       await client.connect()
       _clients[dbName] = client

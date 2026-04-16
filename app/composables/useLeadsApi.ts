@@ -465,7 +465,7 @@ export function useLeadsApi() {
     if (!_leadsLastKnownTs.value) {
       _leadsLastKnownTs.value = Date.now()
     }
-    _leadsQuickSyncInterval = setInterval(_checkLeadsUpdates, 5000)
+    _leadsQuickSyncInterval = setInterval(_checkLeadsUpdates, 30000)
   }
 
   function stopLeadsQuickSync() {

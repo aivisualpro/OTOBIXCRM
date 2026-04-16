@@ -184,7 +184,7 @@ export function usePeopleApi() {
   function startPeopleQuickSync() {
     if (_peopleInterval) return
     if (!_peopleLastTs.value) _peopleLastTs.value = Date.now()
-    _peopleInterval = setInterval(_checkPeopleUpdates, 5000)
+    _peopleInterval = setInterval(_checkPeopleUpdates, 30000)
   }
 
   function stopPeopleQuickSync() {

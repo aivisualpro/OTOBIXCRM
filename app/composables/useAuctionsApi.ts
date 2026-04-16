@@ -137,7 +137,7 @@ export function useAuctionsApi() {
       _lastKnownTs.value = Date.now()
     }
     // Poll every 5 seconds
-    _quickSyncInterval = setInterval(_checkForUpdates, 5000)
+    _quickSyncInterval = setInterval(_checkForUpdates, 30000)
   }
 
   function stopQuickSync() {

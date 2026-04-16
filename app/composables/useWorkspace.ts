@@ -392,7 +392,7 @@ export function useWorkspace() {
   function startWsQuickSync() {
     if (_wsInterval) return
     if (!_wsLastTs.value) _wsLastTs.value = Date.now()
-    _wsInterval = setInterval(_checkWsUpdates, 5000)
+    _wsInterval = setInterval(_checkWsUpdates, 30000)
   }
 
   function stopWsQuickSync() {
