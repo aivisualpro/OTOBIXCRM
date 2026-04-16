@@ -9,6 +9,8 @@ export default defineEventHandler(async (event) => {
       make: 1,
       model: 1,
       variant: 1,
+      yearMonthOfManufacture: 1,
+      odometerReadingInKms: 1,
       fuelType: 1,
       ownerSerialNumber: 1,
       registrationNumber: 1,
