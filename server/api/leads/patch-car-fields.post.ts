@@ -37,9 +37,9 @@ export default defineEventHandler(async (event) => {
       const marginSchemes = await db.collection('carMargins').find({}).sort({ fixedMargin: 1 }).toArray()
       if (marginSchemes.length > 0) {
         const scheme = marginSchemes[0]
-        calculatedFixedMargin = Number(scheme.fixedMargin) || 0
+        calculatedFixedMargin = Number(scheme?.fixedMargin) || 0
 
-        const ranges = scheme.variableRanges || []
+        const ranges = scheme?.variableRanges || []
         for (const range of ranges) {
           const min = Number(range.min) || 0
           const max = Number(range.max) || Infinity

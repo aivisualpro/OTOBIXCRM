@@ -30,6 +30,7 @@ export interface Workspace {
   menuIds: string[]
   auctionTabs?: string[]
   leadTabs?: string[]
+  leadActions?: string[]
   salesTabs?: string[]
   retailTabs?: string[]
   peopleTabs?: string[]

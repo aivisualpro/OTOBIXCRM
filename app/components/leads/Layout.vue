@@ -67,31 +67,36 @@ const filteredNavItems = computed(() => {
 <template>
   <div class="-m-4 lg:-m-6 h-[calc(100%+2rem)] lg:h-[calc(100%+3rem)] flex flex-col overflow-hidden bg-background">
     <!-- Tab Navigation Bar -->
-    <div class="shrink-0 border-b bg-muted/30">
-      <div class="flex items-center gap-0 overflow-x-auto no-scrollbar px-[19px]">
+    <div class="shrink-0 border-b bg-background/80 backdrop-blur-sm z-10 flex items-center justify-between">
+      <div class="flex items-center gap-2 px-4 lg:px-6 py-2 overflow-x-auto no-scrollbar">
         <NuxtLink
           v-for="item in filteredNavItems"
           :key="item.id"
           :to="item.link"
-          class="leads-tab"
+          class="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold rounded-md transition-all whitespace-nowrap flex-shrink-0 relative group overflow-hidden"
           :class="[
-            currentActiveId === item.id ? 'is-active' : '',
-            hasSearchMatches(item.id) ? 'has-matches' : '',
-            item.id === 'search-results' ? 'is-search-tab' : '',
+            currentActiveId === item.id 
+              ? 'bg-primary text-primary-foreground shadow-sm' 
+              : 'bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+            hasSearchMatches(item.id) && currentActiveId !== item.id ? 'animate-pulse-subtle border-primary/20 bg-primary/5' : '',
+            item.id === 'search-results' ? 'border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400' : ''
           ]"
         >
-          <Icon :name="item.icon" class="size-3.5 shrink-0 transition-colors" />
+          <Icon :name="item.icon" class="size-4 shrink-0 transition-colors" />
           <span>{{ item.title }}</span>
           <span
             v-if="getTabCount(item.id)"
-            class="leads-tab-count"
-            :class="{
-              'is-active': currentActiveId === item.id,
-              'is-matching': hasSearchMatches(item.id) && currentActiveId !== item.id,
-            }"
+            class="text-[10px] font-bold leading-none py-[3px] px-[6px] rounded-full min-w-[20px] text-center"
+            :class="[
+              currentActiveId === item.id || item.id === 'search-results'
+                ? 'bg-primary-foreground/20 text-primary-foreground'
+                : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary',
+              hasSearchMatches(item.id) && currentActiveId !== item.id ? 'bg-primary/20 text-primary' : ''
+            ]"
           >
             {{ getTabCount(item.id) }}
           </span>
+          <div v-if="item.id === 'search-results'" class="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-500/50 animate-[shimmer_1.5s_infinite_linear] shadow-[0_0_10px_rgba(245,158,11,0.5)] bg-gradient-to-r from-transparent via-amber-500 to-transparent bg-[length:200%_100%]"></div>
         </NuxtLink>
       </div>
     </div>
@@ -104,128 +109,15 @@ const filteredNavItems = computed(() => {
 </template>
 
 <style scoped>
-.leads-tab {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s ease;
-  margin-bottom: -1px;
-  flex-shrink: 0;
-  position: relative;
-}
-
-.leads-tab:hover {
-  color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 5%, color-mix(in srgb, var(--accent) 50%, transparent));
-}
-
-.leads-tab.is-active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 8%, transparent);
-}
-
-/* Persistent Search Results Loading Animation */
-.leads-tab.is-search-tab {
-  overflow: hidden;
-}
-.leads-tab.is-search-tab::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg,
-     color-mix(in srgb, var(--primary) 0%, transparent) 0%,
-     var(--primary) 50%,
-     color-mix(in srgb, var(--primary) 0%, transparent) 100%
-  );
-  background-size: 200% 100%;
-  animation: search-loading-shimmer 1.5s infinite linear;
-  border-radius: 1px;
-}
-
-@keyframes search-loading-shimmer {
+@keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
-
-/* Animated pulsing border for tabs with matching search results */
-.leads-tab.has-matches {
-  color: var(--primary);
-  animation: tab-pulse-theme 2s ease-in-out infinite;
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
-
-.leads-tab.has-matches::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg,
-    color-mix(in srgb, var(--primary) 20%, transparent),
-    var(--primary),
-    color-mix(in srgb, var(--primary) 20%, transparent)
-  );
-  background-size: 200% 100%;
-  animation: tab-border-shimmer 2s ease-in-out infinite;
-  border-radius: 1px;
-}
-
-@keyframes tab-pulse-theme {
-  0%, 100% {
-    background: color-mix(in srgb, var(--primary) 4%, transparent);
-  }
-  50% {
-    background: color-mix(in srgb, var(--primary) 12%, transparent);
-  }
-}
-
-@keyframes tab-border-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* Counter badges — always visible, never clipped */
-.leads-tab-count {
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1;
-  padding: 3px 6px;
-  border-radius: 999px;
-  background: var(--muted);
-  color: var(--muted-foreground);
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-  min-width: 18px;
-  text-align: center;
-}
-
-.leads-tab-count.is-active {
-  background: color-mix(in srgb, var(--primary) 15%, transparent);
-  color: var(--primary);
-}
-
-.leads-tab-count.is-matching {
-  background: color-mix(in srgb, var(--primary) 20%, transparent);
-  color: var(--primary);
-  animation: count-pulse-theme 2s ease-in-out infinite;
-}
-
-@keyframes count-pulse-theme {
-  0%, 100% {
-    background: color-mix(in srgb, var(--primary) 15%, transparent);
-  }
-  50% {
-    background: color-mix(in srgb, var(--primary) 30%, transparent);
-  }
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
 }
 </style>

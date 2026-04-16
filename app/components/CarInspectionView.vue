@@ -16,6 +16,55 @@ const { setHeader } = usePageHeader()
 // Header is set dynamically based on active tab below
 
 const { carDetails: car, isLoading, error, fetchCarDetails } = useCarDetails()
+const { activeWorkspace } = useWorkspace()
+
+const hasAction = (actionId: string) => {
+  if (!activeWorkspace.value?.leadActions) return true
+  return activeWorkspace.value.leadActions.includes(actionId)
+}
+
+const showPDModal = ref(false)
+const pdValue = ref<number | ''>('')
+const isSavingPD = ref(false)
+
+function openPDModal() {
+  pdValue.value = Number(car.value?.priceDiscovery) || ''
+  showPDModal.value = true
+}
+
+async function savePD() {
+  if (!pdValue.value) {
+    toast.error('Price Discovery is required')
+    return
+  }
+  isSavingPD.value = true
+  try {
+    const userCookie = useCookie('userData')
+    const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
+    const email = currentUser?.email || ''
+
+    await $fetch('/api/leads/update', {
+      method: 'PUT',
+      body: {
+        telecallingId: car.value?.appointmentId || car.value?._id,
+        priceDiscovery: Number(pdValue.value),
+        priceDiscoveryBy: email,
+        changedBy: currentUser?.userName || currentUser?.email || 'QC',
+      }
+    })
+
+    toast.success('Price Discovery updated')
+    showPDModal.value = false
+    await fetchCarDetails(carId.value)
+  }
+  catch (err: any) {
+    toast.error(err?.data?.message || err?.message || 'Failed to update PD')
+  }
+  finally {
+    isSavingPD.value = false
+  }
+}
+
 const { fetchDropdowns, getOptions } = useDropdowns()
 const { fetchCarDropdowns, makes, getModels, getVariants } = useCarDropdowns()
 const { allUsers, fetchAllUsers } = usePeopleApi()
@@ -2040,6 +2089,39 @@ watch(editForm, () => {
 
 <template>
   <div class="flex-1 min-h-0 flex flex-col overflow-hidden -m-4 lg:-m-6">
+    <!-- PD Modal -->
+    <Dialog :open="showPDModal" @update:open="showPDModal = $event">
+      <DialogContent class="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <div class="size-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+              <Icon name="i-lucide-indian-rupee" class="size-4 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            Update Price Discovery
+          </DialogTitle>
+          <DialogDescription>
+            Modify the base price discovery. This will be tracked under your email.
+          </DialogDescription>
+        </DialogHeader>
+        <div class="py-4 space-y-4">
+          <div class="space-y-1.5">
+            <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Price Discovery (PD) *</label>
+            <Input v-model="pdValue" type="number" placeholder="Enter new PD value" class="font-bold text-lg h-11" autofocus />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" @click="showPDModal = false">
+            Cancel
+          </Button>
+          <Button class="bg-indigo-600 hover:bg-indigo-700 text-white" :disabled="isSavingPD" @click="savePD">
+            <Icon v-if="isSavingPD" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
+            <Icon v-else name="i-lucide-save" class="mr-2 size-4" />
+            Save PD
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <!-- QC Approval Modal -->
     <Dialog :open="showQCModal" @update:open="showQCModal = $event">
       <DialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -2302,12 +2384,22 @@ watch(editForm, () => {
             </Button>
             <template v-else-if="car.approvalStatus === 'Approved'">
               <Button
+                v-if="hasAction('re-qc-button')"
                 class="mr-2 h-8 text-xs font-bold shrink-0 border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-900/20 shadow-sm"
                 variant="outline"
                 @click="revertToUnderReview"
               >
                 <Icon name="i-lucide-refresh-ccw" class="mr-1.5 size-4" />
                 Re-QC
+              </Button>
+              <Button
+                v-if="hasAction('pd-button')"
+                class="mr-2 h-8 text-xs font-bold shrink-0 border-indigo-500/30 text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20 shadow-sm"
+                variant="outline"
+                @click="openPDModal"
+              >
+                <Icon name="i-lucide-indian-rupee" class="mr-1.5 size-4" />
+                PD
               </Button>
               <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 rounded-lg flex items-center justify-center font-bold px-3 h-8 text-xs shrink-0">
                 <Icon name="i-lucide-shield-check" class="mr-1.5 size-4" />

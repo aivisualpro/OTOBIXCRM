@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const carId = query.carId as string
   if (!carId)
-    return { error: 'Missing carId' }(config.mongodbUri as string) || process.env.NUXT_MONGODB_URI || ''
+    return { error: 'Missing carId' }
 
   try {
     const db = await getLeadsDb(event)

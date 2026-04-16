@@ -585,6 +585,16 @@ const filteredItems = computed(() => {
   return result
 })
 
+const frontendDisplayLimit = ref(50)
+
+watch(() => props.filters, () => {
+  frontendDisplayLimit.value = 50
+}, { deep: true })
+
+const displayedItems = computed(() => {
+  return filteredItems.value.slice(0, frontendDisplayLimit.value)
+})
+
 const _totalFiltered = computed(() => filteredItems.value.length)
 
 // ─── Search triggers server-side query & auto-navigates to Search Results tab ───
@@ -644,8 +654,12 @@ let observer: IntersectionObserver | null = null
 onMounted(() => {
   observer = new IntersectionObserver(
     (entries) => {
-      if (entries[0]?.isIntersecting && serverHasMore.value) {
-        loadMoreFromServer()
+      if (entries[0]?.isIntersecting) {
+        if (frontendDisplayLimit.value < filteredItems.value.length) {
+          frontendDisplayLimit.value += 50
+        } else if (serverHasMore.value) {
+          loadMoreFromServer()
+        }
       }
     },
     { rootMargin: '200px' },
@@ -1266,7 +1280,7 @@ function getInitials(name: string): string {
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="item in filteredItems"
+            v-for="item in displayedItems"
             :key="item.id || item._id"
             class="group"
             :class="{ 'cursor-pointer hover:bg-muted/50': props.clickable || item.inspectionStatus === 'Inspected' }"
@@ -1379,7 +1393,7 @@ function getInitials(name: string): string {
               </div>
             </TableCell>
           </TableRow>
-          <TableRow v-if="filteredItems.length === 0 && !isLoading">
+          <TableRow v-if="displayedItems.length === 0 && !isLoading">
             <TableCell :colspan="router.currentRoute.value.path !== '/leads/under-review' ? columns.length + 1 : columns.length" class="h-32 text-center">
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-inbox" class="size-8" />
@@ -1393,21 +1407,14 @@ function getInitials(name: string): string {
           </TableRow>
         </TableBody>
       </Table>
-
       <!-- Scroll Sentinel for infinite loading from server -->
-      <div v-if="serverHasMore" ref="scrollSentinel" class="flex items-center justify-center py-6">
-        <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <Icon v-if="isLoadingMore" name="i-lucide-loader-2" class="size-4 animate-spin" />
-          <Icon v-else name="i-lucide-chevrons-down" class="size-4" />
-          {{ isLoadingMore ? 'Loading more...' : 'Scroll for more' }}
-        </div>
-      </div>
+      <div v-if="serverHasMore" ref="scrollSentinel" class="h-1 w-full" />
     </div>
 
     <!-- Footer info bar -->
     <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex items-center justify-between">
       <p class="text-xs text-muted-foreground tabular-nums">
-        Showing {{ filteredItems.length }} of {{ totalCount }} records
+        Showing {{ displayedItems.length }} of {{ totalCount }} records
       </p>
     </div>
 

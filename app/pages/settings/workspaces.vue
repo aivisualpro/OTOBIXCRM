@@ -312,6 +312,32 @@ function localToggleLeadTab(tabId: string) {
   isDirty.value = true
 }
 
+// ─── Leads Actions Sub-Config ───
+const LEADS_ACTIONS = [
+  { id: 'pd-button', title: 'Price Discovery (PD) Button' },
+  { id: 're-qc-button', title: 'Re-QC Button' },
+]
+
+function localToggleLeadAction(actionId: string) {
+  const ws = editingWorkspace.value
+  if (!ws)
+    return
+
+  if (!ws.leadActions)
+    ws.leadActions = LEADS_ACTIONS.map(t => t.id) // Default all
+
+  const current = [...ws.leadActions]
+  const idx = current.indexOf(actionId)
+  if (idx >= 0) {
+    current.splice(idx, 1)
+  }
+  else {
+    current.push(actionId)
+  }
+  ws.leadActions = current
+  isDirty.value = true
+}
+
 // ─── Dashboard Widgets Sub-Config ───
 const DASHBOARD_WIDGETS = [
   { id: 'auctions_closed', title: 'Auctions Closed' },
@@ -532,7 +558,7 @@ async function saveMenuConfig() {
 
       <!-- Right Content: Menu Configuration -->
       <div class="flex-1 overflow-y-auto p-4 lg:p-6 bg-background">
-        <div v-if="editingWorkspace" class="space-y-4 max-w-4xl mx-auto">
+        <div v-if="editingWorkspace" class="space-y-4">
           <!-- Workspace Header -->
           <div class="flex items-center gap-4 border-b pb-4 mb-6">
             <div
@@ -712,6 +738,30 @@ async function saveMenuConfig() {
                         class="size-3.5"
                         :style="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
                         :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                      />
+                    </div>
+                  </div>
+
+                  <!-- Leads Actions Options -->
+                  <div
+                    v-if="item.id === 'leads' && editingWorkspace!.menuIds.includes('leads')"
+                    class="col-span-2 mt-2 pt-2 border-t border-primary/5 grid grid-cols-2 gap-2"
+                  >
+                    <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">
+                      Allowed Actions
+                    </p>
+                    <div
+                      v-for="action in LEADS_ACTIONS"
+                      :key="action.id"
+                      class="flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                      @click="localToggleLeadAction(action.id)"
+                    >
+                      <span class="text-[11px] truncate">{{ action.title }}</span>
+                      <Icon
+                        :name="(editingWorkspace!.leadActions || LEADS_ACTIONS.map(t => t.id)).includes(action.id) ? 'i-lucide-check-square' : 'i-lucide-square'"
+                        class="size-3.5"
+                        :style="(editingWorkspace!.leadActions || LEADS_ACTIONS.map(t => t.id)).includes(action.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.leadActions || LEADS_ACTIONS.map(t => t.id)).includes(action.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
                       />
                     </div>
                   </div>

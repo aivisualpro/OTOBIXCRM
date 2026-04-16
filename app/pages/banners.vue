@@ -79,7 +79,7 @@ const groupedByView = computed(() => {
   // Sort groups by viewOptions order, unknown at the end
   const order = [...viewOptions, 'other']
   return Object.entries(groups).sort(([a], [b]) => {
-    return (!order.indexOf(a) === -1 ? 999 : order.indexOf(a)) - (!order.indexOf(b) === -1 ? 999 : order.indexOf(b))
+    return (order.indexOf(a) === -1 ? 999 : order.indexOf(a)) - (order.indexOf(b) === -1 ? 999 : order.indexOf(b))
   })
 })
 

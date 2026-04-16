@@ -37,7 +37,7 @@ const columns = computed(() => props.table.getAllColumns()
         :key="column.id"
         class="capitalize"
         :checked="column.getIsVisible()"
-        @update:checked="(value) => column.toggleVisibility(!!value)"
+        @update:checked="column.toggleVisibility(!!$event)"
       >
         {{ column.id }}
       </DropdownMenuCheckboxItem>

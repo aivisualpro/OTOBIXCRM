@@ -55,7 +55,7 @@ interface CountsResponse {
 }
 
 // ─── Shared state key (PAGE_SIZE is safe at module level - just a constant) ───
-const PAGE_SIZE = 100
+const PAGE_SIZE = 2000
 
 export function useLeadsApi() {
   // useState keyed calls — safe inside composable, shared across all callers via key
@@ -148,11 +148,6 @@ export function useLeadsApi() {
         params.search = _serverSearch.value
       }
 
-      if (_statusFilters.value.inspectionStatus)
-        params.inspectionStatus = _statusFilters.value.inspectionStatus
-      if (_statusFilters.value.approvalStatus)
-        params.approvalStatus = _statusFilters.value.approvalStatus
-
       // Apply advanced UI filters
       if (_advancedFilters.value.startDate)
         params.startDate = _advancedFilters.value.startDate
@@ -216,11 +211,6 @@ export function useLeadsApi() {
         params.search = _serverSearch.value
       }
 
-      if (_statusFilters.value.inspectionStatus)
-        params.inspectionStatus = _statusFilters.value.inspectionStatus
-      if (_statusFilters.value.approvalStatus)
-        params.approvalStatus = _statusFilters.value.approvalStatus
-
       // Apply advanced UI filters
       if (_advancedFilters.value.startDate)
         params.startDate = _advancedFilters.value.startDate
@@ -276,11 +266,6 @@ export function useLeadsApi() {
         if (_serverSearch.value) {
           params.search = _serverSearch.value
         }
-
-        if (_statusFilters.value.inspectionStatus)
-          params.inspectionStatus = _statusFilters.value.inspectionStatus
-        if (_statusFilters.value.approvalStatus)
-          params.approvalStatus = _statusFilters.value.approvalStatus
 
         if (_advancedFilters.value.startDate)
           params.startDate = _advancedFilters.value.startDate
@@ -346,13 +331,36 @@ export function useLeadsApi() {
 
     if (newInsp !== oldInsp || newAppr !== oldAppr) {
       _statusFilters.value = { ...filters }
-      // Force reload with new filters
-      _isInitialized.value = false
-      _leads.value = [] // Instantly clear old tab data
-      _totalCount.value = 0
-      fetchLeads(true)
+      // Fully instant client-side switching! 
+      // Ensure we have loaded leads at least once. If app just opened, trigger load.
+      if (!_isInitialized.value && !_isLoading.value) {
+        fetchLeads(false)
+      }
     }
   }
+
+  // ─── Client-side instant filter ───
+  const filteredLeads = computed(() => {
+    const iFilter = (_statusFilters.value.inspectionStatus || '').trim().toLowerCase()
+    const aFilter = (_statusFilters.value.approvalStatus || '').trim().toLowerCase()
+
+    if (!iFilter && !aFilter) return _leads.value
+
+    return _leads.value.filter(lead => {
+      let iMatch = true
+      let aMatch = true
+
+      if (iFilter && iFilter !== '*') {
+        iMatch = String(lead.inspectionStatus || '').trim().toLowerCase() === iFilter
+      }
+      
+      if (aFilter && aFilter !== '*') {
+        aMatch = String(lead.approvalStatus || '').trim().toLowerCase() === aFilter
+      }
+
+      return iMatch && aMatch
+    })
+  })
 
   // ─── Set advanced UI filters ───
   const activeAdvancedFilterCount = computed(() => {
@@ -403,8 +411,8 @@ export function useLeadsApi() {
 
   return {
     // Data
-    allLeads: _leads,
-    totalCount: _totalCount,
+    allLeads: filteredLeads,
+    totalCount: computed(() => filteredLeads.value.length >= _leads.value.length ? _totalCount.value : filteredLeads.value.length),
     hasMore,
 
     // Status counts (whole DB)

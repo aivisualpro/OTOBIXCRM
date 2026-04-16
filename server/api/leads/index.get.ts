@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
     const query = getQuery(event)
 
     const page = Math.max(1, Number(query.page) || 1)
-    const limit = Math.min(1000, Math.max(1, Number(query.limit) || 500))
+    const limit = Math.min(2000, Math.max(1, Number(query.limit) || 1000))
     const skip = (page - 1) * limit
     const search = (query.search as string || '').trim()
 
