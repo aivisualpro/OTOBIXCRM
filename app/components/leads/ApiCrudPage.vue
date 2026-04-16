@@ -648,6 +648,8 @@ watch(search, (q) => {
     router.replace({ query: { ...router.currentRoute.value.query, search: undefined } })
 
     if (router.currentRoute.value.path === '/leads/search-results' && activeFilterCount.value === 0) {
+      // Force re-fetch all data (search replaced _leads with filtered subset)
+      refreshLeads()
       router.push('/leads/all')
     }
     else if (router.currentRoute.value.path === '/leads/search-results') {
@@ -667,17 +669,16 @@ const scrollSentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 onMounted(() => {
-  // On the search-results tab: read URL query and fire server search once
+  // On the search-results tab: read URL query and fire search
   const routeSearch = String(useRoute().query.search || '').trim()
   if (routeSearch && router.currentRoute.value.path === '/leads/search-results') {
-    // Only set + fire if not already loaded for this search
-    if (serverSearch.value !== routeSearch) {
-      serverSearch.value = routeSearch
-      search.value = routeSearch
-      // Fire search after a tick to avoid double-trigger with setFilters
-      nextTick(() => searchLeads(routeSearch))
-    }
+    serverSearch.value = routeSearch
+    search.value = routeSearch
+    searchLeads(routeSearch)
   }
+
+  // Find the table's scrollable container (the div with overflow-auto wrapping the table)
+  const scrollRoot = document.querySelector('[data-slot="table-container"]') as HTMLElement | null
 
   observer = new IntersectionObserver(
     (entries) => {
@@ -691,7 +692,7 @@ onMounted(() => {
         }
       }
     },
-    { rootMargin: '400px' },
+    { root: scrollRoot, rootMargin: '400px' },
   )
 })
 
@@ -1258,7 +1259,7 @@ function getInitials(name: string): string {
       </Badge>
     </div>
 
-    <Button v-if="hasAddPermission && router.currentRoute.value.path === '/leads'" size="sm" class="h-8" @click="openCreate">
+    <Button v-if="hasAddPermission && router.currentRoute.value.path.startsWith('/leads')" size="sm" class="h-8" @click="openCreate">
       <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
       Add {{ entity }}
     </Button>
@@ -1439,17 +1440,21 @@ function getInitials(name: string): string {
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-inbox" class="size-8" />
                 <p>No leads found</p>
-                <Button v-if="hasAddPermission && router.currentRoute.value.path === '/leads'" size="sm" variant="outline" @click="openCreate">
+                <Button v-if="hasAddPermission && router.currentRoute.value.path.startsWith('/leads')" size="sm" variant="outline" @click="openCreate">
                   <Icon name="i-lucide-plus" class="mr-1 size-4" />
                   Add {{ entity }}
                 </Button>
               </div>
             </TableCell>
           </TableRow>
+          <!-- Scroll Sentinel — MUST be inside the table's overflow-auto container -->
+          <TableRow v-if="serverHasMore || frontendDisplayLimit < filteredItems.length">
+            <TableCell :colspan="columns.length + 1" class="p-0 h-1">
+              <div ref="scrollSentinel" class="h-1 w-full" />
+            </TableCell>
+          </TableRow>
         </TableBody>
       </Table>
-      <!-- Scroll Sentinel for infinite loading from server -->
-      <div v-if="serverHasMore || frontendDisplayLimit < filteredItems.length" ref="scrollSentinel" class="h-1 w-full" />
     </div>
 
     <!-- Footer info bar -->
