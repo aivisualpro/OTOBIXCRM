@@ -320,11 +320,20 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      await db.collection('cars').updateOne(
+      const updateRes = await db.collection('cars').updateOne(
         { appointmentId: apptId },
         carsUpdateQuery,
         { upsert: true }
       )
+
+      // Broadcast real-time change to all connected clients
+      broadcastChange('leads', 'update', apptId || telecallingId, changedBy)
+
+      return {
+        success: true,
+        message: 'Lead updated successfully',
+        modifiedCount: 1,
+      }
     }
 
     // Broadcast real-time change to all connected clients
