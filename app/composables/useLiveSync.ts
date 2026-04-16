@@ -71,6 +71,11 @@ export function useLiveSync() {
           const { fetchLeads, fetchCounts } = useLeadsApi()
           await fetchLeads(true)
           fetchCounts()
+
+          // Also silently hot-reload auctions/retail grid
+          const { fetchAllCars } = useAuctionsApi()
+          await fetchAllCars(true)
+          
           break
         }
         // Extend here for other collections:

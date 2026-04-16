@@ -188,7 +188,10 @@ async function updateDealStatus(car: any, newStatus: string) {
     isFollowupDialogOpen.value = true
     return
   }
-  await commitDealStatus(car, newStatus, null)
+
+  // Auto-clear followup date if dealStatus is cleared globally
+  const autoClearTs = newStatus === '' ? '' : null
+  await commitDealStatus(car, newStatus, autoClearTs)
 }
 
 async function commitDealStatus(car: any, newStatus: string, followupTs: string | null) {
