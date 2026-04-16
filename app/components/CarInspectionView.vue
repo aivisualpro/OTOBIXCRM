@@ -704,23 +704,31 @@ async function downloadPDF(action: 'save' | 'blob' = 'save') {
   
   // MUST INTERCEPT COMPUTED STYLES: 
   // Tailwind v4 uses OKLCH natively, which immediately crashes html2canvas 1.4.1.
+  // CRITICAL: Native browser functions MUST be called with their original `this` context
+  // (window for getComputedStyle, CSSStyleDeclaration for getPropertyValue) or they throw
+  // "Illegal invocation". We use .call() and .bind() to preserve these bindings.
   const originalGetComputedStyle = window.getComputedStyle;
-  window.getComputedStyle = function(el, pseudoElt) {
-    const css = originalGetComputedStyle(el, pseudoElt);
+  window.getComputedStyle = function(el: Element, pseudoElt?: string | null) {
+    const css = originalGetComputedStyle.call(window, el, pseudoElt);
     return new Proxy(css, {
       get(target, prop) {
         if (prop === 'getPropertyValue') {
+          const boundFn = target.getPropertyValue.bind(target);
           return function(key: string) {
-            const val = target.getPropertyValue(key);
+            const val = boundFn(key);
             if (typeof val === 'string' && val.includes('oklch')) return 'rgb(128, 128, 128)';
             return val;
           }
         }
-        const val = (target as any)[prop];
-        if (typeof val === 'string' && val.includes('oklch')) {
-            return 'rgb(128, 128, 128)';
+        const raw = (target as any)[prop];
+        // Bind native methods to their target to prevent Illegal invocation
+        if (typeof raw === 'function') {
+          return raw.bind(target);
         }
-        return val;
+        if (typeof raw === 'string' && raw.includes('oklch')) {
+          return 'rgb(128, 128, 128)';
+        }
+        return raw;
       }
     });
   };
