@@ -90,18 +90,36 @@ export function useAuctionsApi() {
   }
 
   // ─── Quick Sync Engine ───
-  // Polls a lightweight timestamp endpoint every 15s.
-  // If any user on any device changed a car record, silently refetch.
+  // Polls a delta sync endpoint every 5s.
+  // Only fetches records that changed since last check — typically 0-2 records.
   const _lastKnownTs = useState('auctions_lastKnownTs', () => 0)
   let _quickSyncInterval: ReturnType<typeof setInterval> | null = null
 
   async function _checkForUpdates() {
     try {
-      const res = await $fetch<{ ts: number }>(`/api/cars/last-updated?t=${Date.now()}`)
-      if (res.ts && _lastKnownTs.value > 0 && res.ts > _lastKnownTs.value) {
-        // Something changed — silently refetch
-        await fetchAllCars(true)
+      const since = _lastKnownTs.value
+      const res = await $fetch<{ cars: any[], ts: number }>(`/api/cars/sync?since=${since}&t=${Date.now()}`)
+
+      if (res.cars && res.cars.length > 0 && since > 0) {
+        // Delta merge: patch only the changed records into the existing array
+        const changedMap = new Map(res.cars.map((c: any) => [String(c._id || c.id), c]))
+
+        _allCars.value = _allCars.value.map((existing) => {
+          const key = String(existing._id || existing.id)
+          const updated = changedMap.get(key)
+          if (updated) {
+            changedMap.delete(key)
+            return { ...updated, id: updated.id || updated._id }
+          }
+          return existing
+        })
+
+        // Append any brand-new records not in the existing array
+        for (const [, newCar] of changedMap) {
+          _allCars.value.push({ ...newCar, id: newCar.id || newCar._id })
+        }
       }
+
       if (res.ts) {
         _lastKnownTs.value = res.ts
       }
@@ -115,7 +133,7 @@ export function useAuctionsApi() {
     if (_quickSyncInterval) return
     // Set initial timestamp
     _checkForUpdates()
-    // Poll every 15 seconds
+    // Poll every 5 seconds
     _quickSyncInterval = setInterval(_checkForUpdates, 5000)
   }
 
