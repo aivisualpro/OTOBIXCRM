@@ -96,11 +96,13 @@ export function useAuctionsApi() {
   let _quickSyncInterval: ReturnType<typeof setInterval> | null = null
 
   async function _checkForUpdates() {
+    if (!_lastKnownTs.value) return // Not bootstrapped yet
+
     try {
       const since = _lastKnownTs.value
       const res = await $fetch<{ cars: any[], ts: number }>(`/api/cars/sync?since=${since}&t=${Date.now()}`)
 
-      if (res.cars && res.cars.length > 0 && since > 0) {
+      if (res.cars && res.cars.length > 0) {
         // Delta merge: patch only the changed records into the existing array
         const changedMap = new Map(res.cars.map((c: any) => [String(c._id || c.id), c]))
 
@@ -120,9 +122,8 @@ export function useAuctionsApi() {
         }
       }
 
-      if (res.ts) {
-        _lastKnownTs.value = res.ts
-      }
+      // Always advance the timestamp
+      _lastKnownTs.value = Math.max(res.ts || since, since)
     }
     catch {
       // Silent fail — will retry next interval
@@ -131,8 +132,10 @@ export function useAuctionsApi() {
 
   function startQuickSync() {
     if (_quickSyncInterval) return
-    // Set initial timestamp
-    _checkForUpdates()
+    // Bootstrap: set timestamp to NOW (data is already loaded at this point)
+    if (!_lastKnownTs.value) {
+      _lastKnownTs.value = Date.now()
+    }
     // Poll every 5 seconds
     _quickSyncInterval = setInterval(_checkForUpdates, 5000)
   }
