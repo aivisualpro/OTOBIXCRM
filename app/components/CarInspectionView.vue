@@ -1551,7 +1551,7 @@ const exteriorSections = [
       { new: 'lhsRunningBorderImages', old: 'lhsRunningBorderImages' },
       { new: 'lhsRearWheelImages', old: 'lhsRearAlloyImages' },
       { new: 'lhsRearTyreImages', old: 'lhsRearTyreImages' },
-      { new: 'lhsQuarterPanelWithRearDoorOpenImages', old: 'lhsQuarterPanelImages' },
+      { new: 'lhsQuarterPanelWithRearDoorClosedImages', old: 'lhsQuarterPanelImages' },
     ],
     parts: [
       { key: 'lhsFullViewImages', oldKey: 'lhsFront45Degree', imageKey: 'lhsFullViewImages', oldImageKey: 'lhsFront45Degree', label: 'LHS Full View', isImageOnly: true },
@@ -1571,7 +1571,7 @@ const exteriorSections = [
         key: 'lhsQuarterPanelDropdownList',
         oldKey: 'lhsQuarterPanel',
         label: 'LHS Quarter Panel',
-        imageKey: 'lhsQuarterPanelWithRearDoorOpenImages',
+        imageKey: 'lhsQuarterPanelWithRearDoorClosedImages',
         oldImageKey: 'lhsQuarterPanelImages'
       },
     ],
@@ -1630,7 +1630,7 @@ const exteriorSections = [
     icon: 'i-lucide-arrow-right',
     imageKeys: [
       { new: 'rhsFullViewImages', old: 'rhsRear45Degree' },
-      { new: 'rhsQuarterPanelWithRearDoorOpenImages', old: 'rhsQuarterPanelImages' },
+      { new: 'rhsQuarterPanelWithRearDoorClosedImages', old: 'rhsQuarterPanelImages' },
       { new: 'rhsRearWheelImages', old: 'rhsRearAlloyImages' },
       { new: 'rhsRearTyreImages', old: 'rhsRearTyreImages' },
       { new: 'rhsRunningBorderImages', old: 'rhsRunningBorderImages' },
@@ -1650,7 +1650,7 @@ const exteriorSections = [
         key: 'rhsQuarterPanelDropdownList',
         oldKey: 'rhsQuarterPanel',
         label: 'RHS Quarter Panel',
-        imageKey: 'rhsQuarterPanelWithRearDoorOpenImages',
+        imageKey: 'rhsQuarterPanelWithRearDoorClosedImages',
         oldImageKey: 'rhsQuarterPanelImages'
       },
       { key: 'rhsRearWheelDropdownList', oldKey: 'rhsRearAlloy', imageKey: 'rhsRearWheelImages', oldImageKey: 'rhsRearAlloyImages', label: 'RHS Rear Wheel' },
@@ -1751,7 +1751,7 @@ const _exteriorImageKeys = [
   'lhsFrontDoorImages',
   'lhsRearDoorImages',
   'lhsRearTyreImages',
-  'lhsQuarterPanelWithRearDoorOpenImages',
+  'lhsQuarterPanelWithRearDoorClosedImages',
   'rearMain',
   'rearWithBootDoorOpen',
   'rearBumperImages',
@@ -1760,7 +1760,7 @@ const _exteriorImageKeys = [
   'spareTyreImages',
   'bootFloorImages',
   'rhsRear45Degree',
-  'rhsQuarterPanelWithRearDoorOpenImages',
+  'rhsQuarterPanelWithRearDoorClosedImages',
   'rhsRearDoorImages',
   'rhsFrontDoorImages',
   'rhsRunningBorderImages',

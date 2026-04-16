@@ -615,7 +615,7 @@ const _totalFiltered = computed(() => filteredItems.value.length)
 // ─── Search triggers server-side query & auto-navigates to Search Results tab ───
 let _localSearchDebounce: ReturnType<typeof setTimeout> | null = null
 
-watch(search, (q) => {
+watch(search, async (q) => {
   const trimmed = q.trim()
 
   // Cancel any pending debounce immediately
@@ -652,7 +652,7 @@ watch(search, (q) => {
 
     if (router.currentRoute.value.path === '/leads/search-results' && activeFilterCount.value === 0) {
       // Force re-fetch all data (search replaced _leads with filtered subset)
-      refreshLeads()
+      await refreshLeads()
       router.push({ path: '/leads/all', query: resetQuery })
     }
     else if (router.currentRoute.value.path === '/leads/search-results') {
@@ -661,7 +661,7 @@ watch(search, (q) => {
     }
     else {
       router.replace({ query: resetQuery })
-      refreshLeads()
+      await refreshLeads()
       if (props.filters) {
         nextTick(() => setFilters(props.filters!))
       }
