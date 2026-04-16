@@ -17,6 +17,16 @@ const currentUserRole = computed(() => {
 const canViewPassword = computed(() => currentUserRole.value === 'Admin' || currentUserRole.value === 'Super Admin')
 const showPassword = ref(false)
 
+const { activeWorkspace } = useWorkspace()
+const hasEditPermission = computed(() => {
+  if (!activeWorkspace.value?.peopleActions) return true
+  return activeWorkspace.value.peopleActions.includes('edit')
+})
+const hasDeletePermission = computed(() => {
+  if (!activeWorkspace.value?.peopleActions) return true
+  return activeWorkspace.value.peopleActions.includes('delete')
+})
+
 // ─── KAM lookup ───
 const { allKams, fetchKams } = useKamsApi()
 onMounted(() => fetchKams())
@@ -96,11 +106,11 @@ const wishlist = computed(() => props.user?.wishlist || [])
         Back
       </Button>
       <Separator orientation="vertical" class="h-5" />
-      <Button size="sm" class="h-8" @click="emit('edit')">
+      <Button v-if="hasEditPermission" size="sm" class="h-8" @click="emit('edit')">
         <Icon name="i-lucide-pencil" class="mr-1.5 size-3.5" />
         Edit
       </Button>
-      <Button variant="destructive" size="sm" class="h-8" @click="emit('delete')">
+      <Button v-if="hasDeletePermission" variant="destructive" size="sm" class="h-8" @click="emit('delete')">
         <Icon name="i-lucide-trash-2" class="mr-1.5 size-3.5" />
         Delete
       </Button>

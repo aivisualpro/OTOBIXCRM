@@ -19,6 +19,20 @@ const approvalStatuses = ['Pending', 'Under Review', 'Approved', 'Quality Reject
 
 const router = useRouter()
 
+const { activeWorkspace } = useWorkspace()
+const hasAddPermission = computed(() => {
+  if (!activeWorkspace.value?.leadActions) return true
+  return activeWorkspace.value.leadActions.includes('add')
+})
+const hasEditPermission = computed(() => {
+  if (!activeWorkspace.value?.leadActions) return true
+  return activeWorkspace.value.leadActions.includes('edit')
+})
+const hasDeletePermission = computed(() => {
+  if (!activeWorkspace.value?.leadActions) return true
+  return activeWorkspace.value.leadActions.includes('delete')
+})
+
 const entity = computed(() => props.entityName || 'Lead')
 
 const { setHeader } = usePageHeader()
@@ -36,6 +50,7 @@ const {
   isFetched,
   fetchError,
   fetchLeads,
+  deleteLead,
   loadMore: loadMoreFromServer,
   searchLeads,
   refreshLeads,
@@ -898,6 +913,36 @@ async function handleSave() {
   }
 }
 
+// ─── Delete ───
+const showDeleteDialog = ref(false)
+const deletingItem = ref<any>(null)
+const isDeleting = ref(false)
+
+function confirmDelete(item: any) {
+  deletingItem.value = item
+  showDeleteDialog.value = true
+}
+
+async function handleDelete() {
+  if (!deletingItem.value) return
+  isDeleting.value = true
+  try {
+    const leadId = deletingItem.value._id || deletingItem.value.id || deletingItem.value.appointmentId
+    await deleteLead(leadId)
+    toast.success(`Lead deleted successfully`)
+    showDeleteDialog.value = false
+    deletingItem.value = null
+  }
+  catch (err: any) {
+    toast.error(err?.data?.message || err?.message || 'Delete failed')
+  }
+  finally {
+    isDeleting.value = false
+  }
+}
+
+// ─── Bulk Actions ───
+
 async function syncAppSheet(item: any) {
   try {
     isSyncing.value = true
@@ -1218,7 +1263,7 @@ function getInitials(name: string): string {
       </Badge>
     </div>
 
-    <Button v-if="router.currentRoute.value.path === '/leads'" size="sm" class="h-8" @click="openCreate">
+    <Button v-if="hasAddPermission && router.currentRoute.value.path === '/leads'" size="sm" class="h-8" @click="openCreate">
       <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
       Add {{ entity }}
     </Button>
@@ -1384,8 +1429,11 @@ function getInitials(name: string): string {
             </TableCell>
             <TableCell v-if="router.currentRoute.value.path !== '/leads/under-review'" class="text-right">
               <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button v-if="router.currentRoute.value.path === '/leads'" variant="ghost" size="icon" class="size-8" @click.stop="openEdit(item)">
+                <Button v-if="hasEditPermission && router.currentRoute.value.path === '/leads'" variant="ghost" size="icon" class="size-8" @click.stop="openEdit(item)">
                   <Icon name="i-lucide-pencil" class="size-3.5" />
+                </Button>
+                <Button v-if="hasDeletePermission && router.currentRoute.value.path === '/leads'" variant="ghost" size="icon" class="size-8 text-destructive hover:bg-destructive/10" @click.stop="confirmDelete(item)">
+                  <Icon name="i-lucide-trash-2" class="size-3.5" />
                 </Button>
                 <Button v-if="isAdmin" variant="ghost" size="icon" class="size-8 text-blue-600 hover:text-blue-700" :disabled="isSyncing" title="Force Sync to AppSheet" @click.stop="syncAppSheet(item)">
                   <Icon name="i-lucide-refresh-cw" class="size-3.5" :class="{ 'animate-spin': isSyncing }" />
@@ -1398,7 +1446,7 @@ function getInitials(name: string): string {
               <div class="flex flex-col items-center gap-2 text-muted-foreground">
                 <Icon name="i-lucide-inbox" class="size-8" />
                 <p>No leads found</p>
-                <Button v-if="router.currentRoute.value.path === '/leads'" size="sm" variant="outline" @click="openCreate">
+                <Button v-if="hasAddPermission && router.currentRoute.value.path === '/leads'" size="sm" variant="outline" @click="openCreate">
                   <Icon name="i-lucide-plus" class="mr-1 size-4" />
                   Add {{ entity }}
                 </Button>
@@ -1616,7 +1664,7 @@ function getInitials(name: string): string {
                 <Icon name="i-lucide-arrow-right" class="ml-1.5 size-3.5" />
               </Button>
               <!-- Create/Update button (only on last tab) -->
-              <Button v-else type="submit" :disabled="isSaving">
+              <Button v-else type="submit" :disabled="isSaving" v-if="(editingItem && hasEditPermission) || (!editingItem && hasAddPermission)">
                 <Icon v-if="isSaving" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
                 {{ editingItem ? 'Update' : 'Create' }}
               </Button>

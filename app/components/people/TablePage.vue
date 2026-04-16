@@ -244,7 +244,12 @@ function defaultForm() {
   }
 }
 
-const { allWorkspaces } = useWorkspace()
+const { allWorkspaces, activeWorkspace } = useWorkspace()
+
+const hasAddPermission = computed(() => {
+  if (!activeWorkspace.value?.peopleActions) return true
+  return activeWorkspace.value.peopleActions.includes('add')
+})
 
 const form = ref(defaultForm())
 
@@ -418,7 +423,7 @@ function toggleSelectAllWorkspaces() {
         <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading }" />
         Refresh
       </Button>
-      <Button size="sm" class="h-8" @click="showAddDialog = true">
+      <Button v-if="hasAddPermission" size="sm" class="h-8" @click="showAddDialog = true">
         <Icon name="i-lucide-plus" class="mr-1 size-3.5" />
         Add User
       </Button>
@@ -484,9 +489,9 @@ function toggleSelectAllWorkspaces() {
               <div v-else-if="col.type === 'badge'" @click.stop>
                 <DropdownMenu v-if="col.key === 'approvalStatus'">
                   <DropdownMenuTrigger as-child>
-                    <Badge variant="outline" class="cursor-pointer hover:opacity-80 transition-opacity" :class="[getBadgeClass(item[col.key])]">
+                    <Badge variant="outline" class="cursor-pointer hover:opacity-80 transition-opacity" :class="[getBadgeClass(item[col.key]), !hasAddPermission ? 'pointer-events-none' : '']">
                       {{ formatBadgeValue(item[col.key]) }}
-                      <Icon name="i-lucide-chevron-down" class="ml-1 size-3 opacity-50" />
+                      <Icon v-if="hasAddPermission" name="i-lucide-chevron-down" class="ml-1 size-3 opacity-50" />
                     </Badge>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">

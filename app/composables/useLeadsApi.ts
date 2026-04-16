@@ -409,6 +409,21 @@ export function useLeadsApi() {
     fetchLeads(true)
   }
 
+  async function deleteLead(telecallingId: string) {
+    const res = await $fetch<any>('/api/leads/delete', {
+      method: 'POST',
+      body: { telecallingId },
+    })
+    
+    // Optimistic update
+    const idx = _leads.value.findIndex((l: any) => (l._id === telecallingId || l.id === telecallingId || l.appointmentId === telecallingId))
+    if (idx >= 0) {
+      _leads.value.splice(idx, 1)
+      _totalCount.value--
+    }
+    return res
+  }
+
   return {
     // Data
     allLeads: filteredLeads,
@@ -431,6 +446,7 @@ export function useLeadsApi() {
     loadMore,
     searchLeads,
     refreshLeads,
+    deleteLead,
     setFilters,
     setAdvancedFilters,
     advancedFilters: _advancedFilters,

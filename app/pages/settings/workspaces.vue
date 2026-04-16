@@ -136,7 +136,10 @@ const editingWorkspace = computed(() =>
 
 // Stats
 const totalMenuItems = computed(() => allMenuItems.length)
-const enabledMenuItems = computed(() => editingWorkspace.value?.menuIds?.length ?? 0)
+const enabledMenuItems = computed(() => {
+  if (!editingWorkspace.value) return 0
+  return editingWorkspace.value.menuIds.filter(id => allMenuItems.some(m => m.id === id)).length
+})
 const allSelected = computed(() => enabledMenuItems.value === totalMenuItems.value)
 
 // ─── Local Menu Toggle (no API call) ───
@@ -313,7 +316,11 @@ function localToggleLeadTab(tabId: string) {
 }
 
 // ─── Leads Actions Sub-Config ───
+// ─── Leads Actions Sub-Config ───
 const LEADS_ACTIONS = [
+  { id: 'add', title: 'Add Data' },
+  { id: 'edit', title: 'Edit Data' },
+  { id: 'delete', title: 'Delete Data' },
   { id: 'pd-button', title: 'Price Discovery (PD) Button' },
   { id: 're-qc-button', title: 'Re-QC Button' },
 ]
@@ -330,11 +337,50 @@ function localToggleLeadAction(actionId: string) {
   const idx = current.indexOf(actionId)
   if (idx >= 0) {
     current.splice(idx, 1)
+    
+    // Auto turn off dependent actions if 'edit' is disabled
+    if (actionId === 'edit') {
+      const pdIdx = current.indexOf('pd-button')
+      if (pdIdx >= 0) current.splice(pdIdx, 1)
+      const reqcIdx = current.indexOf('re-qc-button')
+      if (reqcIdx >= 0) current.splice(reqcIdx, 1)
+    }
+  }
+  else {
+    // If turning on pd-button or re-qc-button, make sure edit is turned on
+    if ((actionId === 'pd-button' || actionId === 're-qc-button') && !current.includes('edit')) {
+      return // Do not allow enabling if edit is not selected
+    }
+    current.push(actionId)
+  }
+  ws.leadActions = current
+  isDirty.value = true
+}
+
+// ─── People Actions Sub-Config ───
+const PEOPLE_ACTIONS = [
+  { id: 'add', title: 'Add Data' },
+  { id: 'edit', title: 'Edit Data' },
+  { id: 'delete', title: 'Delete Data' },
+]
+
+function localTogglePeopleAction(actionId: string) {
+  const ws = editingWorkspace.value
+  if (!ws)
+    return
+
+  if (!ws.peopleActions)
+    ws.peopleActions = PEOPLE_ACTIONS.map(t => t.id) // Default all
+
+  const current = [...ws.peopleActions]
+  const idx = current.indexOf(actionId)
+  if (idx >= 0) {
+    current.splice(idx, 1)
   }
   else {
     current.push(actionId)
   }
-  ws.leadActions = current
+  ws.peopleActions = current
   isDirty.value = true
 }
 
@@ -453,6 +499,10 @@ async function saveMenuConfig() {
       updates.retailTabs = [...ws.retailTabs]
     if (ws.peopleTabs)
       updates.peopleTabs = [...ws.peopleTabs]
+    if (ws.peopleActions)
+      updates.peopleActions = [...ws.peopleActions]
+    if (ws.leadActions)
+      updates.leadActions = [...ws.leadActions]
     if (ws.leadTabs)
       updates.leadTabs = [...ws.leadTabs]
     if (ws.dashboardWidgets)
@@ -559,76 +609,56 @@ async function saveMenuConfig() {
       <!-- Right Content: Menu Configuration -->
       <div class="flex-1 overflow-y-auto p-4 lg:p-6 bg-background">
         <div v-if="editingWorkspace" class="space-y-4">
-          <!-- Workspace Header -->
-          <div class="flex items-center gap-4 border-b pb-4 mb-6">
-            <div
-              class="size-12 flex items-center justify-center rounded-xl text-white shadow-sm"
-              :style="{ backgroundColor: editingWorkspace.color || '#6366f1' }"
-            >
-              <Icon :name="editingWorkspace.icon || 'i-lucide-briefcase'" class="size-6" />
-            </div>
-            <div>
-              <h2 class="text-xl font-bold tracking-tight">
-                {{ editingWorkspace.name }}
-              </h2>
-            </div>
-          </div>
-
-          <!-- Menu Actions -->
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                class="h-7 text-xs"
-                @click="allSelected ? deselectAll() : selectAll()"
+          <!-- Workspace Header & Actions (Sticky) -->
+          <div class="flex items-center justify-between border-b pb-4 mb-6 sticky top-0 bg-background/95 backdrop-blur z-10 -mx-4 px-4 lg:-mx-6 lg:px-6 pt-4 -mt-4">
+            <div class="flex items-center gap-4">
+              <div
+                class="size-12 flex items-center justify-center rounded-xl text-white shadow-sm"
+                :style="{ backgroundColor: editingWorkspace.color || '#6366f1' }"
               >
-                <Icon :name="allSelected ? 'i-lucide-square' : 'i-lucide-check-square'" class="mr-1.5 size-3.5" />
-                {{ allSelected ? 'Deselect All' : 'Select All' }}
-              </Button>
-              <span class="text-xs text-muted-foreground tabular-nums">
-                {{ enabledMenuItems }}/{{ totalMenuItems }} selected
-              </span>
+                <Icon :name="editingWorkspace.icon || 'i-lucide-briefcase'" class="size-6" />
+              </div>
+              <div>
+                <h2 class="text-xl font-bold tracking-tight">
+                  {{ editingWorkspace.name }}
+                </h2>
+              </div>
             </div>
-            <Button
-              size="sm"
-              class="h-7 text-xs"
-              :disabled="!isDirty || isSavingMenu"
-              @click="saveMenuConfig"
-            >
-              <Icon v-if="isSavingMenu" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
-              <Icon v-else name="i-lucide-save" class="mr-1.5 size-3.5" />
-              Save Changes
-            </Button>
+
+            <!-- Menu Actions -->
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="h-8 text-xs font-semibold bg-background"
+                  @click="allSelected ? deselectAll() : selectAll()"
+                >
+                  <Icon :name="allSelected ? 'i-lucide-square' : 'i-lucide-check-square'" class="mr-1.5 size-3.5" />
+                  {{ allSelected ? 'Deselect All' : 'Select All' }}
+                </Button>
+                <span class="text-xs font-medium text-muted-foreground tabular-nums">
+                  {{ enabledMenuItems }}/{{ totalMenuItems }} selected
+                </span>
+              </div>
+              <Button
+                size="sm"
+                class="h-8 text-xs font-semibold"
+                :disabled="!isDirty || isSavingMenu"
+                @click="saveMenuConfig"
+              >
+                <Icon v-if="isSavingMenu" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
+                <Icon v-else name="i-lucide-save" class="mr-1.5 size-3.5" />
+                Save Changes
+              </Button>
+            </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div
-              v-for="[groupName, items] in menuGroups"
-              :key="groupName"
-              class="rounded-xl border bg-card p-4 transition-all hover:shadow-sm"
-            >
-              <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center gap-2">
-                  <h3 class="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                    {{ groupName }}
-                  </h3>
-                  <Badge variant="secondary" class="text-[10px]">
-                    {{ items.filter(i => editingWorkspace!.menuIds.includes(i.id)).length }}/{{ items.length }}
-                  </Badge>
-                </div>
-                <button
-                  class="text-[11px] font-medium text-primary hover:text-primary/70 transition-colors"
-                  @click="toggleGroupAll(items)"
-                >
-                  {{ isGroupAllSelected(items) ? 'Deselect All' : 'Select All' }}
-                </button>
-              </div>
-              <div class="space-y-1.5">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
                 <div
-                  v-for="item in items"
+                  v-for="item in allMenuItems"
                   :key="item.id"
-                  class="group flex flex-col p-2.5 rounded-lg border transition-all"
+                  class="group flex flex-col p-3 rounded-xl border transition-all"
                   :style="editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon && editingWorkspace!.color ? { borderColor: `${editingWorkspace!.color}4D`, backgroundColor: `${editingWorkspace!.color}0D`, boxShadow: `0 0 0 1px ${editingWorkspace!.color}1A` } : {}"
                   :class="[
                     item.comingSoon ? 'opacity-50 cursor-not-allowed bg-muted/20' : '',
@@ -886,6 +916,30 @@ async function saveMenuConfig() {
                     </div>
                   </div>
 
+                  <!-- People Actions Options -->
+                  <div
+                    v-if="item.id === 'people' && editingWorkspace!.menuIds.includes('people')"
+                    class="col-span-2 mt-2 pt-2 border-t border-primary/5 grid grid-cols-2 gap-2"
+                  >
+                    <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">
+                      Allowed Actions
+                    </p>
+                    <div
+                      v-for="action in PEOPLE_ACTIONS"
+                      :key="action.id"
+                      class="flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                      @click="localTogglePeopleAction(action.id)"
+                    >
+                      <span class="text-[11px] truncate">{{ action.title }}</span>
+                      <Icon
+                        :name="(editingWorkspace!.peopleActions || PEOPLE_ACTIONS.map(t => t.id)).includes(action.id) ? 'i-lucide-check-square' : 'i-lucide-square'"
+                        class="size-3.5"
+                        :style="(editingWorkspace!.peopleActions || PEOPLE_ACTIONS.map(t => t.id)).includes(action.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                        :class="(editingWorkspace!.peopleActions || PEOPLE_ACTIONS.map(t => t.id)).includes(action.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                      />
+                    </div>
+                  </div>
+
                   <!-- Dashboard Widgets Options -->
                   <div
                     v-if="item.id === 'dashboard' && editingWorkspace!.menuIds.includes('dashboard')"
@@ -950,9 +1004,32 @@ async function saveMenuConfig() {
                       />
                     </div>
                   </div>
+
+                  <!-- Placeholder for Unselected Items -->
+                  <div
+                    v-if="!editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon"
+                    class="mt-3 py-6 rounded-lg border border-dashed border-muted/60 bg-muted/10 flex flex-col items-center justify-center text-center px-4 transition-colors group-hover:bg-muted/30 group-hover:border-muted/80"
+                  >
+                    <div class="size-10 rounded-full bg-background/50 flex items-center justify-center shadow-sm border border-muted/50 mb-3 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground/70 group-hover:shadow-md">
+                      <Icon name="i-lucide-power-off" class="size-4" />
+                    </div>
+                    <h4 class="text-xs font-semibold text-muted-foreground mb-1">Module Offline</h4>
+                    <p class="text-[10px] text-muted-foreground/60 leading-relaxed max-w-[180px]">
+                      Activate this workspace component to safely mount its interfaces and configuration payload.
+                    </p>
+                  </div>
+                  
+                  <!-- Placeholder for Selected Items with NO Options -->
+                  <div
+                    v-else-if="editingWorkspace!.menuIds.includes(item.id) && !['auctions','leads','people','sales','retail','dashboard','settings'].includes(item.id) && !item.comingSoon"
+                    class="mt-3 py-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10 flex flex-col items-center justify-center text-center px-4"
+                  >
+                    <div class="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center mb-2 text-emerald-500/70">
+                      <Icon name="i-lucide-check-circle-2" class="size-4" />
+                    </div>
+                    <p class="text-[10px] text-emerald-600/80 font-medium tracking-tight">Active with uniform telemetry.</p>
+                  </div>
                 </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

@@ -19,6 +19,20 @@ const {
 
 const { allUsers, fetchAllUsers } = usePeopleApi()
 
+const { activeWorkspace } = useWorkspace()
+const hasAddPermission = computed(() => {
+  if (!activeWorkspace.value?.peopleActions) return true
+  return activeWorkspace.value.peopleActions.includes('add')
+})
+const hasEditPermission = computed(() => {
+  if (!activeWorkspace.value?.peopleActions) return true
+  return activeWorkspace.value.peopleActions.includes('edit')
+})
+const hasDeletePermission = computed(() => {
+  if (!activeWorkspace.value?.peopleActions) return true
+  return activeWorkspace.value.peopleActions.includes('delete')
+})
+
 onMounted(() => {
   fetchKams()
   fetchAllUsers()
@@ -222,7 +236,7 @@ async function handleAssign() {
         <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading }" />
         Refresh
       </Button>
-      <Button size="sm" class="h-8" @click="openCreate">
+      <Button v-if="hasAddPermission" size="sm" class="h-8" @click="openCreate">
         <Icon name="i-lucide-plus" class="mr-1 size-3.5" />
         Add KAM
       </Button>
@@ -303,10 +317,10 @@ async function handleAssign() {
                 <Button variant="ghost" size="icon" class="size-7" title="Assign to Dealer" @click.stop="openAssign(kam)">
                   <Icon name="i-lucide-link" class="size-3.5 text-violet-500" />
                 </Button>
-                <Button variant="ghost" size="icon" class="size-7" title="Edit" @click.stop="openEdit(kam)">
+                <Button v-if="hasEditPermission" variant="ghost" size="icon" class="size-7" title="Edit" @click.stop="openEdit(kam)">
                   <Icon name="i-lucide-pencil" class="size-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" class="size-7" title="Delete" @click.stop="confirmDelete(kam)">
+                <Button v-if="hasDeletePermission" variant="ghost" size="icon" class="size-7" title="Delete" @click.stop="confirmDelete(kam)">
                   <Icon name="i-lucide-trash-2" class="size-3.5 text-destructive" />
                 </Button>
               </div>

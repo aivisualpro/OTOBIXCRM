@@ -34,6 +34,7 @@ export interface Workspace {
   salesTabs?: string[]
   retailTabs?: string[]
   peopleTabs?: string[]
+  peopleActions?: string[]
   dashboardWidgets?: string[]
   systemSettings?: string[]
   defaultRoutes?: Record<string, string>
