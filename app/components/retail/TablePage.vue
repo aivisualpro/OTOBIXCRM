@@ -387,7 +387,7 @@ const baseFilteredItems = computed(() => {
   }
 
   if (props.filterStatus === 'followup') {
-    result.sort((a, b) => new Date(b.followupTimeStamp || 0).getTime() - new Date(a.followupTimeStamp || 0).getTime())
+    result.sort((a, b) => new Date(a.followupTimeStamp || 0).getTime() - new Date(b.followupTimeStamp || 0).getTime())
   }
 
   return result
