@@ -778,7 +778,7 @@ const pageNumbers = computed(() => {
                 </div>
               </TableCell>
               <TableCell class="font-bold text-emerald-600 text-[15px] tabular-nums">
-                {{ formatCurrency(bid.bidAmount || bid.amount) }}
+                {{ formatCurrency(Math.ceil(Number(bid.bidAmount || bid.amount) / 1000) * 1000) }}
               </TableCell>
               <TableCell>
                 <div v-if="bid.dealer" class="flex flex-col gap-0.5">
