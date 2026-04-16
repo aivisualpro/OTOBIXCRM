@@ -122,6 +122,9 @@ const baseFilteredItems = computed(() => {
     return ok
   })
 
+  // Global base sort by inspectionDate (newest to oldest)
+  result.sort((a, b) => new Date(b.inspectionDate || 0).getTime() - new Date(a.inspectionDate || 0).getTime())
+
   // Ensure 'customer-activity' tab enforces descending latest-activity sort
   if (props.filterStatus === 'customer-activity') {
     result.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())

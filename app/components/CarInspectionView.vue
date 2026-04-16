@@ -486,10 +486,7 @@ const approvalWarnings = computed<ValidationWarning[]>(() => {
     }
   }
 
-  // ── sendToAuctionApk — must not be empty ──
-  if (isEmpty(data.sendToAuctionApk)) {
-    warnings.push({ field: 'sendToAuctionApk', label: 'Send To Auction APK (timestamp)', type: 'error' })
-  }
+  // `sendToAuctionApk` is no longer validated here. Auto-stamped on approval.
 
   // ── frontMain / frontMainImages — at least one image ──
   const frontImgs = data.frontMainImages || data.frontMain || []
@@ -625,6 +622,9 @@ async function confirmQCApproval() {
   editForm.value.auctionStatus = auctionStatus
   editForm.value.upcomingUntil = startTimeDate.toISOString()
   editForm.value.liveAt = startTimeDate.toISOString()
+  
+  // Auto-stamp the send API timestamp
+  editForm.value.sendToAuctionApk = new Date().toISOString()
 
   // ── Sync frontMain from frontMainImages ──
   const frontImgs = editForm.value.frontMainImages || editForm.value.frontMain || []

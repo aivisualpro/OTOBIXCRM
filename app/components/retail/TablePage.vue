@@ -367,6 +367,9 @@ const baseFilteredItems = computed(() => {
     return ok
   })
 
+  // Global base sort by inspectionDate (newest to oldest)
+  result.sort((a, b) => new Date(b.inspectionDate || 0).getTime() - new Date(a.inspectionDate || 0).getTime())
+
   // Ensure 'customer-activity' tab enforces descending latest-activity sort
   if (props.filterStatus === 'customer-activity') {
     result.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
@@ -942,6 +945,9 @@ async function fetchAndShowBids(car: any) {
             <TableHead class="whitespace-nowrap text-center">
               Remarks
             </TableHead>
+            <TableHead class="whitespace-nowrap text-center text-emerald-600 dark:text-emerald-400">
+              RA
+            </TableHead>
             <TableHead class="w-10 text-center">
               <Icon name="i-lucide-history" class="size-4" />
             </TableHead>
@@ -1420,6 +1426,11 @@ async function fetchAndShowBids(car: any) {
               </div>
             </TableCell>
 
+            <!-- RA (Retail Associate) -->
+            <TableCell class="text-xs text-center px-1 whitespace-nowrap text-emerald-700 dark:text-emerald-300 font-medium">
+              {{ car.retailAssociate || '—' }}
+            </TableCell>
+
             <TableCell class="text-xs text-center px-1">
               <Button variant="ghost" size="icon" class="size-7 hover:bg-primary/10 hover:text-primary transition-colors" @click="viewHistory(car)">
                 <Icon name="i-lucide-history" class="size-3.5" />
@@ -1427,7 +1438,7 @@ async function fetchAndShowBids(car: any) {
             </TableCell>
           </TableRow>
           <TableRow v-if="displayedItems.length === 0">
-            <TableCell :colspan="(['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 21 : 22) + (filterStatus === 'followup' ? 1 : 0)" class="h-32 text-center text-muted-foreground bg-muted/10">
+            <TableCell :colspan="(['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 22 : 23) + (filterStatus === 'followup' ? 1 : 0)" class="h-32 text-center text-muted-foreground bg-muted/10">
               No matching records found
             </TableCell>
           </TableRow>

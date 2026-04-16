@@ -149,8 +149,8 @@ export function useLeadsApi() {
     }
     if (_isInitialized.value && !force)
       return
-    if (_isLoading.value)
-      return // Block concurrent fetches
+    if (_isLoading.value && !force)
+      return // Block concurrent fetches unless forced
 
     _isLoading.value = true
     _fetchError.value = null
@@ -211,7 +211,9 @@ export function useLeadsApi() {
       _leads.value = []
     }
     finally {
-      _isLoading.value = false
+      if (!signal.aborted) {
+        _isLoading.value = false
+      }
     }
   }
 
@@ -324,7 +326,9 @@ export function useLeadsApi() {
         _fetchError.value = err?.data?.message || err?.message || 'Search failed'
       }
       finally {
-        _isLoading.value = false
+        if (!signal.aborted) {
+          _isLoading.value = false
+        }
       }
     }, 400)
   }

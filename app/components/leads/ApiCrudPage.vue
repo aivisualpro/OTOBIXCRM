@@ -645,17 +645,22 @@ watch(search, (q) => {
     // Search cleared
     cancelSearch()
     serverSearch.value = ''
-    router.replace({ query: { ...router.currentRoute.value.query, search: undefined } })
+    
+    // Remove search from query
+    const resetQuery = { ...router.currentRoute.value.query }
+    delete resetQuery.search
 
     if (router.currentRoute.value.path === '/leads/search-results' && activeFilterCount.value === 0) {
       // Force re-fetch all data (search replaced _leads with filtered subset)
       refreshLeads()
-      router.push('/leads/all')
+      router.push({ path: '/leads/all', query: resetQuery })
     }
     else if (router.currentRoute.value.path === '/leads/search-results') {
+      router.replace({ query: resetQuery })
       searchLeads('')
     }
     else {
+      router.replace({ query: resetQuery })
       refreshLeads()
       if (props.filters) {
         nextTick(() => setFilters(props.filters!))
