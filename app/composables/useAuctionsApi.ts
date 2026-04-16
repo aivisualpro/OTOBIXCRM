@@ -116,7 +116,7 @@ export function useAuctionsApi() {
     // Set initial timestamp
     _checkForUpdates()
     // Poll every 15 seconds
-    _quickSyncInterval = setInterval(_checkForUpdates, 15000)
+    _quickSyncInterval = setInterval(_checkForUpdates, 5000)
   }
 
   function stopQuickSync() {
