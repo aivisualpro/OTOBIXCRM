@@ -111,6 +111,7 @@ const qcByName = computed(() => {
 const editForm = ref<Record<string, any>>({})
 let _skipAutoSave = false
 let _skipCarWatch = false
+let _pendingSave = false // gates SSE re-fetches during ANY save (silent or manual)
 
 const makeOptions = computed(() => {
   if (makes.value.length === 0 && editForm.value.make)
@@ -155,7 +156,7 @@ watch(carId, (newVal) => {
 const { lastEvent } = useLiveSync()
 watch(lastEvent, (evt) => {
   // Skip SSE re-fetches triggered by our own save to prevent editForm wipe
-  if (isSaving.value) return
+  if (_pendingSave) return
   if (evt && (evt.collection === 'cars' || evt.collection === 'telecallings' || evt.collection === 'leads') && evt.recordId) {
     if (car.value && (car.value.id === evt.recordId || car.value._id === evt.recordId || car.value.appointmentId === evt.recordId)) { // note: update.put.ts fires sync with car _id
       fetchCarDetails(carId.value, true)
@@ -211,6 +212,7 @@ const filteredQcLogs = computed(() => {
 async function saveQC(silent = false) {
   if (!silent)
     isSaving.value = true
+  _pendingSave = true
   try {
     const userCookie = useCookie('userData')
     const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
@@ -339,6 +341,8 @@ async function saveQC(silent = false) {
       toast.error(err?.data?.message || err?.message || 'Failed to save')
   }
   finally {
+    // Keep _pendingSave active for 3s after save completes to absorb delayed SSE echoes
+    setTimeout(() => { _pendingSave = false }, 3000)
     if (!silent)
       isSaving.value = false
   }
