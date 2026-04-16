@@ -217,11 +217,17 @@ export interface LeadRouteFilter {
 }
 
 export const routeFilters = {
-  // /leads (index)
-  'leads': {
+  // /leads/all
+  'all': {
+    inspectionStatus: '*',
+    approvalStatus: '*',
+    label: 'All Leads',
+  },
+  // /leads/pending
+  'pending': {
     inspectionStatus: 'Pending',
     approvalStatus: '*',
-    label: 'Leads',
+    label: 'Pending',
   },
   // /leads/scheduled
   'scheduled': {

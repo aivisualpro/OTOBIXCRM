@@ -29,7 +29,8 @@ function hasSearchMatches(itemId: string): boolean {
 }
 
 const navItems = [
-  { id: 'leads', title: 'Leads', icon: 'i-lucide-magnet', color: 'text-blue-500', link: '/leads' },
+  { id: 'all', title: 'All Leads', icon: 'i-lucide-layers', color: 'text-indigo-400', link: '/leads/all' },
+  { id: 'pending', title: 'Pending', icon: 'i-lucide-magnet', color: 'text-blue-500', link: '/leads/pending' },
   { id: 'scheduled', title: 'Scheduled', icon: 'i-lucide-calendar', color: 'text-indigo-500', link: '/leads/scheduled' },
   { id: 're-scheduled', title: 'Re-Scheduled', icon: 'i-lucide-calendar-range', color: 'text-purple-500', link: '/leads/re-scheduled' },
   { id: 'running', title: 'Running', icon: 'i-lucide-activity', color: 'text-green-500', link: '/leads/running' },

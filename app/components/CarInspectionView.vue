@@ -688,6 +688,89 @@ function getPdfFields(partsArray: any[]) {
   return partsArray.flatMap((p: any) => p.splitParts ? p.splitParts : [p]).filter((p: any) => !p.isVideoBox && p.label && !p.isImageOnly)
 }
 
+async function downloadPDF(action: 'save' | 'blob' = 'save') {
+  isGeneratingPdf.value = true
+  await nextTick()
+  await new Promise(r => setTimeout(r, props.headlessPdf ? 1000 : 200)) // give DOM time to append images structurally
+
+  const element = document.getElementById('pdf-container')
+  if (!element) {
+    isGeneratingPdf.value = false
+    toast.error('Template missing!')
+    return
+  }
+
+  const loadingToast = toast.loading('Generating PDF Report... Please wait.')
+  
+  // MUST INTERCEPT COMPUTED STYLES: 
+  // Tailwind v4 uses OKLCH natively, which immediately crashes html2canvas 1.4.1.
+  const originalGetComputedStyle = window.getComputedStyle;
+  window.getComputedStyle = function(el, pseudoElt) {
+    const css = originalGetComputedStyle(el, pseudoElt);
+    return new Proxy(css, {
+      get(target, prop) {
+        if (prop === 'getPropertyValue') {
+          return function(key: string) {
+            const val = target.getPropertyValue(key);
+            if (typeof val === 'string' && val.includes('oklch')) return 'rgb(128, 128, 128)';
+            return val;
+          }
+        }
+        const val = (target as any)[prop];
+        if (typeof val === 'string' && val.includes('oklch')) {
+            return 'rgb(128, 128, 128)';
+        }
+        return val;
+      }
+    });
+  };
+
+  try {
+    if (typeof window !== 'undefined' && !(window as any).html2pdf) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+
+    const opt = {
+      margin: [10, 0, 10, 0],
+      filename: `Inspection_Report_${carId.value}.pdf`,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }
+
+    if (action === 'blob') {
+      const pdfBlob = await (window as any).html2pdf().set(opt).from(element).output('blob')
+      toast.dismiss(loadingToast)
+      return URL.createObjectURL(pdfBlob)
+    }
+
+    await (window as any).html2pdf().set(opt).from(element).save()
+    toast.dismiss(loadingToast)
+    if (!props.headlessPdf) toast.success('PDF Downloaded successfully!')
+  }
+  catch (err) {
+    console.error('PDF Generation Error: ', err)
+    toast.dismiss(loadingToast)
+    toast.error('Failed to generate PDF')
+  } finally {
+    isGeneratingPdf.value = false;
+    window.getComputedStyle = originalGetComputedStyle;
+  }
+}
+
+watch(car, async (newVal) => {
+  if (newVal && Object.keys(newVal).length > 0 && props.headlessPdf) {
+    const url = await downloadPDF('blob')
+    emit('pdfBlobReady', url)
+  }
+}, { deep: true, immediate: true })
+
 async function scheduleAuctionFromModal() {
   let startTimeDate
   if (qcForm.value.auctionMode === 'makeLiveNow') {

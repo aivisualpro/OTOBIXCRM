@@ -279,7 +279,8 @@ function localTogglePeopleTab(tabId: string) {
 
 // ─── Leads Tabs Sub-Config ───
 const LEADS_TABS = [
-  { id: 'leads', title: 'Leads' },
+  { id: 'all', title: 'All Leads' },
+  { id: 'pending', title: 'Pending' },
   { id: 'scheduled', title: 'Scheduled' },
   { id: 're-scheduled', title: 'Re-Scheduled' },
   { id: 'running', title: 'Running' },
