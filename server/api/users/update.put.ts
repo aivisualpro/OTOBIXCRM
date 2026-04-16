@@ -52,6 +52,8 @@ export default defineEventHandler(async (event) => {
 
     console.warn(`[API:users/update] Updated user ${userId} — modified: ${result.modifiedCount}`)
 
+    broadcastChange('users', 'update', userId)
+
     return {
       success: true,
       modifiedCount: result.modifiedCount,

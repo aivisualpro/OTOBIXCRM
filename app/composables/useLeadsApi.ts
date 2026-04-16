@@ -424,6 +424,57 @@ export function useLeadsApi() {
     return res
   }
 
+  // ─── Quick Sync Engine (Leads) ───
+  const _leadsLastKnownTs = useState('leads_lastKnownTs', () => 0)
+  let _leadsQuickSyncInterval: ReturnType<typeof setInterval> | null = null
+
+  async function _checkLeadsUpdates() {
+    if (!_leadsLastKnownTs.value) return
+
+    try {
+      const since = _leadsLastKnownTs.value
+      const res = await $fetch<{ leads: any[], ts: number }>(`/api/leads/delta?since=${since}&t=${Date.now()}`)
+
+      if (res.leads && res.leads.length > 0) {
+        const changedMap = new Map(res.leads.map((l: any) => [String(l._id || l.id), l]))
+
+        _leads.value = _leads.value.map((existing) => {
+          const key = String(existing._id || existing.id)
+          const updated = changedMap.get(key)
+          if (updated) {
+            changedMap.delete(key)
+            return { ...updated, id: updated.id || updated._id } as TelecallingLead
+          }
+          return existing
+        })
+
+        for (const [, newLead] of changedMap) {
+          _leads.value.push({ ...newLead, id: newLead.id || newLead._id } as TelecallingLead)
+        }
+      }
+
+      _leadsLastKnownTs.value = Math.max(res.ts || since, since)
+    }
+    catch {
+      // Silent fail
+    }
+  }
+
+  function startLeadsQuickSync() {
+    if (_leadsQuickSyncInterval) return
+    if (!_leadsLastKnownTs.value) {
+      _leadsLastKnownTs.value = Date.now()
+    }
+    _leadsQuickSyncInterval = setInterval(_checkLeadsUpdates, 5000)
+  }
+
+  function stopLeadsQuickSync() {
+    if (_leadsQuickSyncInterval) {
+      clearInterval(_leadsQuickSyncInterval)
+      _leadsQuickSyncInterval = null
+    }
+  }
+
   return {
     // Data
     allLeads: filteredLeads,
@@ -454,5 +505,9 @@ export function useLeadsApi() {
     serverSearch: _serverSearch,
     cancelSearch,
     matchingTabIds,
+
+    // Quick Sync
+    startQuickSync: startLeadsQuickSync,
+    stopQuickSync: stopLeadsQuickSync,
   }
 }

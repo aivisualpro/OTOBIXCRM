@@ -39,6 +39,8 @@ export default defineEventHandler(async (event) => {
 
     await collection.insertOne(workspace)
 
+    broadcastChange('workspaces', 'create', workspaceId)
+
     return {
       success: true,
       workspace,

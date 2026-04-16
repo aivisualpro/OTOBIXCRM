@@ -155,6 +155,42 @@ export function usePeopleApi() {
     return _allUsers.value.find(u => u.id === id || u._id === id)
   }
 
+  // ─── Quick Sync Engine (People) ───
+  const _peopleLastTs = useState('people_lastKnownTs', () => 0)
+  let _peopleInterval: ReturnType<typeof setInterval> | null = null
+
+  async function _checkPeopleUpdates() {
+    if (!_peopleLastTs.value) return
+    try {
+      const since = _peopleLastTs.value
+      const res = await $fetch<{ users: any[], ts: number }>(`/api/users/delta?since=${since}&t=${Date.now()}`)
+      if (res.users && res.users.length > 0) {
+        const changedMap = new Map(res.users.map((u: any) => [String(u._id || u.id), u]))
+        _allUsers.value = _allUsers.value.map((existing) => {
+          const key = String(existing._id || existing.id)
+          const updated = changedMap.get(key)
+          if (updated) { changedMap.delete(key); return { ...updated, id: updated.id || updated._id } as PeopleUser }
+          return existing
+        })
+        for (const [, u] of changedMap) {
+          _allUsers.value.push({ ...u, id: u.id || u._id } as PeopleUser)
+        }
+      }
+      _peopleLastTs.value = Math.max(res.ts || since, since)
+    }
+    catch { /* silent */ }
+  }
+
+  function startPeopleQuickSync() {
+    if (_peopleInterval) return
+    if (!_peopleLastTs.value) _peopleLastTs.value = Date.now()
+    _peopleInterval = setInterval(_checkPeopleUpdates, 5000)
+  }
+
+  function stopPeopleQuickSync() {
+    if (_peopleInterval) { clearInterval(_peopleInterval); _peopleInterval = null }
+  }
+
   return {
     allUsers: _allUsers,
     isLoading: _isFetching,
@@ -166,5 +202,7 @@ export function usePeopleApi() {
     updateUser,
     deleteUser,
     getUserById,
+    startQuickSync: startPeopleQuickSync,
+    stopQuickSync: stopPeopleQuickSync,
   }
 }

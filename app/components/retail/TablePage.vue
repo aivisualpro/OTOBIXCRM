@@ -24,7 +24,7 @@ const loggedInUserId = computed(() => {
   }
 })
 
-const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars, globalSearch, startQuickSync, stopQuickSync } = useAuctionsApi()
+const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars, globalSearch } = useAuctionsApi()
 const { dropdowns, fetchDropdowns, getOptions } = useDropdowns()
 
 const bidStats = ref<Record<string, { totalBids: number, uniqueDealers: number, lastBidAt?: string }>>({})
@@ -53,7 +53,6 @@ onMounted(() => {
     fetchAllCars()
   fetchBidStats()
   fetchDropdowns()
-  startQuickSync()
 
   observer = new IntersectionObserver((entries) => {
     if (entries[0]?.isIntersecting) {
@@ -471,7 +470,6 @@ onUnmounted(() => {
   if (timerInterval)
     clearInterval(timerInterval)
   if (observer) observer.disconnect()
-  stopQuickSync()
 })
 
 function getFirstImage(car: any): string | null {

@@ -35,6 +35,8 @@ export default defineEventHandler(async (event) => {
         { $set: { menuIds, updatedAt: new Date().toISOString() } },
       )
 
+      broadcastChange('workspaces', 'update', workspaceId)
+
       return { success: true, menuIds, message: `Menu item "${menuId}" toggled` }
     }
 
@@ -65,6 +67,8 @@ export default defineEventHandler(async (event) => {
     if (result.matchedCount === 0) {
       throw createError({ statusCode: 404, message: 'Workspace not found' })
     }
+
+    broadcastChange('workspaces', 'update', body.workspaceId || body._id)
 
     return {
       success: true,

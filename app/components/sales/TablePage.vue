@@ -12,7 +12,7 @@ const props = defineProps<{
 const { setHeader } = usePageHeader()
 setHeader({ title: props.title, description: props.description, icon: props.icon })
 
-const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars, globalSearch, startQuickSync, stopQuickSync } = useAuctionsApi()
+const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars, globalSearch } = useAuctionsApi()
 
 const { fetchDropdowns, getOptions } = useDropdowns()
 
@@ -49,7 +49,6 @@ onMounted(() => {
     fetchAllCars()
   fetchBidStats()
   fetchDropdowns()
-  startQuickSync()
 
   observer = new IntersectionObserver((entries) => {
     if (entries[0]?.isIntersecting) {
@@ -66,7 +65,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (observer) observer.disconnect()
-  stopQuickSync()
 })
 
 const quickFilterStatus = ref('all')

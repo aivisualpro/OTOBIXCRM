@@ -284,6 +284,11 @@ async function saveQC(silent = false) {
       }
     }
 
+    if (Object.keys(changedFields).length === 0) {
+      isSaving.value = false
+      return
+    }
+
     // Ensure numeric fields are properly typed when present
     if ('cubicCapacity' in changedFields)
       changedFields.cubicCapacity = Number(changedFields.cubicCapacity) || null

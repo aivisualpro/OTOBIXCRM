@@ -66,6 +66,8 @@ export default defineEventHandler(async (event) => {
 
     console.warn(`[API:users/add] Created user "${body.userName}" → _id: ${result.insertedId}`)
 
+    broadcastChange('users', 'create', result.insertedId.toString())
+
     return {
       success: true,
       message: 'User created successfully',
