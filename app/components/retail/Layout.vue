@@ -17,6 +17,7 @@ const ALL_RETAIL_TABS = [
   { id: 'ended', title: 'Ended', icon: 'i-lucide-timer-off', link: '/retail/ended' },
   { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/retail/sold' },
   { id: 'removed', title: 'Removed', icon: 'i-lucide-trash-2', link: '/retail/removed' },
+  { id: 'followup', title: 'Followup', icon: 'i-lucide-phone-forwarded', link: '/retail/followup' },
 ]
 
 const navItems = computed(() => {
@@ -43,6 +44,11 @@ function getTabCount(filterId: string) {
     let ok = true
     if (filterId === 'all')
       return ok
+
+    if (filterId === 'followup') {
+      if (car.dealStatus !== 'Under Negotiation') return false
+      return true
+    }
 
     if (filterId === 'customer-activity') {
       if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy') {

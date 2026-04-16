@@ -347,6 +347,11 @@ const baseFilteredItems = computed(() => {
           ok = false
         }
       }
+      else if (props.filterStatus === 'followup') {
+        if (car.dealStatus !== 'Under Negotiation') {
+          ok = false
+        }
+      }
       else if (car.auctionStatus !== props.filterStatus) {
         ok = false
       }
@@ -379,6 +384,10 @@ const baseFilteredItems = computed(() => {
 
       return actB - actA
     })
+  }
+
+  if (props.filterStatus === 'followup') {
+    result.sort((a, b) => new Date(b.followupTimeStamp || 0).getTime() - new Date(a.followupTimeStamp || 0).getTime())
   }
 
   return result
@@ -921,6 +930,9 @@ async function fetchAndShowBids(car: any) {
             <TableHead class="whitespace-nowrap text-center">
               Deal Status
             </TableHead>
+            <TableHead v-if="filterStatus === 'followup'" class="whitespace-nowrap text-center">
+              Followup Time
+            </TableHead>
             <TableHead class="whitespace-nowrap text-center">
               Tentative Handover Date
             </TableHead>
@@ -1373,6 +1385,11 @@ async function fetchAndShowBids(car: any) {
               </div>
             </TableCell>
 
+            <!-- Followup Time -->
+            <TableCell v-if="filterStatus === 'followup'" class="text-xs text-center px-1 font-mono text-muted-foreground whitespace-nowrap">
+              {{ car.followupTimeStamp ? formatDateTimeStr(car.followupTimeStamp) : '—' }}
+            </TableCell>
+
             <!-- Tentative Handover Date -->
             <TableCell class="text-xs text-center px-1">
               <div class="min-h-[28px] min-w-[60px] flex items-center justify-center cursor-pointer group rounded hover:bg-muted/50 transition-colors" @click="startEdit(car, 'tentativeHandoverDate')">
@@ -1407,7 +1424,7 @@ async function fetchAndShowBids(car: any) {
             </TableCell>
           </TableRow>
           <TableRow v-if="displayedItems.length === 0">
-            <TableCell :colspan="['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 21 : 22" class="h-32 text-center text-muted-foreground bg-muted/10">
+            <TableCell :colspan="(['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 21 : 22) + (filterStatus === 'followup' ? 1 : 0)" class="h-32 text-center text-muted-foreground bg-muted/10">
               No matching records found
             </TableCell>
           </TableRow>
