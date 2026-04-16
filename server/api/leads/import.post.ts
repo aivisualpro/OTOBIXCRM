@@ -1,4 +1,3 @@
-import { syncLeadToAppSheet } from '../../utils/appsheet'
 
 // POST /api/leads/import — bulk-import leads from CSV data
 export default defineEventHandler(async (event) => {
@@ -35,7 +34,6 @@ export default defineEventHandler(async (event) => {
     }
 
     let autoIdIndex = 0
-    const fullDocs: any[] = []
 
     const ops = rows.map((row: any) => {
       const generatedId = row.appointmentId || `${yearPrefix}-${100000 + batchStartSeq + autoIdIndex++}`
@@ -103,10 +101,6 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      // Keep track of the full combined document for AppSheet syncing
-      const combinedDoc = { ...updateDoc.$setOnInsert, ...updateDoc.$set }
-      fullDocs.push(combinedDoc)
-
       return {
         updateOne: {
           filter: { appointmentId: generatedId },
@@ -117,17 +111,6 @@ export default defineEventHandler(async (event) => {
     })
 
     const result = await db.collection('telecallings').bulkWrite(ops)
-
-    // Fire-and-forget sync to AppSheet
-    // We sync them individually in the background to simplify tracking Add vs Edit
-    fullDocs.forEach((doc) => {
-      // If the bulkWrite upserted this specific appointmentId, it's an Add. Otherwise it's an Edit.
-      // (Simplified approach: AppSheet might tolerate 'Edit' if configured, but to be robust 
-      // we check if it was newly inserted. However, bulkWrite upsertedIds is an object mapped by index)
-      syncLeadToAppSheet('Edit', doc, db)
-      // Note: If AppSheet rejects 'Edit' for new records, you can switch to a combined workflow.
-      // Assuming 'Edit' works as an upsert in AppSheet or they are already present.
-    })
 
     return {
       success: true,

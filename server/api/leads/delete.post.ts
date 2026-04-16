@@ -1,5 +1,4 @@
 import { ObjectId } from 'mongodb'
-import { syncLeadToAppSheet } from '../../utils/appsheet'
 
 // POST /api/leads/delete — delete a telecalling record
 export default defineEventHandler(async (event) => {
@@ -22,9 +21,6 @@ export default defineEventHandler(async (event) => {
     if (!result) {
       throw createError({ statusCode: 404, message: 'Lead not found' })
     }
-
-    // Sync deletion to AppSheet (uses Appointment ID as key)
-    syncLeadToAppSheet('Delete', result, db)
 
     // Broadcast real-time change to all connected clients
     broadcastChange('leads', 'delete', telecallingId)

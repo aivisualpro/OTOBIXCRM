@@ -29,13 +29,3 @@ function replaceInDir(dir) {
 }
 
 replaceInDir(path.join(__dirname, 'server/api'))
-
-const utilsFile = path.join(__dirname, 'server/utils/appsheet.ts')
-if (fs.existsSync(utilsFile)) {
-  const content = fs.readFileSync(utilsFile, 'utf8')
-  const newContent = content.replace(/console\.warn\('\[AppSheet\] Sync error/g, 'console.info(\'[AppSheet] Sync error')
-  if (content !== newContent) {
-    fs.writeFileSync(utilsFile, newContent)
-    console.log('Fixed:', utilsFile)
-  }
-}

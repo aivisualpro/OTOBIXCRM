@@ -110,6 +110,7 @@ const qcByName = computed(() => {
 
 const editForm = ref<Record<string, any>>({})
 let _skipAutoSave = false
+let _skipCarWatch = false
 
 const makeOptions = computed(() => {
   if (makes.value.length === 0 && editForm.value.make)
@@ -153,6 +154,8 @@ watch(carId, (newVal) => {
 // ─── Live Sync Interceptor ───
 const { lastEvent } = useLiveSync()
 watch(lastEvent, (evt) => {
+  // Skip SSE re-fetches triggered by our own save to prevent editForm wipe
+  if (isSaving.value) return
   if (evt && (evt.collection === 'cars' || evt.collection === 'telecallings' || evt.collection === 'leads') && evt.recordId) {
     if (car.value && (car.value.id === evt.recordId || car.value._id === evt.recordId || car.value.appointmentId === evt.recordId)) { // note: update.put.ts fires sync with car _id
       fetchCarDetails(carId.value, true)
@@ -273,7 +276,7 @@ async function saveQC(silent = false) {
     }
 
     // Build the payload: only send fields that actually changed from the original car data
-    // This prevents image uploads from sending ALL car info to telecallings/AppSheet
+    // Build the payload: only send fields that actually changed from the original car data
     for (const key of Object.keys(edited)) {
       if (key === '_id' || key === 'id' || key === 'qcLogs' || key === 'logs' || key === 'qcLog')
         continue
@@ -323,10 +326,11 @@ async function saveQC(silent = false) {
       // Update the baseline so the diff doesn't re-send already-saved fields
       if (car.value && Object.keys(changedFields).length > 0) {
         _skipAutoSave = true
+        _skipCarWatch = true // Prevent the car.value watcher from resetting editForm
         for (const k of Object.keys(changedFields)) {
           car.value[k] = JSON.parse(JSON.stringify(changedFields[k]))
         }
-        nextTick(() => { _skipAutoSave = false })
+        nextTick(() => { _skipAutoSave = false; _skipCarWatch = false })
       }
     }
   }
@@ -2040,6 +2044,7 @@ function sectionImages(keys: (string | { new: string, old: string | undefined })
 }
 
 watch(() => car.value, (newVal) => {
+  if (_skipCarWatch) return // Skip when baseline was just updated by saveQC
   if (newVal) {
     _skipAutoSave = true // Guard: don't trigger auto-save when resetting editForm from fetched data
     const clone = JSON.parse(JSON.stringify(newVal))
@@ -2698,7 +2703,7 @@ watch(editForm, () => {
                                     </template>
                                     <template v-else>
                                       <Input v-if="partItem.type === 'date'" :model-value="formatDateYYYYMMDD(editForm[partItem.key])" type="date" class="h-8 text-xs font-medium w-full bg-background" @update:model-value="editForm[partItem.key] = $event" />
-                                      <Input v-else-if="partItem.type === 'single'" :model-value="editForm[partItem.key]" @change="editForm[partItem.key] = $event.target.value" class="h-8 text-xs font-medium w-full bg-background" />
+                                      <Input v-else-if="partItem.type === 'single'" v-model="editForm[partItem.key]" class="h-8 text-xs font-medium w-full bg-background" />
                                       <SearchableSelect v-else v-model="editForm[partItem.key]" :options="partItem.staticOptions || getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />
                                     </template>
                                   </div>
@@ -2764,7 +2769,7 @@ watch(editForm, () => {
                                 </template>
                                 <template v-else>
                                   <Input v-if="partItem.type === 'date'" :model-value="formatDateYYYYMMDD(editForm[partItem.key])" type="date" class="h-8 text-xs font-medium w-full bg-background" @update:model-value="editForm[partItem.key] = $event" />
-                                  <Input v-else-if="partItem.type === 'single'" :model-value="editForm[partItem.key]" @change="editForm[partItem.key] = $event.target.value" class="h-8 text-xs font-medium w-full bg-background" />
+                                  <Input v-else-if="partItem.type === 'single'" v-model="editForm[partItem.key]" class="h-8 text-xs font-medium w-full bg-background" />
                                   <SearchableSelect v-else v-model="editForm[partItem.key]" :options="partItem.staticOptions || getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />
                                 </template>
                               </div>

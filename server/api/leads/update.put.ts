@@ -1,5 +1,4 @@
 import { ObjectId } from 'mongodb'
-import { syncLeadToAppSheet } from '../../utils/appsheet'
 
 // PUT /api/leads/update — update a telecalling record
 export default defineEventHandler(async (event) => {
@@ -62,8 +61,8 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // The FIELD_MAP in appsheet.ts defines which fields matter to telecalling
-    const APPSHEET_FIELDS = new Set([
+    // Fields that belong to the telecallings collection (core lead data)
+    const TELECALLING_FIELDS = new Set([
       'appointmentId',
       'ownerName',
       'customerContactNumber',
@@ -98,7 +97,7 @@ export default defineEventHandler(async (event) => {
 
     const telecallingUpdates: Record<string, any> = {}
     for (const k of Object.keys(updates)) {
-      if (APPSHEET_FIELDS.has(k)) {
+      if (TELECALLING_FIELDS.has(k)) {
         telecallingUpdates[k] = updates[k]
       }
     }
@@ -326,11 +325,6 @@ export default defineEventHandler(async (event) => {
         carsUpdateQuery,
         { upsert: true }
       )
-    }
-
-    const hasAppSheetChange = changes.some((c: any) => APPSHEET_FIELDS.has(c.field))
-    if (hasAppSheetChange && result) {
-      syncLeadToAppSheet('Edit', result, db)
     }
 
     // Broadcast real-time change to all connected clients

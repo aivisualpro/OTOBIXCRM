@@ -378,7 +378,7 @@ async function doStatusUpdate(lead: any, updates: Record<string, string>) {
 const search = ref(serverSearch.value || String(useRoute().query.search || ''))
 const showDialog = ref(false)
 const editingItem = ref<any>(null)
-const isSyncing = ref(false)
+
 const isAdmin = computed(() => {
   const userCookie = useCookie<any>('userData')
   if (!userCookie.value)
@@ -943,26 +943,7 @@ async function handleDelete() {
 
 // ─── Bulk Actions ───
 
-async function syncAppSheet(item: any) {
-  try {
-    isSyncing.value = true
-    toast.info('Syncing to AppSheet...')
 
-    await $fetch('/api/leads/sync', {
-      method: 'POST',
-      body: { appointmentId: item.appointmentId },
-    })
-
-    toast.success(`Synced ${item.appointmentId} to AppSheet`)
-  }
-  catch (err: any) {
-    console.error('Sync failed:', err)
-    toast.error(err?.data?.message || err?.message || 'Failed to sync')
-  }
-  finally {
-    isSyncing.value = false
-  }
-}
 
 async function handleRefresh() {
   search.value = '' // Clear search on refresh
@@ -1435,9 +1416,7 @@ function getInitials(name: string): string {
                 <Button v-if="hasDeletePermission && router.currentRoute.value.path === '/leads'" variant="ghost" size="icon" class="size-8 text-destructive hover:bg-destructive/10" @click.stop="confirmDelete(item)">
                   <Icon name="i-lucide-trash-2" class="size-3.5" />
                 </Button>
-                <Button v-if="isAdmin" variant="ghost" size="icon" class="size-8 text-blue-600 hover:text-blue-700" :disabled="isSyncing" title="Force Sync to AppSheet" @click.stop="syncAppSheet(item)">
-                  <Icon name="i-lucide-refresh-cw" class="size-3.5" :class="{ 'animate-spin': isSyncing }" />
-                </Button>
+
               </div>
             </TableCell>
           </TableRow>

@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
     const carRecord = await colCars.findOne({ appointmentId })
     const teleRecord = await colTelecallings.findOne({ appointmentId })
 
-    // The FIELD_MAP in appsheet.ts defines which fields matter to telecalling
-    const APPSHEET_FIELDS = new Set([
+    // Fields that belong to the telecallings collection (core lead data)
+    const TELECALLING_FIELDS = new Set([
       'appointmentId',
       'ownerName',
       'customerContactNumber',
@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
 
     if (teleRecord) {
       for (const key of Object.keys(teleRecord)) {
-        if (key === '_id' || APPSHEET_FIELDS.has(key) || key === 'logs') {
+        if (key === '_id' || TELECALLING_FIELDS.has(key) || key === 'logs') {
           record[key] = teleRecord[key]
         }
       }
