@@ -1434,7 +1434,7 @@ function getInitials(name: string): string {
             </TableCell>
             <TableCell v-if="router.currentRoute.value.path !== '/leads/under-review'" class="text-right">
               <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button v-if="hasEditPermission && router.currentRoute.value.path === '/leads'" variant="ghost" size="icon" class="size-8" @click.stop="openEdit(item)">
+                <Button v-if="hasEditPermission && router.currentRoute.value.path.startsWith('/leads') && item.inspectionStatus !== 'Inspected'" variant="ghost" size="icon" class="size-8" @click.stop="openEdit(item)">
                   <Icon name="i-lucide-pencil" class="size-3.5" />
                 </Button>
                 <Button v-if="hasDeletePermission && router.currentRoute.value.path === '/leads'" variant="ghost" size="icon" class="size-8 text-destructive hover:bg-destructive/10" @click.stop="confirmDelete(item)">

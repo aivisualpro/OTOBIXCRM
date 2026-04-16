@@ -35,11 +35,13 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
       <div class="flex items-center gap-4 min-w-0 flex-1">
         <ClientOnly>
           <div class="flex items-center gap-3">
-            <Button v-if="headerState.showBackButton" variant="ghost" size="icon" class="size-8 text-muted-foreground hover:text-foreground shrink-0 lg:hidden" @click="$router.back()">
+            <Button v-if="headerState.showBackButton" variant="ghost" size="sm" class="h-8 px-2.5 text-primary hover:text-primary hover:bg-primary/10 shrink-0 lg:hidden" @click="$router.back()">
               <Icon name="i-lucide-arrow-left" class="size-4" />
+              <span class="ml-1.5 font-semibold text-xs text-primary">Back</span>
             </Button>
-            <Button v-if="headerState.showBackButton" variant="ghost" size="icon" class="size-8 text-muted-foreground hover:text-foreground shrink-0 hidden lg:flex border border-border/50 bg-background hover:bg-muted" @click="$router.back()">
+            <Button v-if="headerState.showBackButton" variant="ghost" size="sm" class="h-8 px-3 text-primary hover:text-primary shrink-0 hidden lg:flex border border-primary/20 bg-primary/5 hover:bg-primary/10" @click="$router.back()">
               <Icon name="i-lucide-arrow-left" class="size-4" />
+              <span class="ml-1.5 font-semibold text-sm text-primary">Back</span>
             </Button>
 
             <div

@@ -2381,12 +2381,12 @@ watch(editForm, () => {
           <div class="ml-auto flex items-center shrink-0 gap-2">
             <Button
               v-if="car.attesterRawCarDetails"
-              class="h-8 text-xs font-bold shrink-0 border-violet-500/30 text-violet-600 dark:text-violet-400 bg-violet-50/50 dark:bg-violet-900/20 shadow-sm"
+              class="h-8 w-8 p-0 shrink-0 border-violet-500/30 text-violet-600 dark:text-violet-400 bg-violet-50/50 dark:bg-violet-900/20 shadow-sm"
               variant="outline"
+              title="Attester Raw Car Details"
               @click="showAttesterModal = true"
             >
-              <Icon name="i-lucide-scan-text" class="mr-1.5 size-3.5" />
-              Attester Raw Car Details
+              <Icon name="i-lucide-scan-text" class="size-4" />
             </Button>
             <Button
               v-if="car.approvalStatus === 'Approved'"
@@ -2411,7 +2411,7 @@ watch(editForm, () => {
               @click="openQCModal"
             >
               <Icon name="i-lucide-check-circle-2" class="mr-1.5 size-4" />
-              Approve Inspection
+              Approve
             </Button>
             <template v-else-if="car.approvalStatus === 'Approved'">
               <Button
@@ -2434,7 +2434,7 @@ watch(editForm, () => {
               </Button>
               <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 rounded-lg flex items-center justify-center font-bold px-3 h-8 text-xs shrink-0">
                 <Icon name="i-lucide-shield-check" class="mr-1.5 size-4" />
-                Approve Inspection
+                Approve
               </div>
             </template>
           </div>
@@ -2489,7 +2489,7 @@ watch(editForm, () => {
               </div>
 
               <!-- MIDDLE: Data Grid -->
-              <div class="flex-1 min-w-0 p-5 lg:p-6 lg:px-8 flex flex-col gap-6 z-10 relative">
+              <div class="flex-1 min-w-0 p-2 flex flex-col gap-6 z-10 relative">
                 <!-- Stats Grid Layout -->
                 <div class="flex flex-col gap-3 m-auto w-full">
                   <!-- Row 1: Make, Model, Variant, MFG Year -->
@@ -2538,7 +2538,7 @@ watch(editForm, () => {
                       <p class="text-xs text-muted-foreground mb-1 font-medium">
                         MFG Year
                       </p>
-                      <div v-if="props.readonly" class="text-2xl font-black text-foreground mt-auto tracking-tight truncate">
+                      <div v-if="props.readonly" class="text-2xl font-black text-foreground mt-auto tracking-tight break-words">
                         {{ car.yearMonthOfManufacture ? String(new Date(car.yearMonthOfManufacture).getMonth() + 1).padStart(2, '0') + ' / ' + new Date(car.yearMonthOfManufacture).getFullYear() : '—' }}
                       </div>
                       <Input v-else :model-value="editForm.yearMonthOfManufacture ? new Date(editForm.yearMonthOfManufacture).toISOString().slice(0, 7) : ''" type="month" class="h-8 mt-auto text-lg font-black border-none bg-transparent p-0 focus-visible:ring-0 shadow-none w-full text-foreground" @update:model-value="editForm.yearMonthOfManufacture = $event ? new Date($event).toISOString() : ''" />
@@ -2547,16 +2547,21 @@ watch(editForm, () => {
 
                   <!-- Bottom Row: Registration, Ownership & City -->
                   <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-                    <!-- Registration Number -->
-                    <div id="field-registrationNumber" class="transition-all duration-500 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden">
-                      <p class="text-xs text-muted-foreground mb-1 font-medium">
-                        Registration
-                      </p>
-                      <div class="mt-auto relative z-10 w-full">
-                        <div v-if="props.readonly" class="text-xl font-black text-foreground truncate uppercase" :title="car.registrationNumber">
+                    <!-- Registration Number & Source -->
+                    <div id="field-registrationNumber" class="transition-all duration-500 rounded-xl border border-border/80 bg-background/50 py-3 px-4 flex flex-col justify-center relative overflow-hidden gap-2">
+                      <div class="flex flex-col">
+                        <p class="text-[11px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">Registration</p>
+                        <div v-if="props.readonly" class="text-lg md:text-xl font-black text-foreground break-all uppercase leading-tight mt-0.5" :title="car.registrationNumber">
                           {{ car.registrationNumber || '—' }}
                         </div>
-                        <Input v-else v-model="editForm.registrationNumber" class="h-8 max-w-[120px] text-lg font-black uppercase border-none bg-transparent p-0 focus-visible:ring-0 shadow-none text-foreground" placeholder="MH01..." />
+                        <Input v-else v-model="editForm.registrationNumber" class="h-7 text-lg font-black uppercase border-none bg-transparent p-0 focus-visible:ring-0 shadow-none text-foreground w-full" placeholder="MH01..." />
+                      </div>
+                      <div class="w-full h-px bg-border/50" />
+                      <div class="flex flex-col">
+                        <p class="text-[11px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">Source</p>
+                        <div class="text-sm font-bold text-violet-600 dark:text-violet-400 truncate mt-0.5" :title="car.appointmentSource">
+                          {{ car.appointmentSource || '—' }}
+                        </div>
                       </div>
                     </div>
 
