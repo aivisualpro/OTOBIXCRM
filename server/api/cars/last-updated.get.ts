@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
       .aggregate([
         { $sort: { updatedAt: -1 } },
         { $limit: 1 },
-        { $project: { updatedAt: 1, _id: 0 } }
+        { $project: { updatedAt: 1, _id: 0 } },
       ], { allowDiskUse: true })
       .toArray()
 

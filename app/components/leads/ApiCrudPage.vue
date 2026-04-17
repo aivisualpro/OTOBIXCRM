@@ -21,15 +21,18 @@ const router = useRouter()
 
 const { activeWorkspace } = useWorkspace()
 const hasAddPermission = computed(() => {
-  if (!activeWorkspace.value?.leadActions) return true
+  if (!activeWorkspace.value?.leadActions)
+    return true
   return activeWorkspace.value.leadActions.includes('add')
 })
 const hasEditPermission = computed(() => {
-  if (!activeWorkspace.value?.leadActions) return true
+  if (!activeWorkspace.value?.leadActions)
+    return true
   return activeWorkspace.value.leadActions.includes('edit')
 })
 const hasDeletePermission = computed(() => {
-  if (!activeWorkspace.value?.leadActions) return true
+  if (!activeWorkspace.value?.leadActions)
+    return true
   return activeWorkspace.value.leadActions.includes('delete')
 })
 
@@ -649,7 +652,7 @@ watch(search, async (q) => {
     // Search cleared
     cancelSearch()
     serverSearch.value = ''
-    
+
     // Remove search from query
     const resetQuery = { ...router.currentRoute.value.query }
     delete resetQuery.search
@@ -843,13 +846,14 @@ function openEdit(item: any) {
       }
     }
   })
-  
+
   if (cloned.customerContactNumber) {
     let num = String(cloned.customerContactNumber).replace(/\D/g, '')
-    if (num.length > 10 && num.startsWith('91')) num = num.slice(2)
+    if (num.length > 10 && num.startsWith('91'))
+      num = num.slice(2)
     cloned.customerContactNumber = num.slice(0, 10)
   }
-  
+
   formData.value = cloned
   activeTab.value = 'owner'
   tabValidationErrors.value = {}
@@ -948,7 +952,8 @@ function confirmDelete(item: any) {
 }
 
 async function handleDelete() {
-  if (!deletingItem.value) return
+  if (!deletingItem.value)
+    return
   isDeleting.value = true
   try {
     const leadId = deletingItem.value._id || deletingItem.value.id || deletingItem.value.appointmentId
@@ -966,8 +971,6 @@ async function handleDelete() {
 }
 
 // ─── Bulk Actions ───
-
-
 
 async function handleRefresh() {
   search.value = '' // Clear search on refresh
@@ -1440,7 +1443,6 @@ function getInitials(name: string): string {
                 <Button v-if="hasDeletePermission && router.currentRoute.value.path === '/leads'" variant="ghost" size="icon" class="size-8 text-destructive hover:bg-destructive/10" @click.stop="confirmDelete(item)">
                   <Icon name="i-lucide-trash-2" class="size-3.5" />
                 </Button>
-
               </div>
             </TableCell>
           </TableRow>
@@ -1671,7 +1673,7 @@ function getInitials(name: string): string {
                 <Icon name="i-lucide-arrow-right" class="ml-1.5 size-3.5" />
               </Button>
               <!-- Create/Update button (only on last tab) -->
-              <Button v-else type="submit" :disabled="isSaving" v-if="(editingItem && hasEditPermission) || (!editingItem && hasAddPermission)">
+              <Button v-else v-if="(editingItem && hasEditPermission) || (!editingItem && hasAddPermission)" type="submit" :disabled="isSaving">
                 <Icon v-if="isSaving" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
                 {{ editingItem ? 'Update' : 'Create' }}
               </Button>

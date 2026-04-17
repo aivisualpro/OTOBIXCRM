@@ -35,7 +35,8 @@ onMounted(async () => {
     // Force page refresh automatically when new SW activates over existing SW
     let refreshing = false
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return
+      if (refreshing)
+        return
       refreshing = true
       window.location.reload()
     })

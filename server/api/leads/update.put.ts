@@ -131,9 +131,11 @@ export default defineEventHandler(async (event) => {
         // Convert explicitly empty strings to null so they don't break BSON typing
         if (!val || val.toLowerCase().includes('applicable')) {
           updates[k] = null
-        } else if (!Number.isNaN(Date.parse(val))) {
+        }
+        else if (!Number.isNaN(Date.parse(val))) {
           updates[k] = new Date(val)
-        } else {
+        }
+        else {
           updates[k] = null
         }
       }
@@ -323,7 +325,7 @@ export default defineEventHandler(async (event) => {
       const updateRes = await db.collection('cars').updateOne(
         { appointmentId: apptId },
         carsUpdateQuery,
-        { upsert: true }
+        { upsert: true },
       )
 
       // Broadcast real-time change to all connected clients

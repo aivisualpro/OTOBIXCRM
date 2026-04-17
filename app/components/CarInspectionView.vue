@@ -18,8 +18,9 @@ const { setHeader } = usePageHeader()
 const { carDetails: car, isLoading, error, fetchCarDetails } = useCarDetails()
 const { activeWorkspace } = useWorkspace()
 
-const hasAction = (actionId: string) => {
-  if (!activeWorkspace.value?.leadActions) return true
+function hasAction(actionId: string) {
+  if (!activeWorkspace.value?.leadActions)
+    return true
   return activeWorkspace.value.leadActions.includes(actionId)
 }
 
@@ -50,7 +51,7 @@ async function savePD() {
         priceDiscovery: Number(pdValue.value),
         priceDiscoveryBy: email,
         changedBy: currentUser?.userName || currentUser?.email || 'QC',
-      }
+      },
     })
 
     toast.success('Price Discovery updated')
@@ -148,12 +149,13 @@ onMounted(() => {
 
   // ESC to close attester panel
   const onKeydown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') showAttesterModal.value = false
+    if (e.key === 'Escape')
+      showAttesterModal.value = false
   }
   window.addEventListener('keydown', onKeydown)
   onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 })
-  
+
 watch(carId, (newVal) => {
   if (newVal)
     fetchCarDetails(newVal)
@@ -163,7 +165,8 @@ watch(carId, (newVal) => {
 const { lastEvent } = useLiveSync()
 watch(lastEvent, (evt) => {
   // Skip SSE re-fetches triggered by our own save to prevent editForm wipe
-  if (_pendingSave) return
+  if (_pendingSave)
+    return
   if (evt && (evt.collection === 'cars' || evt.collection === 'telecallings' || evt.collection === 'leads') && evt.recordId) {
     if (car.value && (car.value.id === evt.recordId || car.value._id === evt.recordId || car.value.appointmentId === evt.recordId)) { // note: update.put.ts fires sync with car _id
       fetchCarDetails(carId.value, true)
@@ -188,7 +191,8 @@ function clearUploadProgress(key: string) {
 const qcLogSearchField = ref('all')
 
 const allQcLogFields = computed(() => {
-  if (!car.value?.qcLog) return []
+  if (!car.value?.qcLog)
+    return []
   const fields = new Set<string>()
   car.value.qcLog.forEach((log: any) => {
     log.changes.forEach((change: any) => {
@@ -201,17 +205,18 @@ const allQcLogFields = computed(() => {
 const qcLogSearchOptions = computed(() => {
   return [
     { label: 'All Fields', value: 'all' },
-    ...allQcLogFields.value.map(cf => ({ label: cf, value: cf }))
+    ...allQcLogFields.value.map(cf => ({ label: cf, value: cf })),
   ]
 })
 
 const filteredQcLogs = computed(() => {
-  if (!car.value?.qcLog) return []
+  if (!car.value?.qcLog)
+    return []
   let logs = [...car.value.qcLog].reverse()
   if (qcLogSearchField.value !== 'all') {
     logs = logs.map(log => ({
       ...log,
-      changes: log.changes.filter((c: any) => c.field === qcLogSearchField.value)
+      changes: log.changes.filter((c: any) => c.field === qcLogSearchField.value),
     })).filter(log => log.changes.length > 0)
   }
   return logs
@@ -228,7 +233,8 @@ async function saveQC(silent = false) {
     const edited = editForm.value || {}
 
     const syncFallbacks = (item: any) => {
-      if (!item) return
+      if (!item)
+        return
       if (item.oldKey && item.oldKey !== 'new' && item.key && item.key in edited) {
         let val = edited[item.key]
         // Ensure dropdown arrays flatten into comma-separated strings for legacy fields
@@ -236,7 +242,7 @@ async function saveQC(silent = false) {
         if (Array.isArray(val) && !['engineVideo', 'exhaustSmokeVideo'].includes(item.key)) {
           val = val.join(', ')
         }
-        
+
         if (JSON.stringify(val) !== JSON.stringify(edited[item.oldKey])) {
           edited[item.oldKey] = val === undefined ? undefined : JSON.parse(JSON.stringify(val))
         }
@@ -247,15 +253,21 @@ async function saveQC(silent = false) {
           edited[item.oldImageKey] = val === undefined ? undefined : JSON.parse(JSON.stringify(val))
         }
       }
-      if (item.splitParts) item.splitParts.forEach(syncFallbacks)
-      if (item.rightParts) item.rightParts.forEach(syncFallbacks)
-      if (item.imageGroups) item.imageGroups.forEach(syncFallbacks)
-      if (item.fourPanels) item.fourPanels.forEach(syncFallbacks)
-      if (item.parts) item.parts.forEach(syncFallbacks)
+      if (item.splitParts)
+        item.splitParts.forEach(syncFallbacks)
+      if (item.rightParts)
+        item.rightParts.forEach(syncFallbacks)
+      if (item.imageGroups)
+        item.imageGroups.forEach(syncFallbacks)
+      if (item.fourPanels)
+        item.fourPanels.forEach(syncFallbacks)
+      if (item.parts)
+        item.parts.forEach(syncFallbacks)
     }
 
-    exteriorSections.forEach(section => {
-      if (section.parts) section.parts.forEach(syncFallbacks)
+    exteriorSections.forEach((section) => {
+      if (section.parts)
+        section.parts.forEach(syncFallbacks)
       if (section.imageKeys) {
         section.imageKeys.forEach((entry: any) => {
           if (typeof entry !== 'string' && entry.old && entry.new && entry.new in edited) {
@@ -269,16 +281,18 @@ async function saveQC(silent = false) {
     })
     documentDetailFields.forEach(syncFallbacks)
     engineVideoKeys.forEach(syncFallbacks)
-    
+
     const changedFields: Record<string, any> = {}
     const original = car.value || {}
-    
+
     // Explicit array merge for Apron fallback
     if (Array.isArray(edited.lhsApronImages) || Array.isArray(edited.rhsApronImages)) {
       const combinedApron = []
-      if (Array.isArray(edited.lhsApronImages)) combinedApron.push(...edited.lhsApronImages)
-      if (Array.isArray(edited.rhsApronImages)) combinedApron.push(...edited.rhsApronImages)
-      
+      if (Array.isArray(edited.lhsApronImages))
+        combinedApron.push(...edited.lhsApronImages)
+      if (Array.isArray(edited.rhsApronImages))
+        combinedApron.push(...edited.rhsApronImages)
+
       if (JSON.stringify(combinedApron) !== JSON.stringify(original.apronLhsRhs || [])) {
         edited.apronLhsRhs = combinedApron
       }
@@ -339,7 +353,10 @@ async function saveQC(silent = false) {
         for (const k of Object.keys(changedFields)) {
           car.value[k] = JSON.parse(JSON.stringify(changedFields[k]))
         }
-        nextTick(() => { _skipAutoSave = false; _skipCarWatch = false })
+        nextTick(() => {
+          _skipAutoSave = false
+          _skipCarWatch = false
+        })
       }
     }
   }
@@ -488,9 +505,12 @@ const approvalWarnings = computed<ValidationWarning[]>(() => {
   for (const f of requiredFields) {
     const val = data[f.key]
     if (f.type === 'number') {
-      if (!val && val !== 0) warnings.push({ field: f.key, label: f.label, type: 'error' })
-    } else {
-      if (isEmpty(val)) warnings.push({ field: f.key, label: f.label, type: 'error' })
+      if (!val && val !== 0)
+        warnings.push({ field: f.key, label: f.label, type: 'error' })
+    }
+    else {
+      if (isEmpty(val))
+        warnings.push({ field: f.key, label: f.label, type: 'error' })
     }
   }
 
@@ -509,9 +529,12 @@ const approvalWarnings = computed<ValidationWarning[]>(() => {
   }
 
   // Optional warnings (non-blocking but informational)
-  if (isEmpty(data.roadTaxValidity)) warnings.push({ field: 'roadTaxValidity', label: 'Road Tax Validity', type: 'warning' })
-  if (isEmpty(data.taxValidTill)) warnings.push({ field: 'taxValidTill', label: 'Tax Valid Till', type: 'warning' })
-  if (isEmpty(data.transmissionTypeDropdownList)) warnings.push({ field: 'transmissionTypeDropdownList', label: 'Transmission Type', type: 'warning' })
+  if (isEmpty(data.roadTaxValidity))
+    warnings.push({ field: 'roadTaxValidity', label: 'Road Tax Validity', type: 'warning' })
+  if (isEmpty(data.taxValidTill))
+    warnings.push({ field: 'taxValidTill', label: 'Tax Valid Till', type: 'warning' })
+  if (isEmpty(data.transmissionTypeDropdownList))
+    warnings.push({ field: 'transmissionTypeDropdownList', label: 'Transmission Type', type: 'warning' })
 
   return warnings
 })
@@ -522,45 +545,69 @@ const softWarnings = computed(() => approvalWarnings.value.filter(w => w.type ==
 
 function findTabForField(fieldKey: string) {
   const detailsFields = ['make', 'model', 'variant', 'yearMonthOfManufacture', 'registrationNumber', 'registrationDate', 'registrationState', 'registeredRto', 'fuelType', 'ownerSerialNumber', 'odometerReadingInKms', 'cubicCapacity', 'city', 'sendToAuctionApk', 'contactNumber', 'roadTaxValidity', 'taxValidTill']
-  if (detailsFields.includes(fieldKey)) return 'details'
+  if (detailsFields.includes(fieldKey))
+    return 'details'
 
   let foundDoc = false
-  const checkDoc = (items: any[]) => items.forEach(i => {
-    if (i.key === fieldKey || i.imageKey === fieldKey) foundDoc = true
-    if (i.splitParts) checkDoc(i.splitParts)
-    if (i.rightParts) checkDoc(i.rightParts)
-    if (i.fourPanels) checkDoc(i.fourPanels)
-    if (i.parts) checkDoc(i.parts)
+  const checkDoc = (items: any[]) => items.forEach((i) => {
+    if (i.key === fieldKey || i.imageKey === fieldKey)
+      foundDoc = true
+    if (i.splitParts)
+      checkDoc(i.splitParts)
+    if (i.rightParts)
+      checkDoc(i.rightParts)
+    if (i.fourPanels)
+      checkDoc(i.fourPanels)
+    if (i.parts)
+      checkDoc(i.parts)
   })
   checkDoc(documentDetailFields)
-  if (foundDoc) return 'details'
+  if (foundDoc)
+    return 'details'
 
   for (const g of exteriorSections) {
     let found = false
-    const cg = (items: any[]) => items.forEach(i => {
-      if (i.key === fieldKey || i.imageKey === fieldKey) found = true
-      if (i.splitParts) cg(i.splitParts)
-      if (i.rightParts) cg(i.rightParts)
-      if (i.parts) cg(i.parts)
-      if (i.imageGroups) cg(i.imageGroups)
-      if (i.fourPanels) cg(i.fourPanels)
+    const cg = (items: any[]) => items.forEach((i) => {
+      if (i.key === fieldKey || i.imageKey === fieldKey)
+        found = true
+      if (i.splitParts)
+        cg(i.splitParts)
+      if (i.rightParts)
+        cg(i.rightParts)
+      if (i.parts)
+        cg(i.parts)
+      if (i.imageGroups)
+        cg(i.imageGroups)
+      if (i.fourPanels)
+        cg(i.fourPanels)
     })
-    if (g.parts) cg(g.parts)
+    if (g.parts)
+      cg(g.parts)
     if (g.imageKeys) {
       for (const req of g.imageKeys as any[]) {
-        if (typeof req === 'string' && req === fieldKey) found = true
-        else if (typeof req !== 'string' && req.new === fieldKey) found = true
+        if (typeof req === 'string' && req === fieldKey)
+          found = true
+        else if (typeof req !== 'string' && req.new === fieldKey)
+          found = true
       }
     }
     if (found) {
-      if (g.title === 'Front') return 'front'
-      if (g.title === 'Left (LHS)' || g.title === 'Left') return 'left'
-      if (g.title === 'Rear') return 'rear'
-      if (g.title === 'Right (RHS)' || g.title === 'Right') return 'right'
-      if (g.title === 'Engine Bay') return 'engine-bay'
-      if (g.title === 'Electricals') return 'electricals'
-      if (g.title === 'Interior') return 'interior'
-      if (g.title === 'Steering, Suspension & Brakes' || g.title === 'Steering, Suspension, Brakes') return 'steering-suspension-brakes'
+      if (g.title === 'Front')
+        return 'front'
+      if (g.title === 'Left (LHS)' || g.title === 'Left')
+        return 'left'
+      if (g.title === 'Rear')
+        return 'rear'
+      if (g.title === 'Right (RHS)' || g.title === 'Right')
+        return 'right'
+      if (g.title === 'Engine Bay')
+        return 'engine-bay'
+      if (g.title === 'Electricals')
+        return 'electricals'
+      if (g.title === 'Interior')
+        return 'interior'
+      if (g.title === 'Steering, Suspension & Brakes' || g.title === 'Steering, Suspension, Brakes')
+        return 'steering-suspension-brakes'
     }
   }
   return 'details'
@@ -572,12 +619,14 @@ function scrollToField(fieldKey: string) {
     setTab(targetTab)
   }
   showQCModal.value = false
-  
+
   setTimeout(() => {
-    let el = document.getElementById('field-' + fieldKey)
-    if (!el && fieldKey === 'frontMain') el = document.getElementById('field-frontMainImages')
-    if (!el && fieldKey === 'sendToAuctionApk') el = document.getElementById('field-sendToAuctionApk')
-    
+    let el = document.getElementById(`field-${fieldKey}`)
+    if (!el && fieldKey === 'frontMain')
+      el = document.getElementById('field-frontMainImages')
+    if (!el && fieldKey === 'sendToAuctionApk')
+      el = document.getElementById('field-sendToAuctionApk')
+
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       el.classList.add('ring-4', 'ring-red-500', 'ring-offset-2', 'ring-offset-background', '!border-red-500', 'shadow-[0_0_20px_rgba(239,68,68,0.4)]', 'scale-[1.02]', 'z-50', 'transition-all', 'duration-500')
@@ -616,7 +665,8 @@ async function confirmQCApproval() {
   let startTimeDate: Date
   if (qcForm.value.auctionMode === 'makeLiveNow') {
     startTimeDate = new Date()
-  } else {
+  }
+  else {
     startTimeDate = new Date(qcForm.value.auctionStartTime)
   }
 
@@ -630,13 +680,14 @@ async function confirmQCApproval() {
   editForm.value.auctionStatus = auctionStatus
   editForm.value.upcomingUntil = startTimeDate.toISOString()
   editForm.value.liveAt = startTimeDate.toISOString()
-  
+
   // Auto-stamp the send API timestamp
   editForm.value.sendToAuctionApk = new Date().toISOString()
 
   // ── Force Sync all 'new' to 'old' keys for legacy compatibility during Approval ──
   const forceSync = (item: any) => {
-    if (!item) return
+    if (!item)
+      return
     if (item.oldKey && item.oldKey !== 'new' && item.key) {
       let val = editForm.value[item.key] ?? car.value?.[item.key]
       if (val !== undefined && val !== null) {
@@ -654,15 +705,21 @@ async function confirmQCApproval() {
         editForm.value[item.oldImageKey] = JSON.parse(JSON.stringify(val))
       }
     }
-    if (item.splitParts) item.splitParts.forEach(forceSync)
-    if (item.rightParts) item.rightParts.forEach(forceSync)
-    if (item.imageGroups) item.imageGroups.forEach(forceSync)
-    if (item.fourPanels) item.fourPanels.forEach(forceSync)
-    if (item.parts) item.parts.forEach(forceSync)
+    if (item.splitParts)
+      item.splitParts.forEach(forceSync)
+    if (item.rightParts)
+      item.rightParts.forEach(forceSync)
+    if (item.imageGroups)
+      item.imageGroups.forEach(forceSync)
+    if (item.fourPanels)
+      item.fourPanels.forEach(forceSync)
+    if (item.parts)
+      item.parts.forEach(forceSync)
   }
 
-  exteriorSections.forEach(section => {
-    if (section.parts) section.parts.forEach(forceSync)
+  exteriorSections.forEach((section) => {
+    if (section.parts)
+      section.parts.forEach(forceSync)
     if (section.imageKeys) {
       section.imageKeys.forEach((entry: any) => {
         if (typeof entry !== 'string' && entry.old && entry.new) {
@@ -674,16 +731,20 @@ async function confirmQCApproval() {
       })
     }
   })
-  if (typeof documentDetailFields !== 'undefined') documentDetailFields.forEach(forceSync)
-  if (typeof engineVideoKeys !== 'undefined') engineVideoKeys.forEach(forceSync)
+  if (typeof documentDetailFields !== 'undefined')
+    documentDetailFields.forEach(forceSync)
+  if (typeof engineVideoKeys !== 'undefined')
+    engineVideoKeys.forEach(forceSync)
 
   // Custom manual fallback for apron which spans lhs and rhs
   const lhsApron = editForm.value.lhsApronImages ?? car.value?.lhsApronImages
   const rhsApron = editForm.value.rhsApronImages ?? car.value?.rhsApronImages
   if (Array.isArray(lhsApron) || Array.isArray(rhsApron)) {
     const combinedApron = []
-    if (Array.isArray(lhsApron)) combinedApron.push(...lhsApron)
-    if (Array.isArray(rhsApron)) combinedApron.push(...rhsApron)
+    if (Array.isArray(lhsApron))
+      combinedApron.push(...lhsApron)
+    if (Array.isArray(rhsApron))
+      combinedApron.push(...rhsApron)
     if (JSON.stringify(combinedApron) !== JSON.stringify(car.value?.apronLhsRhs || [])) {
       editForm.value.apronLhsRhs = combinedApron
     }
@@ -820,47 +881,48 @@ async function downloadPDF(action: 'save' | 'blob' = 'save') {
   }
 
   const loadingToast = toast.loading('Generating PDF Report... Please wait.')
-  
+
   // MUST INTERCEPT COMPUTED STYLES: 
   // Tailwind v4 uses OKLCH natively, which immediately crashes html2canvas 1.4.1.
   // CRITICAL: Native browser functions MUST be called with their original `this` context
   // (window for getComputedStyle, CSSStyleDeclaration for getPropertyValue) or they throw
   // "Illegal invocation". We use .call() and .bind() to preserve these bindings.
-  const originalGetComputedStyle = window.getComputedStyle;
-  window.getComputedStyle = function(el: Element, pseudoElt?: string | null) {
-    const css = originalGetComputedStyle.call(window, el, pseudoElt);
+  const originalGetComputedStyle = window.getComputedStyle
+  window.getComputedStyle = function (el: Element, pseudoElt?: string | null) {
+    const css = originalGetComputedStyle.call(window, el, pseudoElt)
     return new Proxy(css, {
       get(target, prop) {
         if (prop === 'getPropertyValue') {
-          const boundFn = target.getPropertyValue.bind(target);
-          return function(key: string) {
-            const val = boundFn(key);
-            if (typeof val === 'string' && val.includes('oklch')) return 'rgb(128, 128, 128)';
-            return val;
+          const boundFn = target.getPropertyValue.bind(target)
+          return function (key: string) {
+            const val = boundFn(key)
+            if (typeof val === 'string' && val.includes('oklch'))
+              return 'rgb(128, 128, 128)'
+            return val
           }
         }
-        const raw = (target as any)[prop];
+        const raw = (target as any)[prop]
         // Bind native methods to their target to prevent Illegal invocation
         if (typeof raw === 'function') {
-          return raw.bind(target);
+          return raw.bind(target)
         }
         if (typeof raw === 'string' && raw.includes('oklch')) {
-          return 'rgb(128, 128, 128)';
+          return 'rgb(128, 128, 128)'
         }
-        return raw;
-      }
-    });
-  };
+        return raw
+      },
+    })
+  }
 
   try {
     if (typeof window !== 'undefined' && !(window as any).html2pdf) {
       await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
+        const script = document.createElement('script')
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+        script.onload = resolve
+        script.onerror = reject
+        document.head.appendChild(script)
+      })
     }
 
     const opt = {
@@ -879,15 +941,17 @@ async function downloadPDF(action: 'save' | 'blob' = 'save') {
 
     await (window as any).html2pdf().set(opt).from(element).save()
     toast.dismiss(loadingToast)
-    if (!props.headlessPdf) toast.success('PDF Downloaded successfully!')
+    if (!props.headlessPdf)
+      toast.success('PDF Downloaded successfully!')
   }
   catch (err) {
     console.error('PDF Generation Error: ', err)
     toast.dismiss(loadingToast)
     toast.error('Failed to generate PDF')
-  } finally {
-    isGeneratingPdf.value = false;
-    window.getComputedStyle = originalGetComputedStyle;
+  }
+  finally {
+    isGeneratingPdf.value = false
+    window.getComputedStyle = originalGetComputedStyle
   }
 }
 
@@ -974,7 +1038,8 @@ async function uploadCloudinaryFile(files: File[], progressKey?: string) {
 
   if (isVideo) {
     formData.append('video', files[0]!)
-  } else {
+  }
+  else {
     for (const file of files) {
       formData.append('imagesList', file)
     }
@@ -995,14 +1060,16 @@ async function uploadCloudinaryFile(files: File[], progressKey?: string) {
       }
 
       xhr.upload.onload = () => {
-        if (progressKey) setUploadProgress(progressKey, 100, 'processing')
+        if (progressKey)
+          setUploadProgress(progressKey, 100, 'processing')
       }
 
       xhr.onload = () => {
         try {
           const data = JSON.parse(xhr.responseText)
           resolve(data)
-        } catch {
+        }
+        catch {
           reject(new Error('Invalid JSON response'))
         }
       }
@@ -1048,7 +1115,8 @@ async function uploadCloudinaryFile(files: File[], progressKey?: string) {
     // Try to extract a URL from the message field (video upload API embeds it there)
     if (res?.message && typeof res.message === 'string') {
       const urlMatch = res.message.match(/(https?:\/\/[^\s"',]+)/)
-      if (urlMatch) return [urlMatch[1]]
+      if (urlMatch)
+        return [urlMatch[1]]
     }
 
     // If the upload succeeded but no URL found anywhere, try to deep-scan all response values
@@ -1068,7 +1136,8 @@ async function uploadCloudinaryFile(files: File[], progressKey?: string) {
   }
   catch (e: any) {
     console.error('Upload failed:', e)
-    if (progressKey) setUploadProgress(progressKey, 0, 'error')
+    if (progressKey)
+      setUploadProgress(progressKey, 0, 'error')
     throw e
   }
 }
@@ -1083,7 +1152,8 @@ async function removeImage(key: string, idx: number, oldKey?: string, imageIndex
           const actualIndex = imageIndex !== undefined ? imageIndex : idx
           urlToDelete = editForm.value[key][actualIndex]
           const newArr = [...editForm.value[key]]
-          if (imageIndex !== undefined) newArr[actualIndex] = ''
+          if (imageIndex !== undefined)
+            newArr[actualIndex] = ''
           else newArr.splice(idx, 1)
           editForm.value[key] = newArr
         }
@@ -1091,7 +1161,8 @@ async function removeImage(key: string, idx: number, oldKey?: string, imageIndex
           const actualIndex = imageIndex !== undefined ? imageIndex : idx
           urlToDelete = editForm.value[oldKey][actualIndex]
           const newArr = [...editForm.value[oldKey]]
-          if (imageIndex !== undefined) newArr[actualIndex] = ''
+          if (imageIndex !== undefined)
+            newArr[actualIndex] = ''
           else newArr.splice(idx, 1)
           editForm.value[oldKey] = newArr
           editForm.value[key] = [...newArr]
@@ -1101,8 +1172,8 @@ async function removeImage(key: string, idx: number, oldKey?: string, imageIndex
           await deleteCloudinaryFile(urlToDelete)
         }
         await saveQC(true)
-      }
-    }
+      },
+    },
   })
 }
 
@@ -1126,17 +1197,21 @@ async function addImage(key: string, imageIndex?: number) {
           while (newArr.length <= imageIndex) newArr.push('')
           newArr[imageIndex] = urls[0]
           editForm.value[key] = newArr
-        } else {
+        }
+        else {
           editForm.value[key] = [...currentArr, ...urls]
         }
         await saveQC(true)
         toast.success('Uploaded successfully')
-      } else {
+      }
+      else {
         toast.error('Upload rejected: server returned no file URL.')
       }
-    } catch (e: any) {
+    }
+    catch (e: any) {
       toast.error(`Upload error: ${e.data?.message || e.message || 'Unknown error'}`)
-    } finally {
+    }
+    finally {
       setTimeout(() => clearUploadProgress(progressKey), 800)
       isSaving.value = false
     }
@@ -1193,12 +1268,15 @@ async function replaceImage(key: string, idx: number, oldKey?: string, imageInde
         }
         await saveQC(true)
         toast.success('Replaced successfully')
-      } else {
+      }
+      else {
         toast.error('Upload rejected: server returned no file URL.')
       }
-    } catch (e: any) {
+    }
+    catch (e: any) {
       toast.error(`Upload error: ${e.data?.message || e.message || 'Unknown error'}`)
-    } finally {
+    }
+    finally {
       setTimeout(() => clearUploadProgress(progressKey), 800)
       isSaving.value = false
     }
@@ -1249,7 +1327,8 @@ watch(activeTab, () => {
     // Small delay to ensure the DOM unmount/remount paints the new activeTab first
     setTimeout(() => {
       const el = document.getElementById('app-main-content-scroll')
-      if (el) el.scrollTop = 0
+      if (el)
+        el.scrollTop = 0
       window.scrollTo({ top: 0, behavior: 'instant' })
     }, 10)
   }
@@ -1274,10 +1353,11 @@ function _conditionColor(val: string) {
 }
 
 function downloadImageFile(url: string, label: string) {
-  if (!url) return
+  if (!url)
+    return
   const isCloudinary = url.includes('res.cloudinary.com')
   const downloadUrl = isCloudinary ? url.replace('/upload/', `/upload/fl_attachment:${encodeURIComponent(label).replace(/%20/g, '_')}/`) : url
-  
+
   const a = document.createElement('a')
   a.href = downloadUrl
   a.download = `${label || 'image'}.jpg`
@@ -1397,8 +1477,8 @@ const interiorParts = [
     isFourPanel: true,
     fourPanels: [
       { key: 'noOfAirBags', oldKey: 'noOfAirBags', label: 'Number of Airbags', type: 'dropdown', dropdownName: 'Number of Airbags' },
-      { key: 'commentOnInterior', oldKey: 'commentOnInterior', label: 'Comment on Interior', type: 'dropdown', dropdownName: 'Comment on Interior' }
-    ]
+      { key: 'commentOnInterior', oldKey: 'commentOnInterior', label: 'Comment on Interior', type: 'dropdown', dropdownName: 'Comment on Interior' },
+    ],
   },
   // Airbags — right column: 4-panel horizontal grid
   {
@@ -1410,7 +1490,7 @@ const interiorParts = [
       { key: 'airbagImages', oldKey: 'airbags', label: 'Driver Airbag Image', type: 'imageSlot', imageIndex: 0 },
       { key: 'coDriverAirbagDropdownList', oldKey: 'airbagFeaturesCoDriverSide', label: 'Co-Driver Airbag', type: 'dropdown', dropdownName: 'Co-Driver Airbag' },
       { key: 'airbagImages', oldKey: 'airbags', label: 'Co-Driver Airbag Image', type: 'imageSlot', imageIndex: 1 },
-    ]
+    ],
   },
   // Airbags — row 2: left column (seat airbags)
   {
@@ -1422,7 +1502,7 @@ const interiorParts = [
       { key: 'airbagImages', oldKey: 'driverSeatAirbagImages', label: 'Driver Seat Airbag Image', type: 'imageSlot', imageIndex: 2 },
       { key: 'coDriverSeatAirbagDropdownList', oldKey: 'airbagFeaturesLhsAPillarCurtain', label: 'Co-Driver Seat Airbag', type: 'dropdown', dropdownName: 'Co-Driver Seat Airbag' },
       { key: 'airbagImages', oldKey: 'coDriverSeatAirbagImages', label: 'Co-Driver Seat Airbag Image', type: 'imageSlot', imageIndex: 3 },
-    ]
+    ],
   },
   // Airbags — row 2: right column (curtain airbags)
   {
@@ -1434,7 +1514,7 @@ const interiorParts = [
       { key: 'airbagImages', oldKey: 'rhsCurtainAirbagImages', label: 'RHS Curtain Airbag Image', type: 'imageSlot', imageIndex: 4 },
       { key: 'lhsCurtainAirbagDropdownList', oldKey: 'airbagFeaturesLhsBPillarCurtain', label: 'LHS Curtain Airbag', type: 'dropdown', dropdownName: 'LHS Curtain Airbag' },
       { key: 'airbagImages', oldKey: 'lhsCurtainAirbagImages', label: 'LHS Curtain Airbag Image', type: 'imageSlot', imageIndex: 5 },
-    ]
+    ],
   },
   // Airbags — row 3: left column (knee airbags)
   {
@@ -1446,7 +1526,7 @@ const interiorParts = [
       { key: 'airbagImages', label: 'Driver Knee Airbag Image', type: 'imageSlot', imageIndex: 6 },
       { key: 'coDriverKneeSeatAirbag', label: 'Co-Driver Knee Airbag', type: 'dropdown', dropdownName: 'Co-Driver Knee Airbag' },
       { key: 'airbagImages', label: 'Co-Driver Knee Airbag Image', type: 'imageSlot', imageIndex: 7 },
-    ]
+    ],
   },
   // Airbags — row 3: right column (rear side airbags)
   {
@@ -1458,7 +1538,7 @@ const interiorParts = [
       { key: 'airbagImages', oldKey: 'rhsRearSideAirbagImages', label: 'RHS Rear Side Airbag Image', type: 'imageSlot', imageIndex: 8 },
       { key: 'lhsRearSideAirbag', oldKey: 'airbagFeaturesLhsCPillarCurtain', label: 'LHS Rear Side Airbag', type: 'dropdown', dropdownName: 'LHS Rear Side Airbag' },
       { key: 'airbagImages', oldKey: 'lhsRearSideAirbagImages', label: 'LHS Rear Side Airbag Image', type: 'imageSlot', imageIndex: 9 },
-    ]
+    ],
   },
 
   // Seats & Upholstery — row 4: left column
@@ -1469,7 +1549,7 @@ const interiorParts = [
     fourPanels: [
       { key: 'seatsUpholstery', oldKey: 'leatherSeats/fabricSeats', label: 'Seat Upholstery', type: 'dropdown', dropdownName: 'seatsUpholstery' },
       { key: 'driverSeatDropdownList', label: 'Driver Seat', type: 'dropdown', dropdownName: 'Driver Seat' },
-    ]
+    ],
   },
   // Seats & Upholstery — row 4: right column
   {
@@ -1479,7 +1559,7 @@ const interiorParts = [
     fourPanels: [
       { key: 'coDriverSeatDropdownList', label: 'Co-Driver Seat', type: 'dropdown', dropdownName: 'Co-Driver Seat' },
       { key: 'frontCentreArmRestDropdownList', label: 'Front Centre Arm Rest', type: 'dropdown', dropdownName: 'Front Centre Arm Rest' },
-    ]
+    ],
   },
   // Row 5: left column
   {
@@ -1489,7 +1569,7 @@ const interiorParts = [
     fourPanels: [
       { key: 'rearSeatsDropdownList', label: 'Rear Seats', type: 'dropdown', dropdownName: 'Rear Seats' },
       { key: 'thirdRowSeatsDropdownList', label: 'Third Row Seats', type: 'dropdown', dropdownName: 'Third Row Seats' },
-    ]
+    ],
   },
   // Standalone Image Boxes (Seats)
   {
@@ -1498,7 +1578,7 @@ const interiorParts = [
     imageKey: 'frontSeatsFromDriverSideImages',
     oldImageKey: 'frontSeatsFromDriverSideDoor',
     label: 'Front Seats (Driver Side)',
-    isImageOnly: true
+    isImageOnly: true,
   },
   {
     key: 'rearSeatsFromRightSideImagesBox',
@@ -1506,17 +1586,17 @@ const interiorParts = [
     imageKey: 'rearSeatsFromRightSideImages',
     oldImageKey: 'rearSeatsFromRightSideDoor',
     label: 'Rear Seats (Right Side)',
-    isImageOnly: true
+    isImageOnly: true,
   },
 
   // Row 6: left side (Dashboard Images)
-  { 
-    key: 'dashboardImages', 
-    oldKey: 'dashboardFromRearSeat', 
-    imageKey: 'dashboardImages', 
-    oldImageKey: 'dashboardFromRearSeat', 
-    label: 'Dashboard from Rear Seat', 
-    isImageOnly: true 
+  {
+    key: 'dashboardImages',
+    oldKey: 'dashboardFromRearSeat',
+    imageKey: 'dashboardImages',
+    oldImageKey: 'dashboardFromRearSeat',
+    label: 'Dashboard from Rear Seat',
+    isImageOnly: true,
   },
 
 ]
@@ -1629,7 +1709,7 @@ const exteriorSections = [
         oldKey: 'lhsQuarterPanel',
         label: 'LHS Quarter Panel',
         imageKey: 'lhsQuarterPanelWithRearDoorClosedImages',
-        oldImageKey: 'lhsQuarterPanelImages'
+        oldImageKey: 'lhsQuarterPanelImages',
       },
     ],
   },
@@ -1708,7 +1788,7 @@ const exteriorSections = [
         oldKey: 'rhsQuarterPanel',
         label: 'RHS Quarter Panel',
         imageKey: 'rhsQuarterPanelWithRearDoorClosedImages',
-        oldImageKey: 'rhsQuarterPanelImages'
+        oldImageKey: 'rhsQuarterPanelImages',
       },
       { key: 'rhsRearWheelDropdownList', oldKey: 'rhsRearAlloy', imageKey: 'rhsRearWheelImages', oldImageKey: 'rhsRearAlloyImages', label: 'RHS Rear Wheel' },
       { key: 'rhsRearTyreDropdownList', oldKey: 'rhsRearTyre', imageKey: 'rhsRearTyreImages', oldImageKey: 'rhsRearTyreImages', label: 'RHS Rear Tyre' },
@@ -1973,41 +2053,52 @@ const showLightbox = ref(false)
 
 // ── QC Audit Log Value Formatting Helpers ──
 function qcLogIsImageField(field: string, value: any): boolean {
-  if (!value) return false
+  if (!value)
+    return false
   const f = String(field).toUpperCase()
-  if (f.includes('IMAGE')) return true
+  if (f.includes('IMAGE'))
+    return true
   const v = String(value)
-  if (v.includes('cloudinary.com') || v.includes('/image/upload/')) return true
-  if (/\.(jpg|jpeg|png|webp|gif|svg|avif)/i.test(v)) return true
+  if (v.includes('cloudinary.com') || v.includes('/image/upload/'))
+    return true
+  if (/\.(jpg|jpeg|png|webp|gif|svg|avif)/i.test(v))
+    return true
   return false
 }
 
 function qcLogExtractUrls(value: any): string[] {
-  if (!value) return []
+  if (!value)
+    return []
   let arr: string[] = []
   if (Array.isArray(value)) {
     arr = value
-  } else {
+  }
+  else {
     const v = String(value).trim()
     if (v.startsWith('[')) {
-      try { arr = JSON.parse(v.replace(/'/g, '"')) } catch { /* ignore */ }
-    } else {
+      try { arr = JSON.parse(v.replace(/'/g, '"')) }
+      catch { /* ignore */ }
+    }
+    else {
       arr = [v]
     }
   }
 
-  if (!Array.isArray(arr)) return []
+  if (!Array.isArray(arr))
+    return []
 
   return arr
     .filter((u: any) => u && typeof u === 'string' && u.trim() !== '')
     .map((u: string) => {
-      if (u.startsWith('http')) return u
+      if (u.startsWith('http'))
+        return u
       return `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.value?.appointmentId}/${u}`
     })
 }
 
 function qcLogIsDate(value: any): boolean {
-  if (!value) return false
+  if (!value)
+    return false
   const v = String(value).trim()
   // ISO 8601 format: 2021-09-01T00:00:00.0002 or 2024-12-14
   return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?/.test(v)
@@ -2016,16 +2107,19 @@ function qcLogIsDate(value: any): boolean {
 function qcLogFormatDate(value: any): string {
   try {
     const d = new Date(String(value))
-    if (Number.isNaN(d.getTime())) return String(value)
+    if (Number.isNaN(d.getTime()))
+      return String(value)
     return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
   }
   catch { return String(value) }
 }
 
 function qcLogIsNumber(field: string, value: any): boolean {
-  if (value === null || value === undefined || value === '') return false
+  if (value === null || value === undefined || value === '')
+    return false
   const f = String(field).toUpperCase()
-  if (f.includes('PRICE') || f.includes('KMS') || f.includes('ODOMETER') || f.includes('READING') || f.includes('NUMBER') || f.includes('NOOFAIRBAGS') || f.includes('SEATS') || f.includes('COST')) return true
+  if (f.includes('PRICE') || f.includes('KMS') || f.includes('ODOMETER') || f.includes('READING') || f.includes('NUMBER') || f.includes('NOOFAIRBAGS') || f.includes('SEATS') || f.includes('COST'))
+    return true
   return !Number.isNaN(Number(value)) && String(value).trim() !== '' && /^\d+(\.\d+)?$/.test(String(value).trim())
 }
 
@@ -2104,8 +2198,12 @@ function sectionImages(keys: (string | { new: string, old?: string })[]) {
   return imgs
 }
 
+// Track which fields the user has locally edited but not yet saved
+const _dirtyFields = new Set<string>()
+
 watch(() => car.value, (newVal) => {
-  if (_skipCarWatch) return // Skip when baseline was just updated by saveQC
+  if (_skipCarWatch)
+    return // Skip when baseline was just updated by saveQC
   if (newVal) {
     _skipAutoSave = true // Guard: don't trigger auto-save when resetting editForm from fetched data
     const clone = JSON.parse(JSON.stringify(newVal))
@@ -2140,20 +2238,45 @@ watch(() => car.value, (newVal) => {
       try { clone.yearOfManufacture = new Date(clone.yearMonthOfManufacture).getFullYear() }
       catch {}
     }
+
+    // If there are locally dirty (unsaved) fields, preserve them instead of overwriting
+    if (_dirtyFields.size > 0 && Object.keys(editForm.value).length > 0) {
+      for (const dirtyKey of _dirtyFields) {
+        clone[dirtyKey] = editForm.value[dirtyKey]
+      }
+    }
+
     editForm.value = clone
     nextTick(() => { _skipAutoSave = false })
   }
 }, { immediate: true })
 
-watch(editForm, () => {
+// Track editForm changes to detect dirty fields
+let _prevEditSnapshot: Record<string, any> = {}
+watch(editForm, (newForm) => {
   if (_skipAutoSave || props.readonly)
     return
+
+  // Detect which fields actually changed and mark them dirty
+  const current = newForm || {}
+  for (const key of Object.keys(current)) {
+    if (key === '_id' || key === 'id' || key === 'qcLog' || key === 'logs')
+      continue
+    if (JSON.stringify(current[key]) !== JSON.stringify(_prevEditSnapshot[key])) {
+      _dirtyFields.add(key)
+    }
+  }
+  _prevEditSnapshot = JSON.parse(JSON.stringify(current))
+
+  // Gate SSE re-fetches while we have unsaved edits
+  _pendingSave = true
 
   // Debounce: wait 1.5s after last change before saving
   if (_autoSaveTimer)
     clearTimeout(_autoSaveTimer)
-  _autoSaveTimer = setTimeout(() => {
-    saveQC(true)
+  _autoSaveTimer = setTimeout(async () => {
+    await saveQC(true)
+    _dirtyFields.clear()
   }, 1500)
 }, { deep: true })
 </script>
@@ -2289,8 +2412,12 @@ watch(editForm, () => {
                 <Icon name="i-lucide-check-circle-2" class="size-4 text-emerald-500" />
               </div>
               <div>
-                <p class="text-xs font-bold text-emerald-700 dark:text-emerald-400">All Checks Passed</p>
-                <p class="text-[11px] text-emerald-600/80 dark:text-emerald-400/70">Required fields verified. Ready to approve.</p>
+                <p class="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                  All Checks Passed
+                </p>
+                <p class="text-[11px] text-emerald-600/80 dark:text-emerald-400/70">
+                  Required fields verified. Ready to approve.
+                </p>
               </div>
             </div>
 
@@ -2314,7 +2441,9 @@ watch(editForm, () => {
 
             <!-- Computed Preview -->
             <div v-if="qcForm.priceDiscovery" class="rounded-xl border bg-muted/30 p-3 space-y-2 mt-2">
-              <h4 class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Computed Preview</h4>
+              <h4 class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                Computed Preview
+              </h4>
               <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
                 <span class="text-muted-foreground">Auction Status</span>
                 <span class="font-bold" :class="qcForm.auctionMode === 'makeLiveNow' ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'">
@@ -2529,7 +2658,7 @@ watch(editForm, () => {
                 <div v-else class="absolute inset-0 w-full h-full flex items-center justify-center">
                   <Icon name="i-lucide-car" class="size-20 text-muted-foreground/30" />
                 </div>
-                
+
                 <div v-if="getImages(editForm, 'frontMainImages', 'frontMain').length" class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[8px] text-white font-medium tracking-wider uppercase pointer-events-none z-10">
                   Front Main Image 1
                 </div>
@@ -2545,7 +2674,6 @@ watch(editForm, () => {
                     <Icon name="i-lucide-trash" class="size-3.5 text-white" />
                   </Button>
                 </div>
-                
               </div>
 
               <!-- MIDDLE: Data Grid -->
@@ -2554,7 +2682,6 @@ watch(editForm, () => {
                 <div class="flex flex-col gap-3 m-auto w-full">
                   <!-- Row 1: Make, Model, Variant, MFG Year -->
                   <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-
                     <!-- Make -->
                     <div id="field-make" class="transition-all duration-500 rounded-xl border border-border/80 bg-background/50 p-4 flex flex-col justify-between relative overflow-hidden md:col-span-3">
                       <p class="text-xs text-muted-foreground mb-2 font-medium">
@@ -2599,7 +2726,7 @@ watch(editForm, () => {
                         MFG Year
                       </p>
                       <div v-if="props.readonly" class="text-2xl font-black text-foreground mt-auto tracking-tight break-words">
-                        {{ car.yearMonthOfManufacture ? String(new Date(car.yearMonthOfManufacture).getMonth() + 1).padStart(2, '0') + ' / ' + new Date(car.yearMonthOfManufacture).getFullYear() : '—' }}
+                        {{ car.yearMonthOfManufacture ? `${String(new Date(car.yearMonthOfManufacture).getMonth() + 1).padStart(2, '0')} / ${new Date(car.yearMonthOfManufacture).getFullYear()}` : '—' }}
                       </div>
                       <Input v-else :model-value="editForm.yearMonthOfManufacture ? new Date(editForm.yearMonthOfManufacture).toISOString().slice(0, 7) : ''" type="month" class="h-8 mt-auto text-lg font-black border-none bg-transparent p-0 focus-visible:ring-0 shadow-none w-full text-foreground" @update:model-value="editForm.yearMonthOfManufacture = $event ? new Date($event).toISOString() : ''" />
                     </div>
@@ -2610,7 +2737,9 @@ watch(editForm, () => {
                     <!-- Registration Number & Source -->
                     <div id="field-registrationNumber" class="transition-all duration-500 rounded-xl border border-border/80 bg-background/50 py-3 px-4 flex flex-col justify-center relative overflow-hidden gap-2">
                       <div class="flex flex-col">
-                        <p class="text-[11px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">Registration</p>
+                        <p class="text-[11px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">
+                          Registration
+                        </p>
                         <div v-if="props.readonly" class="text-lg md:text-xl font-black text-foreground break-all uppercase leading-tight mt-0.5" :title="car.registrationNumber">
                           {{ car.registrationNumber || '—' }}
                         </div>
@@ -2618,7 +2747,9 @@ watch(editForm, () => {
                       </div>
                       <div class="w-full h-px bg-border/50" />
                       <div class="flex flex-col">
-                        <p class="text-[11px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">Source</p>
+                        <p class="text-[11px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">
+                          Source
+                        </p>
                         <div class="text-sm font-bold text-violet-600 dark:text-violet-400 truncate mt-0.5" :title="car.appointmentSource">
                           {{ car.appointmentSource || '—' }}
                         </div>
@@ -2718,7 +2849,7 @@ watch(editForm, () => {
                 <div v-else class="absolute inset-0 w-full h-full flex items-center justify-center">
                   <Icon name="i-lucide-car" class="size-20 text-muted-foreground/30" />
                 </div>
-                
+
                 <div v-if="getImages(editForm, 'rearMainImages', 'rearMain').length" class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[8px] text-white font-medium tracking-wider uppercase pointer-events-none z-10">
                   Rear Main Image 1
                 </div>
@@ -2778,8 +2909,12 @@ watch(editForm, () => {
                     <Icon name="i-lucide-scan-text" class="size-3.5 text-violet-500" />
                   </div>
                   <div class="flex-1">
-                    <p class="text-xs font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wider">Attester Raw Car Details</p>
-                    <p class="text-[10px] text-muted-foreground">{{ car.appointmentId }} · Press <kbd class="px-1 py-0.5 rounded border border-border text-[9px] font-mono">Esc</kbd> to close</p>
+                    <p class="text-xs font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wider">
+                      Attester Raw Car Details
+                    </p>
+                    <p class="text-[10px] text-muted-foreground">
+                      {{ car.appointmentId }} · Press <kbd class="px-1 py-0.5 rounded border border-border text-[9px] font-mono">Esc</kbd> to close
+                    </p>
                   </div>
                   <button
                     class="size-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-violet-500/10 hover:text-violet-600 transition-colors"
@@ -2877,8 +3012,10 @@ watch(editForm, () => {
                             <!-- IMAGE SLOT type: inline image thumbnail for indexed arrays -->
                             <div v-if="partItem.type === 'imageSlot'" class="flex-1 px-2 py-1.5 border-b border-border/50 last:border-b-0 flex items-center gap-2 overflow-hidden bg-zinc-950/5 dark:bg-black/30 min-h-[48px]">
                               <template v-if="getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex).length">
-                                <div class="relative shrink-0 h-10 w-14 rounded overflow-hidden cursor-pointer group/imgslot border border-border/50 shadow-sm"
-                                  @click="openLightboxUrls(getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex), 0, partItem.label)">
+                                <div
+                                  class="relative shrink-0 h-10 w-14 rounded overflow-hidden cursor-pointer group/imgslot border border-border/50 shadow-sm"
+                                  @click="openLightboxUrls(getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex), 0, partItem.label)"
+                                >
                                   <img :src="getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex)[0]" :alt="partItem.label" class="w-full h-full object-cover select-none" loading="lazy">
                                 </div>
                                 <span class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground truncate flex-1">{{ partItem.label }}</span>
@@ -3049,7 +3186,7 @@ watch(editForm, () => {
                       </div>
                     </div>
                     <!-- DROPDOWN field -->
-                    <div v-else-if="field.type === 'dropdown'" :id="'field-' + field.key" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
+                    <div v-else-if="field.type === 'dropdown'" :id="`field-${field.key}`" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
                       <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                         {{ field.label }}
                       </p>
@@ -3072,7 +3209,7 @@ watch(editForm, () => {
                       <SearchableSelect v-else v-model="editForm[field.key]" :options="field.staticOptions || getOptions(field.dropdownName || '')" class-name="w-2/3 h-8 shadow-sm text-sm" />
                     </div>
                     <!-- MULTISELECT field -->
-                    <div v-else-if="field.type === 'multiselect'" :id="'field-' + field.key" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
+                    <div v-else-if="field.type === 'multiselect'" :id="`field-${field.key}`" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
                       <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                         {{ field.label }}
                       </p>
@@ -3118,7 +3255,7 @@ watch(editForm, () => {
                       </div>
                     </div>
                     <!-- DATE field -->
-                    <div v-else-if="field.type === 'date'" :id="'field-' + field.key" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
+                    <div v-else-if="field.type === 'date'" :id="`field-${field.key}`" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
                       <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                         {{ field.label }}
                       </p>
@@ -3134,7 +3271,7 @@ watch(editForm, () => {
                       />
                     </div>
                     <!-- SINGLE (text) field -->
-                    <div v-else :id="'field-' + field.key" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
+                    <div v-else :id="`field-${field.key}`" class="transition-all duration-500 rounded-lg -mx-2 px-2 flex items-center justify-between gap-4 py-1.5 border-b border-border/40 last:border-0 hover:bg-muted/30">
                       <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1 w-1/3">
                         {{ field.label }}
                       </p>
@@ -3183,9 +3320,9 @@ watch(editForm, () => {
                   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 xl:gap-6">
                     <div
                       v-for="part in activeExteriorSection.parts"
-                      :id="'field-' + part.key"
-                      :key="part.key"
                       v-show="!(part as any).isLegacyFallback || getImages(editForm, (part as any).imageGroups?.[0]?.key || (part as any).imageKey, (part as any).imageGroups?.[0]?.oldKey || (part as any).oldImageKey).length > 0"
+                      :id="`field-${part.key}`"
+                      :key="part.key"
                       class="transition-all duration-500 rounded-xl border bg-card shadow-sm flex flex-col md:flex-row overflow-hidden"
                       :class="[
                         (part as any).hasNoImages && !(part as any).isVideoBox && !(part as any).rightParts && !(part as any).isFourPanel ? 'min-h-[100px]' : 'min-h-[160px]',
@@ -3247,7 +3384,9 @@ watch(editForm, () => {
                                       <span class="truncate">{{ val }}</span>
                                     </div>
                                   </div>
-                                  <p v-else class="text-[10px] text-muted-foreground/50 px-1">—</p>
+                                  <p v-else class="text-[10px] text-muted-foreground/50 px-1">
+                                    —
+                                  </p>
                                 </template>
                                 <template v-else>
                                   <SearchableSelect v-model="editForm[panel.key]" :options="getOptions(panel.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background border-border/80" />
@@ -3365,7 +3504,7 @@ watch(editForm, () => {
                         <div v-if="(part as any).splitParts || !(part as any).rightParts" class="flex overflow-hidden h-full min-h-0 min-w-0" :class="[(part as any).isVerticalSplit ? 'flex-col' : 'flex-row', ((part as any).hasNoImages && !(part as any).rightParts) ? 'flex-1' : 'shrink-0']">
                           <template v-for="(renderPart, rIdx) in ((part as any).splitParts || [part])" :key="renderPart.key">
                             <div
-                                class="flex flex-col shrink-0 bg-muted/10 relative min-h-0 min-w-0"
+                              class="flex flex-col shrink-0 bg-muted/10 relative min-h-0 min-w-0"
                               :class="[
                                 (part as any).isVerticalSplit ? 'h-1/2 w-[200px] xl:w-[240px]' : (part as any).splitParts ? (((part as any).hasNoImages && !(part as any).rightParts) ? ((part as any).splitParts.length === 1 ? 'h-full w-full' : 'h-full w-1/2') : 'h-full w-[240px] xl:w-[280px]') : (renderPart as any).hasNoImages ? 'h-full w-full' : 'h-full w-[200px] xl:w-[240px]',
                                 rIdx === 0 && (part as any).splitParts && !(part as any).isVerticalSplit && (part as any).splitParts.length > 1 ? 'border-r border-border/50' : '',
@@ -3483,8 +3622,10 @@ watch(editForm, () => {
                             <!-- IMAGE SLOT type -->
                             <div v-if="partItem.type === 'imageSlot'" class="flex-1 px-2 py-1.5 border-b border-border/50 last:border-b-0 flex items-center gap-2 overflow-hidden bg-zinc-950/5 dark:bg-black/30 min-h-[48px]">
                               <template v-if="getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex).length">
-                                <div class="relative shrink-0 h-10 w-14 rounded overflow-hidden cursor-pointer group/imgslot border border-border/50 shadow-sm"
-                                  @click="openLightboxUrls(getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex), 0, partItem.label)">
+                                <div
+                                  class="relative shrink-0 h-10 w-14 rounded overflow-hidden cursor-pointer group/imgslot border border-border/50 shadow-sm"
+                                  @click="openLightboxUrls(getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex), 0, partItem.label)"
+                                >
                                   <img :src="getImages(editForm, partItem.key, partItem.oldKey, partItem.imageIndex)[0]" :alt="partItem.label" class="w-full h-full object-cover select-none" loading="lazy">
                                 </div>
                                 <span class="text-[9px] font-bold uppercase tracking-wider text-muted-foreground truncate flex-1">{{ partItem.label }}</span>
@@ -3528,7 +3669,9 @@ watch(editForm, () => {
                                       <span class="truncate max-w-[180px]">{{ val }}</span>
                                     </div>
                                   </div>
-                                  <p v-else class="text-xs font-medium px-2 py-1.5 bg-muted/50 rounded border border-border/50 truncate w-full text-muted-foreground">—</p>
+                                  <p v-else class="text-xs font-medium px-2 py-1.5 bg-muted/50 rounded border border-border/50 truncate w-full text-muted-foreground">
+                                    —
+                                  </p>
                                 </template>
                                 <template v-else>
                                   <SearchableSelect v-model="editForm[partItem.key]" :options="partItem.staticOptions || getOptions(partItem.dropdownName || '')" class-name="h-8 shadow-sm text-xs font-medium w-full bg-background mt-0 border-border/80" />

@@ -63,11 +63,13 @@ onMounted(() => {
 
 watch(scrollSentinel, (el) => {
   observer?.disconnect()
-  if (el) observer?.observe(el)
+  if (el)
+    observer?.observe(el)
 })
 
 onUnmounted(() => {
-  if (observer) observer.disconnect()
+  if (observer)
+    observer.disconnect()
 })
 
 const quickFilterStatus = ref('all')
@@ -389,8 +391,6 @@ async function fetchAndShowBids(car: any) {
     bidsLoading.value = false
   }
 }
-
-
 </script>
 
 <template>

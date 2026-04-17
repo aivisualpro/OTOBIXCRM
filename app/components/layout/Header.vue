@@ -5,7 +5,8 @@ const { headerState, clearHeader } = usePageHeader()
 const router = useRouter()
 // Clear header state BEFORE route changes so deep pages with setHeader() don't get cleared post-mount
 router.beforeEach((to, from, next) => {
-  if (to.path !== from.path) clearHeader()
+  if (to.path !== from.path)
+    clearHeader()
   next()
 })
 
@@ -53,7 +54,7 @@ const displayTitle = computed(() => headerState.title || fallbackTitle.value)
             </div>
           </div>
         </ClientOnly>
-        
+
         <div class="min-w-0 flex flex-col justify-center">
           <div class="flex items-center gap-3">
             <h1

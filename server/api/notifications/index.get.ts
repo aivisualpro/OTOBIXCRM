@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
           { $match: filter },
           { $sort: { _id: -1 } },
           { $skip: skip },
-          { $limit: limit }
+          { $limit: limit },
         ])
         .toArray(),
       collection.countDocuments(filter),

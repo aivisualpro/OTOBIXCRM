@@ -10,11 +10,14 @@ let fallback = '/leads/all'
 
 if (serverSearch.value || activeAdvancedFilterCount.value > 0) {
   fallback = '/leads/search-results'
-} else if (allowed.length > 0 && !allowed.includes('all') && !allowed.includes('pending')) {
+}
+else if (allowed.length > 0 && !allowed.includes('all') && !allowed.includes('pending')) {
   fallback = ws?.defaultRoutes?.leads || `/leads/${allowed[0]}`
-} else if (allowed.includes('all')) {
+}
+else if (allowed.includes('all')) {
   fallback = '/leads/all'
-} else if (allowed.includes('pending')) {
+}
+else if (allowed.includes('pending')) {
   fallback = '/leads/pending'
 }
 

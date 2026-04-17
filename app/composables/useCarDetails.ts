@@ -14,7 +14,8 @@ export function useCarDetails() {
   const error = ref<string | null>(null)
 
   async function fetchCarDetails(carId: string, silent = false) {
-    if (!silent) isLoading.value = true
+    if (!silent)
+      isLoading.value = true
     error.value = null
 
     try {

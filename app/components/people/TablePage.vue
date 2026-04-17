@@ -62,13 +62,13 @@ const filteredItems = computed(() => {
   if (search.value) {
     const q = search.value.toLowerCase()
     return allUsers.value.filter(item =>
-      String(item.userName ?? '').toLowerCase().includes(q) ||
-      String(item.email ?? '').toLowerCase().includes(q) ||
-      String(item.phoneNumber ?? '').toLowerCase().includes(q) ||
-      String(item.userRole ?? '').toLowerCase().includes(q) ||
-      props.columns.some(col =>
+      String(item.userName ?? '').toLowerCase().includes(q)
+      || String(item.email ?? '').toLowerCase().includes(q)
+      || String(item.phoneNumber ?? '').toLowerCase().includes(q)
+      || String(item.userRole ?? '').toLowerCase().includes(q)
+      || props.columns.some(col =>
         String(item[col.key] ?? '').toLowerCase().includes(q),
-      )
+      ),
     )
   }
 
@@ -247,7 +247,8 @@ function defaultForm() {
 const { allWorkspaces, activeWorkspace } = useWorkspace()
 
 const hasAddPermission = computed(() => {
-  if (!activeWorkspace.value?.peopleActions) return true
+  if (!activeWorkspace.value?.peopleActions)
+    return true
   return activeWorkspace.value.peopleActions.includes('add')
 })
 
@@ -313,14 +314,16 @@ async function handleUpdateStatus(user: any, newStatus: string) {
 }
 
 async function handleUpdateWorkspaces(user: any, workspaceId: string) {
-  if (!user) return
+  if (!user)
+    return
   const id = user.id || user._id
   const currentWorkspaces = Array.isArray(user.workspaces) ? [...user.workspaces] : []
   const idx = currentWorkspaces.indexOf(workspaceId)
-  
+
   if (idx >= 0) {
     currentWorkspaces.splice(idx, 1)
-  } else {
+  }
+  else {
     currentWorkspaces.push(workspaceId)
   }
 
@@ -509,10 +512,10 @@ function toggleSelectAllWorkspaces() {
                         </Badge>
                       </template>
                       <template v-else>
-                        <Badge 
-                          v-for="wsId in item.workspaces" 
-                          :key="wsId" 
-                          variant="secondary" 
+                        <Badge
+                          v-for="wsId in item.workspaces"
+                          :key="wsId"
+                          variant="secondary"
                           class="text-xs font-normal truncate max-w-[120px]"
                         >
                           {{ allWorkspaces.find(w => w.workspaceId === wsId)?.name || wsId }}
@@ -530,8 +533,8 @@ function toggleSelectAllWorkspaces() {
                       v-for="ws in allWorkspaces"
                       :key="ws.workspaceId"
                       :checked="(item.workspaces || []).includes(ws.workspaceId)"
-                      @select.prevent="handleUpdateWorkspaces(item, ws.workspaceId)"
                       :class="[(item.workspaces || []).includes(ws.workspaceId) ? 'bg-primary/5 font-medium' : '']"
+                      @select.prevent="handleUpdateWorkspaces(item, ws.workspaceId)"
                     >
                       <div class="flex items-center gap-2">
                         <Icon :name="ws.icon || 'i-lucide-briefcase'" class="size-4 shrink-0" :style="{ color: ws.color || '#6366f1' }" />

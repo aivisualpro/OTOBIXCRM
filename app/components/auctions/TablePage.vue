@@ -143,24 +143,25 @@ watch(globalSearch, (newVal) => {
 
   if (newVal && newVal.trim().length > 4) {
     const q = newVal.trim().toLowerCase()
-    
+
     // Check if there is an exact match for appointmentId
     const exactMatch = allCars.value.find((c: any) => {
       const appt = String(c.appointmentId || '').trim().toLowerCase()
       const reg = String(c.registrationNumber || '').trim().toLowerCase()
       return appt === q || reg === q || (q.length > 5 && (appt.includes(q) || reg.includes(q)))
     })
-    
+
     // If exact match found, but it's not in the current tab's items...
     if (exactMatch && !baseFilteredItems.value.some(c => (c.id || c._id) === (exactMatch.id || exactMatch._id))) {
-       let targetStatus = String(exactMatch.auctionStatus || '').toLowerCase().trim()
-       if (targetStatus === 'liveauctionended') targetStatus = 'ended'
-       
-       if (['upcoming', 'live', 'otobuy', 'ended', 'sold', 'removed'].includes(targetStatus)) {
-          toast.success(`Found in ${targetStatus}, navigating...`)
-          sessionStorage.setItem('auction_last_viewed', String(exactMatch.id || exactMatch._id || ''))
-          router.push(`/auctions/${targetStatus}`)
-       }
+      let targetStatus = String(exactMatch.auctionStatus || '').toLowerCase().trim()
+      if (targetStatus === 'liveauctionended')
+        targetStatus = 'ended'
+
+      if (['upcoming', 'live', 'otobuy', 'ended', 'sold', 'removed'].includes(targetStatus)) {
+        toast.success(`Found in ${targetStatus}, navigating...`)
+        sessionStorage.setItem('auction_last_viewed', String(exactMatch.id || exactMatch._id || ''))
+        router.push(`/auctions/${targetStatus}`)
+      }
     }
   }
 })

@@ -1,4 +1,3 @@
-
 // POST /api/leads/add — create a new lead directly in MongoDB
 export default defineEventHandler(async (event) => {
   try {

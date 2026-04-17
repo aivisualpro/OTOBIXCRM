@@ -21,15 +21,18 @@ const { allUsers, fetchAllUsers } = usePeopleApi()
 
 const { activeWorkspace } = useWorkspace()
 const hasAddPermission = computed(() => {
-  if (!activeWorkspace.value?.peopleActions) return true
+  if (!activeWorkspace.value?.peopleActions)
+    return true
   return activeWorkspace.value.peopleActions.includes('add')
 })
 const hasEditPermission = computed(() => {
-  if (!activeWorkspace.value?.peopleActions) return true
+  if (!activeWorkspace.value?.peopleActions)
+    return true
   return activeWorkspace.value.peopleActions.includes('edit')
 })
 const hasDeletePermission = computed(() => {
-  if (!activeWorkspace.value?.peopleActions) return true
+  if (!activeWorkspace.value?.peopleActions)
+    return true
   return activeWorkspace.value.peopleActions.includes('delete')
 })
 

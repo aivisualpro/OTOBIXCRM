@@ -96,7 +96,8 @@ export function useAuctionsApi() {
   let _quickSyncInterval: ReturnType<typeof setInterval> | null = null
 
   async function _checkForUpdates() {
-    if (!_lastKnownTs.value) return // Not bootstrapped yet
+    if (!_lastKnownTs.value)
+      return // Not bootstrapped yet
 
     try {
       const since = _lastKnownTs.value
@@ -131,7 +132,8 @@ export function useAuctionsApi() {
   }
 
   function startQuickSync() {
-    if (_quickSyncInterval) return
+    if (_quickSyncInterval)
+      return
     // Bootstrap: set timestamp to NOW (data is already loaded at this point)
     if (!_lastKnownTs.value) {
       _lastKnownTs.value = Date.now()

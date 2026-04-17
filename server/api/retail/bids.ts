@@ -1,6 +1,5 @@
 import { ObjectId } from 'mongodb'
 
-
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const carId = query.carId as string

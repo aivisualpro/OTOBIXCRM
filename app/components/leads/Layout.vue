@@ -75,11 +75,11 @@ const filteredNavItems = computed(() => {
           :to="item.link"
           class="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold rounded-md transition-all whitespace-nowrap flex-shrink-0 relative group overflow-hidden"
           :class="[
-            currentActiveId === item.id 
-              ? 'bg-primary text-primary-foreground shadow-sm' 
+            currentActiveId === item.id
+              ? 'bg-primary text-primary-foreground shadow-sm'
               : 'bg-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground',
             hasSearchMatches(item.id) && currentActiveId !== item.id ? 'animate-pulse-subtle border-primary/20 bg-primary/5' : '',
-            item.id === 'search-results' ? 'border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400' : ''
+            item.id === 'search-results' ? 'border border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400' : '',
           ]"
         >
           <Icon :name="item.icon" class="size-4 shrink-0 transition-colors" />
@@ -91,12 +91,12 @@ const filteredNavItems = computed(() => {
               currentActiveId === item.id || item.id === 'search-results'
                 ? 'bg-primary-foreground/20 text-primary-foreground'
                 : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary',
-              hasSearchMatches(item.id) && currentActiveId !== item.id ? 'bg-primary/20 text-primary' : ''
+              hasSearchMatches(item.id) && currentActiveId !== item.id ? 'bg-primary/20 text-primary' : '',
             ]"
           >
             {{ getTabCount(item.id) }}
           </span>
-          <div v-if="item.id === 'search-results'" class="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-500/50 animate-[shimmer_1.5s_infinite_linear] shadow-[0_0_10px_rgba(245,158,11,0.5)] bg-gradient-to-r from-transparent via-amber-500 to-transparent bg-[length:200%_100%]"></div>
+          <div v-if="item.id === 'search-results'" class="absolute bottom-0 left-0 right-0 h-[2px] bg-amber-500/50 animate-[shimmer_1.5s_infinite_linear] shadow-[0_0_10px_rgba(245,158,11,0.5)] bg-gradient-to-r from-transparent via-amber-500 to-transparent bg-[length:200%_100%]" />
         </NuxtLink>
       </div>
     </div>

@@ -23,7 +23,7 @@ async function run() {
   for (const collName of collections) {
     console.log(`Processing collection: ${collName}`)
     const coll = db.collection(collName)
-    
+
     // Find all documents
     const cursor = coll.find({})
     let count = 0
@@ -31,16 +31,18 @@ async function run() {
     while (await cursor.hasNext()) {
       const doc = await cursor.next()
       const updates = {}
-      
+
       for (const field of dateFieldsToFix) {
         if (typeof doc[field] === 'string') {
           if (doc[field] === '') {
             updates[field] = null // convert empty string to null
-          } else {
+          }
+          else {
             const parsed = new Date(doc[field])
             if (!isNaN(parsed.getTime())) {
               updates[field] = parsed
-            } else {
+            }
+            else {
               updates[field] = null // invalid date string
             }
           }

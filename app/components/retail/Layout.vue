@@ -46,7 +46,8 @@ function getTabCount(filterId: string) {
       return ok
 
     if (filterId === 'followup') {
-      if (car.dealStatus !== 'Under Negotiation') return false
+      if (car.dealStatus !== 'Under Negotiation')
+        return false
       return true
     }
 

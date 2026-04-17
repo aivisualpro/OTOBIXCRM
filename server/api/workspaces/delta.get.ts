@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
       .aggregate([
         { $match: filter },
         { $sort: { updatedAt: -1 } },
-        { $limit: since > 0 ? 100 : 99999999 }
+        { $limit: since > 0 ? 100 : 99999999 },
       ], { allowDiskUse: true })
       .toArray()
 

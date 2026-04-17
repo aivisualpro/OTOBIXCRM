@@ -368,7 +368,8 @@ export function useWorkspace() {
   let _wsInterval: ReturnType<typeof setInterval> | null = null
 
   async function _checkWsUpdates() {
-    if (!_wsLastTs.value) return
+    if (!_wsLastTs.value)
+      return
     try {
       const since = _wsLastTs.value
       const res = await $fetch<{ workspaces: any[], ts: number }>(`/api/workspaces/delta?since=${since}&t=${Date.now()}`)
@@ -390,8 +391,10 @@ export function useWorkspace() {
   }
 
   function startWsQuickSync() {
-    if (_wsInterval) return
-    if (!_wsLastTs.value) _wsLastTs.value = Date.now()
+    if (_wsInterval)
+      return
+    if (!_wsLastTs.value)
+      _wsLastTs.value = Date.now()
     _wsInterval = setInterval(_checkWsUpdates, 30000)
   }
 

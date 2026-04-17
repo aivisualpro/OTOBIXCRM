@@ -1,5 +1,4 @@
 export default defineEventHandler(async (event) => {
-
   try {
     const db = await getLeadsDb(event)
     const bidsCollection = db.collection('bids')

@@ -19,7 +19,8 @@ const open = ref(false)
 
 const selectedLabel = computed(() => {
   const option = props.options.find(opt => String(opt.value) === String(props.modelValue))
-  if (option) return option.label
+  if (option)
+    return option.label
   // Fallback: show raw stored value when no matching option exists (e.g. legacy data)
   if (props.modelValue !== undefined && props.modelValue !== null && props.modelValue !== '')
     return Array.isArray(props.modelValue) ? props.modelValue.join(', ') : String(props.modelValue)

@@ -160,7 +160,8 @@ export function usePeopleApi() {
   let _peopleInterval: ReturnType<typeof setInterval> | null = null
 
   async function _checkPeopleUpdates() {
-    if (!_peopleLastTs.value) return
+    if (!_peopleLastTs.value)
+      return
     try {
       const since = _peopleLastTs.value
       const res = await $fetch<{ users: any[], ts: number }>(`/api/users/delta?since=${since}&t=${Date.now()}`)
@@ -182,8 +183,10 @@ export function usePeopleApi() {
   }
 
   function startPeopleQuickSync() {
-    if (_peopleInterval) return
-    if (!_peopleLastTs.value) _peopleLastTs.value = Date.now()
+    if (_peopleInterval)
+      return
+    if (!_peopleLastTs.value)
+      _peopleLastTs.value = Date.now()
     _peopleInterval = setInterval(_checkPeopleUpdates, 30000)
   }
 

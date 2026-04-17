@@ -322,7 +322,8 @@ export function useLeadsApi() {
 
         params.t = String(Date.now())
         const response = await $fetch<LocalApiResponse>('/api/leads', { params, signal })
-        if (signal.aborted) return
+        if (signal.aborted)
+          return
         _leads.value = normalize(response.data || [])
         _totalCount.value = response.totalCount
         _currentPage.value = 1
@@ -395,16 +396,17 @@ export function useLeadsApi() {
     const iFilter = (_statusFilters.value.inspectionStatus || '').trim().toLowerCase()
     const aFilter = (_statusFilters.value.approvalStatus || '').trim().toLowerCase()
 
-    if (!iFilter && !aFilter) return _leads.value
+    if (!iFilter && !aFilter)
+      return _leads.value
 
-    return _leads.value.filter(lead => {
+    return _leads.value.filter((lead) => {
       let iMatch = true
       let aMatch = true
 
       if (iFilter && iFilter !== '*') {
         iMatch = String(lead.inspectionStatus || '').trim().toLowerCase() === iFilter
       }
-      
+
       if (aFilter && aFilter !== '*') {
         aMatch = String(lead.approvalStatus || '').trim().toLowerCase() === aFilter
       }
@@ -465,7 +467,7 @@ export function useLeadsApi() {
       method: 'POST',
       body: { telecallingId },
     })
-    
+
     // Optimistic update
     const idx = _leads.value.findIndex((l: any) => (l._id === telecallingId || l.id === telecallingId || l.appointmentId === telecallingId))
     if (idx >= 0) {
@@ -480,7 +482,8 @@ export function useLeadsApi() {
   let _leadsQuickSyncInterval: ReturnType<typeof setInterval> | null = null
 
   async function _checkLeadsUpdates() {
-    if (!_leadsLastKnownTs.value) return
+    if (!_leadsLastKnownTs.value)
+      return
 
     try {
       const since = _leadsLastKnownTs.value
@@ -512,7 +515,8 @@ export function useLeadsApi() {
   }
 
   function startLeadsQuickSync() {
-    if (_leadsQuickSyncInterval) return
+    if (_leadsQuickSyncInterval)
+      return
     if (!_leadsLastKnownTs.value) {
       _leadsLastKnownTs.value = Date.now()
     }

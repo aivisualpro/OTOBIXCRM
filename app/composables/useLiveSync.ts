@@ -40,7 +40,8 @@ export function useLiveSync() {
    * Debounces refetches to avoid hammering the API on rapid edits.
    */
   function handleChange(event: LiveSyncEvent) {
-    if (event.type !== 'change' || !event.collection) return
+    if (event.type !== 'change' || !event.collection)
+      return
 
     _lastEvent.value = event
 
@@ -75,7 +76,7 @@ export function useLiveSync() {
           // Also silently hot-reload auctions/retail grid
           const { fetchAllCars } = useAuctionsApi()
           await fetchAllCars(true)
-          
+
           break
         }
         // Extend here for other collections:
@@ -93,8 +94,10 @@ export function useLiveSync() {
    */
   function connect() {
     // Guard: only one connection per app instance
-    if (_eventSource.value) return
-    if (!isLoggedIn.value) return
+    if (_eventSource.value)
+      return
+    if (!isLoggedIn.value)
+      return
 
     try {
       const es = new EventSource('/api/live-sync')
@@ -120,7 +123,7 @@ export function useLiveSync() {
         _eventSource.value = null
 
         // Exponential backoff: 2s, 4s, 8s, 16s, max 60s
-        const delay = Math.min(2000 * Math.pow(2, _reconnectAttempts.value), 60000)
+        const delay = Math.min(2000 * 2 ** _reconnectAttempts.value, 60000)
         _reconnectAttempts.value++
 
         setTimeout(() => {
@@ -158,7 +161,8 @@ export function useLiveSync() {
    * Boot the live sync engine. Call from app.vue on mount.
    */
   function startLiveSync() {
-    if (_started.value) return
+    if (_started.value)
+      return
     _started.value = true
 
     if (import.meta.client) {

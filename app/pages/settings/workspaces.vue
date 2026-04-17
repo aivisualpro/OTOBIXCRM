@@ -137,7 +137,8 @@ const editingWorkspace = computed(() =>
 // Stats
 const totalMenuItems = computed(() => allMenuItems.length)
 const enabledMenuItems = computed(() => {
-  if (!editingWorkspace.value) return 0
+  if (!editingWorkspace.value)
+    return 0
   return editingWorkspace.value.menuIds.filter(id => allMenuItems.some(m => m.id === id)).length
 })
 const allSelected = computed(() => enabledMenuItems.value === totalMenuItems.value)
@@ -337,13 +338,15 @@ function localToggleLeadAction(actionId: string) {
   const idx = current.indexOf(actionId)
   if (idx >= 0) {
     current.splice(idx, 1)
-    
+
     // Auto turn off dependent actions if 'edit' is disabled
     if (actionId === 'edit') {
       const pdIdx = current.indexOf('pd-button')
-      if (pdIdx >= 0) current.splice(pdIdx, 1)
+      if (pdIdx >= 0)
+        current.splice(pdIdx, 1)
       const reqcIdx = current.indexOf('re-qc-button')
-      if (reqcIdx >= 0) current.splice(reqcIdx, 1)
+      if (reqcIdx >= 0)
+        current.splice(reqcIdx, 1)
     }
   }
   else {
@@ -655,381 +658,385 @@ async function saveMenuConfig() {
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-                <div
-                  v-for="item in allMenuItems"
-                  :key="item.id"
-                  class="group flex flex-col p-3 rounded-xl border transition-all"
-                  :style="editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon && editingWorkspace!.color ? { borderColor: `${editingWorkspace!.color}4D`, backgroundColor: `${editingWorkspace!.color}0D`, boxShadow: `0 0 0 1px ${editingWorkspace!.color}1A` } : {}"
-                  :class="[
-                    item.comingSoon ? 'opacity-50 cursor-not-allowed bg-muted/20' : '',
-                    editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon
-                      ? (editingWorkspace!.color ? '' : 'border-primary/30 bg-primary/5 ring-1 ring-primary/10')
-                      : 'bg-background/80 hover:bg-accent/50',
-                  ]"
-                >
-                  <div class="flex items-center justify-between cursor-pointer" @click="!item.comingSoon && localToggle(item.id)">
-                    <div class="flex items-center gap-3 min-w-0">
-                      <div class="min-w-0">
-                        <div class="flex items-center gap-1.5">
-                          <p class="text-sm font-semibold leading-none">
-                            {{ item.title }}
-                          </p>
-                          <span v-if="item.comingSoon" class="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-bold text-amber-600 uppercase tracking-tighter">
-                            Soon
-                          </span>
-                        </div>
-                        <p class="text-[10px] text-muted-foreground/70 truncate mt-1">
-                          {{ item.link }}
-                        </p>
-                      </div>
+            <div
+              v-for="item in allMenuItems"
+              :key="item.id"
+              class="group flex flex-col p-3 rounded-xl border transition-all"
+              :style="editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon && editingWorkspace!.color ? { borderColor: `${editingWorkspace!.color}4D`, backgroundColor: `${editingWorkspace!.color}0D`, boxShadow: `0 0 0 1px ${editingWorkspace!.color}1A` } : {}"
+              :class="[
+                item.comingSoon ? 'opacity-50 cursor-not-allowed bg-muted/20' : '',
+                editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon
+                  ? (editingWorkspace!.color ? '' : 'border-primary/30 bg-primary/5 ring-1 ring-primary/10')
+                  : 'bg-background/80 hover:bg-accent/50',
+              ]"
+            >
+              <div class="flex items-center justify-between cursor-pointer" @click="!item.comingSoon && localToggle(item.id)">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5">
+                      <p class="text-sm font-semibold leading-none">
+                        {{ item.title }}
+                      </p>
+                      <span v-if="item.comingSoon" class="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-bold text-amber-600 uppercase tracking-tighter">
+                        Soon
+                      </span>
                     </div>
-                    <Switch
-                      :checked="editingWorkspace!.menuIds.includes(item.id)"
-                      :disabled="item.comingSoon"
-                      :active-color="editingWorkspace!.color"
-                      class="scale-90 pointer-events-none"
-                    />
-                  </div>
-
-                  <!-- Auctions Sub-Tabs Options -->
-                  <div
-                    v-if="item.id === 'auctions' && editingWorkspace!.menuIds.includes('auctions')"
-                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
-                  >
-                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
-                      Visible Auction Tabs
-                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                    <p class="text-[10px] text-muted-foreground/70 truncate mt-1">
+                      {{ item.link }}
                     </p>
-                    <div
-                      v-for="subTab in AUCTION_TABS"
-                      :key="subTab.id"
-                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
-                      @click="localToggleAuctionTab(subTab.id)"
-                    >
-                      <div class="flex items-center gap-1.5 min-w-0">
-                        <button
-                          v-if="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id)"
-                          title="Set as Default Route"
-                          class="transition-opacity p-0.5 mt-0.5"
-                          :class="safeGetDefaultRoute(editingWorkspace!, 'auctions') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
-                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'auctions', subTab.route)"
-                        >
-                          <Icon
-                            name="i-lucide-star"
-                            class="size-3 block transition-colors"
-                            :class="safeGetDefaultRoute(editingWorkspace!, 'auctions') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
-                          />
-                        </button>
-                        <span class="text-[11px] truncate" :class="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
-                      </div>
-                      <Icon
-                        :name="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
-                        class="size-3.5"
-                        :style="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- Leads Sub-Tabs Options -->
-                  <div
-                    v-if="item.id === 'leads' && editingWorkspace!.menuIds.includes('leads')"
-                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
-                  >
-                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
-                      Visible Lead Tabs
-                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
-                    </p>
-                    <div
-                      v-for="subTab in LEADS_TABS"
-                      :key="subTab.id"
-                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
-                      @click="localToggleLeadTab(subTab.id)"
-                    >
-                      <div class="flex items-center gap-1.5 min-w-0">
-                        <button
-                          v-if="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id)"
-                          title="Set as Default Route"
-                          class="transition-opacity p-0.5 mt-0.5" :class="[
-                            safeGetDefaultRoute(editingWorkspace!, 'leads') === (subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`) ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100',
-                          ]"
-                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'leads', subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`)"
-                        >
-                          <Icon
-                            name="i-lucide-star"
-                            class="size-3 block transition-colors"
-                            :class="safeGetDefaultRoute(editingWorkspace!, 'leads') === (subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`) ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
-                          />
-                        </button>
-                        <span class="text-[11px] truncate" :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
-                      </div>
-                      <Icon
-                        :name="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
-                        class="size-3.5"
-                        :style="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- Leads Actions Options -->
-                  <div
-                    v-if="item.id === 'leads' && editingWorkspace!.menuIds.includes('leads')"
-                    class="col-span-2 mt-2 pt-2 border-t border-primary/5 grid grid-cols-2 gap-2"
-                  >
-                    <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">
-                      Allowed Actions
-                    </p>
-                    <div
-                      v-for="action in LEADS_ACTIONS"
-                      :key="action.id"
-                      class="flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
-                      @click="localToggleLeadAction(action.id)"
-                    >
-                      <span class="text-[11px] truncate">{{ action.title }}</span>
-                      <Icon
-                        :name="(editingWorkspace!.leadActions || LEADS_ACTIONS.map(t => t.id)).includes(action.id) ? 'i-lucide-check-square' : 'i-lucide-square'"
-                        class="size-3.5"
-                        :style="(editingWorkspace!.leadActions || LEADS_ACTIONS.map(t => t.id)).includes(action.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.leadActions || LEADS_ACTIONS.map(t => t.id)).includes(action.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- Sales Sub-Tabs Options -->
-                  <div
-                    v-if="item.id === 'sales' && editingWorkspace!.menuIds.includes('sales')"
-                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
-                  >
-                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
-                      Visible Sales Tabs
-                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
-                    </p>
-                    <div
-                      v-for="subTab in SALES_TABS"
-                      :key="subTab.id"
-                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
-                      @click="localToggleSalesTab(subTab.id)"
-                    >
-                      <div class="flex items-center gap-1.5 min-w-0">
-                        <button
-                          v-if="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id)"
-                          title="Set as Default Route"
-                          class="transition-opacity p-0.5 mt-0.5"
-                          :class="safeGetDefaultRoute(editingWorkspace!, 'sales') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
-                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'sales', subTab.route)"
-                        >
-                          <Icon
-                            name="i-lucide-star"
-                            class="size-3 block transition-colors"
-                            :class="safeGetDefaultRoute(editingWorkspace!, 'sales') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
-                          />
-                        </button>
-                        <span class="text-[11px] truncate" :class="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
-                      </div>
-                      <Icon
-                        :name="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
-                        class="size-3.5"
-                        :style="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- Retail Sub-Tabs Options -->
-                  <div
-                    v-if="item.id === 'retail' && editingWorkspace!.menuIds.includes('retail')"
-                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
-                  >
-                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
-                      Visible Retail Tabs
-                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
-                    </p>
-                    <div
-                      v-for="subTab in RETAIL_TABS"
-                      :key="subTab.id"
-                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
-                      @click="localToggleRetailTab(subTab.id)"
-                    >
-                      <div class="flex items-center gap-1.5 min-w-0">
-                        <button
-                          v-if="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id)"
-                          title="Set as Default Route"
-                          class="transition-opacity p-0.5 mt-0.5"
-                          :class="safeGetDefaultRoute(editingWorkspace!, 'retail') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
-                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'retail', subTab.route)"
-                        >
-                          <Icon
-                            name="i-lucide-star"
-                            class="size-3 block transition-colors"
-                            :class="safeGetDefaultRoute(editingWorkspace!, 'retail') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
-                          />
-                        </button>
-                        <span class="text-[11px] truncate" :class="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
-                      </div>
-                      <Icon
-                        :name="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
-                        class="size-3.5"
-                        :style="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- People Sub-Tabs Options -->
-                  <div
-                    v-if="item.id === 'people' && editingWorkspace!.menuIds.includes('people')"
-                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
-                  >
-                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
-                      Visible People Tabs
-                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
-                    </p>
-                    <div
-                      v-for="subTab in PEOPLE_TABS"
-                      :key="subTab.id"
-                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
-                      @click="localTogglePeopleTab(subTab.id)"
-                    >
-                      <div class="flex items-center gap-1.5 min-w-0">
-                        <button
-                          v-if="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id)"
-                          title="Set as Default Route"
-                          class="transition-opacity p-0.5 mt-0.5"
-                          :class="safeGetDefaultRoute(editingWorkspace!, 'people') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
-                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'people', subTab.route)"
-                        >
-                          <Icon
-                            name="i-lucide-star"
-                            class="size-3 block transition-colors"
-                            :class="safeGetDefaultRoute(editingWorkspace!, 'people') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
-                          />
-                        </button>
-                        <span class="text-[11px] truncate" :class="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
-                      </div>
-                      <Icon
-                        :name="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
-                        class="size-3.5"
-                        :style="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- People Actions Options -->
-                  <div
-                    v-if="item.id === 'people' && editingWorkspace!.menuIds.includes('people')"
-                    class="col-span-2 mt-2 pt-2 border-t border-primary/5 grid grid-cols-2 gap-2"
-                  >
-                    <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">
-                      Allowed Actions
-                    </p>
-                    <div
-                      v-for="action in PEOPLE_ACTIONS"
-                      :key="action.id"
-                      class="flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
-                      @click="localTogglePeopleAction(action.id)"
-                    >
-                      <span class="text-[11px] truncate">{{ action.title }}</span>
-                      <Icon
-                        :name="(editingWorkspace!.peopleActions || PEOPLE_ACTIONS.map(t => t.id)).includes(action.id) ? 'i-lucide-check-square' : 'i-lucide-square'"
-                        class="size-3.5"
-                        :style="(editingWorkspace!.peopleActions || PEOPLE_ACTIONS.map(t => t.id)).includes(action.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.peopleActions || PEOPLE_ACTIONS.map(t => t.id)).includes(action.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- Dashboard Widgets Options -->
-                  <div
-                    v-if="item.id === 'dashboard' && editingWorkspace!.menuIds.includes('dashboard')"
-                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
-                  >
-                    <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">
-                      Dashboard Widgets
-                    </p>
-                    <div
-                      v-for="widget in DASHBOARD_WIDGETS"
-                      :key="widget.id"
-                      class="flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
-                      @click="localToggleDashboardWidget(widget.id)"
-                    >
-                      <span class="text-[11px]">{{ widget.title }}</span>
-                      <Icon
-                        :name="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w => w.id)).includes(widget.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
-                        class="size-3.5"
-                        :style="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w => w.id)).includes(widget.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w => w.id)).includes(widget.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- System Settings Options -->
-                  <div
-                    v-if="item.id === 'settings' && editingWorkspace!.menuIds.includes('settings')"
-                    class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
-                  >
-                    <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
-                      System Menus
-                      <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
-                    </p>
-                    <div
-                      v-for="setting in SYSTEM_SETTINGS"
-                      :key="setting.id"
-                      class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
-                      @click="localToggleSystemSetting(setting.id)"
-                    >
-                      <div class="flex items-center gap-1.5 min-w-0">
-                        <button
-                          v-if="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id)"
-                          title="Set as Default Route"
-                          class="transition-opacity p-0.5 mt-0.5" :class="[
-                            safeGetDefaultRoute(editingWorkspace!, 'settings') === `/settings/${setting.id}` ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100',
-                          ]"
-                          @click.stop="safeSetDefaultRoute(editingWorkspace!, 'settings', `/settings/${setting.id}`)"
-                        >
-                          <Icon
-                            name="i-lucide-star"
-                            class="size-3 block transition-colors"
-                            :class="safeGetDefaultRoute(editingWorkspace!, 'settings') === `/settings/${setting.id}` ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
-                          />
-                        </button>
-                        <span class="text-[11px] truncate" :class="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) ? '' : 'pl-4'">{{ setting.title }}</span>
-                      </div>
-                      <Icon
-                        :name="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
-                        class="size-3.5"
-                        :style="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
-                        :class="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
-                      />
-                    </div>
-                  </div>
-
-                  <!-- Placeholder for Unselected Items -->
-                  <div
-                    v-if="!editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon"
-                    class="mt-3 py-6 rounded-lg border border-dashed border-muted/60 bg-muted/10 flex flex-col items-center justify-center text-center px-4 transition-colors group-hover:bg-muted/30 group-hover:border-muted/80"
-                  >
-                    <div class="size-10 rounded-full bg-background/50 flex items-center justify-center shadow-sm border border-muted/50 mb-3 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground/70 group-hover:shadow-md">
-                      <Icon name="i-lucide-power-off" class="size-4" />
-                    </div>
-                    <h4 class="text-xs font-semibold text-muted-foreground mb-1">Module Offline</h4>
-                    <p class="text-[10px] text-muted-foreground/60 leading-relaxed max-w-[180px]">
-                      Activate this workspace component to safely mount its interfaces and configuration payload.
-                    </p>
-                  </div>
-                  
-                  <!-- Placeholder for Selected Items with NO Options -->
-                  <div
-                    v-else-if="editingWorkspace!.menuIds.includes(item.id) && !['auctions','leads','people','sales','retail','dashboard','settings'].includes(item.id) && !item.comingSoon"
-                    class="mt-3 py-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10 flex flex-col items-center justify-center text-center px-4"
-                  >
-                    <div class="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center mb-2 text-emerald-500/70">
-                      <Icon name="i-lucide-check-circle-2" class="size-4" />
-                    </div>
-                    <p class="text-[10px] text-emerald-600/80 font-medium tracking-tight">Active with uniform telemetry.</p>
                   </div>
                 </div>
+                <Switch
+                  :checked="editingWorkspace!.menuIds.includes(item.id)"
+                  :disabled="item.comingSoon"
+                  :active-color="editingWorkspace!.color"
+                  class="scale-90 pointer-events-none"
+                />
+              </div>
+
+              <!-- Auctions Sub-Tabs Options -->
+              <div
+                v-if="item.id === 'auctions' && editingWorkspace!.menuIds.includes('auctions')"
+                class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+              >
+                <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                  Visible Auction Tabs
+                  <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                </p>
+                <div
+                  v-for="subTab in AUCTION_TABS"
+                  :key="subTab.id"
+                  class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                  @click="localToggleAuctionTab(subTab.id)"
+                >
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <button
+                      v-if="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id)"
+                      title="Set as Default Route"
+                      class="transition-opacity p-0.5 mt-0.5"
+                      :class="safeGetDefaultRoute(editingWorkspace!, 'auctions') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
+                      @click.stop="safeSetDefaultRoute(editingWorkspace!, 'auctions', subTab.route)"
+                    >
+                      <Icon
+                        name="i-lucide-star"
+                        class="size-3 block transition-colors"
+                        :class="safeGetDefaultRoute(editingWorkspace!, 'auctions') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
+                      />
+                    </button>
+                    <span class="text-[11px] truncate" :class="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
+                  </div>
+                  <Icon
+                    :name="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                    class="size-3.5"
+                    :style="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                    :class="(editingWorkspace!.auctionTabs || AUCTION_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                  />
+                </div>
+              </div>
+
+              <!-- Leads Sub-Tabs Options -->
+              <div
+                v-if="item.id === 'leads' && editingWorkspace!.menuIds.includes('leads')"
+                class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+              >
+                <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                  Visible Lead Tabs
+                  <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                </p>
+                <div
+                  v-for="subTab in LEADS_TABS"
+                  :key="subTab.id"
+                  class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                  @click="localToggleLeadTab(subTab.id)"
+                >
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <button
+                      v-if="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id)"
+                      title="Set as Default Route"
+                      class="transition-opacity p-0.5 mt-0.5" :class="[
+                        safeGetDefaultRoute(editingWorkspace!, 'leads') === (subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`) ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100',
+                      ]"
+                      @click.stop="safeSetDefaultRoute(editingWorkspace!, 'leads', subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`)"
+                    >
+                      <Icon
+                        name="i-lucide-star"
+                        class="size-3 block transition-colors"
+                        :class="safeGetDefaultRoute(editingWorkspace!, 'leads') === (subTab.id === 'leads' ? '/leads' : `/leads/${subTab.id}`) ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
+                      />
+                    </button>
+                    <span class="text-[11px] truncate" :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
+                  </div>
+                  <Icon
+                    :name="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                    class="size-3.5"
+                    :style="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                    :class="(editingWorkspace!.leadTabs || LEADS_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                  />
+                </div>
+              </div>
+
+              <!-- Leads Actions Options -->
+              <div
+                v-if="item.id === 'leads' && editingWorkspace!.menuIds.includes('leads')"
+                class="col-span-2 mt-2 pt-2 border-t border-primary/5 grid grid-cols-2 gap-2"
+              >
+                <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">
+                  Allowed Actions
+                </p>
+                <div
+                  v-for="action in LEADS_ACTIONS"
+                  :key="action.id"
+                  class="flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                  @click="localToggleLeadAction(action.id)"
+                >
+                  <span class="text-[11px] truncate">{{ action.title }}</span>
+                  <Icon
+                    :name="(editingWorkspace!.leadActions || LEADS_ACTIONS.map(t => t.id)).includes(action.id) ? 'i-lucide-check-square' : 'i-lucide-square'"
+                    class="size-3.5"
+                    :style="(editingWorkspace!.leadActions || LEADS_ACTIONS.map(t => t.id)).includes(action.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                    :class="(editingWorkspace!.leadActions || LEADS_ACTIONS.map(t => t.id)).includes(action.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                  />
+                </div>
+              </div>
+
+              <!-- Sales Sub-Tabs Options -->
+              <div
+                v-if="item.id === 'sales' && editingWorkspace!.menuIds.includes('sales')"
+                class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+              >
+                <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                  Visible Sales Tabs
+                  <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                </p>
+                <div
+                  v-for="subTab in SALES_TABS"
+                  :key="subTab.id"
+                  class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                  @click="localToggleSalesTab(subTab.id)"
+                >
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <button
+                      v-if="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id)"
+                      title="Set as Default Route"
+                      class="transition-opacity p-0.5 mt-0.5"
+                      :class="safeGetDefaultRoute(editingWorkspace!, 'sales') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
+                      @click.stop="safeSetDefaultRoute(editingWorkspace!, 'sales', subTab.route)"
+                    >
+                      <Icon
+                        name="i-lucide-star"
+                        class="size-3 block transition-colors"
+                        :class="safeGetDefaultRoute(editingWorkspace!, 'sales') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
+                      />
+                    </button>
+                    <span class="text-[11px] truncate" :class="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
+                  </div>
+                  <Icon
+                    :name="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                    class="size-3.5"
+                    :style="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                    :class="(editingWorkspace!.salesTabs || SALES_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                  />
+                </div>
+              </div>
+
+              <!-- Retail Sub-Tabs Options -->
+              <div
+                v-if="item.id === 'retail' && editingWorkspace!.menuIds.includes('retail')"
+                class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+              >
+                <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                  Visible Retail Tabs
+                  <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                </p>
+                <div
+                  v-for="subTab in RETAIL_TABS"
+                  :key="subTab.id"
+                  class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                  @click="localToggleRetailTab(subTab.id)"
+                >
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <button
+                      v-if="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id)"
+                      title="Set as Default Route"
+                      class="transition-opacity p-0.5 mt-0.5"
+                      :class="safeGetDefaultRoute(editingWorkspace!, 'retail') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
+                      @click.stop="safeSetDefaultRoute(editingWorkspace!, 'retail', subTab.route)"
+                    >
+                      <Icon
+                        name="i-lucide-star"
+                        class="size-3 block transition-colors"
+                        :class="safeGetDefaultRoute(editingWorkspace!, 'retail') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
+                      />
+                    </button>
+                    <span class="text-[11px] truncate" :class="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
+                  </div>
+                  <Icon
+                    :name="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                    class="size-3.5"
+                    :style="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                    :class="(editingWorkspace!.retailTabs || RETAIL_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                  />
+                </div>
+              </div>
+
+              <!-- People Sub-Tabs Options -->
+              <div
+                v-if="item.id === 'people' && editingWorkspace!.menuIds.includes('people')"
+                class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+              >
+                <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                  Visible People Tabs
+                  <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                </p>
+                <div
+                  v-for="subTab in PEOPLE_TABS"
+                  :key="subTab.id"
+                  class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                  @click="localTogglePeopleTab(subTab.id)"
+                >
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <button
+                      v-if="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id)"
+                      title="Set as Default Route"
+                      class="transition-opacity p-0.5 mt-0.5"
+                      :class="safeGetDefaultRoute(editingWorkspace!, 'people') === subTab.route ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100'"
+                      @click.stop="safeSetDefaultRoute(editingWorkspace!, 'people', subTab.route)"
+                    >
+                      <Icon
+                        name="i-lucide-star"
+                        class="size-3 block transition-colors"
+                        :class="safeGetDefaultRoute(editingWorkspace!, 'people') === subTab.route ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
+                      />
+                    </button>
+                    <span class="text-[11px] truncate" :class="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) ? '' : 'pl-4'">{{ subTab.title }}</span>
+                  </div>
+                  <Icon
+                    :name="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                    class="size-3.5"
+                    :style="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                    :class="(editingWorkspace!.peopleTabs || PEOPLE_TABS.map(t => t.id)).includes(subTab.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                  />
+                </div>
+              </div>
+
+              <!-- People Actions Options -->
+              <div
+                v-if="item.id === 'people' && editingWorkspace!.menuIds.includes('people')"
+                class="col-span-2 mt-2 pt-2 border-t border-primary/5 grid grid-cols-2 gap-2"
+              >
+                <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">
+                  Allowed Actions
+                </p>
+                <div
+                  v-for="action in PEOPLE_ACTIONS"
+                  :key="action.id"
+                  class="flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                  @click="localTogglePeopleAction(action.id)"
+                >
+                  <span class="text-[11px] truncate">{{ action.title }}</span>
+                  <Icon
+                    :name="(editingWorkspace!.peopleActions || PEOPLE_ACTIONS.map(t => t.id)).includes(action.id) ? 'i-lucide-check-square' : 'i-lucide-square'"
+                    class="size-3.5"
+                    :style="(editingWorkspace!.peopleActions || PEOPLE_ACTIONS.map(t => t.id)).includes(action.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                    :class="(editingWorkspace!.peopleActions || PEOPLE_ACTIONS.map(t => t.id)).includes(action.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                  />
+                </div>
+              </div>
+
+              <!-- Dashboard Widgets Options -->
+              <div
+                v-if="item.id === 'dashboard' && editingWorkspace!.menuIds.includes('dashboard')"
+                class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+              >
+                <p class="col-span-2 text-xs font-medium text-muted-foreground mb-1">
+                  Dashboard Widgets
+                </p>
+                <div
+                  v-for="widget in DASHBOARD_WIDGETS"
+                  :key="widget.id"
+                  class="flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                  @click="localToggleDashboardWidget(widget.id)"
+                >
+                  <span class="text-[11px]">{{ widget.title }}</span>
+                  <Icon
+                    :name="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w => w.id)).includes(widget.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                    class="size-3.5"
+                    :style="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w => w.id)).includes(widget.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                    :class="(editingWorkspace!.dashboardWidgets || DASHBOARD_WIDGETS.map(w => w.id)).includes(widget.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                  />
+                </div>
+              </div>
+
+              <!-- System Settings Options -->
+              <div
+                v-if="item.id === 'settings' && editingWorkspace!.menuIds.includes('settings')"
+                class="mt-3 pt-3 border-t border-primary/10 grid grid-cols-2 gap-2"
+              >
+                <p class="col-span-2 flex items-center justify-between text-xs font-medium text-muted-foreground mb-1">
+                  System Menus
+                  <span class="text-[9px] uppercase tracking-wider opacity-60 flex items-center gap-1"><Icon name="i-lucide-star" class="size-2.5" /> Def. Route</span>
+                </p>
+                <div
+                  v-for="setting in SYSTEM_SETTINGS"
+                  :key="setting.id"
+                  class="group/subtab flex items-center justify-between p-1.5 px-2 bg-background/50 rounded border cursor-pointer hover:bg-accent transition-colors"
+                  @click="localToggleSystemSetting(setting.id)"
+                >
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <button
+                      v-if="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id)"
+                      title="Set as Default Route"
+                      class="transition-opacity p-0.5 mt-0.5" :class="[
+                        safeGetDefaultRoute(editingWorkspace!, 'settings') === `/settings/${setting.id}` ? 'opacity-100' : 'opacity-0 group-hover/subtab:opacity-100',
+                      ]"
+                      @click.stop="safeSetDefaultRoute(editingWorkspace!, 'settings', `/settings/${setting.id}`)"
+                    >
+                      <Icon
+                        name="i-lucide-star"
+                        class="size-3 block transition-colors"
+                        :class="safeGetDefaultRoute(editingWorkspace!, 'settings') === `/settings/${setting.id}` ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground hover:text-amber-500'"
+                      />
+                    </button>
+                    <span class="text-[11px] truncate" :class="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) ? '' : 'pl-4'">{{ setting.title }}</span>
+                  </div>
+                  <Icon
+                    :name="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) ? 'i-lucide-check-circle-2' : 'i-lucide-circle'"
+                    class="size-3.5"
+                    :style="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) && editingWorkspace!.color ? { color: editingWorkspace!.color } : {}"
+                    :class="(editingWorkspace!.systemSettings || SYSTEM_SETTINGS.map(s => s.id)).includes(setting.id) ? (editingWorkspace!.color ? '' : 'text-primary') : 'text-muted-foreground/40'"
+                  />
+                </div>
+              </div>
+
+              <!-- Placeholder for Unselected Items -->
+              <div
+                v-if="!editingWorkspace!.menuIds.includes(item.id) && !item.comingSoon"
+                class="mt-3 py-6 rounded-lg border border-dashed border-muted/60 bg-muted/10 flex flex-col items-center justify-center text-center px-4 transition-colors group-hover:bg-muted/30 group-hover:border-muted/80"
+              >
+                <div class="size-10 rounded-full bg-background/50 flex items-center justify-center shadow-sm border border-muted/50 mb-3 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground/70 group-hover:shadow-md">
+                  <Icon name="i-lucide-power-off" class="size-4" />
+                </div>
+                <h4 class="text-xs font-semibold text-muted-foreground mb-1">
+                  Module Offline
+                </h4>
+                <p class="text-[10px] text-muted-foreground/60 leading-relaxed max-w-[180px]">
+                  Activate this workspace component to safely mount its interfaces and configuration payload.
+                </p>
+              </div>
+
+              <!-- Placeholder for Selected Items with NO Options -->
+              <div
+                v-else-if="editingWorkspace!.menuIds.includes(item.id) && !['auctions', 'leads', 'people', 'sales', 'retail', 'dashboard', 'settings'].includes(item.id) && !item.comingSoon"
+                class="mt-3 py-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10 flex flex-col items-center justify-center text-center px-4"
+              >
+                <div class="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center mb-2 text-emerald-500/70">
+                  <Icon name="i-lucide-check-circle-2" class="size-4" />
+                </div>
+                <p class="text-[10px] text-emerald-600/80 font-medium tracking-tight">
+                  Active with uniform telemetry.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

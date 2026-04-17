@@ -103,8 +103,10 @@ export default defineEventHandler(async (event) => {
     // Always overwrite margins with calculated values (as numbers)
     $set.fixedMargin = calculatedFixedMargin
     $set.variableMargin = calculatedVariableMargin
-    if (!seeded.includes('fixedMargin')) seeded.push('fixedMargin (overwrite)')
-    if (!seeded.includes('variableMargin')) seeded.push('variableMargin (overwrite)')
+    if (!seeded.includes('fixedMargin'))
+      seeded.push('fixedMargin (overwrite)')
+    if (!seeded.includes('variableMargin'))
+      seeded.push('variableMargin (overwrite)')
 
     if (Object.keys($set).length > 0) {
       await db.collection('cars').updateOne(
@@ -125,7 +127,8 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (err: any) {
-    if (err.statusCode) throw err
+    if (err.statusCode)
+      throw err
     console.error('[API:leads] Patch car fields failed:', err.message)
     throw createError({ statusCode: 500, message: err.message || 'Failed to patch' })
   }

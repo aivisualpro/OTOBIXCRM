@@ -1,5 +1,5 @@
 {
-    "framework": "nuxtjs",
-    "buildCommand": "pnpm generate",
-    "outputDirectory": "dist"
+  "framework": "nuxtjs",
+  "buildCommand": "pnpm generate",
+  "outputDirectory": "dist"
 }

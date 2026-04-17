@@ -67,7 +67,8 @@ onMounted(() => {
 
 watch(scrollSentinel, (el) => {
   observer?.disconnect()
-  if (el) observer?.observe(el)
+  if (el)
+    observer?.observe(el)
 })
 
 function buildLog(fieldKey: string, newValue: any, oldValue: any) {
@@ -475,7 +476,8 @@ onMounted(() => {
 onUnmounted(() => {
   if (timerInterval)
     clearInterval(timerInterval)
-  if (observer) observer.disconnect()
+  if (observer)
+    observer.disconnect()
 })
 
 function getFirstImage(car: any): string | null {
@@ -810,8 +812,6 @@ async function fetchAndShowBids(car: any) {
     bidsLoading.value = false
   }
 }
-
-
 </script>
 
 <template>
@@ -1107,7 +1107,6 @@ async function fetchAndShowBids(car: any) {
                 </Transition>
               </div>
             </TableCell>
-
 
             <TableCell class="text-xs align-middle">
               <div class="flex flex-col items-center gap-1 w-full justify-center min-h-[44px] relative">
