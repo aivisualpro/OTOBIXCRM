@@ -7,7 +7,7 @@
  *
  * Returns: { cars: [...], ts: number }
  */
-import { ObjectId } from 'mongodb'
+
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)

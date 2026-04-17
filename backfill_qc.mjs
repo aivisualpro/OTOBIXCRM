@@ -7,7 +7,7 @@ async function run() {
   console.log('Connected.')
   for (const dbName of ['otobix_auction_app_development', 'otobix_auction_app']) {
     const db = c.db(dbName)
-    const carsCursor = db.collection('cars').find({ qcBy: { $exists: true, $ne: null, $ne: '' } })
+    const carsCursor = db.collection('cars').find({ qcBy: { $exists: true, $nin: [null, ''] } })
     let count = 0
     for await (const car of carsCursor) {
       if (!car.appointmentId)

@@ -170,7 +170,10 @@ export function usePeopleApi() {
         _allUsers.value = _allUsers.value.map((existing) => {
           const key = String(existing._id || existing.id)
           const updated = changedMap.get(key)
-          if (updated) { changedMap.delete(key); return { ...updated, id: updated.id || updated._id } as PeopleUser }
+          if (updated) {
+            changedMap.delete(key)
+            return { ...updated, id: updated.id || updated._id } as PeopleUser
+          }
           return existing
         })
         for (const [, u] of changedMap) {
@@ -191,7 +194,10 @@ export function usePeopleApi() {
   }
 
   function stopPeopleQuickSync() {
-    if (_peopleInterval) { clearInterval(_peopleInterval); _peopleInterval = null }
+    if (_peopleInterval) {
+      clearInterval(_peopleInterval)
+      _peopleInterval = null
+    }
   }
 
   return {

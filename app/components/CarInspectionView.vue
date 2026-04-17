@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable ts/no-use-before-define */
 import { toast } from 'vue-sonner'
 
 const props = defineProps<{
@@ -2063,7 +2064,7 @@ function qcLogIsImageField(field: string, value: any): boolean {
   const v = String(value)
   if (v.includes('cloudinary.com') || v.includes('/image/upload/'))
     return true
-  if (/\.(jpg|jpeg|png|webp|gif|svg|avif)/i.test(v))
+  if (/\.(?:jpg|jpeg|png|webp|gif|svg|avif)/i.test(v))
     return true
   return false
 }
@@ -2103,7 +2104,7 @@ function qcLogIsDate(value: any): boolean {
     return false
   const v = String(value).trim()
   // ISO 8601 format: 2021-09-01T00:00:00.0002 or 2024-12-14
-  return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?/.test(v)
+  return /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?/.test(v)
 }
 
 function qcLogFormatDate(value: any): string {
@@ -2122,7 +2123,7 @@ function qcLogIsNumber(field: string, value: any): boolean {
   const f = String(field).toUpperCase()
   if (f.includes('PRICE') || f.includes('KMS') || f.includes('ODOMETER') || f.includes('READING') || f.includes('NUMBER') || f.includes('NOOFAIRBAGS') || f.includes('SEATS') || f.includes('COST'))
     return true
-  return !Number.isNaN(Number(value)) && String(value).trim() !== '' && /^\d+(\.\d+)?$/.test(String(value).trim())
+  return !Number.isNaN(Number(value)) && String(value).trim() !== '' && /^\d+(?:\.\d+)?$/.test(String(value).trim())
 }
 
 function openLightbox(images: { url: string, label: string }[], index: number) {

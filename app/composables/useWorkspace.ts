@@ -378,7 +378,10 @@ export function useWorkspace() {
         _workspaces.value = _workspaces.value.map((existing: any) => {
           const key = existing.workspaceId || String(existing._id)
           const updated = changedMap.get(key)
-          if (updated) { changedMap.delete(key); return updated }
+          if (updated) {
+            changedMap.delete(key)
+            return updated
+          }
           return existing
         })
         for (const [, w] of changedMap) {
@@ -399,7 +402,10 @@ export function useWorkspace() {
   }
 
   function stopWsQuickSync() {
-    if (_wsInterval) { clearInterval(_wsInterval); _wsInterval = null }
+    if (_wsInterval) {
+      clearInterval(_wsInterval)
+      _wsInterval = null
+    }
   }
 
   return {

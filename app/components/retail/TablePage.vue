@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable ts/no-use-before-define */
 import { useClipboard } from '@vueuse/core'
 import { toast } from 'vue-sonner'
 

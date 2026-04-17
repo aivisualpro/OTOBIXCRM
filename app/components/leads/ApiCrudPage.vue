@@ -1673,7 +1673,7 @@ function getInitials(name: string): string {
                 <Icon name="i-lucide-arrow-right" class="ml-1.5 size-3.5" />
               </Button>
               <!-- Create/Update button (only on last tab) -->
-              <Button v-else v-if="(editingItem && hasEditPermission) || (!editingItem && hasAddPermission)" type="submit" :disabled="isSaving">
+              <Button v-else-if="(editingItem && hasEditPermission) || (!editingItem && hasAddPermission)" type="submit" :disabled="isSaving">
                 <Icon v-if="isSaving" name="i-lucide-loader-2" class="mr-1.5 size-3.5 animate-spin" />
                 {{ editingItem ? 'Update' : 'Create' }}
               </Button>
