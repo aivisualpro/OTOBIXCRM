@@ -634,10 +634,59 @@ async function confirmQCApproval() {
   // Auto-stamp the send API timestamp
   editForm.value.sendToAuctionApk = new Date().toISOString()
 
-  // ── Sync frontMain from frontMainImages ──
-  const frontImgs = editForm.value.frontMainImages || editForm.value.frontMain || []
-  if (Array.isArray(frontImgs) && frontImgs.length > 0) {
-    editForm.value.frontMain = [...frontImgs]
+  // ── Force Sync all 'new' to 'old' keys for legacy compatibility during Approval ──
+  const forceSync = (item: any) => {
+    if (!item) return
+    if (item.oldKey && item.oldKey !== 'new' && item.key) {
+      let val = editForm.value[item.key] ?? car.value?.[item.key]
+      if (val !== undefined && val !== null) {
+        if (Array.isArray(val) && !['engineVideo', 'exhaustSmokeVideo'].includes(item.key)) {
+          val = val.join(', ')
+        }
+        if (JSON.stringify(val) !== JSON.stringify(car.value?.[item.oldKey])) {
+          editForm.value[item.oldKey] = JSON.parse(JSON.stringify(val))
+        }
+      }
+    }
+    if (item.oldImageKey && item.oldImageKey !== 'new' && item.imageKey) {
+      const val = editForm.value[item.imageKey] ?? car.value?.[item.imageKey]
+      if (val !== undefined && val !== null && JSON.stringify(val) !== JSON.stringify(car.value?.[item.oldImageKey])) {
+        editForm.value[item.oldImageKey] = JSON.parse(JSON.stringify(val))
+      }
+    }
+    if (item.splitParts) item.splitParts.forEach(forceSync)
+    if (item.rightParts) item.rightParts.forEach(forceSync)
+    if (item.imageGroups) item.imageGroups.forEach(forceSync)
+    if (item.fourPanels) item.fourPanels.forEach(forceSync)
+    if (item.parts) item.parts.forEach(forceSync)
+  }
+
+  exteriorSections.forEach(section => {
+    if (section.parts) section.parts.forEach(forceSync)
+    if (section.imageKeys) {
+      section.imageKeys.forEach((entry: any) => {
+        if (typeof entry !== 'string' && entry.old && entry.new) {
+          const val = editForm.value[entry.new] ?? car.value?.[entry.new]
+          if (val !== undefined && val !== null && JSON.stringify(val) !== JSON.stringify(car.value?.[entry.old])) {
+            editForm.value[entry.old] = JSON.parse(JSON.stringify(val))
+          }
+        }
+      })
+    }
+  })
+  if (typeof documentDetailFields !== 'undefined') documentDetailFields.forEach(forceSync)
+  if (typeof engineVideoKeys !== 'undefined') engineVideoKeys.forEach(forceSync)
+
+  // Custom manual fallback for apron which spans lhs and rhs
+  const lhsApron = editForm.value.lhsApronImages ?? car.value?.lhsApronImages
+  const rhsApron = editForm.value.rhsApronImages ?? car.value?.rhsApronImages
+  if (Array.isArray(lhsApron) || Array.isArray(rhsApron)) {
+    const combinedApron = []
+    if (Array.isArray(lhsApron)) combinedApron.push(...lhsApron)
+    if (Array.isArray(rhsApron)) combinedApron.push(...rhsApron)
+    if (JSON.stringify(combinedApron) !== JSON.stringify(car.value?.apronLhsRhs || [])) {
+      editForm.value.apronLhsRhs = combinedApron
+    }
   }
 
   // ── Strip +91 from contactNumber for the cars collection ──
@@ -1283,13 +1332,13 @@ const engineParts = [
   { key: 'split_1', hasNoImages: true, splitParts: [{ key: 'commentsOnEngineDropdownList', oldKey: 'commentsOnEngine', label: 'Comment on Engine', dropdownName: 'Comments On Engine' }, { key: 'engineOilLevelDipstickDropdownList', oldKey: 'engineOilLevelDipstick', label: 'Engine Oil Level Dipstick', dropdownName: 'Engine Oil Level Dipstick' }] },
   { key: 'split_2', hasNoImages: true, splitParts: [{ key: 'engineOilDropdownList', oldKey: 'engineOil', label: 'Engine Oil', dropdownName: 'Engine Oil' }, { key: 'commentsOnEngineOilDropdownList', oldKey: 'commentsOnEngineOil', label: 'Comment on Engine Oil', dropdownName: 'Comments On Engine Oil' }] },
   { key: 'split_3', hasNoImages: true, splitParts: [{ key: 'enginePermisableBlowByDropdownList', oldKey: 'enginePermisableBlowBy', label: 'Engine Permisable Blowby', dropdownName: 'Engine Permisable Blow By' }, { key: 'coolantDropdownList', oldKey: 'coolant', label: 'Coolant', dropdownName: 'Coolant' }] },
-  { key: 'cowlTopDropdownList', oldKey: 'cowlTop', imageKey: 'cowlTopImages', oldImageKey: 'new', label: 'Cowl Top', dropdownName: 'Cowl Top' },
-  { key: 'firewallDropdownList', oldKey: 'firewall', imageKey: 'firewallImages', oldImageKey: 'new', label: 'Firewall', dropdownName: 'Firewall' },
+  { key: 'cowlTopDropdownList', imageKey: 'cowlTopImages', label: 'Cowl Top', dropdownName: 'Cowl Top' },
+  { key: 'firewallDropdownList', imageKey: 'firewallImages', label: 'Firewall', dropdownName: 'Firewall' },
   { key: 'lhsApronDropdownList', oldKey: 'lhsApron', imageKey: 'lhsApronImages', oldImageKey: 'apronLhsRhs', label: 'LHS Apron', dropdownName: 'LHS Apron' },
   { key: 'rhsApronDropdownList', oldKey: 'rhsApron', imageKey: 'rhsApronImages', oldImageKey: 'apronLhsRhs', label: 'RHS Apron', dropdownName: 'RHS Apron' },
   { key: 'batteryDropdownList', oldKey: 'battery', imageKey: 'batteryImages', oldImageKey: 'batteryImages', label: 'Battery', dropdownName: 'Battery' },
   { key: 'split_4', hasNoImages: true, splitParts: [{ key: 'abs', label: 'ABS', dropdownName: 'ABS' }, { key: 'upperCrossMemberDropdownList', oldKey: 'upperCrossMember', label: 'Upper Cross Member', dropdownName: 'Upper Cross Member' }] },
-  { key: 'split_5', hasNoImages: true, splitParts: [{ key: 'lhsSideMemberDropdownList', oldKey: 'new', label: 'LHS Side Member', dropdownName: 'LHS Side Member' }, { key: 'rhsSideMemberDropdownList', oldKey: 'new', label: 'RHS Side Member', dropdownName: 'RHS Side Member' }] },
+  { key: 'split_5', hasNoImages: true, splitParts: [{ key: 'lhsSideMemberDropdownList', label: 'LHS Side Member', dropdownName: 'LHS Side Member' }, { key: 'rhsSideMemberDropdownList', label: 'RHS Side Member', dropdownName: 'RHS Side Member' }] },
   { key: 'split_6', hasNoImages: true, splitParts: [{ key: 'engineMountDropdownList', oldKey: 'engineMount', label: 'Engine Mount', dropdownName: 'Engine Mount' }, { key: 'headlightSupportDropdownList', oldKey: 'headlightSupport', label: 'Headlamp Support', dropdownName: 'Headlight Support' }] },
   { key: 'split_7', hasNoImages: true, splitParts: [{ key: 'radiatorSupportDropdownList', oldKey: 'radiatorSupport', label: 'Radiator Support', dropdownName: 'Radiator Support' }, { key: 'commentsOnRadiatorDropdownList', oldKey: 'commentsOnRadiator', label: 'Comment on Radiator', dropdownName: 'Comments On Radiator' }] },
   { key: 'split_8', hasNoImages: true, splitParts: [{ key: 'lowerCrossMemberDropdownList', oldKey: 'lowerCrossMember', label: 'Lower Cross Member', dropdownName: 'Lower Cross Member' }, { key: 'exhaustSmokeDropdownList', oldKey: 'exhaustSmoke', label: 'Exhaust Smoke', dropdownName: 'Exhaust Smoke' }] },
@@ -1303,10 +1352,10 @@ const electricalParts = [
   ] },
   { key: 'split_e1', hasNoImages: true, splitParts: [
     { key: 'fuelLevel', oldKey: 'fuelLevel', label: 'Fuel Level', dropdownName: 'Fuel Level' },
-    { key: 'irvm', oldKey: 'new', label: 'IRVM', dropdownName: 'IRVM' },
+    { key: 'irvm', label: 'IRVM', dropdownName: 'IRVM' },
   ] },
   { key: 'split_e2', hasNoImages: true, splitParts: [
-    { key: 'dashboardDropdownList', oldKey: 'new', label: 'Dashboard', dropdownName: 'Dashboard' },
+    { key: 'dashboardDropdownList', label: 'Dashboard', dropdownName: 'Dashboard' },
     { key: 'infotainmentSystemDropdownList', oldKey: 'stereo', label: 'Infotainment System', dropdownName: 'Infotainment System' },
   ] },
   { key: 'split_e3', hasNoImages: true, splitParts: [
@@ -1322,9 +1371,9 @@ const electricalParts = [
     { key: 'acTypeDropdownList', oldKey: 'airConditioningManual', label: 'AC Type', dropdownName: 'A/C Type' },
     { key: 'acCoolingDropdownList', oldKey: 'airConditioningClimateControl', label: 'AC Cooling', dropdownName: 'A/C Cooling' },
   ] },
-  { key: 'commentsOnAc', oldKey: 'commentsOnAc', imageKey: 'acImages', oldImageKey: 'new', label: 'Comment on AC', dropdownName: 'Comments On A/C' },
-  { key: 'rearWiperWasherDropdownList', oldKey: 'rearWiperWasher', imageKey: 'rearWiperAndWasherImages', oldImageKey: 'new', label: 'Rear Wiper & Washer', dropdownName: 'frontWiperAndWasher' },
-  { key: 'reverseCameraDropdownList', oldKey: 'reverseCamera', imageKey: 'reverseCameraImages', oldImageKey: 'new', label: 'Reverse Camera', dropdownName: 'Reverse Camera' },
+  { key: 'commentsOnAc', imageKey: 'acImages', label: 'Comment on AC', dropdownName: 'Comments On A/C' },
+  { key: 'rearWiperWasherDropdownList', imageKey: 'rearWiperAndWasherImages', label: 'Rear Wiper & Washer', dropdownName: 'frontWiperAndWasher' },
+  { key: 'reverseCameraDropdownList', imageKey: 'reverseCameraImages', label: 'Reverse Camera', dropdownName: 'Reverse Camera' },
   { key: 'sunroofDropdownList', oldKey: 'sunroof', imageKey: 'sunroofImages', oldImageKey: 'sunroofImages', label: 'Sunroof', dropdownName: 'Sunroof' },
   { key: 'split_e7', hasNoImages: true, splitParts: [
     { key: 'rearDefoggerDropdownList', oldKey: 'rearDefogger', label: 'Rear Defogger', dropdownName: 'Rear Defogger' },
@@ -1393,10 +1442,10 @@ const interiorParts = [
     hasNoImages: true,
     isFourPanel: true,
     fourPanels: [
-      { key: 'driverSideKneeAirbag', oldKey: 'new', label: 'Driver Knee Airbag', type: 'dropdown', dropdownName: 'Driver Knee Airbag' },
-      { key: 'airbagImages', oldKey: 'driverSideKneeAirbagImages', label: 'Driver Knee Airbag Image', type: 'imageSlot', imageIndex: 6 },
-      { key: 'coDriverKneeSeatAirbag', oldKey: 'new', label: 'Co-Driver Knee Airbag', type: 'dropdown', dropdownName: 'Co-Driver Knee Airbag' },
-      { key: 'airbagImages', oldKey: 'coDriverKneeSeatAirbagImages', label: 'Co-Driver Knee Airbag Image', type: 'imageSlot', imageIndex: 7 },
+      { key: 'driverSideKneeAirbag', label: 'Driver Knee Airbag', type: 'dropdown', dropdownName: 'Driver Knee Airbag' },
+      { key: 'airbagImages', label: 'Driver Knee Airbag Image', type: 'imageSlot', imageIndex: 6 },
+      { key: 'coDriverKneeSeatAirbag', label: 'Co-Driver Knee Airbag', type: 'dropdown', dropdownName: 'Co-Driver Knee Airbag' },
+      { key: 'airbagImages', label: 'Co-Driver Knee Airbag Image', type: 'imageSlot', imageIndex: 7 },
     ]
   },
   // Airbags — row 3: right column (rear side airbags)
@@ -1419,7 +1468,7 @@ const interiorParts = [
     isFourPanel: true,
     fourPanels: [
       { key: 'seatsUpholstery', oldKey: 'leatherSeats/fabricSeats', label: 'Seat Upholstery', type: 'dropdown', dropdownName: 'seatsUpholstery' },
-      { key: 'driverSeatDropdownList', oldKey: 'new', label: 'Driver Seat', type: 'dropdown', dropdownName: 'Driver Seat' },
+      { key: 'driverSeatDropdownList', label: 'Driver Seat', type: 'dropdown', dropdownName: 'Driver Seat' },
     ]
   },
   // Seats & Upholstery — row 4: right column
@@ -1428,8 +1477,8 @@ const interiorParts = [
     hasNoImages: true,
     isFourPanel: true,
     fourPanels: [
-      { key: 'coDriverSeatDropdownList', oldKey: 'new', label: 'Co-Driver Seat', type: 'dropdown', dropdownName: 'Co-Driver Seat' },
-      { key: 'frontCentreArmRestDropdownList', oldKey: 'new', label: 'Front Centre Arm Rest', type: 'dropdown', dropdownName: 'Front Centre Arm Rest' },
+      { key: 'coDriverSeatDropdownList', label: 'Co-Driver Seat', type: 'dropdown', dropdownName: 'Co-Driver Seat' },
+      { key: 'frontCentreArmRestDropdownList', label: 'Front Centre Arm Rest', type: 'dropdown', dropdownName: 'Front Centre Arm Rest' },
     ]
   },
   // Row 5: left column
@@ -1438,8 +1487,8 @@ const interiorParts = [
     hasNoImages: true,
     isFourPanel: true,
     fourPanels: [
-      { key: 'rearSeatsDropdownList', oldKey: 'new', label: 'Rear Seats', type: 'dropdown', dropdownName: 'Rear Seats' },
-      { key: 'thirdRowSeatsDropdownList', oldKey: 'new', label: 'Third Row Seats', type: 'dropdown', dropdownName: 'Third Row Seats' },
+      { key: 'rearSeatsDropdownList', label: 'Rear Seats', type: 'dropdown', dropdownName: 'Rear Seats' },
+      { key: 'thirdRowSeatsDropdownList', label: 'Third Row Seats', type: 'dropdown', dropdownName: 'Third Row Seats' },
     ]
   },
   // Standalone Image Boxes (Seats)
@@ -1483,14 +1532,14 @@ const steeringSuspensionBrakesParts = [
   ] },
   { key: 'split_ssb3', hasNoImages: true, splitParts: [
     { key: 'gearShiftDropdownList', oldKey: 'gearShift', label: 'Gear Shift', dropdownName: 'Gear Shift' },
-    { key: 'transmissionTypeDropdownList', oldKey: 'new', label: 'Transmission Type', dropdownName: 'Transmission Type' },
+    { key: 'transmissionTypeDropdownList', label: 'Transmission Type', dropdownName: 'Transmission Type' },
   ] },
   { key: 'split_ssb4', hasNoImages: true, splitParts: [
-    { key: 'driveTrainDropdownList', oldKey: 'new', label: 'Drive Train', dropdownName: 'Drive Train' },
+    { key: 'driveTrainDropdownList', label: 'Drive Train', dropdownName: 'Drive Train' },
     { key: 'commentsOnTransmission', oldKey: 'commentsOnTransmission', label: 'Comment on Transmission', inputType: 'text' },
   ] },
 
-  { key: 'odometerReadingAfterTestDriveInKms', oldKey: 'new', imageKey: 'odometerReadingAfterTestDriveImages', oldImageKey: 'new', label: 'Odometer Reading after Test Drive', inputType: 'number' },
+  { key: 'odometerReadingAfterTestDriveInKms', imageKey: 'odometerReadingAfterTestDriveImages', label: 'Odometer Reading after Test Drive', inputType: 'number' },
 ]
 
 const exteriorSections = [
@@ -1502,7 +1551,7 @@ const exteriorSections = [
       { new: 'bonnetOpenImages', old: 'bonnetImages' },
       { new: 'bonnetClosedImages', old: 'bonnetImages' },
       { new: 'frontWindshieldImages', old: 'frontWindshieldImages' },
-      { new: 'frontWiperAndWasherImages', old: 'frontWiperAndWasherImages' },
+      { new: 'frontWiperAndWasherImages' },
       { new: 'roofImages', old: 'roofImages' },
       { new: 'frontBumperImages', old: 'frontBumperImages' },
       { new: 'frontBumperLhs45DegreeImages', old: 'frontBumperImages' },
@@ -1524,7 +1573,7 @@ const exteriorSections = [
         ],
       },
       { key: 'frontWindshieldDropdownList', oldKey: 'frontWindshield', imageKey: 'frontWindshieldImages', oldImageKey: 'frontWindshieldImages', label: 'Front Windshield' },
-      { key: 'frontWiperAndWasherDropdownList', oldKey: undefined, imageKey: 'frontWiperAndWasherImages', oldImageKey: undefined, label: 'Front Wiper & Washer', dropdownName: 'frontWiperAndWasher' },
+      { key: 'frontWiperAndWasherDropdownList', imageKey: 'frontWiperAndWasherImages', label: 'Front Wiper & Washer', dropdownName: 'frontWiperAndWasher' },
       { key: 'roofDropdownList', oldKey: 'roof', imageKey: 'roofImages', oldImageKey: 'roofImages', label: 'Roof' },
       {
         key: 'frontBumperDropdownList',
@@ -1593,12 +1642,12 @@ const exteriorSections = [
       { new: 'rearBumperRhs45DegreeImages', old: 'rearBumperImages' },
       { new: 'rearBumperImages', old: 'rearBumperImages' },
       { new: 'lhsTailLampImages', old: 'lhsTailLampImages' },
-      { new: 'lhsRearFogLampImages', old: undefined },
+      { new: 'lhsRearFogLampImages' },
       { new: 'rhsTailLampImages', old: 'rhsTailLampImages' },
-      { new: 'rhsRearFogLampImages', old: undefined },
+      { new: 'rhsRearFogLampImages' },
       { new: 'rearWindshieldImages', old: 'rearWindshieldImages' },
       { new: 'bootDoorOpenImages', old: 'rearWithBootDoorOpen' },
-      { new: 'spareWheelImages', old: undefined },
+      { new: 'spareWheelImages' },
       { new: 'spareTyreImages', old: 'spareTyreImages' },
       { new: 'bootFloorImages', old: 'bootFloorImages' },
     ],
@@ -1615,9 +1664,9 @@ const exteriorSections = [
         ],
       },
       { key: 'lhsTailLampDropdownList', oldKey: 'lhsTailLamp', imageKey: 'lhsTailLampImages', oldImageKey: 'lhsTailLampImages', label: 'LHS Tail Lamp' },
-      { key: 'lhsRearFogLampDropdownList', oldKey: undefined, imageKey: 'lhsRearFogLampImages', oldImageKey: undefined, label: 'LHS Rear Fog Lamp', dropdownName: 'LHS Rear Foglamp' },
+      { key: 'lhsRearFogLampDropdownList', imageKey: 'lhsRearFogLampImages', label: 'LHS Rear Fog Lamp', dropdownName: 'LHS Rear Foglamp' },
       { key: 'rhsTailLampDropdownList', oldKey: 'rhsTailLamp', imageKey: 'rhsTailLampImages', oldImageKey: 'rhsTailLampImages', label: 'RHS Tail Lamp' },
-      { key: 'rhsRearFogLampDropdownList', oldKey: undefined, imageKey: 'rhsRearFogLampImages', oldImageKey: undefined, label: 'RHS Rear Fog Lamp', dropdownName: 'RHS Rear Foglamp' },
+      { key: 'rhsRearFogLampDropdownList', imageKey: 'rhsRearFogLampImages', label: 'RHS Rear Fog Lamp', dropdownName: 'RHS Rear Foglamp' },
       { key: 'rearWindshieldDropdownList', oldKey: 'rearWindshield', imageKey: 'rearWindshieldImages', oldImageKey: 'rearWindshieldImages', label: 'Rear Windshield' },
       {
         key: 'bootDoorDropdownList',
@@ -1628,7 +1677,7 @@ const exteriorSections = [
           { key: 'rearWithBootDoorOpenImages', oldKey: 'rearWithBootDoorOpen', label: 'Rear With Boot Door Open Image' },
         ],
       },
-      { key: 'spareWheelDropdownList', oldKey: undefined, imageKey: 'spareWheelImages', oldImageKey: undefined, label: 'Spare Wheel' },
+      { key: 'spareWheelDropdownList', imageKey: 'spareWheelImages', label: 'Spare Wheel' },
       { key: 'spareTyreDropdownList', oldKey: 'spareTyre', imageKey: 'spareTyreImages', oldImageKey: 'spareTyreImages', label: 'Spare Tyre' },
       { key: 'bootFloorDropdownList', oldKey: 'bootFloor', imageKey: 'bootFloorImages', oldImageKey: 'bootFloorImages', label: 'Boot Floor' },
     ],
@@ -1680,8 +1729,8 @@ const exteriorSections = [
     icon: 'i-lucide-cog',
     imageKeys: [
       { new: 'engineBayImages', old: 'engineBay' },
-      { new: 'cowlTopImages', old: 'new' },
-      { new: 'firewallImages', old: 'new' },
+      { new: 'cowlTopImages' },
+      { new: 'firewallImages' },
       { new: 'lhsApronImages', old: 'apronLhsRhs' },
       { new: 'rhsApronImages', old: 'apronLhsRhs' },
       { new: 'batteryImages', old: 'batteryImages' },
@@ -1694,9 +1743,9 @@ const exteriorSections = [
     icon: 'i-lucide-zap',
     imageKeys: [
       { new: 'meterConsoleWithEngineOnImages', old: 'meterConsoleWithEngineOn' },
-      { new: 'acImages', old: 'new' },
-      { new: 'rearWiperAndWasherImages', old: 'new' },
-      { new: 'reverseCameraImages', old: 'new' },
+      { new: 'acImages' },
+      { new: 'rearWiperAndWasherImages' },
+      { new: 'reverseCameraImages' },
       { new: 'sunroofImages', old: 'sunroofImages' },
     ],
     parts: electricalParts,
@@ -1711,8 +1760,8 @@ const exteriorSections = [
       { new: 'coDriverSeatAirbagImages', old: 'airbags' },
       { new: 'rhsCurtainAirbagImages', old: 'airbags' },
       { new: 'lhsCurtainAirbagImages', old: 'airbags' },
-      { new: 'driverSideKneeAirbagImages', old: 'airbags' },
-      { new: 'coDriverKneeSeatAirbagImages', old: 'airbags' },
+      { new: 'driverSideKneeAirbagImages' },
+      { new: 'coDriverKneeSeatAirbagImages' },
       { new: 'rhsRearSideAirbagImages', old: 'airbags' },
       { new: 'lhsRearSideAirbagImages', old: 'airbags' },
       { new: 'frontSeatsFromDriverSideImages', old: 'frontSeatsFromDriverSideDoor' },
@@ -1726,7 +1775,7 @@ const exteriorSections = [
     title: 'Steering, Suspension & Brakes',
     icon: 'i-lucide-disc',
     imageKeys: [
-      { new: 'odometerReadingAfterTestDriveImages', old: 'new' },
+      { new: 'odometerReadingAfterTestDriveImages' },
     ],
     parts: steeringSuspensionBrakesParts,
   },
@@ -1825,10 +1874,10 @@ const documentImageKeys = [
   { new: 'rcTokenImages', old: 'rcTaxToken' },
   { new: 'insuranceImages', old: 'insuranceImages' },
   { new: 'duplicateKeyImages', old: 'duplicateKey' },
-  { new: 'chassisEmbossmentImages', old: 'chassisEmbossment' },
-  { new: 'vinPlateImages', old: 'vinPlate' },
-  { new: 'pucImages', old: 'puc' },
-  { new: 'roadTaxImages', old: 'roadTax' },
+  { new: 'chassisEmbossmentImages' },
+  { new: 'vinPlateImages' },
+  { new: 'pucImages' },
+  { new: 'roadTaxImages' },
 ]
 
 const allPdfImages = computed(() => {
@@ -1850,10 +1899,10 @@ const documentDetailFields: any[] = [
   // Core Identity
   { key: 'chassisEmbossmentImages', type: 'combinedBox', label: 'Chassis Embossment', splitParts: [
     { label: 'To Be Scrapped', key: 'toBeScrapped', oldKey: 'toBeScrapped', type: 'dropdown', dropdownName: 'To Be Scrapped' },
-    { label: 'Chassis Details', key: 'chassisDetails', oldKey: undefined, type: 'dropdown', dropdownName: 'Chassis Details' },
+    { label: 'Chassis Details', key: 'chassisDetails', type: 'dropdown', dropdownName: 'Chassis Details' },
   ] },
   { key: 'vinPlateImages', type: 'combinedBox', label: 'Vin Plate', splitParts: [
-    { label: 'Vin Plate Details', key: 'vinPlateDetails', oldKey: undefined, type: 'dropdown', dropdownName: 'Vin Plate Details' },
+    { label: 'Vin Plate Details', key: 'vinPlateDetails', type: 'dropdown', dropdownName: 'Vin Plate Details' },
   ] },
   { key: 'rcTokenImages', type: 'combinedBox', oldKey: 'rcTaxToken', label: 'RC Token', splitParts: [
     { label: 'RC Book Availability', key: 'rcBookAvailabilityDropdownList', oldKey: 'rcBookAvailability', type: 'dropdown', dropdownName: 'RC Book Availability' },
@@ -1862,8 +1911,8 @@ const documentDetailFields: any[] = [
   ] },
   { key: 'technicalSpecs', type: 'combinedBox', label: 'Technical Specs', hideImages: true, splitParts: [
     { label: 'Fuel Type', key: 'fuelType', oldKey: 'fuelType', type: 'single', dropdownName: undefined },
-    { label: 'Seating Capacity', key: 'seatingCapacity', oldKey: undefined, type: 'single', dropdownName: undefined },
-    { label: 'Color', key: 'color', oldKey: undefined, type: 'single', dropdownName: undefined },
+    { label: 'Seating Capacity', key: 'seatingCapacity', type: 'single', dropdownName: undefined },
+    { label: 'Color', key: 'color', type: 'single', dropdownName: undefined },
   ], rightParts: [
     { label: 'Fitness Validity', key: 'fitnessValidity', oldKey: 'fitnessTill', type: 'date', dropdownName: undefined },
     { label: 'Engine Number', key: 'engineNumber', oldKey: 'engineNumber', type: 'single', dropdownName: undefined },
@@ -1871,7 +1920,7 @@ const documentDetailFields: any[] = [
   ] },
   { key: 'registrationDetails', type: 'combinedBox', label: 'Registration Details', hideImages: true, splitParts: [
     { label: 'Cubic Capacity', key: 'cubicCapacity', oldKey: 'cubicCapacity', type: 'single', dropdownName: undefined },
-    { label: 'Norms', key: 'norms', oldKey: undefined, type: 'single', dropdownName: undefined },
+    { label: 'Norms', key: 'norms', type: 'single', dropdownName: undefined },
     { label: 'Registration State', key: 'registrationState', oldKey: 'registrationState', type: 'single', dropdownName: undefined },
   ], rightParts: [
     { label: 'Registered RTO', key: 'registeredRto', oldKey: 'registeredRto', type: 'single', dropdownName: undefined },
@@ -1885,25 +1934,25 @@ const documentDetailFields: any[] = [
   // Hypothecation
   // Hypothecation & Insurance
   { key: 'hypothecationInsurance', type: 'combinedBox', label: 'Hypo & Insurance', hideImages: true, splitParts: [
-    { label: 'Hypothecation Details', key: 'hypothecationDetails', oldKey: 'hypothecationDetails', type: 'dropdown', dropdownName: 'Hypothecation Details' },
-    { label: 'Hypothecated To', key: 'hypothecatedTo', oldKey: undefined, type: 'single', dropdownName: undefined },
+    { label: 'Hypothecation Details', key: 'hypothecationDetails', type: 'dropdown', dropdownName: 'Hypothecation Details' },
+    { label: 'Hypothecated To', key: 'hypothecatedTo', type: 'single', dropdownName: undefined },
   ], rightParts: [
     { label: 'Insurance Type', key: 'insuranceDropdownList', oldKey: 'insurance', type: 'dropdown', dropdownName: 'Insurance' },
     { label: 'Insurance Validity', key: 'insuranceValidity', oldKey: 'insuranceValidity', type: 'date', dropdownName: undefined },
   ] },
   { key: 'insuranceImages', type: 'combinedBox', label: 'Insurance Policy', splitParts: [
-    { label: 'Insured By', key: 'insurer', oldKey: undefined, type: 'single', dropdownName: undefined },
+    { label: 'Insured By', key: 'insurer', type: 'single', dropdownName: undefined },
     { label: 'Policy Number', key: 'policyNumber', oldKey: 'insurancePolicyNumber', type: 'single', dropdownName: undefined },
   ] },
   // PUC
   { key: 'pucImages', type: 'combinedBox', label: 'PUC Details', splitParts: [
-    { label: 'PUC Validity', key: 'pucValidity', oldKey: undefined, type: 'date', dropdownName: undefined },
-    { label: 'PUC Number', key: 'pucNumber', oldKey: undefined, type: 'single', dropdownName: undefined },
+    { label: 'PUC Validity', key: 'pucValidity', type: 'date', dropdownName: undefined },
+    { label: 'PUC Number', key: 'pucNumber', type: 'single', dropdownName: undefined },
   ] },
   // Status & Compliance
   { key: 'statusCompliance', type: 'combinedBox', label: 'Status & Compliance', hideImages: true, splitParts: [
-    { label: 'RC Status', key: 'rcStatus', oldKey: undefined, type: 'dropdown', dropdownName: 'RC Status' },
-    { label: 'Blacklist Status', key: 'blacklistStatus', oldKey: undefined, type: 'dropdown', staticOptions: [{ label: 'YES', value: 'YES' }, { label: 'NO', value: 'NO' }, { label: 'fetching data', value: 'fetching data' }] },
+    { label: 'RC Status', key: 'rcStatus', type: 'dropdown', dropdownName: 'RC Status' },
+    { label: 'Blacklist Status', key: 'blacklistStatus', type: 'dropdown', staticOptions: [{ label: 'YES', value: 'YES' }, { label: 'NO', value: 'NO' }, { label: 'fetching data', value: 'fetching data' }] },
     { label: 'RTO NOC Details', key: 'rtoNoc', oldKey: 'rtoNoc', type: 'multiselect', dropdownName: 'RTO NOC' },
   ], rightParts: [
     { label: 'RTO Form 28 (2 Copies)', key: 'rtoForm28', oldKey: 'rtoForm28', type: 'multiselect', dropdownName: 'RTO Form 28 (2 copies)' },
@@ -2034,7 +2083,7 @@ onMounted(() => window.addEventListener('keydown', onLightboxKeydown))
 onUnmounted(() => window.removeEventListener('keydown', onLightboxKeydown))
 
 // Collect all images for a section — supports both string keys and { new, old } fallback objects
-function sectionImages(keys: (string | { new: string, old: string | undefined })[]) {
+function sectionImages(keys: (string | { new: string, old?: string })[]) {
   const obj = editForm.value && Object.keys(editForm.value).length ? editForm.value : car.value
   if (!obj)
     return []
@@ -2470,22 +2519,33 @@ watch(editForm, () => {
               </div>
 
               <!-- LEFT: Image Area -->
-              <div class="relative w-full lg:w-[320px] shrink-0 h-64 lg:h-auto overflow-hidden bg-muted group cursor-pointer" @click="getImages(car, 'frontMain').length && openLightboxUrls(getImages(car, 'frontMain'), 0, `${car.make} ${car.model}`)">
+              <div class="relative w-full lg:w-[320px] shrink-0 h-64 lg:h-auto overflow-hidden bg-muted group/item cursor-pointer" @click="getImages(editForm, 'frontMainImages', 'frontMain').length && openLightboxUrls(getImages(editForm, 'frontMainImages', 'frontMain'), 0, `${car.make} ${car.model}`)">
                 <img
-                  v-if="getImages(car, 'frontMain').length"
-                  :src="getImages(car, 'frontMain')[0]"
+                  v-if="getImages(editForm, 'frontMainImages', 'frontMain').length"
+                  :src="getImages(editForm, 'frontMainImages', 'frontMain')[0]"
                   :alt="`${car.make} ${car.model}`"
-                  class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/item:scale-105"
                 >
                 <div v-else class="absolute inset-0 w-full h-full flex items-center justify-center">
                   <Icon name="i-lucide-car" class="size-20 text-muted-foreground/30" />
                 </div>
-                <!-- Top Left Badge -->
-                <div class="absolute top-5 left-5">
-                  <Badge class="bg-black/60 hover:bg-black/60 text-white/90 border-transparent backdrop-blur-md rounded-full px-4 py-1.5 font-mono text-sm tracking-widest shadow-none">
-                    # {{ car.appointmentId }}
-                  </Badge>
+                
+                <div v-if="getImages(editForm, 'frontMainImages', 'frontMain').length" class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[8px] text-white font-medium tracking-wider uppercase pointer-events-none z-10">
+                  Front Main Image 1
                 </div>
+
+                <div v-if="!props.readonly && getImages(editForm, 'frontMainImages', 'frontMain').length" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-100 lg:opacity-0 group-hover/item:opacity-100 transition-opacity z-20">
+                  <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage('frontMainImages', 0, 'frontMain')">
+                    <Icon name="i-lucide-refresh-cw" class="size-3.5" />
+                  </Button>
+                  <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-blue-500/90 hover:bg-blue-600 focus:outline-none" @click.stop="downloadImageFile(getImages(editForm, 'frontMainImages', 'frontMain')[0] || '', 'Front Main')">
+                    <Icon name="i-lucide-download" class="size-3.5 text-white" />
+                  </Button>
+                  <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage('frontMainImages', 0, 'frontMain')">
+                    <Icon name="i-lucide-trash" class="size-3.5 text-white" />
+                  </Button>
+                </div>
+                
               </div>
 
               <!-- MIDDLE: Data Grid -->
@@ -2648,15 +2708,31 @@ watch(editForm, () => {
               </div>
 
               <!-- RIGHT IMAGE AREA -->
-              <div class="relative w-full lg:w-[320px] shrink-0 h-64 lg:h-auto overflow-hidden bg-muted group cursor-pointer lg:border-l border-border/60" @click="getImages(car, 'rearMainImages', 'rearMain').length && openLightboxUrls(getImages(car, 'rearMainImages', 'rearMain'), 0, `${car.make} ${car.model}`)">
+              <div class="relative w-full lg:w-[320px] shrink-0 h-64 lg:h-auto overflow-hidden bg-muted group/item cursor-pointer lg:border-l border-border/60" @click="getImages(editForm, 'rearMainImages', 'rearMain').length && openLightboxUrls(getImages(editForm, 'rearMainImages', 'rearMain'), 0, `${car.make} ${car.model}`)">
                 <img
-                  v-if="getImages(car, 'rearMainImages', 'rearMain').length"
-                  :src="getImages(car, 'rearMainImages', 'rearMain')[0]"
+                  v-if="getImages(editForm, 'rearMainImages', 'rearMain').length"
+                  :src="getImages(editForm, 'rearMainImages', 'rearMain')[0]"
                   :alt="`${car.make} ${car.model}`"
-                  class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/item:scale-105"
                 >
                 <div v-else class="absolute inset-0 w-full h-full flex items-center justify-center">
                   <Icon name="i-lucide-car" class="size-20 text-muted-foreground/30" />
+                </div>
+                
+                <div v-if="getImages(editForm, 'rearMainImages', 'rearMain').length" class="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-[8px] text-white font-medium tracking-wider uppercase pointer-events-none z-10">
+                  Rear Main Image 1
+                </div>
+
+                <div v-if="!props.readonly && getImages(editForm, 'rearMainImages', 'rearMain').length" class="absolute top-2 right-2 flex flex-col gap-1.5 opacity-100 lg:opacity-0 group-hover/item:opacity-100 transition-opacity z-20">
+                  <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-white/90 hover:bg-white text-primary focus:outline-none" @click.stop="replaceImage('rearMainImages', 0, 'rearMain')">
+                    <Icon name="i-lucide-refresh-cw" class="size-3.5" />
+                  </Button>
+                  <Button variant="secondary" size="icon" class="size-7 shadow-sm rounded-full bg-blue-500/90 hover:bg-blue-600 focus:outline-none" @click.stop="downloadImageFile(getImages(editForm, 'rearMainImages', 'rearMain')[0] || '', 'Rear Main')">
+                    <Icon name="i-lucide-download" class="size-3.5 text-white" />
+                  </Button>
+                  <Button variant="destructive" size="icon" class="size-7 shadow-sm rounded-full bg-red-500/90 hover:bg-red-600 focus:outline-none" @click.stop="removeImage('rearMainImages', 0, 'rearMain')">
+                    <Icon name="i-lucide-trash" class="size-3.5 text-white" />
+                  </Button>
                 </div>
               </div>
 
@@ -3716,7 +3792,7 @@ watch(editForm, () => {
                       Chassis Details
                     </p>
                     <p class="text-sm font-medium font-mono text-right">
-                      {{ car.chassisDetails || car.chassisNumber || '—' }}
+                      {{ car.chassisDetails || '—' }}
                     </p>
                   </div>
                   <div class="flex items-center justify-between gap-4 py-1.5 border-b border-border/40">
@@ -3951,9 +4027,9 @@ watch(editForm, () => {
         </div>
 
         <!-- CAR MAIN PICS IN HEADER -->
-        <div v-if="(getImages(car, 'frontMain').length) || (getImages(car, 'rearMainImages', 'rearMain').length)" class="flex gap-4 mb-6">
-          <div v-if="getImages(car, 'frontMain').length" class="flex-1 h-[60mm] bg-[#f9fafb] border border-gray-300 rounded overflow-hidden flex items-center justify-center p-1">
-            <img :src="getImages(car, 'frontMain')[0]" class="w-full h-full object-contain" crossorigin="anonymous">
+        <div v-if="(getImages(car, 'frontMainImages', 'frontMain').length) || (getImages(car, 'rearMainImages', 'rearMain').length)" class="flex gap-4 mb-6">
+          <div v-if="getImages(car, 'frontMainImages', 'frontMain').length" class="flex-1 h-[60mm] bg-[#f9fafb] border border-gray-300 rounded overflow-hidden flex items-center justify-center p-1">
+            <img :src="getImages(car, 'frontMainImages', 'frontMain')[0]" class="w-full h-full object-contain" crossorigin="anonymous">
           </div>
           <div v-if="getImages(car, 'rearMainImages', 'rearMain').length" class="flex-1 h-[60mm] bg-[#f9fafb] border border-gray-300 rounded overflow-hidden flex items-center justify-center p-1">
             <img :src="getImages(car, 'rearMainImages', 'rearMain')[0]" class="w-full h-full object-contain" crossorigin="anonymous">
