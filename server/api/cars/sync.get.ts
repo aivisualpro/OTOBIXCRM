@@ -7,21 +7,17 @@
  *
  * Returns: { cars: [...], ts: number }
  */
-
-
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const since = Number(query.since) || 0
-
   try {
     const db = await getLeadsDb(event)
-
     // Build filter: only records updated after 'since'
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filter: any = {}
     if (since > 0) {
       filter.updatedAt = { $gt: new Date(since) }
     }
-
     const cars = await db.collection('cars')
       .aggregate([
         { $match: filter },
@@ -29,19 +25,16 @@ export default defineEventHandler(async (event) => {
         { $limit: since > 0 ? 200 : 99999999 },
       ], { allowDiskUse: true })
       .toArray()
-
     // Normalize _id to string
     const normalized = cars.map((car: any) => ({
       ...car,
       _id: car._id.toString(),
       id: car._id.toString(),
     }))
-
     // Get the latest timestamp
     const latestTs = normalized.length > 0
       ? Math.max(...normalized.map((c: any) => new Date(c.updatedAt || 0).getTime()))
       : since
-
     return { cars: normalized, ts: latestTs }
   }
   catch (err: any) {
