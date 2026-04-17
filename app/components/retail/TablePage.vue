@@ -25,8 +25,35 @@ const loggedInUserId = computed(() => {
   }
 })
 
+const loggedInUserEmail = computed(() => {
+  try {
+    const parsed = typeof _userCookie.value === 'string' ? JSON.parse(_userCookie.value) : _userCookie.value
+    return parsed?.email || ''
+  }
+  catch {
+    return ''
+  }
+})
+
+const loggedInUserRole = computed(() => {
+  try {
+    const parsed = typeof _userCookie.value === 'string' ? JSON.parse(_userCookie.value) : _userCookie.value
+    return parsed?.userRole || parsed?.role || ''
+  }
+  catch {
+    return ''
+  }
+})
+
 const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars, globalSearch } = useAuctionsApi()
 const { dropdowns, fetchDropdowns, getOptions } = useDropdowns()
+const { allUsers, fetchAllUsers, isFetched: isUsersFetched } = usePeopleApi()
+
+function resolveUserNameByEmail(email: string) {
+  if (!email) return '—'
+  const user = allUsers.value.find(u => u.email === email)
+  return user?.userName || email
+}
 
 const bidStats = ref<Record<string, { totalBids: number, uniqueDealers: number, lastBidAt?: string }>>({})
 const isStatsLoading = ref(false)
@@ -52,6 +79,8 @@ let observer: IntersectionObserver | null = null
 onMounted(() => {
   if (!isFetched.value)
     fetchAllCars()
+  if (!isUsersFetched.value)
+    fetchAllUsers()
   fetchBidStats()
   fetchDropdowns()
 
@@ -341,6 +370,12 @@ const baseFilteredItems = computed(() => {
     // Exclude records with blank auction status altogether
     if (!car.auctionStatus || car.auctionStatus.trim() === '' || car.auctionStatus === 'inspected') {
       return false
+    }
+
+    if (loggedInUserRole.value === 'Retailer') {
+      if (car.retailAssociate !== loggedInUserEmail.value) {
+        return false
+      }
     }
 
     let ok = true
@@ -1436,7 +1471,7 @@ async function fetchAndShowBids(car: any) {
 
             <!-- RA (Retail Associate) -->
             <TableCell class="text-xs text-center px-1 whitespace-nowrap text-emerald-700 dark:text-emerald-300 font-medium">
-              {{ car.retailAssociate || '—' }}
+              {{ resolveUserNameByEmail(car.retailAssociate) }}
             </TableCell>
 
             <TableCell class="text-xs text-center px-1">

@@ -41,6 +41,7 @@ export default defineEventHandler(async (event) => {
       followupTimeStamp: 1,
       retailChangeLog: 1,
       retailQuality: 1,
+      retailAssociate: 1,
       saleReason: 1,
       tentativeHandoverDate: 1,
       // Only the first/thumbnail image fields — not full arrays
