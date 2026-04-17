@@ -2198,9 +2198,6 @@ function sectionImages(keys: (string | { new: string, old?: string })[]) {
   return imgs
 }
 
-// Track which fields the user has locally edited but not yet saved
-const _dirtyFields = new Set<string>()
-
 watch(() => car.value, (newVal) => {
   if (_skipCarWatch)
     return // Skip when baseline was just updated by saveQC
@@ -2239,44 +2236,23 @@ watch(() => car.value, (newVal) => {
       catch {}
     }
 
-    // If there are locally dirty (unsaved) fields, preserve them instead of overwriting
-    if (_dirtyFields.size > 0 && Object.keys(editForm.value).length > 0) {
-      for (const dirtyKey of _dirtyFields) {
-        clone[dirtyKey] = editForm.value[dirtyKey]
-      }
-    }
-
     editForm.value = clone
     nextTick(() => { _skipAutoSave = false })
   }
 }, { immediate: true })
 
-// Track editForm changes to detect dirty fields
-let _prevEditSnapshot: Record<string, any> = {}
-watch(editForm, (newForm) => {
+watch(editForm, () => {
   if (_skipAutoSave || props.readonly)
     return
 
-  // Detect which fields actually changed and mark them dirty
-  const current = newForm || {}
-  for (const key of Object.keys(current)) {
-    if (key === '_id' || key === 'id' || key === 'qcLog' || key === 'logs')
-      continue
-    if (JSON.stringify(current[key]) !== JSON.stringify(_prevEditSnapshot[key])) {
-      _dirtyFields.add(key)
-    }
-  }
-  _prevEditSnapshot = JSON.parse(JSON.stringify(current))
-
-  // Gate SSE re-fetches while we have unsaved edits
+  // Block SSE re-fetches while user has unsaved edits
   _pendingSave = true
 
   // Debounce: wait 1.5s after last change before saving
   if (_autoSaveTimer)
     clearTimeout(_autoSaveTimer)
-  _autoSaveTimer = setTimeout(async () => {
-    await saveQC(true)
-    _dirtyFields.clear()
+  _autoSaveTimer = setTimeout(() => {
+    saveQC(true)
   }, 1500)
 }, { deep: true })
 </script>
