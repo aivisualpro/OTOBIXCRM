@@ -230,7 +230,9 @@ async function saveQC(silent = false) {
     const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
 
     // ── GENERIC FALLBACK SYNC: forward changes from new keys to fallback (old) keys ──
-    const edited = editForm.value || {}
+    // IMPORTANT: Clone to avoid mutating the reactive editForm directly,
+    // which would re-trigger the deep watcher and create an infinite save loop.
+    const edited = JSON.parse(JSON.stringify(editForm.value || {}))
 
     const syncFallbacks = (item: any) => {
       if (!item)
