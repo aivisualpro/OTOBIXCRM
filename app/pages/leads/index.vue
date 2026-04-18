@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { leadsColumns, leadsFormFields, routeColumnsMap, routeFilters } from '~/constants/leads'
 import { watch } from 'vue'
+import { leadsColumns, leadsFormFields, routeColumnsMap, routeFilters } from '~/constants/leads'
 
 const { activeWorkspace } = useWorkspace()
 const ws = activeWorkspace.value
@@ -11,7 +11,7 @@ const router = useRouter()
 const { serverSearch, activeAdvancedFilterCount, setTab } = useLeadsApi()
 
 // Default tab resolution logic
-let tabParam = computed(() => (route.query.tab as string) || '')
+const tabParam = computed(() => (route.query.tab as string) || '')
 
 // Auto-navigate to correct tab if none provided
 if (!tabParam.value) {
@@ -32,7 +32,7 @@ if (!tabParam.value) {
 }
 
 // Compute the active filter configuration from constants
-const filter = computed(() => routeFilters[tabParam.value as keyof typeof routeFilters] || routeFilters['all'])
+const filter = computed(() => routeFilters[tabParam.value as keyof typeof routeFilters] || routeFilters.all)
 const activeColumns = computed(() => routeColumnsMap[tabParam.value] || leadsColumns)
 
 // When tab changes, update useLeadsApi's internal tab tracker

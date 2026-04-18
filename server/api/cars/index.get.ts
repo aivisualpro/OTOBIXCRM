@@ -12,38 +12,43 @@ export default defineEventHandler(async (event) => {
 
     // Parse userData cookie to enforce Role Base Access Control (RBAC)
     const rawUserData = getCookie(event, 'userData')
-    let userEmail = ""
-    let userRole = ""
+    let userEmail = ''
+    let userRole = ''
     if (rawUserData) {
       try {
         const decoded = JSON.parse(decodeURIComponent(rawUserData))
-        userEmail = decoded.email || ""
-        userRole = decoded.userRole || decoded.role || ""
-      } catch (e) {
+        userEmail = decoded.email || ''
+        userRole = decoded.userRole || decoded.role || ''
+      }
+      catch (e) {
         // Fallback or ignore
       }
     }
 
     // 1. Build Query Filter based on tab
     const filter: any = {}
-    
+
     // Role-based visibility
     if (userRole === 'Retailer' && userEmail) {
       filter.retailAssociate = userEmail
     }
 
     // Always exclude blank auction statuses and 'inspected' based on legacy table logic
-    filter.auctionStatus = { $exists: true, $nin: ["", " ", "inspected"] }
+    filter.auctionStatus = { $exists: true, $nin: ['', ' ', 'inspected'] }
 
     if (tab === 'ended') {
       filter.auctionStatus = 'liveAuctionEnded'
-    } else if (tab === 'customer-activity') {
+    }
+    else if (tab === 'customer-activity') {
       filter.auctionStatus = { $in: ['live', 'otobuy'] }
-    } else if (tab === 'dealer-activity') {
+    }
+    else if (tab === 'dealer-activity') {
       filter.auctionStatus = { $in: ['live', 'otobuy', 'upcoming'] }
-    } else if (tab === 'followup') {
+    }
+    else if (tab === 'followup') {
       filter.dealStatus = 'Under Negotiation'
-    } else if (['upcoming', 'live', 'otobuy', 'sold', 'removed'].includes(tab)) {
+    }
+    else if (['upcoming', 'live', 'otobuy', 'sold', 'removed'].includes(tab)) {
       filter.auctionStatus = tab
     } // 'all' requires no additional filter
 
@@ -61,7 +66,7 @@ export default defineEventHandler(async (event) => {
         { registrationNumber: searchRegex },
         { city: searchRegex },
         { fuelType: searchRegex },
-        { appointmentId: searchRegex }
+        { appointmentId: searchRegex },
       ]
     }
 
@@ -117,12 +122,13 @@ export default defineEventHandler(async (event) => {
 
     const skip = (page - 1) * limit
     const sortParams: any = { [sortField]: sortDir }
-    if (sortField !== '_id') sortParams._id = -1 // secondary sort to stabilize
+    if (sortField !== '_id')
+      sortParams._id = -1 // secondary sort to stabilize
 
     const coll = db.collection('cars')
     const [cars, totalCount] = await Promise.all([
       coll.find(filter, { projection }).sort(sortParams).skip(skip).limit(limit).toArray(),
-      coll.countDocuments(filter)
+      coll.countDocuments(filter),
     ])
 
     // Load autobids for these specific chunk of cars only
@@ -130,7 +136,8 @@ export default defineEventHandler(async (event) => {
     let autoBids: any[] = []
     if (carIds.length > 0) {
       autoBids = await db.collection('autoBidsForLiveSection')
-        .find({ carId: { $in: carIds } }).toArray()
+        .find({ carId: { $in: carIds } })
+        .toArray()
     }
 
     const mappedCars = cars.map((car) => {
@@ -148,7 +155,7 @@ export default defineEventHandler(async (event) => {
       total: totalCount,
       page,
       limit,
-      totalPages: Math.ceil(totalCount / limit)
+      totalPages: Math.ceil(totalCount / limit),
     }
   }
   catch (err: any) {

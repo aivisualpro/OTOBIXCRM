@@ -137,10 +137,11 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleGlobalKeydown)
 })
 
-watch(scrollSentinel, (el) => {
+watch(scrollSentinel, (el: any) => {
   observer?.disconnect()
-  if (el)
-    observer?.observe(el)
+  const node = el?.$el || el
+  if (node && node instanceof Element)
+    observer?.observe(node)
 })
 
 // ─── Formatters ───
@@ -528,7 +529,7 @@ function toggleSelectAllWorkspaces() {
                       </template>
                     </div>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" class="w-56" @click.stop>
+                  <DropdownMenuContent align="end" class="w-56">
                     <DropdownMenuLabel>Allocated Workspaces</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuCheckboxItem
@@ -574,16 +575,16 @@ function toggleSelectAllWorkspaces() {
               </div>
             </TableCell>
           </TableRow>
+          <TableRow v-if="hasMore" ref="scrollSentinel" class="hover:bg-transparent border-none">
+            <TableCell :colspan="columns.length" class="text-center py-6">
+              <div class="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Icon name="i-lucide-loader-2" class="size-4 animate-spin" />
+                Loading more...
+              </div>
+            </TableCell>
+          </TableRow>
         </TableBody>
       </Table>
-
-      <!-- Scroll Sentinel for infinite loading -->
-      <div v-if="hasMore" ref="scrollSentinel" class="flex items-center justify-center py-6">
-        <div class="flex items-center gap-2 text-sm text-muted-foreground">
-          <Icon name="i-lucide-loader-2" class="size-4 animate-spin" />
-          Loading more...
-        </div>
-      </div>
     </div>
 
     <!-- Footer info bar -->

@@ -54,7 +54,8 @@ export function useLiveSync() {
    * Debounces update patches to avoid thrashing on rapid edits.
    */
   function handleChange(event: SyncEvent) {
-    if (event.type !== 'change' || !event.collection) return
+    if (event.type !== 'change' || !event.collection)
+      return
 
     _lastEvent.value = event
 
@@ -94,7 +95,8 @@ export function useLiveSync() {
    */
   function applyDeltaPatch(event: SyncEvent) {
     const { collection, action, recordId, payload } = event
-    if (!collection || !action) return
+    if (!collection || !action)
+      return
 
     try {
       switch (collection) {
@@ -169,8 +171,10 @@ export function useLiveSync() {
     $fetch('/api/leads/counts', { params: { t: String(Date.now()) } }).then((res: any) => {
       const _counts = useState<Record<string, number>>('leads_counts')
       const _countsTotal = useState('leads_countsTotal')
-      if (res?.counts) _counts.value = res.counts
-      if (res?.totalCount) _countsTotal.value = res.totalCount
+      if (res?.counts)
+        _counts.value = res.counts
+      if (res?.totalCount)
+        _countsTotal.value = res.totalCount
     }).catch(() => {})
   }
 
@@ -253,7 +257,8 @@ export function useLiveSync() {
 
   async function _catchUpAfterReconnect() {
     const since = _lastSyncTimestamp.value
-    if (!since) return
+    if (!since)
+      return
 
     try {
       // Catch up leads (only records changed since last sync)
@@ -331,8 +336,10 @@ export function useLiveSync() {
   // ──────────────────────────────────────────────
 
   function connect() {
-    if (_eventSource.value) return
-    if (!isLoggedIn.value) return
+    if (_eventSource.value)
+      return
+    if (!isLoggedIn.value)
+      return
 
     try {
       const es = new EventSource('/api/live-sync')
@@ -409,7 +416,8 @@ export function useLiveSync() {
   }
 
   function startLiveSync() {
-    if (_started.value) return
+    if (_started.value)
+      return
     _started.value = true
 
     if (import.meta.client) {

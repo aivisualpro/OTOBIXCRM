@@ -13,7 +13,6 @@ export default defineEventHandler(async (event) => {
   try {
     const db = await getLeadsDb(event)
     // Build filter: only records updated after 'since'
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filter: any = {}
     if (since > 0) {
       filter.updatedAt = { $gt: new Date(since) }

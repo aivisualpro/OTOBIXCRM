@@ -1,6 +1,6 @@
-import { shallowRef, computed } from 'vue'
+import { computed, shallowRef } from 'vue'
+import { deduplicatedFetch, getCachedData, QUERY_KEYS, setCachedData } from '~/composables/useQueryCache'
 import { routeFilters } from '~/constants/leads'
-import { deduplicatedFetch, QUERY_KEYS, getCachedData, setCachedData } from '~/composables/useQueryCache'
 
 export interface TelecallingLead {
   [key: string]: any
@@ -120,18 +120,30 @@ export function useLeadsApi() {
       params.search = _serverSearch.value
     }
 
-    if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
-    if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
-    if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
-    if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
-    if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
-    if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
-    if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
-    if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
-    if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
-    if (_activeTab.value) params.tab = _activeTab.value
-    if (_sortKey.value) params.sort = _sortKey.value
-    if (_sortDir.value) params.sortDir = _sortDir.value
+    if (_advancedFilters.value.startDate)
+      params.startDate = _advancedFilters.value.startDate
+    if (_advancedFilters.value.endDate)
+      params.endDate = _advancedFilters.value.endDate
+    if (_advancedFilters.value.dateField)
+      params.dateField = _advancedFilters.value.dateField
+    if (_advancedFilters.value.make)
+      params.make = _advancedFilters.value.make
+    if (_advancedFilters.value.city)
+      params.city = _advancedFilters.value.city
+    if (_advancedFilters.value.priority)
+      params.priority = _advancedFilters.value.priority
+    if (_advancedFilters.value.allocatedTo)
+      params.allocatedTo = _advancedFilters.value.allocatedTo
+    if (_advancedFilters.value.createdBy)
+      params.createdBy = _advancedFilters.value.createdBy
+    if (_advancedFilters.value.addedBy)
+      params.addedBy = _advancedFilters.value.addedBy
+    if (_activeTab.value)
+      params.tab = _activeTab.value
+    if (_sortKey.value)
+      params.sort = _sortKey.value
+    if (_sortDir.value)
+      params.sortDir = _sortDir.value
 
     return params
   }
@@ -142,9 +154,8 @@ export function useLeadsApi() {
       const params = _buildFilterParams()
       params.t = String(Date.now())
       const queryKey = QUERY_KEYS.leadsCount()
-      const res = await deduplicatedFetch(queryKey, () => 
-        $fetch<CountsResponse>('/api/leads/counts', { params })
-      )
+      const res = await deduplicatedFetch(queryKey, () =>
+        $fetch<CountsResponse>('/api/leads/counts', { params }))
       _counts.value = res.counts || {}
       _countsTotal.value = res.totalCount || 0
     }
@@ -160,8 +171,10 @@ export function useLeadsApi() {
     if (_fetchedForEnv.value && _fetchedForEnv.value !== currentEnv.value) {
       force = true
     }
-    if (_isInitialized.value && !force) return
-    if (_isLoading.value && !force) return // Block concurrent fetches unless forced
+    if (_isInitialized.value && !force)
+      return
+    if (_isLoading.value && !force)
+      return // Block concurrent fetches unless forced
 
     _fetchError.value = null
     _fetchSeq.value++
@@ -180,22 +193,24 @@ export function useLeadsApi() {
       _currentPage.value = 1
       _isInitialized.value = true
       _isRefreshing.value = true // Show subtle loader
-    } else {
+    }
+    else {
       // Look if we have ANY existing data to hold visual stability (fallback)
       if (_leads.value.length === 0) {
         _isLoading.value = true
-      } else {
+      }
+      else {
         _isRefreshing.value = true
       }
     }
 
     try {
-      const response = await deduplicatedFetch(queryKey, () => 
-        $fetch<LocalApiResponse>('/api/leads', { params, signal })
-      )
+      const response = await deduplicatedFetch(queryKey, () =>
+        $fetch<LocalApiResponse>('/api/leads', { params, signal }))
 
       // Bail if a newer fetch was initiated while we were waiting
-      if (_fetchSeq.value !== currentSeq) return
+      if (_fetchSeq.value !== currentSeq)
+        return
 
       _leads.value = normalize(response.items || [])
       _totalCount.value = response.total
@@ -207,12 +222,13 @@ export function useLeadsApi() {
 
       // Fetch counts in background (non-blocking)
       fetchCounts()
-      
+
       // Auto-prefetch page 2 for seamless scrolling feeling
       _prefetchNextPage(2)
     }
     catch (err: any) {
-      if (err?.name === 'AbortError' || signal.aborted) return // Silently ignore cancelled requests
+      if (err?.name === 'AbortError' || signal.aborted)
+        return // Silently ignore cancelled requests
       console.error('Failed to fetch leads:', err)
       _fetchError.value = err?.data?.message || err?.message || 'Failed to fetch leads'
       // Keep stale data visible
@@ -230,25 +246,26 @@ export function useLeadsApi() {
 
   // ─── Load more (next page) ───
   async function loadMore() {
-    if (_isLoadingMore.value) return
-    if (_leads.value.length >= _totalCount.value) return
+    if (_isLoadingMore.value)
+      return
+    if (_leads.value.length >= _totalCount.value)
+      return
 
     _isLoadingMore.value = true
     try {
       const nextPage = _currentPage.value + 1
       const params: Record<string, any> = { page: nextPage, limit: PAGE_SIZE, ..._buildFilterParams() }
       const queryKey = QUERY_KEYS.leads(params)
-      const response = await deduplicatedFetch(queryKey, () => 
-        $fetch<LocalApiResponse>('/api/leads', { params })
-      )
+      const response = await deduplicatedFetch(queryKey, () =>
+        $fetch<LocalApiResponse>('/api/leads', { params }))
       const newItems = normalize(response.items || [])
 
       _leads.value = [..._leads.value, ...newItems]
       _currentPage.value = nextPage
       _totalCount.value = response.total // Keep in sync
-      
+
       setCachedData(queryKey, response)
-      
+
       // Auto-prefetch n+1 page in background
       _prefetchNextPage(nextPage + 1)
     }
@@ -261,10 +278,11 @@ export function useLeadsApi() {
   }
 
   function _prefetchNextPage(targetPage: number) {
-    if (_leads.value.length >= _totalCount.value) return
+    if (_leads.value.length >= _totalCount.value)
+      return
     const params: Record<string, any> = { page: targetPage, limit: PAGE_SIZE, ..._buildFilterParams() }
     const queryKey = QUERY_KEYS.leads(params)
-    
+
     // Only prefetch if we don't already have it
     if (!getCachedData(queryKey)) {
       deduplicatedFetch(queryKey, () => $fetch<LocalApiResponse>('/api/leads', { params }))
@@ -296,19 +314,20 @@ export function useLeadsApi() {
 
         const params: Record<string, any> = { page: 1, limit: PAGE_SIZE, ..._buildFilterParams() }
         params.t = String(Date.now())
-        
+
         const queryKey = QUERY_KEYS.leads(params)
-        const response = await deduplicatedFetch(queryKey, () => 
-          $fetch<LocalApiResponse>('/api/leads', { params, signal })
-        )
-        if (signal.aborted) return
+        const response = await deduplicatedFetch(queryKey, () =>
+          $fetch<LocalApiResponse>('/api/leads', { params, signal }))
+        if (signal.aborted)
+          return
         _leads.value = normalize(response.items || [])
         _totalCount.value = response.total
         _currentPage.value = 1
         _isInitialized.value = true
       }
       catch (err: any) {
-        if (err?.name === 'AbortError' || signal.aborted) return
+        if (err?.name === 'AbortError' || signal.aborted)
+          return
         console.error('Search failed:', err)
         _fetchError.value = err?.data?.message || err?.message || 'Search failed'
       }
@@ -355,7 +374,7 @@ export function useLeadsApi() {
   function setTab(tab: string) {
     if (_activeTab.value !== tab) {
       _activeTab.value = tab
-      
+
       // The user wants each tab to have its own page API call. Force refetch when tab changes.
       fetchLeads(true)
     }

@@ -62,10 +62,12 @@ export function getEventSequence(): number {
  * Returns events with eventId > sinceId, in order.
  */
 export function getEventsSince(sinceId: number): SyncEvent[] {
-  if (sinceId <= 0 || _eventBuffer.length === 0) return []
+  if (sinceId <= 0 || _eventBuffer.length === 0)
+    return []
 
   const idx = _eventBuffer.findIndex(e => e.eventId > sinceId)
-  if (idx === -1) return [] // Client is already up to date
+  if (idx === -1)
+    return [] // Client is already up to date
 
   return _eventBuffer.slice(idx)
 }

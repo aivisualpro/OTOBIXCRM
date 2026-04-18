@@ -48,7 +48,8 @@ export const QUERY_KEYS = {
  * Ensures same filters/page/sort always produce the same cache key.
  */
 export function buildQueryKey(base: string, params?: Record<string, any>): string {
-  if (!params || Object.keys(params).length === 0) return base
+  if (!params || Object.keys(params).length === 0)
+    return base
 
   const sorted = Object.keys(params)
     .filter(k => params[k] !== undefined && params[k] !== null && params[k] !== '')
@@ -64,7 +65,8 @@ export function buildQueryKey(base: string, params?: Record<string, any>): strin
  */
 export function isCacheStale(queryKey: string, ttl: number = 30000): boolean {
   const entry = _cache.get(queryKey)
-  if (!entry) return true
+  if (!entry)
+    return true
   return Date.now() - entry.fetchedAt > ttl
 }
 
@@ -123,7 +125,8 @@ export async function deduplicatedFetch<T>(
   fetchFn: () => Promise<T>,
 ): Promise<T> {
   const existing = _inflightFetches.get(queryKey)
-  if (existing) return existing as Promise<T>
+  if (existing)
+    return existing as Promise<T>
 
   const promise = fetchFn().finally(() => {
     _inflightFetches.delete(queryKey)
@@ -149,8 +152,10 @@ export function patchCachedRecord(
   let patched = false
 
   for (const [key, entry] of _cache.entries()) {
-    if (!key.startsWith(cacheKeyPrefix)) continue
-    if (!Array.isArray(entry.data)) continue
+    if (!key.startsWith(cacheKeyPrefix))
+      continue
+    if (!Array.isArray(entry.data))
+      continue
 
     const idx = entry.data.findIndex((item: any) =>
       String(item[idField]) === recordId
@@ -175,8 +180,10 @@ export function insertCachedRecord(
   newRecord: Record<string, any>,
 ): void {
   for (const [key, entry] of _cache.entries()) {
-    if (!key.startsWith(cacheKeyPrefix)) continue
-    if (!Array.isArray(entry.data)) continue
+    if (!key.startsWith(cacheKeyPrefix))
+      continue
+    if (!Array.isArray(entry.data))
+      continue
     entry.data.unshift(newRecord)
   }
 }
@@ -192,8 +199,10 @@ export function removeCachedRecord(
   let removed = false
 
   for (const [key, entry] of _cache.entries()) {
-    if (!key.startsWith(cacheKeyPrefix)) continue
-    if (!Array.isArray(entry.data)) continue
+    if (!key.startsWith(cacheKeyPrefix))
+      continue
+    if (!Array.isArray(entry.data))
+      continue
 
     const idx = entry.data.findIndex((item: any) =>
       String(item[idField]) === recordId

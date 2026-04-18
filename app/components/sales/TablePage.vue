@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable ts/no-use-before-define */
 import { useClipboard } from '@vueuse/core'
 import { toast } from 'vue-sonner'
 
@@ -58,11 +57,13 @@ useIntersectionObserver(
 
 let searchDebounce: ReturnType<typeof setTimeout> | null = null
 watch(globalSearch, (newVal) => {
-  if (searchDebounce) clearTimeout(searchDebounce)
+  if (searchDebounce)
+    clearTimeout(searchDebounce)
   searchDebounce = setTimeout(() => {
     if (newVal && newVal.trim().length > 0) {
       searchCars(newVal.trim())
-    } else {
+    }
+    else {
       cancelSearch()
     }
   }, 400)
@@ -87,14 +88,20 @@ function formatYear(value: string): string {
     const year = new Date(value).getFullYear()
     return isNaN(year) ? value : String(year)
   }
-  catch { return value }
+  catch {
+    return value
+  }
 }
 
 function formatDate(value: string): string {
   if (!value)
     return '—'
-  try { return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) }
-  catch { return value }
+  try {
+    return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  }
+  catch {
+    return value
+  }
 }
 
 const now = ref(Date.now())
@@ -119,7 +126,9 @@ function formatCountdown(targetDate: string, expiredLabel = 'Ended'): string {
 }
 
 onMounted(() => {
-  timerInterval = setInterval(() => { now.value = Date.now() }, 1000)
+  timerInterval = setInterval(() => {
+    now.value = Date.now()
+  }, 1000)
 })
 
 onUnmounted(() => {

@@ -16,7 +16,7 @@ if (!tabParam.value || !auctionRouteFilters[tabParam.value]) {
   router.replace({ query: { ...route.query, tab: fallback } })
 }
 
-const filter = computed(() => auctionRouteFilters[tabParam.value] || auctionRouteFilters['upcoming'])
+const filter = computed(() => auctionRouteFilters[tabParam.value] || auctionRouteFilters.upcoming)
 
 watch(tabParam, (newTab) => {
   if (newTab && auctionRouteFilters[newTab]) {

@@ -34,12 +34,14 @@ const navItems = computed(() => {
 const { statusCounts, isFetched, fetchCounts } = useAuctionsApi()
 
 function getTabCount(filterId: string) {
-  if (!isFetched.value || !statusCounts.value) return undefined
+  if (!isFetched.value || !statusCounts.value)
+    return undefined
   return statusCounts.value[filterId] || 0
 }
 
 onMounted(() => {
-  if (isBaseRoute.value) fetchCounts()
+  if (isBaseRoute.value)
+    fetchCounts()
 })
 </script>
 

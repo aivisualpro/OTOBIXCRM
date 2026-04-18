@@ -51,8 +51,10 @@ export function usePeopleApi() {
    * SWR: Cached globally — shows stale data immediately, refreshes in background.
    */
   async function fetchAllUsers(force = false) {
-    if (_isFetched.value && !force) return
-    if (_isFetching.value && !force) return
+    if (_isFetched.value && !force)
+      return
+    if (_isFetching.value && !force)
+      return
 
     // SWR: If we have cached data and this is a forced refresh, don't block UI
     const hasCachedData = _allUsers.value.length > 0
@@ -67,9 +69,8 @@ export function usePeopleApi() {
 
     try {
       const queryKey = QUERY_KEYS.users()
-      const response = await deduplicatedFetch(queryKey, () => 
-        $fetch<any>('/api/users', { method: 'GET' })
-      )
+      const response = await deduplicatedFetch(queryKey, () =>
+        $fetch<any>('/api/users', { method: 'GET' }))
 
       const usersArray = Array.isArray(response)
         ? response

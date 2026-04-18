@@ -120,11 +120,13 @@ const hasTimer = computed(() => isUpcoming.value || isLive.value)
 let searchDebounce: ReturnType<typeof setTimeout> | null = null
 watch(globalSearch, (newVal) => {
   expandedCarId.value = null
-  if (searchDebounce) clearTimeout(searchDebounce)
+  if (searchDebounce)
+    clearTimeout(searchDebounce)
   searchDebounce = setTimeout(() => {
     if (newVal && newVal.trim().length > 0) {
       searchCars(newVal.trim())
-    } else {
+    }
+    else {
       cancelSearch()
     }
   }, 400)

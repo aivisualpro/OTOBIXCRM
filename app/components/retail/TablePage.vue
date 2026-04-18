@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable ts/no-use-before-define */
 import { useClipboard } from '@vueuse/core'
 import { toast } from 'vue-sonner'
 
@@ -62,16 +61,19 @@ useIntersectionObserver(
 
 let searchDebounce: ReturnType<typeof setTimeout> | null = null
 watch(globalSearch, (newVal) => {
-  if (searchDebounce) clearTimeout(searchDebounce)
+  if (searchDebounce)
+    clearTimeout(searchDebounce)
   searchDebounce = setTimeout(() => {
-    if (!newVal || newVal.trim() === '') cancelSearch()
+    if (!newVal || newVal.trim() === '')
+      cancelSearch()
     else searchCars(newVal.trim())
   }, 400)
 })
 const { allUsers, fetchAllUsers, isFetched: isUsersFetched } = usePeopleApi()
 
 function resolveUserNameByEmail(email: string) {
-  if (!email) return '—'
+  if (!email)
+    return '—'
   const user = allUsers.value.find(u => u.email === email)
   return user?.userName || email
 }
@@ -92,8 +94,6 @@ async function fetchBidStats() {
     isStatsLoading.value = false
   }
 }
-
-
 
 onMounted(() => {
   fetchCars()
@@ -136,7 +136,9 @@ function formatDateTimeStr(val: string) {
     const min = String(d.getMinutes()).padStart(2, '0')
     return `${dd}/${mm} ${h}:${min} ${ap}`
   }
-  catch (e) { return val }
+  catch (e) {
+    return val
+  }
 }
 
 function getFollowupBgColor(tsStr: string) {
@@ -1607,7 +1609,12 @@ async function fetchAndShowBids(car: any) {
   </Dialog>
 
   <!-- Set Followup Dialog for Under Negotiation -->
-  <Dialog :open="isFollowupDialogOpen" @update:open="(val) => { if (!val) cancelFollowup(); else isFollowupDialogOpen = val }">
+  <Dialog
+    :open="isFollowupDialogOpen" @update:open="(val) => {
+      if (!val)
+        cancelFollowup(); else isFollowupDialogOpen = val
+    }"
+  >
     <DialogContent class="sm:max-w-[400px]">
       <DialogHeader>
         <DialogTitle class="flex items-center gap-2">

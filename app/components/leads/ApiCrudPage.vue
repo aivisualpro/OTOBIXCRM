@@ -111,10 +111,10 @@ onMounted(async () => {
   if (router.currentRoute.value.path === '/leads/search-results' && serverSearch.value) {
     nextTick(() => { focusGlobalSearch() })
   }
-  
+
   // No longer rely on props.filters since useLeadsApi internally controls Tab/Page via query.tab
   fetchLeads()
-  
+
   fetchCarDropdowns({ limit: 500 })
   await fetchDbDropdowns()
   bankSourceOptions.value = getDbOptions('Bank Source')
@@ -687,7 +687,7 @@ function getFieldsForTab(tabId: string) {
     // Basic tab check
     if (!tab.keys.includes(f.key))
       return false
-    // Hide fields conditionally unified fully for both New and Edit states equivalently 
+    // Hide fields conditionally unified fully for both New and Edit states equivalently
     if (f.hideOnCreate)
       return false
 

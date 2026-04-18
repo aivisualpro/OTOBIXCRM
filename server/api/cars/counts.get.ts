@@ -6,19 +6,20 @@ export default defineEventHandler(async (event) => {
 
     // Parse userData cookie to enforce Role Base Access Control (RBAC)
     const rawUserData = getCookie(event, 'userData')
-    let userEmail = ""
-    let userRole = ""
+    let userEmail = ''
+    let userRole = ''
     if (rawUserData) {
       try {
         const decoded = JSON.parse(decodeURIComponent(rawUserData))
-        userEmail = decoded.email || ""
-        userRole = decoded.userRole || decoded.role || ""
-      } catch (e) {}
+        userEmail = decoded.email || ''
+        userRole = decoded.userRole || decoded.role || ''
+      }
+      catch (e) {}
     }
 
     // Base filter excludes completely blank auction statuses and 'inspected' based on legacy table logic
-    const matchQuery: any = { auctionStatus: { $exists: true, $nin: ["", " ", "inspected"] } }
-    
+    const matchQuery: any = { auctionStatus: { $exists: true, $nin: ['', ' ', 'inspected'] } }
+
     // Role-based visibility
     if (userRole === 'Retailer' && userEmail) {
       matchQuery.retailAssociate = userEmail
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event) => {
         { registrationNumber: regex },
         { city: regex },
         { fuelType: regex },
-        { appointmentId: regex }
+        { appointmentId: regex },
       ]
     }
 
@@ -41,24 +42,24 @@ export default defineEventHandler(async (event) => {
 
     const aggregationPipeline = [
       { $match: matchQuery },
-      { 
-        $group: { 
-          _id: "$auctionStatus", 
-          count: { $sum: 1 } 
-        } 
-      }
+      {
+        $group: {
+          _id: '$auctionStatus',
+          count: { $sum: 1 },
+        },
+      },
     ]
 
     // For 'followup' tab we need to count cars where dealStatus is Under Negotiation
     const followupCountPipeline = [
       { $match: { ...matchQuery, dealStatus: 'Under Negotiation' } },
-      { $count: "count" }
+      { $count: 'count' },
     ]
     const followupRes = await coll.aggregate(followupCountPipeline).toArray()
     const followupCount = followupRes[0]?.count || 0
 
     const result = await coll.aggregate(aggregationPipeline).toArray()
-    
+
     // Map backend statuses to simple count mapping
     const rawCounts = result.reduce((acc, stage) => {
       acc[stage._id] = stage.count
@@ -71,17 +72,18 @@ export default defineEventHandler(async (event) => {
       otobuy: rawCounts.otobuy || 0,
       ended: rawCounts.liveAuctionEnded || 0,
       sold: rawCounts.sold || 0,
-      removed: rawCounts.removed || 0
+      removed: rawCounts.removed || 0,
     }
-    
+
     // Aggregate complex tabs
-    counts['customer-activity'] = counts.live + counts.otobuy
-    counts['dealer-activity'] = counts.live + counts.otobuy + counts.upcoming
-    counts['followup'] = followupCount
+    counts['customer-activity'] = (counts.live || 0) + (counts.otobuy || 0)
+    counts['dealer-activity'] = (counts.live || 0) + (counts.otobuy || 0) + (counts.upcoming || 0)
+    counts.followup = followupCount
     counts.all = Object.values(rawCounts).reduce((a, b) => a + b, 0)
-    
+
     return counts
-  } catch (err: any) {
+  }
+  catch (err: any) {
     console.error('Failed to fetch car counts:', err)
     return {}
   }

@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
 
     // Status filters (server-side mapping based on tab)
     const tab = (query.tab as string || 'all').trim().toLowerCase()
-    
+
     // Internal MongoDB filter combination per tab (matches existing routeFilters)
     const tabFilters: Record<string, { inspectionStatus: string, approvalStatus: string }> = {
       'all': { inspectionStatus: '*', approvalStatus: '*' },
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
       'search-results': { inspectionStatus: '*', approvalStatus: '*' },
     }
 
-    const { inspectionStatus, approvalStatus } = tabFilters[tab] || tabFilters['all']
+    const { inspectionStatus, approvalStatus } = tabFilters[tab] || tabFilters.all!
 
     if (inspectionStatus && inspectionStatus !== '*') {
       filter.inspectionStatus = { $regex: `^\\s*${inspectionStatus}\\s*$`, $options: 'i' }
@@ -144,7 +144,7 @@ export default defineEventHandler(async (event) => {
     const sortField = (query.sort as string || '_id').trim()
     const sortDir = (query.sortDir as string || 'desc').trim().toLowerCase()
     const sortParams: Record<string, 1 | -1> = {
-      [sortField]: sortDir === 'asc' ? 1 : -1
+      [sortField]: sortDir === 'asc' ? 1 : -1,
     }
 
     // Projection to keep API lightweight (Lightweight list API)

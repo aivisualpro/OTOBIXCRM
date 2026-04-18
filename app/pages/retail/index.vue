@@ -28,19 +28,19 @@ watch(tabParam, (newTab) => {
 }, { immediate: true })
 
 const routeMap: Record<string, { title: string, icon: string }> = {
-  all: { title: 'All', icon: 'i-lucide-list' },
-  upcoming: { title: 'Upcoming', icon: 'i-lucide-calendar-clock' },
-  live: { title: 'Live', icon: 'i-lucide-radio' },
-  otobuy: { title: 'Otobuy', icon: 'i-lucide-tag' },
+  'all': { title: 'All', icon: 'i-lucide-list' },
+  'upcoming': { title: 'Upcoming', icon: 'i-lucide-calendar-clock' },
+  'live': { title: 'Live', icon: 'i-lucide-radio' },
+  'otobuy': { title: 'Otobuy', icon: 'i-lucide-tag' },
   'customer-activity': { title: 'Customer Activity', icon: 'i-lucide-activity' },
   'dealer-activity': { title: 'Dealer Activity', icon: 'i-lucide-users' },
-  ended: { title: 'Ended', icon: 'i-lucide-timer-off' },
-  sold: { title: 'Sold', icon: 'i-lucide-badge-check' },
-  removed: { title: 'Removed', icon: 'i-lucide-trash-2' },
-  followup: { title: 'Followup', icon: 'i-lucide-phone-forwarded' },
+  'ended': { title: 'Ended', icon: 'i-lucide-timer-off' },
+  'sold': { title: 'Sold', icon: 'i-lucide-badge-check' },
+  'removed': { title: 'Removed', icon: 'i-lucide-trash-2' },
+  'followup': { title: 'Followup', icon: 'i-lucide-phone-forwarded' },
 }
 
-const currentConfig = computed(() => routeMap[tabParam.value] || routeMap['all'])
+const currentConfig = computed(() => routeMap[tabParam.value] || routeMap.all)
 </script>
 
 <template>

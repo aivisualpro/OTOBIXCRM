@@ -1,5 +1,5 @@
-import { shallowRef, computed } from 'vue'
-import { deduplicatedFetch, QUERY_KEYS, getCachedData, setCachedData } from '~/composables/useQueryCache'
+import { computed, shallowRef } from 'vue'
+import { deduplicatedFetch, getCachedData, QUERY_KEYS, setCachedData } from '~/composables/useQueryCache'
 
 export interface AuctionCar {
   [key: string]: any
@@ -52,7 +52,7 @@ interface LocalApiResponse {
 const PAGE_SIZE = 30
 
 /** Centralized environment state so we know when to invalidate memory */
-const _fetchedForEnv = process.client ? window.sessionStorage.getItem('auctions_env') : null
+const _fetchedForEnv = import.meta.client ? window.sessionStorage.getItem('auctions_env') : null
 
 export function useAuctionsApi() {
   const { currentEnv } = useApiEnvironment()
@@ -91,7 +91,8 @@ export function useAuctionsApi() {
 
   // ─── Setters ───
   async function setTab(tab: string) {
-    if (_activeTab.value === tab) return
+    if (_activeTab.value === tab)
+      return
     _activeTab.value = tab
     _currentPage.value = 1
     await fetchCars(true)
@@ -99,7 +100,8 @@ export function useAuctionsApi() {
   }
 
   async function setSort(key: string, dir: 'asc' | 'desc') {
-    if (_sortKey.value === key && _sortDir.value === dir) return
+    if (_sortKey.value === key && _sortDir.value === dir)
+      return
     _sortKey.value = key
     _sortDir.value = dir
     _currentPage.value = 1
@@ -108,9 +110,12 @@ export function useAuctionsApi() {
 
   function _buildFilterParams(): Record<string, string> {
     const params: Record<string, string> = { tab: _activeTab.value }
-    if (serverSearch.value) params.search = serverSearch.value
-    if (_sortKey.value) params.sort = _sortKey.value
-    if (_sortDir.value) params.sortDir = _sortDir.value
+    if (serverSearch.value)
+      params.search = serverSearch.value
+    if (_sortKey.value)
+      params.sort = _sortKey.value
+    if (_sortDir.value)
+      params.sortDir = _sortDir.value
     return params
   }
 
@@ -120,19 +125,21 @@ export function useAuctionsApi() {
       const params = _buildFilterParams()
       params.t = String(Date.now())
       const queryKey = QUERY_KEYS.carsCount() // Needs definition in useQueryCache
-      const res = await deduplicatedFetch(queryKey, () => 
-        $fetch<Record<string, number>>('/api/cars/counts', { params })
-      )
+      const res = await deduplicatedFetch(queryKey, () =>
+        $fetch<Record<string, number>>('/api/cars/counts', { params }))
       _statusCounts.value = res || {}
-    } catch (e) {
+    }
+    catch (e) {
       console.warn('Failed to fetch car counts', e)
     }
   }
 
   // ─── Data Fetching SWR ───
   async function fetchCars(force = false) {
-    if (_isInitialized.value && !force) return
-    if (_isLoading.value && !force) return
+    if (_isInitialized.value && !force)
+      return
+    if (_isLoading.value && !force)
+      return
 
     _fetchError.value = null
     _fetchSeq.value++
@@ -150,24 +157,26 @@ export function useAuctionsApi() {
       _currentPage.value = 1
       _isInitialized.value = true
       _isRefreshing.value = true
-    } else {
-      if (_cars.value.length === 0) _isLoading.value = true
+    }
+    else {
+      if (_cars.value.length === 0)
+        _isLoading.value = true
       else _isRefreshing.value = true
     }
 
     try {
-      const response = await deduplicatedFetch(queryKey, () => 
-        $fetch<LocalApiResponse>('/api/cars', { params, signal })
-      )
+      const response = await deduplicatedFetch(queryKey, () =>
+        $fetch<LocalApiResponse>('/api/cars', { params, signal }))
 
-      if (_fetchSeq.value !== currentSeq) return
+      if (_fetchSeq.value !== currentSeq)
+        return
 
       _cars.value = response.items || []
       _totalCount.value = response.total
       _currentPage.value = 1
       _isInitialized.value = true
 
-      if (process.client) {
+      if (import.meta.client) {
         window.sessionStorage.setItem('auctions_env', currentEnv.value)
       }
 
@@ -176,10 +185,12 @@ export function useAuctionsApi() {
       _prefetchNextPage(2)
     }
     catch (err: any) {
-      if (err?.name === 'AbortError' || signal.aborted) return
+      if (err?.name === 'AbortError' || signal.aborted)
+        return
       console.error('Failed to fetch cars:', err)
       _fetchError.value = err?.data?.message || err?.message || 'Failed to fetch cars'
-      if (_cars.value.length === 0) _cars.value = []
+      if (_cars.value.length === 0)
+        _cars.value = []
     }
     finally {
       if (!signal.aborted) {
@@ -190,22 +201,22 @@ export function useAuctionsApi() {
   }
 
   async function loadMore() {
-    if (_isLoadingMore.value || !hasMore.value) return
+    if (_isLoadingMore.value || !hasMore.value)
+      return
     _isLoadingMore.value = true
 
     try {
       const nextPage = _currentPage.value + 1
       const params: Record<string, any> = { page: nextPage, limit: PAGE_SIZE, ..._buildFilterParams() }
       const queryKey = QUERY_KEYS.cars(params)
-      
-      const response = await deduplicatedFetch(queryKey, () => 
-        $fetch<LocalApiResponse>('/api/cars', { params })
-      )
+
+      const response = await deduplicatedFetch(queryKey, () =>
+        $fetch<LocalApiResponse>('/api/cars', { params }))
 
       _cars.value = [..._cars.value, ...(response.items || [])]
       _currentPage.value = nextPage
       _totalCount.value = response.total
-      
+
       setCachedData(queryKey, response)
       _prefetchNextPage(nextPage + 1)
     }
@@ -218,10 +229,11 @@ export function useAuctionsApi() {
   }
 
   function _prefetchNextPage(targetPage: number) {
-    if (_cars.value.length >= _totalCount.value) return
+    if (_cars.value.length >= _totalCount.value)
+      return
     const params: Record<string, any> = { page: targetPage, limit: PAGE_SIZE, ..._buildFilterParams() }
     const queryKey = QUERY_KEYS.cars(params)
-    
+
     if (!getCachedData(queryKey)) {
       deduplicatedFetch(queryKey, () => $fetch<LocalApiResponse>('/api/cars', { params }))
         .then(res => setCachedData(queryKey, res))
@@ -230,17 +242,15 @@ export function useAuctionsApi() {
   }
 
   // ─── Server-side search ───
-  let _searchDebounce: ReturnType<typeof setTimeout> | null = null
 
   async function searchCars(query: string) {
-    if (_searchDebounce) clearTimeout(_searchDebounce)
     serverSearch.value = query.trim()
     _currentPage.value = 1
     await fetchCars(true)
   }
 
   function cancelSearch() {
-    if (_searchDebounce) clearTimeout(_searchDebounce)
+
     serverSearch.value = ''
     _currentPage.value = 1
     fetchCars(true)
@@ -262,7 +272,7 @@ export function useAuctionsApi() {
     isRefreshing: _isRefreshing,
     isFetched: _isInitialized,
     fetchError: _fetchError,
-    
+
     activeTab: _activeTab,
     sortKey: _sortKey,
     sortDir: _sortDir,
@@ -276,7 +286,7 @@ export function useAuctionsApi() {
     searchCars,
     cancelSearch,
     fetchCounts,
-    
+
     // Alias to avoid renaming in templates immediately where possible
     globalSearch: serverSearch,
     fetchAllCars: fetchCars,

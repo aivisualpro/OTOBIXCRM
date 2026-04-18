@@ -37,7 +37,11 @@ const isActive = computed(() => {
     return useRoute().path === '/'
 
   const baseParts = props.item.link.split('/')
-  const base = baseParts.length > 1 && baseParts[1] ? `/${baseParts[1]}` : '/'
+  let base = baseParts.length > 1 && baseParts[1] ? `/${baseParts[1]}` : '/'
+  
+  // Strip query strings and hashes to correctly match the path
+  base = base.split('?')[0] ?? base
+  base = base.split('#')[0] ?? base
 
   const currentPath = useRoute().path
   return currentPath === base || currentPath.startsWith(`${base}/`)
