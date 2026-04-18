@@ -42,7 +42,38 @@ async function fetchBidStats() {
   }
 }
 
-const { activeTab, searchCars, cancelSearch, loadMore, hasMore, isLoadingMore, totalCount } = useAuctionsApi()
+const { activeTab, searchCars, cancelSearch, loadMore, hasMore, isLoadingMore, totalCount, setSimilarSearchCtx } = useAuctionsApi()
+
+const router = useRouter()
+const route = useRoute()
+
+function handleSimilarSearch(car: any) {
+  const clean = (str: string) => String(str || '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/(^-|-$)/g, '').toLowerCase()
+  
+  const yearStr = String(car.yearMonthOfManufacture || '')
+  let year = ''
+  const d = new Date(yearStr)
+  if (!isNaN(d.getTime())) year = String(d.getFullYear())
+  else {
+    const m = yearStr.match(/\d{4}/)
+    if (m) year = m[0]
+  }
+
+  setSimilarSearchCtx({
+    make: car.make,
+    model: car.model,
+    year: year
+  })
+
+  let yearDisplaySlug = year
+  const yInt = parseInt(year)
+  if (!isNaN(yInt)) {
+    yearDisplaySlug = `${yInt - 1}-${yInt}-${yInt + 1}`
+  }
+
+  const slug = `similar-search-${clean(car.make)}-${clean(car.model)}-${yearDisplaySlug}`.replace(/-+/g, '-')
+  router.push({ query: { ...route.query, tab: slug } })
+}
 
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 useIntersectionObserver(
@@ -461,11 +492,21 @@ async function fetchAndShowBids(car: any) {
               </div>
             </TableCell>
             <TableCell>
-              <div class="flex justify-center">
+              <div class="flex justify-center gap-1">
+                <Button
+                  v-if="car.appointmentId && (!activeTab || !activeTab.startsWith('similar-search'))"
+                  variant="ghost"
+                  class="p-1 hover:bg-muted/50 rounded-md transition-colors w-12 h-12 flex items-center justify-center border border-transparent hover:border-border"
+                  title="Similar Search"
+                  @click.stop="handleSimilarSearch(car)"
+                >
+                  <Icon name="i-lucide-search" class="!size-6 text-blue-500 shrink-0" />
+                </Button>
                 <Button
                   v-if="car.appointmentId"
                   variant="ghost"
                   class="p-1 hover:bg-muted/50 rounded-md transition-colors w-12 h-12 flex items-center justify-center border border-transparent hover:border-border"
+                  title="PDF Report"
                   @click.stop="openPreview(car.appointmentId)"
                 >
                   <Icon name="i-lucide-file-text" class="!size-8 text-red-500 shrink-0" />

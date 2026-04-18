@@ -108,6 +108,8 @@ export function useAuctionsApi() {
     await fetchCars(true)
   }
 
+  const _similarSearchCtx = useState<{ make: string, model: string, year: string | number } | null>('auctions_similarSearch', () => null)
+
   function _buildFilterParams(): Record<string, string> {
     const params: Record<string, string> = { tab: _activeTab.value }
     if (serverSearch.value)
@@ -116,6 +118,12 @@ export function useAuctionsApi() {
       params.sort = _sortKey.value
     if (_sortDir.value)
       params.sortDir = _sortDir.value
+      
+    if (_activeTab.value.startsWith('similar-search') && _similarSearchCtx.value) {
+      params.similarMake = _similarSearchCtx.value.make
+      params.similarModel = _similarSearchCtx.value.model
+      params.similarYear = String(_similarSearchCtx.value.year || '')
+    }
     return params
   }
 
@@ -260,6 +268,10 @@ export function useAuctionsApi() {
     fetchCounts()
   }
 
+  function setSimilarSearchCtx(ctx: { make: string, model: string, year: string | number } | null) {
+    _similarSearchCtx.value = ctx
+  }
+
   return {
     allCars: _cars,
     totalCount: _totalCount,
@@ -276,8 +288,10 @@ export function useAuctionsApi() {
     sortKey: _sortKey,
     sortDir: _sortDir,
     serverSearch,
+    similarSearchCtx: _similarSearchCtx,
 
     setTab,
+    setSimilarSearchCtx,
     setSort,
     fetchCars,
     refreshCars,

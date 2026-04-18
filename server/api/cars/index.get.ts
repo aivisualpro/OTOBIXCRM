@@ -50,6 +50,35 @@ export default defineEventHandler(async (event) => {
     }
     else if (['upcoming', 'live', 'otobuy', 'sold', 'removed'].includes(tab)) {
       filter.auctionStatus = tab
+    }
+    else if (tab.startsWith('similar-search')) {
+      const sMake = queryParams.similarMake ? String(queryParams.similarMake) : ''
+      const sModel = queryParams.similarModel ? String(queryParams.similarModel) : ''
+      const sYearStr = queryParams.similarYear ? String(queryParams.similarYear) : ''
+      
+      if (sMake) filter.make = sMake
+      if (sModel) filter.model = sModel
+      
+      let baseYear = parseInt(sYearStr)
+      if (isNaN(baseYear) && sYearStr) {
+        const d = new Date(sYearStr)
+        if (!isNaN(d.getTime())) {
+          baseYear = d.getFullYear()
+        } else {
+          const yMatch = sYearStr.match(/\d{4}/)
+          if (yMatch) baseYear = parseInt(yMatch[0])
+        }
+      }
+      if (!isNaN(baseYear) && baseYear > 1900) {
+        // yearMonthOfManufacture is a MongoDB Date field.
+        // We match between Jan 1 of (baseYear - 1) and Dec 31 of (baseYear + 1)
+        const startYear = baseYear - 1
+        const endYear = baseYear + 1
+        filter.yearMonthOfManufacture = {
+          $gte: new Date(`${startYear}-01-01T00:00:00.000Z`),
+          $lte: new Date(`${endYear}-12-31T23:59:59.999Z`)
+        }
+      }
     } // 'all' requires no additional filter
 
     console.log('[API:cars] tab:', tab, 'limit:', limit, 'filter:', JSON.stringify(filter))
