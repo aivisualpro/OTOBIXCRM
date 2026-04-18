@@ -2552,7 +2552,7 @@ watch(editForm, () => {
               @click="downloadPDF"
             >
               <Icon :name="isGeneratingPdf ? 'i-lucide-loader-2' : 'i-lucide-file-down'" :class="{ 'animate-spin': isGeneratingPdf }" class="mr-1.5 size-4" />
-              Download PDF
+              Inspection Report
             </Button>
             <Button
               v-if="!props.readonly && car.approvalStatus !== 'Approved'"

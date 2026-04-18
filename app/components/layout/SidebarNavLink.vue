@@ -38,7 +38,7 @@ const isActive = computed(() => {
 
   const baseParts = props.item.link.split('/')
   let base = baseParts.length > 1 && baseParts[1] ? `/${baseParts[1]}` : '/'
-  
+
   // Strip query strings and hashes to correctly match the path
   base = base.split('?')[0] ?? base
   base = base.split('#')[0] ?? base

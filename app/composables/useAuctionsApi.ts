@@ -250,7 +250,6 @@ export function useAuctionsApi() {
   }
 
   function cancelSearch() {
-
     serverSearch.value = ''
     _currentPage.value = 1
     fetchCars(true)
