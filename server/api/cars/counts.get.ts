@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     const matchQuery: any = { auctionStatus: { $exists: true, $nin: ['', ' ', 'inspected'] } }
 
     // Role-based visibility
-    if (userRole === 'Retailer' && userEmail) {
+    if (userRole === 'Retailer' && userEmail && queryParams.module === 'retail') {
       matchQuery.retailAssociate = userEmail
     }
 

@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     const filter: any = {}
 
     // Role-based visibility
-    if (userRole === 'Retailer' && userEmail) {
+    if (userRole === 'Retailer' && userEmail && queryParams.module === 'retail') {
       filter.retailAssociate = userEmail
     }
 

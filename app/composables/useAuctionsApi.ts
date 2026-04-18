@@ -111,7 +111,10 @@ export function useAuctionsApi() {
   const _similarSearchCtx = useState<{ make: string, model: string, year: string | number } | null>('auctions_similarSearch', () => null)
 
   function _buildFilterParams(): Record<string, string> {
-    const params: Record<string, string> = { tab: _activeTab.value }
+    const route = useRoute()
+    const currentModule = route.path.split('/')[1] || ''
+    
+    const params: Record<string, string> = { tab: _activeTab.value, module: currentModule }
     if (serverSearch.value)
       params.search = serverSearch.value
     if (_sortKey.value)
