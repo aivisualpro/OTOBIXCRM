@@ -577,6 +577,12 @@ const _totalFiltered = computed(() => filteredItems.value.length)
 // ─── Search triggers server-side query & auto-navigates to Search Results tab ───
 let _localSearchDebounce: ReturnType<typeof setTimeout> | null = null
 
+watch(() => router.currentRoute.value.query.tab, (newTab) => {
+  if (newTab !== 'search-results' && search.value) {
+    search.value = ''
+  }
+})
+
 watch(search, async (q) => {
   const trimmed = q.trim()
 

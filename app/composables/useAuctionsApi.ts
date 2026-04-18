@@ -132,7 +132,7 @@ export function useAuctionsApi() {
     try {
       const params = _buildFilterParams()
       params.t = String(Date.now())
-      const queryKey = QUERY_KEYS.carsCount() // Needs definition in useQueryCache
+      const queryKey = QUERY_KEYS.carsCount(params)
       const res = await deduplicatedFetch(queryKey, () =>
         $fetch<Record<string, number>>('/api/cars/counts', { params }))
       _statusCounts.value = res || {}

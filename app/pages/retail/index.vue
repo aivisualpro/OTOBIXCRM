@@ -17,7 +17,15 @@ const navItems = computed(() => {
 const tabParam = computed(() => String(route.query.tab || ''))
 
 if (!tabParam.value || (!tabParam.value.startsWith('similar-search') && !navItems.value.includes(tabParam.value))) {
-  const fallback = navItems.value.length > 0 ? navItems.value[0] : 'all'
+  let fallback = 'all'
+  const ws = activeWorkspace.value
+  
+  if (ws?.defaultRoutes?.retail) {
+    fallback = ws.defaultRoutes.retail.split('=').pop() || 'all'
+  }
+  else {
+    fallback = navItems.value[0] || 'all'
+  }
   router.replace({ query: { ...route.query, tab: fallback } })
 }
 

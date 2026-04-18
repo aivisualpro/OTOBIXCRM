@@ -8,11 +8,17 @@ const { setTab } = useAuctionsApi()
 const tabParam = computed(() => String(route.query.tab || ''))
 
 if (!tabParam.value || !auctionRouteFilters[tabParam.value]) {
-  const allowedTabs = useWorkspace().activeWorkspace.value?.auctionTabs
+  const ws = useWorkspace().activeWorkspace.value
+  const allowedTabs = ws?.auctionTabs
   let fallback = 'upcoming'
-  if (allowedTabs && allowedTabs.length > 0 && !allowedTabs.includes(fallback)) {
+
+  if (ws?.defaultRoutes?.auctions) {
+    fallback = ws.defaultRoutes.auctions.split('=').pop() || 'upcoming'
+  }
+  else if (allowedTabs && allowedTabs.length > 0 && !allowedTabs.includes(fallback)) {
     fallback = allowedTabs[0] as string
   }
+  
   router.replace({ query: { ...route.query, tab: fallback } })
 }
 

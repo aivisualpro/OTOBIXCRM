@@ -36,16 +36,14 @@ if (!tabParam.value) {
 const filter = computed(() => routeFilters[tabParam.value as keyof typeof routeFilters] || routeFilters.all)
 const activeColumns = computed(() => routeColumnsMap[tabParam.value] || leadsColumns)
 
+if (searchParam.value && !serverSearch.value) {
+  serverSearch.value = searchParam.value
+}
+
 // When tab changes, update useLeadsApi's internal tab tracker
 watch(tabParam, (newTab) => {
   if (newTab) {
     setTab(newTab)
-  }
-}, { immediate: true })
-
-watch(searchParam, (newSearch) => {
-  if (serverSearch.value !== newSearch) {
-    serverSearch.value = newSearch || ''
   }
 }, { immediate: true })
 
