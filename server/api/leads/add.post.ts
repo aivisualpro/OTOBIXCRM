@@ -63,13 +63,15 @@ export default defineEventHandler(async (event) => {
 
     const result = await db.collection('telecallings').insertOne(doc)
 
-    // Broadcast real-time change to all connected clients
-    broadcastChange('leads', 'create', doc.appointmentId, doc.addedBy)
+    const createdDoc = { ...doc, id: result.insertedId.toString(), _id: result.insertedId.toString() }
+
+    // Broadcast: create → full normalized record
+    broadcastChange('leads', 'create', doc.appointmentId, doc.addedBy, createdDoc)
 
     return {
       success: true,
       message: 'Lead created successfully',
-      data: { _id: result.insertedId, ...doc },
+      data: createdDoc,
     }
   }
   catch (err: any) {

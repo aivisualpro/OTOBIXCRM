@@ -1,12 +1,12 @@
 /**
- * ─── SSE (Server-Sent Events) Endpoint ───
+ * ─── SSE (Server-Sent Events) Endpoint v3 ───
  * GET /api/live-sync
  *
- * Keeps a persistent HTTP connection open.
- * When any mutation endpoint calls broadcastChange(), this streams
- * the event to every connected browser tab in real-time.
+ * Streams versioned, ordered events to all connected browsers.
+ * Uses SSE `id:` field so the browser tracks lastEventId automatically.
  *
- * The client listens via EventSource and auto-refetches stale data.
+ * On reconnect, the browser sends `Last-Event-ID` header, and this endpoint
+ * replays missed events from the in-memory ring buffer before streaming live.
  */
 export default defineEventHandler(async (event) => {
   // Prevent Node.js from tearing down the long-lived SSE socket
@@ -23,19 +23,34 @@ export default defineEventHandler(async (event) => {
     'X-Accel-Buffering': 'no', // Disable Nginx buffering
   })
 
-  // Send initial connection event with current timestamps
-  const timestamps = getLastChangeTimestamps()
-  const initData = JSON.stringify({ type: 'connected', timestamps })
-  event.node.res.write(`data: ${initData}\n\n`)
+  const currentSeq = getEventSequence()
 
-  // Subscribe to change events
+  // Check if client is reconnecting and missed events
+  const lastEventIdHeader = event.node.req.headers['last-event-id']
+  const lastEventId = lastEventIdHeader ? Number(lastEventIdHeader) : 0
+
+  // Send initial connection event with current sequence and timestamps
+  const initData = JSON.stringify({
+    type: 'connected',
+    currentVersion: currentSeq,
+    timestamps: getLastChangeTimestamps(),
+  })
+  event.node.res.write(`id: ${currentSeq}\ndata: ${initData}\n\n`)
+
+  // Replay missed events from ring buffer (if client reconnected)
+  if (lastEventId > 0 && lastEventId < currentSeq) {
+    const missed = getEventsSince(lastEventId)
+    for (const missedEvent of missed) {
+      const payload = JSON.stringify({ type: 'change', ...missedEvent })
+      event.node.res.write(`id: ${missedEvent.eventId}\ndata: ${payload}\n\n`)
+    }
+  }
+
+  // Subscribe to live change events
   const unsubscribe = onDataChange((changeEvent) => {
     try {
-      const payload = JSON.stringify({
-        type: 'change',
-        ...changeEvent,
-      })
-      event.node.res.write(`data: ${payload}\n\n`)
+      const payload = JSON.stringify({ type: 'change', ...changeEvent })
+      event.node.res.write(`id: ${changeEvent.eventId}\ndata: ${payload}\n\n`)
     }
     catch {
       // Connection closed — will be cleaned up below

@@ -22,7 +22,7 @@ export const navMenu: NavMenu[] = [
       {
         title: 'Auctions',
         icon: 'i-lucide-gavel',
-        link: '/auctions/upcoming',
+        link: '/auctions?tab=upcoming',
       },
       {
         title: 'Sales',

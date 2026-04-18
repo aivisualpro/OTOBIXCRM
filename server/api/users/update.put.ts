@@ -52,7 +52,9 @@ export default defineEventHandler(async (event) => {
 
     console.warn(`[API:users/update] Updated user ${userId} — modified: ${result.modifiedCount}`)
 
-    broadcastChange('users', 'update', userId)
+    // Broadcast: update → changed fields only (strip sensitive)
+    const { password: _pw, passwordHash: _ph, ...safeFields } = updateFields
+    broadcastChange('users', 'update', userId, undefined, safeFields)
 
     return {
       success: true,

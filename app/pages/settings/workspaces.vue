@@ -180,12 +180,12 @@ function deselectAll() {
 
 // ─── Auction Tabs Sub-Config ───
 const AUCTION_TABS = [
-  { id: 'upcoming', title: 'Upcoming', route: '/auctions/upcoming' },
-  { id: 'live', title: 'Live', route: '/auctions/live' },
-  { id: 'otobuy', title: 'Otobuy', route: '/auctions/otobuy' },
-  { id: 'ended', title: 'Ended', route: '/auctions/ended' },
-  { id: 'sold', title: 'Sold', route: '/auctions/sold' },
-  { id: 'removed', title: 'Removed', route: '/auctions/removed' },
+  { id: 'upcoming', title: 'Upcoming', route: '/auctions?tab=upcoming' },
+  { id: 'live', title: 'Live', route: '/auctions?tab=live' },
+  { id: 'otobuy', title: 'Otobuy', route: '/auctions?tab=otobuy' },
+  { id: 'ended', title: 'Ended', route: '/auctions?tab=ended' },
+  { id: 'sold', title: 'Sold', route: '/auctions?tab=sold' },
+  { id: 'removed', title: 'Removed', route: '/auctions?tab=removed' },
 ]
 
 function localToggleAuctionTab(tabId: string) {

@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 404, message: 'Lead not found' })
     }
 
-    // Broadcast real-time change to all connected clients
+    // Broadcast: delete → null payload (only recordId needed)
     broadcastChange('leads', 'delete', telecallingId)
 
     return {

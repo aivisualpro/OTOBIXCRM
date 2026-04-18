@@ -1,4 +1,6 @@
+import { shallowRef, computed } from 'vue'
 import { routeFilters } from '~/constants/leads'
+import { deduplicatedFetch, QUERY_KEYS, getCachedData, setCachedData } from '~/composables/useQueryCache'
 
 export interface TelecallingLead {
   [key: string]: any
@@ -42,12 +44,14 @@ export interface TelecallingLead {
 }
 
 interface LocalApiResponse {
-  data: TelecallingLead[]
-  totalCount: number
+  items: TelecallingLead[]
+  total: number
   totalPages: number
   page: number
   limit: number
 }
+
+// ... unchanged lines are kept by only matching the interface ...
 
 interface CountsResponse {
   totalCount: number
@@ -55,7 +59,7 @@ interface CountsResponse {
 }
 
 // ─── Shared state key (PAGE_SIZE is safe at module level - just a constant) ───
-const PAGE_SIZE = 2000
+const PAGE_SIZE = 25
 
 // ─── Module-level abort controller to cancel previous in-flight fetches ───
 let _activeAbortController: AbortController | null = null
@@ -74,24 +78,29 @@ function _newFetchSignal(): AbortSignal {
 }
 
 export function useLeadsApi() {
-  // useState keyed calls — safe inside composable, shared across all callers via key
-  const _leads = useState<TelecallingLead[]>('leads_data', () => [])
+  // ─── Shallow state for large dataset (rule 14: shallow reactive for big data) ───
+  // useState uses deep reactivity by default. For 2000+ row datasets,
+  // we manually track a shallowRef inside useState to avoid deep proxy overhead.
+  const _leads = useState<TelecallingLead[]>('leads_data', () => shallowRef([]) as any)
   const _fetchSeq = useState<number>('leads_fetch_seq', () => 0)
   const _advancedFilters = useState<Record<string, string>>('leads_advancedFilters', () => ({}))
   const _currentPage = useState('leads_currentPage', () => 0)
   const _totalCount = useState('leads_totalCount', () => 0)
   const _isLoading = useState('leads_isLoading', () => false)
   const _isLoadingMore = useState('leads_isLoadingMore', () => false)
+  const _isRefreshing = useState('leads_isRefreshing', () => false)
   const _fetchError = useState<string | null>('leads_fetchError', () => null)
   const _isInitialized = useState('leads_isInitialized', () => false)
   const _fetchedForEnv = useState('leads_fetchedForEnv', () => '')
   const _serverSearch = useState('leads_serverSearch', () => '')
-  const _statusFilters = useState<Record<string, string>>('leads_statusFilters', () => ({}))
+  const _activeTab = useState('leads_activeTab', () => 'all')
   const _counts = useState<Record<string, number>>('leads_counts', () => ({}))
   const _countsTotal = useState('leads_countsTotal', () => 0)
   // Cache of leads before a search — restored instantly on clear
   const _preSearchLeads = useState<TelecallingLead[] | null>('leads_preSearchCache', () => null)
   const _preSearchTotalCount = useState('leads_preSearchTotalCount', () => 0)
+  const _sortKey = useState('leads_sortKey', () => '_id')
+  const _sortDir = useState('leads_sortDir', () => 'desc')
 
   const { currentEnv } = useApiEnvironment()
 
@@ -103,39 +112,39 @@ export function useLeadsApi() {
     }))
   }
 
+  // ─── Build filter params (DRY helper) ───
+  function _buildFilterParams(): Record<string, any> {
+    const params: Record<string, any> = {}
+
+    if (_serverSearch.value) {
+      params.search = _serverSearch.value
+    }
+
+    if (_advancedFilters.value.startDate) params.startDate = _advancedFilters.value.startDate
+    if (_advancedFilters.value.endDate) params.endDate = _advancedFilters.value.endDate
+    if (_advancedFilters.value.dateField) params.dateField = _advancedFilters.value.dateField
+    if (_advancedFilters.value.make) params.make = _advancedFilters.value.make
+    if (_advancedFilters.value.city) params.city = _advancedFilters.value.city
+    if (_advancedFilters.value.priority) params.priority = _advancedFilters.value.priority
+    if (_advancedFilters.value.allocatedTo) params.allocatedTo = _advancedFilters.value.allocatedTo
+    if (_advancedFilters.value.createdBy) params.createdBy = _advancedFilters.value.createdBy
+    if (_advancedFilters.value.addedBy) params.addedBy = _advancedFilters.value.addedBy
+    if (_activeTab.value) params.tab = _activeTab.value
+    if (_sortKey.value) params.sort = _sortKey.value
+    if (_sortDir.value) params.sortDir = _sortDir.value
+
+    return params
+  }
+
   // ─── Fetch counts (lightweight, runs independently) ───
   async function fetchCounts() {
     try {
-      const params: Record<string, string> = {}
-
-      if (_serverSearch.value) {
-        params.search = _serverSearch.value
-      }
-      else {
-        if (_advancedFilters.value.startDate)
-          params.startDate = _advancedFilters.value.startDate
-        if (_advancedFilters.value.endDate)
-          params.endDate = _advancedFilters.value.endDate
-        if (_advancedFilters.value.dateField)
-          params.dateField = _advancedFilters.value.dateField
-        if (_advancedFilters.value.make)
-          params.make = _advancedFilters.value.make
-        if (_advancedFilters.value.city)
-          params.city = _advancedFilters.value.city
-        if (_advancedFilters.value.priority)
-          params.priority = _advancedFilters.value.priority
-        if (_advancedFilters.value.allocatedTo)
-          params.allocatedTo = _advancedFilters.value.allocatedTo
-        if (_advancedFilters.value.createdBy)
-          params.createdBy = _advancedFilters.value.createdBy
-        if (_advancedFilters.value.addedBy)
-          params.addedBy = _advancedFilters.value.addedBy
-        if (_advancedFilters.value.inspectionStatus)
-          params.inspectionStatus = _advancedFilters.value.inspectionStatus
-      }
-
+      const params = _buildFilterParams()
       params.t = String(Date.now())
-      const res = await $fetch<CountsResponse>('/api/leads/counts', { params })
+      const queryKey = QUERY_KEYS.leadsCount()
+      const res = await deduplicatedFetch(queryKey, () => 
+        $fetch<CountsResponse>('/api/leads/counts', { params })
+      )
       _counts.value = res.counts || {}
       _countsTotal.value = res.totalCount || 0
     }
@@ -144,132 +153,123 @@ export function useLeadsApi() {
     }
   }
 
-  // ─── Initial load: all leads ───
+  // ─── Initial load with SWR pattern ───
+  // If data exists, show it immediately and refresh in background
   async function fetchLeads(force = false) {
     // If env changed, force reload
     if (_fetchedForEnv.value && _fetchedForEnv.value !== currentEnv.value) {
       force = true
     }
-    if (_isInitialized.value && !force)
-      return
-    if (_isLoading.value && !force)
-      return // Block concurrent fetches unless forced
+    if (_isInitialized.value && !force) return
+    if (_isLoading.value && !force) return // Block concurrent fetches unless forced
 
-    _isLoading.value = true
     _fetchError.value = null
-
     _fetchSeq.value++
     const currentSeq = _fetchSeq.value
     const signal = _newFetchSignal()
 
-    try {
-      const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
-      if (_serverSearch.value) {
-        params.search = _serverSearch.value
+    const params: Record<string, any> = { page: 1, limit: PAGE_SIZE, ..._buildFilterParams() }
+    // Remove params.t because we WANT to reuse cache logically
+    const queryKey = QUERY_KEYS.leads(params)
+
+    // SWR: Check query cache for this EXACT combination (tab + page + sort, etc.)
+    const cachedData = getCachedData<LocalApiResponse>(queryKey)
+    if (cachedData) {
+      _leads.value = normalize(cachedData.items || [])
+      _totalCount.value = cachedData.total
+      _currentPage.value = 1
+      _isInitialized.value = true
+      _isRefreshing.value = true // Show subtle loader
+    } else {
+      // Look if we have ANY existing data to hold visual stability (fallback)
+      if (_leads.value.length === 0) {
+        _isLoading.value = true
+      } else {
+        _isRefreshing.value = true
       }
+    }
 
-      // Apply advanced UI filters
-      if (_advancedFilters.value.startDate)
-        params.startDate = _advancedFilters.value.startDate
-      if (_advancedFilters.value.endDate)
-        params.endDate = _advancedFilters.value.endDate
-      if (_advancedFilters.value.dateField)
-        params.dateField = _advancedFilters.value.dateField
-      if (_advancedFilters.value.make)
-        params.make = _advancedFilters.value.make
-      if (_advancedFilters.value.city)
-        params.city = _advancedFilters.value.city
-      if (_advancedFilters.value.priority)
-        params.priority = _advancedFilters.value.priority
-      if (_advancedFilters.value.allocatedTo)
-        params.allocatedTo = _advancedFilters.value.allocatedTo
-      if (_advancedFilters.value.createdBy)
-        params.createdBy = _advancedFilters.value.createdBy
-      if (_advancedFilters.value.addedBy)
-        params.addedBy = _advancedFilters.value.addedBy
-      if (_advancedFilters.value.inspectionStatus)
-        params.inspectionStatus = _advancedFilters.value.inspectionStatus
-
-      params.t = String(Date.now())
-      const response = await $fetch<LocalApiResponse>('/api/leads', { params, signal })
+    try {
+      const response = await deduplicatedFetch(queryKey, () => 
+        $fetch<LocalApiResponse>('/api/leads', { params, signal })
+      )
 
       // Bail if a newer fetch was initiated while we were waiting
-      if (_fetchSeq.value !== currentSeq)
-        return
+      if (_fetchSeq.value !== currentSeq) return
 
-      _leads.value = normalize(response.data || [])
-      _totalCount.value = response.totalCount
+      _leads.value = normalize(response.items || [])
+      _totalCount.value = response.total
       _currentPage.value = 1
       _isInitialized.value = true
       _fetchedForEnv.value = currentEnv.value
 
+      setCachedData(queryKey, response)
+
       // Fetch counts in background (non-blocking)
       fetchCounts()
+      
+      // Auto-prefetch page 2 for seamless scrolling feeling
+      _prefetchNextPage(2)
     }
     catch (err: any) {
-      if (err?.name === 'AbortError' || signal.aborted)
-        return // Silently ignore cancelled requests
+      if (err?.name === 'AbortError' || signal.aborted) return // Silently ignore cancelled requests
       console.error('Failed to fetch leads:', err)
       _fetchError.value = err?.data?.message || err?.message || 'Failed to fetch leads'
-      _leads.value = []
+      // Keep stale data visible
+      if (_leads.value.length === 0) {
+        _leads.value = []
+      }
     }
     finally {
       if (!signal.aborted) {
         _isLoading.value = false
+        _isRefreshing.value = false
       }
     }
   }
 
   // ─── Load more (next page) ───
   async function loadMore() {
-    if (_isLoadingMore.value)
-      return
-    if (_leads.value.length >= _totalCount.value)
-      return
+    if (_isLoadingMore.value) return
+    if (_leads.value.length >= _totalCount.value) return
 
     _isLoadingMore.value = true
     try {
       const nextPage = _currentPage.value + 1
-      const params: Record<string, any> = { page: nextPage, limit: PAGE_SIZE }
-      if (_serverSearch.value) {
-        params.search = _serverSearch.value
-      }
-
-      // Apply advanced UI filters
-      if (_advancedFilters.value.startDate)
-        params.startDate = _advancedFilters.value.startDate
-      if (_advancedFilters.value.endDate)
-        params.endDate = _advancedFilters.value.endDate
-      if (_advancedFilters.value.dateField)
-        params.dateField = _advancedFilters.value.dateField
-      if (_advancedFilters.value.make)
-        params.make = _advancedFilters.value.make
-      if (_advancedFilters.value.city)
-        params.city = _advancedFilters.value.city
-      if (_advancedFilters.value.priority)
-        params.priority = _advancedFilters.value.priority
-      if (_advancedFilters.value.allocatedTo)
-        params.allocatedTo = _advancedFilters.value.allocatedTo
-      if (_advancedFilters.value.createdBy)
-        params.createdBy = _advancedFilters.value.createdBy
-      if (_advancedFilters.value.addedBy)
-        params.addedBy = _advancedFilters.value.addedBy
-      if (_advancedFilters.value.inspectionStatus)
-        params.inspectionStatus = _advancedFilters.value.inspectionStatus
-
-      params.t = String(Date.now())
-      const response = await $fetch<LocalApiResponse>('/api/leads', { params })
-      const newItems = normalize(response.data || [])
+      const params: Record<string, any> = { page: nextPage, limit: PAGE_SIZE, ..._buildFilterParams() }
+      const queryKey = QUERY_KEYS.leads(params)
+      const response = await deduplicatedFetch(queryKey, () => 
+        $fetch<LocalApiResponse>('/api/leads', { params })
+      )
+      const newItems = normalize(response.items || [])
 
       _leads.value = [..._leads.value, ...newItems]
       _currentPage.value = nextPage
-      _totalCount.value = response.totalCount // Keep in sync
+      _totalCount.value = response.total // Keep in sync
+      
+      setCachedData(queryKey, response)
+      
+      // Auto-prefetch n+1 page in background
+      _prefetchNextPage(nextPage + 1)
     }
     catch (err: any) {
       console.error('Failed to load more leads:', err)
     }
     finally {
       _isLoadingMore.value = false
+    }
+  }
+
+  function _prefetchNextPage(targetPage: number) {
+    if (_leads.value.length >= _totalCount.value) return
+    const params: Record<string, any> = { page: targetPage, limit: PAGE_SIZE, ..._buildFilterParams() }
+    const queryKey = QUERY_KEYS.leads(params)
+    
+    // Only prefetch if we don't already have it
+    if (!getCachedData(queryKey)) {
+      deduplicatedFetch(queryKey, () => $fetch<LocalApiResponse>('/api/leads', { params }))
+        .then(res => setCachedData(queryKey, res))
+        .catch(() => {})
     }
   }
 
@@ -294,44 +294,21 @@ export function useLeadsApi() {
           _preSearchTotalCount.value = _totalCount.value
         }
 
-        const params: Record<string, any> = { page: 1, limit: PAGE_SIZE }
-        if (_serverSearch.value) {
-          params.search = _serverSearch.value
-        }
-
-        if (_advancedFilters.value.startDate)
-          params.startDate = _advancedFilters.value.startDate
-        if (_advancedFilters.value.endDate)
-          params.endDate = _advancedFilters.value.endDate
-        if (_advancedFilters.value.dateField)
-          params.dateField = _advancedFilters.value.dateField
-        if (_advancedFilters.value.make)
-          params.make = _advancedFilters.value.make
-        if (_advancedFilters.value.city)
-          params.city = _advancedFilters.value.city
-        if (_advancedFilters.value.priority)
-          params.priority = _advancedFilters.value.priority
-        if (_advancedFilters.value.allocatedTo)
-          params.allocatedTo = _advancedFilters.value.allocatedTo
-        if (_advancedFilters.value.createdBy)
-          params.createdBy = _advancedFilters.value.createdBy
-        if (_advancedFilters.value.addedBy)
-          params.addedBy = _advancedFilters.value.addedBy
-        if (_advancedFilters.value.inspectionStatus)
-          params.inspectionStatus = _advancedFilters.value.inspectionStatus
-
+        const params: Record<string, any> = { page: 1, limit: PAGE_SIZE, ..._buildFilterParams() }
         params.t = String(Date.now())
-        const response = await $fetch<LocalApiResponse>('/api/leads', { params, signal })
-        if (signal.aborted)
-          return
-        _leads.value = normalize(response.data || [])
-        _totalCount.value = response.totalCount
+        
+        const queryKey = QUERY_KEYS.leads(params)
+        const response = await deduplicatedFetch(queryKey, () => 
+          $fetch<LocalApiResponse>('/api/leads', { params, signal })
+        )
+        if (signal.aborted) return
+        _leads.value = normalize(response.items || [])
+        _totalCount.value = response.total
         _currentPage.value = 1
         _isInitialized.value = true
       }
       catch (err: any) {
-        if (err?.name === 'AbortError' || signal.aborted)
-          return
+        if (err?.name === 'AbortError' || signal.aborted) return
         console.error('Search failed:', err)
         _fetchError.value = err?.data?.message || err?.message || 'Search failed'
       }
@@ -375,44 +352,27 @@ export function useLeadsApi() {
   const hasMore = computed(() => _leads.value.length < _totalCount.value)
 
   // ─── Set server-side status filters ───
-  function setFilters(filters: Record<string, string>) {
-    const newInsp = filters.inspectionStatus || ''
-    const newAppr = filters.approvalStatus || ''
-    const oldInsp = _statusFilters.value.inspectionStatus || ''
-    const oldAppr = _statusFilters.value.approvalStatus || ''
+  function setTab(tab: string) {
+    if (_activeTab.value !== tab) {
+      _activeTab.value = tab
+      
+      // The user wants each tab to have its own page API call. Force refetch when tab changes.
+      fetchLeads(true)
+    }
+  }
 
-    if (newInsp !== oldInsp || newAppr !== oldAppr) {
-      _statusFilters.value = { ...filters }
-      // Fully instant client-side switching! 
-      // Ensure we have loaded leads at least once. If app just opened, trigger load.
-      if (!_isInitialized.value && !_isLoading.value) {
-        fetchLeads(false)
-      }
+  function setSort(key: string, dir: string) {
+    if (_sortKey.value !== key || _sortDir.value !== dir) {
+      _sortKey.value = key
+      _sortDir.value = dir
+      fetchLeads(true)
     }
   }
 
   // ─── Client-side instant filter ───
+  // Now simply acts as a passthrough since filtering is strictly server-side
   const filteredLeads = computed(() => {
-    const iFilter = (_statusFilters.value.inspectionStatus || '').trim().toLowerCase()
-    const aFilter = (_statusFilters.value.approvalStatus || '').trim().toLowerCase()
-
-    if (!iFilter && !aFilter)
-      return _leads.value
-
-    return _leads.value.filter((lead) => {
-      let iMatch = true
-      let aMatch = true
-
-      if (iFilter && iFilter !== '*') {
-        iMatch = String(lead.inspectionStatus || '').trim().toLowerCase() === iFilter
-      }
-
-      if (aFilter && aFilter !== '*') {
-        aMatch = String(lead.approvalStatus || '').trim().toLowerCase() === aFilter
-      }
-
-      return iMatch && aMatch
-    })
+    return _leads.value
   })
 
   // ─── Set advanced UI filters ───
@@ -468,72 +428,19 @@ export function useLeadsApi() {
       body: { telecallingId },
     })
 
-    // Optimistic update
+    // Optimistic update — reassign array for shallow reactivity
     const idx = _leads.value.findIndex((l: any) => (l._id === telecallingId || l.id === telecallingId || l.appointmentId === telecallingId))
     if (idx >= 0) {
-      _leads.value.splice(idx, 1)
+      _leads.value = _leads.value.filter((_: any, i: number) => i !== idx)
       _totalCount.value--
     }
     return res
   }
 
-  // ─── Quick Sync Engine (Leads) ───
-  const _leadsLastKnownTs = useState('leads_lastKnownTs', () => 0)
-  let _leadsQuickSyncInterval: ReturnType<typeof setInterval> | null = null
-
-  async function _checkLeadsUpdates() {
-    if (!_leadsLastKnownTs.value)
-      return
-
-    try {
-      const since = _leadsLastKnownTs.value
-      const res = await $fetch<{ leads: any[], ts: number }>(`/api/leads/delta?since=${since}&t=${Date.now()}`)
-
-      if (res.leads && res.leads.length > 0) {
-        const changedMap = new Map(res.leads.map((l: any) => [String(l._id || l.id), l]))
-
-        _leads.value = _leads.value.map((existing) => {
-          const key = String(existing._id || existing.id)
-          const updated = changedMap.get(key)
-          if (updated) {
-            changedMap.delete(key)
-            return { ...updated, id: updated.id || updated._id } as TelecallingLead
-          }
-          return existing
-        })
-
-        for (const [, newLead] of changedMap) {
-          _leads.value.push({ ...newLead, id: newLead.id || newLead._id } as TelecallingLead)
-        }
-      }
-
-      _leadsLastKnownTs.value = Math.max(res.ts || since, since)
-    }
-    catch {
-      // Silent fail
-    }
-  }
-
-  function startLeadsQuickSync() {
-    if (_leadsQuickSyncInterval)
-      return
-    if (!_leadsLastKnownTs.value) {
-      _leadsLastKnownTs.value = Date.now()
-    }
-    _leadsQuickSyncInterval = setInterval(_checkLeadsUpdates, 30000)
-  }
-
-  function stopLeadsQuickSync() {
-    if (_leadsQuickSyncInterval) {
-      clearInterval(_leadsQuickSyncInterval)
-      _leadsQuickSyncInterval = null
-    }
-  }
-
   return {
     // Data
     allLeads: filteredLeads,
-    totalCount: computed(() => filteredLeads.value.length >= _leads.value.length ? _totalCount.value : filteredLeads.value.length),
+    totalCount: _totalCount,
     hasMore,
 
     // Status counts (whole DB)
@@ -544,6 +451,7 @@ export function useLeadsApi() {
     // Loading states
     isLoading: _isLoading,
     isLoadingMore: _isLoadingMore,
+    isRefreshing: _isRefreshing,
     isFetched: _isInitialized,
     fetchError: _fetchError,
 
@@ -553,16 +461,16 @@ export function useLeadsApi() {
     searchLeads,
     refreshLeads,
     deleteLead,
-    setFilters,
+    sortKey: _sortKey,
+    sortDir: _sortDir,
+    setSort,
+    setTab,
+    filteredLeads,
     setAdvancedFilters,
     advancedFilters: _advancedFilters,
     activeAdvancedFilterCount,
     serverSearch: _serverSearch,
     cancelSearch,
     matchingTabIds,
-
-    // Quick Sync
-    startQuickSync: startLeadsQuickSync,
-    stopQuickSync: stopLeadsQuickSync,
   }
 }

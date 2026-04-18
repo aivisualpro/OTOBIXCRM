@@ -24,9 +24,27 @@ export default defineEventHandler(async (event) => {
     const isAdmin = _currentUser?.userType?.toLowerCase() === 'admin' || _currentUser?.userRole?.toLowerCase() === 'admin' || _currentUser?.role?.toLowerCase() === 'admin'
     const currentUserEmail = _currentUser?.email || ''
 
-    // Status filters (server-side filtering for paginated status tabs)
-    const inspectionStatus = (query.inspectionStatus as string || '').trim()
-    const approvalStatus = (query.approvalStatus as string || '').trim()
+    // Status filters (server-side mapping based on tab)
+    const tab = (query.tab as string || 'all').trim().toLowerCase()
+    
+    // Internal MongoDB filter combination per tab (matches existing routeFilters)
+    const tabFilters: Record<string, { inspectionStatus: string, approvalStatus: string }> = {
+      'all': { inspectionStatus: '*', approvalStatus: '*' },
+      'pending': { inspectionStatus: 'Pending', approvalStatus: '*' },
+      'scheduled': { inspectionStatus: 'Scheduled', approvalStatus: '*' },
+      're-scheduled': { inspectionStatus: 'Re-Scheduled', approvalStatus: '*' },
+      'running': { inspectionStatus: 'Running', approvalStatus: '*' },
+      'cancelled': { inspectionStatus: 'Cancelled', approvalStatus: '*' },
+      're-inspection': { inspectionStatus: 'Re-Inspection', approvalStatus: '*' },
+      'inspected': { inspectionStatus: 'Inspected', approvalStatus: 'Pending' },
+      'under-review': { inspectionStatus: 'Inspected', approvalStatus: 'Under Review' },
+      'quality-approved': { inspectionStatus: 'Inspected', approvalStatus: 'Approved' },
+      'quality-rejected': { inspectionStatus: 'Inspected', approvalStatus: 'Quality Rejected' },
+      'search-results': { inspectionStatus: '*', approvalStatus: '*' },
+    }
+
+    const { inspectionStatus, approvalStatus } = tabFilters[tab] || tabFilters['all']
+
     if (inspectionStatus && inspectionStatus !== '*') {
       filter.inspectionStatus = { $regex: `^\\s*${inspectionStatus}\\s*$`, $options: 'i' }
     }
@@ -122,11 +140,45 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Use find() with _id sort — _id is ALWAYS indexed, always fast
+    // Determine sort
+    const sortField = (query.sort as string || '_id').trim()
+    const sortDir = (query.sortDir as string || 'desc').trim().toLowerCase()
+    const sortParams: Record<string, 1 | -1> = {
+      [sortField]: sortDir === 'asc' ? 1 : -1
+    }
+
+    // Projection to keep API lightweight (Lightweight list API)
+    const projection = {
+      _id: 1,
+      appointmentId: 1,
+      ownerName: 1,
+      customerContactNumber: 1,
+      make: 1,
+      model: 1,
+      variant: 1,
+      yearOfManufacture: 1,
+      yearOfRegistration: 1,
+      odometerReadingInKms: 1,
+      appointmentSource: 1,
+      inspectionStatus: 1,
+      priority: 1,
+      inspectionDateTime: 1,
+      inspectionAddress: 1,
+      addedBy: 1,
+      createdByFullName: 1,
+      createdAt: 1,
+      timeStamp: 1,
+      allocatedTo: 1,
+      qcBy: 1,
+      approvalStatus: 1,
+    }
+
+    // Use find() with dynamic sort and projection
     const [data, totalCount] = await Promise.all([
       db.collection('telecallings')
         .find(filter)
-        .sort({ _id: -1 })
+        .project(projection)
+        .sort(sortParams)
         .skip(skip)
         .limit(limit)
         .toArray(),
@@ -140,8 +192,8 @@ export default defineEventHandler(async (event) => {
     })
 
     return {
-      data: finalData,
-      totalCount,
+      items: finalData,
+      total: totalCount,
       page,
       limit,
       totalPages: Math.ceil(totalCount / limit),

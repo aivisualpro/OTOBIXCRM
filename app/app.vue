@@ -14,25 +14,15 @@ const { bootPrefetch } = usePrefetch()
 
 // ─── Live Sync Engine ───
 // Real-time data sync across all connected browsers via SSE
+// V2: Delta patching — receives changed document/fields and patches cache in-place
 const { startLiveSync } = useLiveSync()
-
-// ─── Quick Sync Engine ───
-// Delta-based polling for cross-device data sync (5s interval)
-const { startQuickSync: startCarsSync } = useAuctionsApi()
-const { startQuickSync: startLeadsSync } = useLeadsApi()
-const { startQuickSync: startPeopleSync } = usePeopleApi()
-const { startQuickSync: startWorkspaceSync } = useWorkspace()
 
 onMounted(() => {
   // Kick off data prefetch silently — zero loading screens when user navigates
   bootPrefetch()
   // Start listening for real-time changes from other users
+  // SSE replaces all polling — zero interval timers needed
   startLiveSync()
-  // Start Quick Sync polling for all data stores
-  startCarsSync()
-  startLeadsSync()
-  startPeopleSync()
-  startWorkspaceSync()
 })
 
 useHead({

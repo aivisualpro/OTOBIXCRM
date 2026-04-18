@@ -35,6 +35,7 @@ setHeader({ title: props.title, description: props.description, icon: props.icon
 const {
   allUsers,
   isLoading,
+  isRefreshing,
   isFetched,
   fetchError,
   fetchAllUsers,
@@ -422,6 +423,7 @@ function toggleSelectAllWorkspaces() {
       <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
         {{ totalFiltered }} record{{ totalFiltered !== 1 ? 's' : '' }}
       </p>
+      <BaseSyncIndicator :syncing="isRefreshing" />
       <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="handleRefresh">
         <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading }" />
         Refresh

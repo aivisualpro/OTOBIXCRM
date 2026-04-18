@@ -1,3 +1,6 @@
+import { shallowRef } from 'vue'
+import { deduplicatedFetch, QUERY_KEYS } from '~/composables/useQueryCache'
+
 export interface PeopleUser {
   [key: string]: any
   _id: string
@@ -28,10 +31,11 @@ export interface PeopleUser {
 }
 
 export function usePeopleApi() {
-  // useState keyed calls — safe inside composable, shared across all callers via key
-  const _allUsers = useState<PeopleUser[]>('people_users', () => [])
+  // Shallow state for large dataset (rule 14)
+  const _allUsers = useState<PeopleUser[]>('people_users', () => shallowRef([]) as any)
   const _isFetched = useState('people_isFetched', () => false)
   const _isFetching = useState('people_isFetching', () => false)
+  const _isRefreshing = useState('people_isRefreshing', () => false)
   const _fetchError = useState<string | null>('people_fetchError', () => null)
 
   const { apiBaseUrl: _apiBaseUrl } = useApiEnvironment()
@@ -44,19 +48,28 @@ export function usePeopleApi() {
   /**
    * Fetches ALL users from user/all-users-list.
    * Each tab (otobix / dealers / customers / kams) filters this list client-side.
-   * Cached globally — runs only once unless force=true.
+   * SWR: Cached globally — shows stale data immediately, refreshes in background.
    */
   async function fetchAllUsers(force = false) {
-    if (_isFetched.value && !force)
-      return
-    if (_isFetching.value && !force)
-      return
+    if (_isFetched.value && !force) return
+    if (_isFetching.value && !force) return
 
-    _isFetching.value = true
+    // SWR: If we have cached data and this is a forced refresh, don't block UI
+    const hasCachedData = _allUsers.value.length > 0
+    if (hasCachedData && force) {
+      _isRefreshing.value = true
+    }
+    else {
+      _isFetching.value = true
+    }
+
     _fetchError.value = null
 
     try {
-      const response = await $fetch<any>('/api/users', { method: 'GET' })
+      const queryKey = QUERY_KEYS.users()
+      const response = await deduplicatedFetch(queryKey, () => 
+        $fetch<any>('/api/users', { method: 'GET' })
+      )
 
       const usersArray = Array.isArray(response)
         ? response
@@ -71,10 +84,14 @@ export function usePeopleApi() {
     }
     catch (err: any) {
       _fetchError.value = err?.data?.message || err?.message || 'Failed to fetch users'
-      _allUsers.value = []
+      // Don't clear cached data on error — keep stale data visible
+      if (!hasCachedData) {
+        _allUsers.value = []
+      }
     }
     finally {
       _isFetching.value = false
+      _isRefreshing.value = false
     }
   }
 
@@ -102,10 +119,10 @@ export function usePeopleApi() {
       body: payload,
     })
 
-    // Inject the new user into the local cache immediately
+    // Inject into local cache — reassign for shallow reactivity
     if (response?.data) {
       const newUser = { ...response.data, id: response.data._id || response.data.id }
-      _allUsers.value.unshift(newUser)
+      _allUsers.value = [newUser, ..._allUsers.value]
     }
 
     return response
@@ -146,7 +163,10 @@ export function usePeopleApi() {
       '/api/users/delete',
       { method: 'DELETE', body: { userId } },
     )
-    await refreshUsers()
+
+    // Optimistic removal — reassign for shallow reactivity
+    _allUsers.value = _allUsers.value.filter(u => u.id !== userId && u._id !== userId)
+
     return response
   }
 
@@ -155,54 +175,10 @@ export function usePeopleApi() {
     return _allUsers.value.find(u => u.id === id || u._id === id)
   }
 
-  // ─── Quick Sync Engine (People) ───
-  const _peopleLastTs = useState('people_lastKnownTs', () => 0)
-  let _peopleInterval: ReturnType<typeof setInterval> | null = null
-
-  async function _checkPeopleUpdates() {
-    if (!_peopleLastTs.value)
-      return
-    try {
-      const since = _peopleLastTs.value
-      const res = await $fetch<{ users: any[], ts: number }>(`/api/users/delta?since=${since}&t=${Date.now()}`)
-      if (res.users && res.users.length > 0) {
-        const changedMap = new Map(res.users.map((u: any) => [String(u._id || u.id), u]))
-        _allUsers.value = _allUsers.value.map((existing) => {
-          const key = String(existing._id || existing.id)
-          const updated = changedMap.get(key)
-          if (updated) {
-            changedMap.delete(key)
-            return { ...updated, id: updated.id || updated._id } as PeopleUser
-          }
-          return existing
-        })
-        for (const [, u] of changedMap) {
-          _allUsers.value.push({ ...u, id: u.id || u._id } as PeopleUser)
-        }
-      }
-      _peopleLastTs.value = Math.max(res.ts || since, since)
-    }
-    catch { /* silent */ }
-  }
-
-  function startPeopleQuickSync() {
-    if (_peopleInterval)
-      return
-    if (!_peopleLastTs.value)
-      _peopleLastTs.value = Date.now()
-    _peopleInterval = setInterval(_checkPeopleUpdates, 30000)
-  }
-
-  function stopPeopleQuickSync() {
-    if (_peopleInterval) {
-      clearInterval(_peopleInterval)
-      _peopleInterval = null
-    }
-  }
-
   return {
     allUsers: _allUsers,
     isLoading: _isFetching,
+    isRefreshing: _isRefreshing,
     isFetched: _isFetched,
     fetchError: _fetchError,
     fetchAllUsers,
@@ -211,7 +187,5 @@ export function usePeopleApi() {
     updateUser,
     deleteUser,
     getUserById,
-    startQuickSync: startPeopleQuickSync,
-    stopQuickSync: stopPeopleQuickSync,
   }
 }

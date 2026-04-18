@@ -66,7 +66,10 @@ export default defineEventHandler(async (event) => {
 
     console.warn(`[API:users/add] Created user "${body.userName}" → _id: ${result.insertedId}`)
 
-    broadcastChange('users', 'create', result.insertedId.toString())
+    // Broadcast: create → full normalized record (strip sensitive fields)
+    const { password: _pw, passwordHash: _ph, ...safeDoc } = doc
+    const broadcastDoc = { ...safeDoc, id: result.insertedId.toString(), _id: result.insertedId.toString() }
+    broadcastChange('users', 'create', result.insertedId.toString(), undefined, broadcastDoc)
 
     return {
       success: true,

@@ -7,11 +7,12 @@ const props = defineProps<{
   title: string
   description: string
   icon: string
-  filterStatus?: string
 }>()
 
 const { setHeader } = usePageHeader()
-setHeader({ title: props.title, description: props.description, icon: props.icon })
+watchEffect(() => {
+  setHeader({ title: props.title, description: props.description, icon: props.icon })
+})
 
 // ─── Logged-in user ID (from auth cookie) ───
 const _userCookie = useCookie('userData')
@@ -45,8 +46,28 @@ const loggedInUserRole = computed(() => {
   }
 })
 
-const { allCars, isLoading, isFetched, fetchError, fetchAllCars, refreshCars, globalSearch } = useAuctionsApi()
+const { allCars, isLoading, isRefreshing, isFetched, fetchError, fetchCars, refreshCars, globalSearch, activeTab, searchCars, cancelSearch, loadMore, hasMore, isLoadingMore, totalCount } = useAuctionsApi()
 const { dropdowns, fetchDropdowns, getOptions } = useDropdowns()
+
+const loadMoreTrigger = ref<HTMLElement | null>(null)
+useIntersectionObserver(
+  loadMoreTrigger,
+  (entries) => {
+    if (entries?.[0]?.isIntersecting && hasMore.value && !isLoadingMore.value) {
+      loadMore()
+    }
+  },
+  { rootMargin: '400px' },
+)
+
+let searchDebounce: ReturnType<typeof setTimeout> | null = null
+watch(globalSearch, (newVal) => {
+  if (searchDebounce) clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(() => {
+    if (!newVal || newVal.trim() === '') cancelSearch()
+    else searchCars(newVal.trim())
+  }, 400)
+})
 const { allUsers, fetchAllUsers, isFetched: isUsersFetched } = usePeopleApi()
 
 function resolveUserNameByEmail(email: string) {
@@ -72,33 +93,14 @@ async function fetchBidStats() {
   }
 }
 
-const frontendDisplayLimit = ref(50)
-const scrollSentinel = ref<HTMLElement | null>(null)
-let observer: IntersectionObserver | null = null
+
 
 onMounted(() => {
-  if (!isFetched.value)
-    fetchAllCars()
+  fetchCars()
   if (!isUsersFetched.value)
     fetchAllUsers()
   fetchBidStats()
   fetchDropdowns()
-
-  const scrollRoot = document.querySelector('[data-slot="table-container"]') as HTMLElement | null
-
-  observer = new IntersectionObserver((entries) => {
-    if (entries[0]?.isIntersecting) {
-      if (frontendDisplayLimit.value < filteredItems.value.length) {
-        frontendDisplayLimit.value += 50
-      }
-    }
-  }, { root: scrollRoot, rootMargin: '400px' })
-})
-
-watch(scrollSentinel, (el) => {
-  observer?.disconnect()
-  if (el)
-    observer?.observe(el)
 })
 
 function buildLog(fieldKey: string, newValue: any, oldValue: any) {
@@ -341,125 +343,7 @@ function isEditing(car: any, field: string) {
   return editingCell.value?.id === String(car._id || car.id) && editingCell.value?.field === field
 }
 
-const quickFilterStatus = ref('all')
-
-const quickFilterCounts = computed(() => {
-  const counts: Record<string, number> = {
-    all: 0,
-    upcoming: 0,
-    live: 0,
-    otobuy: 0,
-    sold: 0,
-    removed: 0,
-    liveAuctionEnded: 0,
-  }
-  for (const car of allCars.value) {
-    if (!car.auctionStatus || car.auctionStatus.trim() === '' || car.auctionStatus === 'inspected') {
-      continue
-    }
-    counts.all = (counts.all || 0) + 1
-    if (typeof car.auctionStatus === 'string') {
-      counts[car.auctionStatus] = (counts[car.auctionStatus] || 0) + 1
-    }
-  }
-  return counts
-})
-
-const baseFilteredItems = computed(() => {
-  const result = allCars.value.filter((car) => {
-    // Exclude records with blank auction status altogether
-    if (!car.auctionStatus || car.auctionStatus.trim() === '' || car.auctionStatus === 'inspected') {
-      return false
-    }
-
-    if (loggedInUserRole.value === 'Retailer') {
-      if (car.retailAssociate !== loggedInUserEmail.value) {
-        return false
-      }
-    }
-
-    let ok = true
-    if (props.filterStatus) {
-      if (props.filterStatus === 'customer-activity') {
-        if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy') {
-          ok = false
-        }
-      }
-      else if (props.filterStatus === 'dealer-activity') {
-        if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy' && car.auctionStatus !== 'upcoming') {
-          ok = false
-        }
-      }
-      else if (props.filterStatus === 'followup') {
-        if (car.dealStatus !== 'Under Negotiation') {
-          ok = false
-        }
-      }
-      else if (car.auctionStatus !== props.filterStatus) {
-        ok = false
-      }
-    }
-    else if (quickFilterStatus.value !== 'all') {
-      if (car.auctionStatus !== quickFilterStatus.value) {
-        ok = false
-      }
-    }
-    return ok
-  })
-
-  // Global base sort by createdAt (newest to oldest)
-  result.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-
-  // Ensure 'customer-activity' tab enforces descending latest-activity sort
-  if (props.filterStatus === 'customer-activity') {
-    result.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())
-  }
-
-  // 'dealer-activity' tab relies directly on tracking $max updatedAt of active bids per vehicle
-  if (props.filterStatus === 'dealer-activity') {
-    result.sort((a, b) => {
-      const statA = bidStats.value[String(a.id || a._id)]
-      const actA = statA?.lastBidAt
-        ? new Date(statA.lastBidAt).getTime()
-        : new Date(a.createdAt || 0).getTime() // Fallback to creation date if no bids
-
-      const statB = bidStats.value[String(b.id || b._id)]
-      const actB = statB?.lastBidAt
-        ? new Date(statB.lastBidAt).getTime()
-        : new Date(b.createdAt || 0).getTime()
-
-      return actB - actA
-    })
-  }
-
-  if (props.filterStatus === 'followup') {
-    result.sort((a, b) => new Date(a.followupTimeStamp || 0).getTime() - new Date(b.followupTimeStamp || 0).getTime())
-  }
-
-  return result
-})
-
-const filteredItems = computed(() => {
-  let result = baseFilteredItems.value
-  if (globalSearch && globalSearch.value) {
-    const q = globalSearch.value.toLowerCase()
-    result = result.filter(item =>
-      ['make', 'model', 'variant', 'registrationNumber', 'city', 'fuelType', 'appointmentId', 'registeredRto', 'registrationState', 'roadTaxValidity', 'ownerSerialNumber'].some(key =>
-        String(item[key] ?? '').toLowerCase().includes(q),
-      ),
-    )
-  }
-  return result
-})
-
-watch(globalSearch, () => { frontendDisplayLimit.value = 50 })
-watch(quickFilterStatus, () => { frontendDisplayLimit.value = 50 })
-
-const totalFiltered = computed(() => filteredItems.value.length)
-
-const displayedItems = computed(() => {
-  return filteredItems.value.slice(0, frontendDisplayLimit.value)
-})
+// Arrays handled by SWR externally
 
 function formatCurrency(value: any): string {
   if (!value || isNaN(Number(value)))
@@ -512,8 +396,6 @@ onMounted(() => {
 onUnmounted(() => {
   if (timerInterval)
     clearInterval(timerInterval)
-  if (observer)
-    observer.disconnect()
 })
 
 function getFirstImage(car: any): string | null {
@@ -853,31 +735,15 @@ async function fetchAndShowBids(car: any) {
 <template>
   <ClientOnly>
     <HeaderActions>
-      <div v-if="!props.filterStatus" class="hidden md:flex items-center bg-muted/40 p-1 rounded-md ml-auto sm:ml-0 overflow-x-auto no-scrollbar">
-        <button
-          v-for="status in ['all', 'upcoming', 'live', 'otobuy', 'sold', 'removed', 'liveAuctionEnded']"
-          :key="status"
-          class="px-2.5 py-1 flex items-center gap-1.5 text-xs font-semibold rounded-sm transition-all whitespace-nowrap"
-          :class="quickFilterStatus === status ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'"
-          @click="quickFilterStatus = status"
-        >
-          <span>{{ status === 'all' ? 'All Data' : status === 'liveAuctionEnded' ? 'Ended' : status === 'otobuy' ? 'OtoBuy' : status.charAt(0).toUpperCase() + status.slice(1) }}</span>
-          <span
-            class="px-1.5 py-0.5 rounded-full text-[10px] leading-none font-bold"
-            :class="quickFilterStatus === status ? 'bg-primary/10 text-primary' : 'bg-muted-foreground/10 text-muted-foreground'"
-          >
-            {{ quickFilterCounts[status] || 0 }}
-          </span>
-        </button>
-      </div>
       <div class="relative ml-auto sm:ml-0">
         <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
         <Input v-model="globalSearch" placeholder="Search retail..." class="pl-8 h-8 w-40 text-sm" />
       </div>
       <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
-        {{ totalFiltered }} record{{ totalFiltered !== 1 ? 's' : '' }}
+        {{ totalCount }} record{{ totalCount !== 1 ? 's' : '' }}
       </p>
-      <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="handleRefresh">
+      <BaseSyncIndicator :syncing="isRefreshing" />
+      <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="refreshCars">
         <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading }" />
         Refresh
       </Button>
@@ -910,7 +776,13 @@ async function fetchAndShowBids(car: any) {
     </div>
 
     <!-- Table -->
-    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-hidden flex flex-col">
+    <!-- Table -->
+    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-hidden flex flex-col relative">
+      <!-- Minimalist loading bar -->
+      <div v-if="isRefreshing || isLoadingMore" class="absolute top-0 left-0 right-0 h-[2px] bg-primary/20 overflow-hidden z-30">
+        <div class="h-full bg-primary origin-left animate-in fade-in duration-500 rounded-full" style="width: 30%; animation: indeterminate 1.5s infinite linear;" />
+      </div>
+
       <Table container-class="h-full pb-10 px-[19px]">
         <TableHeader class="sticky top-0 z-20 bg-background border-b border-border shadow-sm">
           <TableRow>
@@ -929,7 +801,7 @@ async function fetchAndShowBids(car: any) {
             <TableHead class="whitespace-nowrap">
               Report
             </TableHead>
-            <TableHead v-if="!['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '')" class="whitespace-nowrap">
+            <TableHead v-if="!['ended', 'removed', 'sold', 'otobuy'].includes(activeTab)" class="whitespace-nowrap">
               Auction Status
             </TableHead>
             <TableHead class="whitespace-nowrap">
@@ -975,7 +847,7 @@ async function fetchAndShowBids(car: any) {
             <TableHead class="whitespace-nowrap text-center">
               Deal Status
             </TableHead>
-            <TableHead v-if="filterStatus === 'followup'" class="whitespace-nowrap text-center">
+            <TableHead v-if="activeTab === 'followup'" class="whitespace-nowrap text-center">
               Followup Time
             </TableHead>
             <TableHead class="whitespace-nowrap text-center">
@@ -994,7 +866,7 @@ async function fetchAndShowBids(car: any) {
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="car in displayedItems"
+            v-for="car in allCars"
             :key="car.id || car._id"
             class="group hover:bg-muted/50 transition-all duration-300"
           >
@@ -1059,7 +931,7 @@ async function fetchAndShowBids(car: any) {
                 <span v-else class="text-xs text-muted-foreground">—</span>
               </div>
             </TableCell>
-            <TableCell v-if="!['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '')" class="whitespace-nowrap text-xs">
+            <TableCell v-if="!['ended', 'removed', 'sold', 'otobuy'].includes(activeTab)" class="whitespace-nowrap text-xs">
               <Badge v-if="car.auctionStatus === 'live' && car.auctionEndTime" variant="outline" class="font-bold tracking-wide bg-emerald-800 text-white border-transparent uppercase text-[10px]">
                 <span class="size-1.5 rounded-full mr-1.5 bg-red-500 animate-pulse" />
                 {{ formatCountdown(car.auctionEndTime) }}
@@ -1438,7 +1310,7 @@ async function fetchAndShowBids(car: any) {
             </TableCell>
 
             <!-- Followup Time -->
-            <TableCell v-if="filterStatus === 'followup'" class="text-xs text-center px-1 font-mono text-muted-foreground whitespace-nowrap">
+            <TableCell v-if="activeTab === 'followup'" class="text-xs text-center px-1 font-mono text-muted-foreground whitespace-nowrap">
               {{ car.followupTimeStamp ? formatDateTimeStr(car.followupTimeStamp) : '—' }}
             </TableCell>
 
@@ -1480,15 +1352,15 @@ async function fetchAndShowBids(car: any) {
               </Button>
             </TableCell>
           </TableRow>
-          <TableRow v-if="displayedItems.length === 0">
-            <TableCell :colspan="(['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 22 : 23) + (filterStatus === 'followup' ? 1 : 0)" class="h-32 text-center text-muted-foreground bg-muted/10">
+          <TableRow v-if="allCars.length === 0">
+            <TableCell :colspan="(['ended', 'removed', 'sold', 'otobuy'].includes(activeTab) ? 22 : 23) + (activeTab === 'followup' ? 1 : 0)" class="h-32 text-center text-muted-foreground bg-muted/10">
               No matching records found
             </TableCell>
           </TableRow>
           <!-- Scroll Sentinel — MUST be inside the table's overflow-auto container -->
-          <TableRow v-if="frontendDisplayLimit < totalFiltered">
-            <TableCell :colspan="(['liveAuctionEnded', 'removed', 'sold', 'otobuy'].includes(filterStatus || '') ? 22 : 23) + (filterStatus === 'followup' ? 1 : 0)" class="p-0 h-1">
-              <div ref="scrollSentinel" class="h-1 w-full" />
+          <TableRow v-if="hasMore">
+            <TableCell :colspan="(['ended', 'removed', 'sold', 'otobuy'].includes(activeTab) ? 22 : 23) + (activeTab === 'followup' ? 1 : 0)" class="p-0 h-1">
+              <div ref="loadMoreTrigger" class="h-1 w-full" />
             </TableCell>
           </TableRow>
         </TableBody>
@@ -1498,7 +1370,7 @@ async function fetchAndShowBids(car: any) {
     <!-- Info bar -->
     <div v-if="isFetched && !fetchError" class="shrink-0 border-t bg-muted/30 px-4 lg:px-6 py-2 flex items-center justify-between">
       <p class="text-xs text-muted-foreground tabular-nums">
-        Showing {{ displayedItems.length }} of {{ totalFiltered }} records
+        Showing {{ allCars.length }} of {{ totalCount }} records
       </p>
     </div>
   </div>

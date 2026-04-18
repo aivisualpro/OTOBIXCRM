@@ -328,8 +328,9 @@ export default defineEventHandler(async (event) => {
         { upsert: true },
       )
 
-      // Broadcast real-time change to all connected clients
-      broadcastChange('leads', 'update', apptId || telecallingId, changedBy)
+      // Broadcast: update → changed fields only (lightweight, not full doc)
+      broadcastChange('leads', 'update', apptId || telecallingId, changedBy, telecallingUpdates)
+      broadcastChange('cars', 'update', apptId || telecallingId, changedBy, updates)
 
       return {
         success: true,
@@ -338,8 +339,8 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Broadcast real-time change to all connected clients
-    broadcastChange('leads', 'update', apptId || telecallingId, changedBy)
+    // Broadcast: update → changed fields only (lightweight, not full doc)
+    broadcastChange('leads', 'update', apptId || telecallingId, changedBy, telecallingUpdates)
 
     return {
       success: true,

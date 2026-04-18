@@ -1,47 +1,114 @@
 /**
- * ─── Change Tracker ───
- * In-memory event bus that tracks the latest modification timestamp
- * per collection. SSE clients poll this to know when data changed.
+ * ─── Change Tracker v3 ───
  *
- * Each mutation endpoint calls `broadcastChange(collection, meta)`.
- * The SSE endpoint streams these events to all connected browsers.
+ * In-memory event bus with versioned, ordered events.
+ *
+ * Every event includes:
+ *   - eventId (monotonic sequence number)
+ *   - collection, action, recordId
+ *   - updatedAt (ISO string)
+ *   - version (same as eventId — global sequence)
+ *   - payload (action-specific: full normalized doc, changed fields, or nothing)
+ *
+ * Rules:
+ *   - create: payload = full normalized record (no raw MongoDB internals)
+ *   - update: payload = changed fields only (lightweight)
+ *   - delete: payload = null (only recordId needed)
  */
 
-interface ChangeEvent {
+interface SyncEvent {
+  /** Monotonic event ID — clients track this for ordering & gap detection */
+  eventId: number
+  /** Global sequence version — same as eventId */
+  version: number
   collection: string
   action: 'create' | 'update' | 'delete'
-  timestamp: number
-  /** Optional: which record changed (e.g. appointmentId) */
-  recordId?: string
-  /** Optional: who made the change */
+  recordId: string
+  updatedAt: string
   changedBy?: string
+  /** For create: full normalized doc. For update: changed fields only. For delete: null. */
+  payload: Record<string, any> | null
 }
 
-type ChangeListener = (event: ChangeEvent) => void
+type ChangeListener = (event: SyncEvent) => void
 
 // Module-level singleton — shared across all Nitro handlers
 const _listeners = new Set<ChangeListener>()
 const _lastChange: Record<string, number> = {}
 
 /**
- * Broadcast a data change to all connected SSE clients.
- * Call this from any mutation endpoint (update, create, delete).
+ * Monotonic event counter — survives for the lifetime of the server process.
+ * On server restart, clients detect the gap via lastEventId and trigger catch-up.
+ */
+let _eventSequence = 0
+
+/**
+ * Ring buffer of recent events for missed-event catch-up.
+ * Holds the last 500 events so reconnecting clients can replay gaps
+ * without hitting the database delta endpoints.
+ */
+const EVENT_BUFFER_SIZE = 500
+const _eventBuffer: SyncEvent[] = []
+
+/**
+ * Get the current event sequence number.
+ */
+export function getEventSequence(): number {
+  return _eventSequence
+}
+
+/**
+ * Get events since a given eventId (for catch-up on reconnect).
+ * Returns events with eventId > sinceId, in order.
+ */
+export function getEventsSince(sinceId: number): SyncEvent[] {
+  if (sinceId <= 0 || _eventBuffer.length === 0) return []
+
+  const idx = _eventBuffer.findIndex(e => e.eventId > sinceId)
+  if (idx === -1) return [] // Client is already up to date
+
+  return _eventBuffer.slice(idx)
+}
+
+/**
+ * Broadcast a versioned, ordered change event.
+ *
+ * @param collection - Collection name ('leads', 'cars', 'users')
+ * @param action     - 'create', 'update', or 'delete'
+ * @param recordId   - The record's ID (required)
+ * @param changedBy  - Who made the change
+ * @param payload    - Action-specific payload:
+ *                     create: full normalized record (id, not _id)
+ *                     update: only the changed fields
+ *                     delete: null (omit or pass null)
  */
 export function broadcastChange(
   collection: string,
-  action: ChangeEvent['action'],
-  recordId?: string,
+  action: SyncEvent['action'],
+  recordId: string,
   changedBy?: string,
+  payload?: Record<string, any> | null,
 ) {
-  const event: ChangeEvent = {
+  _eventSequence++
+
+  const event: SyncEvent = {
+    eventId: _eventSequence,
+    version: _eventSequence,
     collection,
     action,
-    timestamp: Date.now(),
-    recordId,
+    recordId: String(recordId || ''),
+    updatedAt: new Date().toISOString(),
     changedBy,
+    payload: payload ?? null,
   }
 
-  _lastChange[collection] = event.timestamp
+  _lastChange[collection] = Date.now()
+
+  // Add to ring buffer
+  _eventBuffer.push(event)
+  if (_eventBuffer.length > EVENT_BUFFER_SIZE) {
+    _eventBuffer.shift()
+  }
 
   // Fan out to all active SSE connections
   for (const listener of _listeners) {

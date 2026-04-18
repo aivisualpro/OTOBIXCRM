@@ -4,13 +4,17 @@ import { auctionRouteFilters } from '~/constants/auctions'
 const route = useRoute()
 const { activeWorkspace } = useWorkspace()
 
+const currentActiveId = computed(() => {
+  return String(route.query.tab || 'upcoming')
+})
+
 const navItems = computed(() => {
   const allItems = Object.entries(auctionRouteFilters).map(([key, filter]) => ({
     id: key,
     title: filter.label,
     icon: filter.icon,
     color: filter.color,
-    link: `/auctions/${key}`,
+    link: `/auctions?tab=${key}`,
   }))
 
   const allowedTabs = activeWorkspace.value?.auctionTabs
@@ -20,58 +24,16 @@ const navItems = computed(() => {
   return allItems
 })
 
-const currentActiveId = computed(() => {
-  const path = route.path
-  return path.split('/').pop() || 'upcoming'
-})
-
 // ─── Live counts per tab ───
-const { allCars, isFetched, globalSearch } = useAuctionsApi()
+const { statusCounts, isFetched, fetchCounts } = useAuctionsApi()
 
 function getTabCount(filterKey: string) {
-  if (!isFetched.value)
-    return undefined
-  const filter = auctionRouteFilters[filterKey]
-  if (!filter)
-    return 0
-
-  let result = allCars.value.filter(filter.filterFn)
-
-  if (globalSearch.value) {
-    const q = globalSearch.value.toLowerCase()
-    result = result.filter(item =>
-      ['make', 'model', 'variant', 'registrationNumber', 'city', 'fuelType', 'appointmentId'].some(key =>
-        String(item[key] ?? '').toLowerCase().includes(q),
-      ),
-    )
-  }
-
-  return result.length || undefined
+  if (!isFetched.value || !statusCounts.value) return undefined
+  return statusCounts.value[filterKey] || 0
 }
 
-watch(globalSearch, (newVal) => {
-  if (newVal && newVal.trim().length > 3) {
-    const q = newVal.toLowerCase()
-    const globalMatches = allCars.value.filter(item =>
-      ['make', 'model', 'variant', 'registrationNumber', 'city', 'fuelType', 'appointmentId'].some(key =>
-        String(item[key] ?? '').toLowerCase().includes(q),
-      ),
-    )
-    if (globalMatches.length === 1) {
-      const match = globalMatches[0]
-      if (!match)
-        return
-
-      for (const [key, filter] of Object.entries(auctionRouteFilters)) {
-        if (filter.filterFn(match)) {
-          if (route.path !== `/auctions/${key}`) {
-            useRouter().push(`/auctions/${key}`)
-          }
-          break
-        }
-      }
-    }
-  }
+onMounted(() => {
+  fetchCounts()
 })
 </script>
 

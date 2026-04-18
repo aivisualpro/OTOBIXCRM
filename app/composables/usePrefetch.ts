@@ -57,7 +57,12 @@ export function usePrefetch() {
 
       if (allowed.includes('dropdowns') || allowed.includes('leads')) {
         const { fetchCarDropdowns } = useCarDropdowns()
-        tasks.push(fetchCarDropdowns().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 30, 90) }))
+        tasks.push(fetchCarDropdowns().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 20, 90) }))
+      }
+
+      if (allowed.includes('auctions') || allowed.includes('sales') || allowed.includes('retail')) {
+        const { fetchAllCars } = useAuctionsApi()
+        tasks.push(fetchAllCars().then(() => { _prefetchProgress.value = Math.min(_prefetchProgress.value + 20, 90) }))
       }
 
       await Promise.allSettled(tasks)

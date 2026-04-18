@@ -8,26 +8,23 @@ const props = defineProps<{
   description: string
   icon: string
   columns: CrudColumn[]
-  filterFn: (car: any) => boolean
-  statusKey?: string
 }>()
-
-const isUpcoming = computed(() => props.statusKey === 'upcoming')
-const isLive = computed(() => props.statusKey === 'live')
-const hasTimer = computed(() => isUpcoming.value || isLive.value)
 
 const router = useRouter()
 
 const { setHeader } = usePageHeader()
-setHeader({ title: props.title, description: props.description, icon: props.icon })
+watchEffect(() => {
+  setHeader({ title: props.title, description: props.description, icon: props.icon })
+})
 
 // ─── Global cached data ───
 const {
   allCars,
   isLoading,
+  isRefreshing,
   isFetched,
   fetchError,
-  fetchAllCars,
+  fetchCars,
   refreshCars,
 } = useAuctionsApi()
 
@@ -85,14 +82,11 @@ function formatCountdown(targetDate: string, expiredLabel = 'Starting soon'): st
 }
 
 onMounted(async () => {
-  if (!isFetched.value)
-    fetchAllCars()
+  fetchCars()
 
-  if (hasTimer.value) {
-    timerInterval = setInterval(() => {
-      now.value = Date.now()
-    }, 1000)
-  }
+  timerInterval = setInterval(() => {
+    now.value = Date.now()
+  }, 1000)
 
   const lastViewed = sessionStorage.getItem('auction_last_viewed')
   if (lastViewed) {
@@ -117,53 +111,23 @@ onUnmounted(() => {
 })
 
 // ─── UI State ───
-const { globalSearch } = useAuctionsApi()
-const baseFilteredItems = computed(() => allCars.value.filter(props.filterFn))
+const { globalSearch, searchCars, cancelSearch, hasMore, loadMore, isLoadingMore, totalCount, activeTab } = useAuctionsApi()
 
-const filteredItems = computed(() => {
-  let result = baseFilteredItems.value
-  if (globalSearch.value) {
-    const q = globalSearch.value.toLowerCase()
-    result = result.filter(item =>
-      ['make', 'model', 'variant', 'registrationNumber', 'city', 'fuelType', 'appointmentId'].some(key =>
-        String(item[key] ?? '').toLowerCase().includes(q),
-      ),
-    )
-  }
-  return result
-})
+const isUpcoming = computed(() => activeTab.value === 'upcoming')
+const isLive = computed(() => activeTab.value === 'live')
+const hasTimer = computed(() => isUpcoming.value || isLive.value)
 
-// ─── Infinite Scroll ───
-const ITEMS_PER_PAGE = 30
-const visibleCount = ref(ITEMS_PER_PAGE)
-
+let searchDebounce: ReturnType<typeof setTimeout> | null = null
 watch(globalSearch, (newVal) => {
-  visibleCount.value = ITEMS_PER_PAGE
   expandedCarId.value = null
-
-  if (newVal && newVal.trim().length > 4) {
-    const q = newVal.trim().toLowerCase()
-
-    // Check if there is an exact match for appointmentId
-    const exactMatch = allCars.value.find((c: any) => {
-      const appt = String(c.appointmentId || '').trim().toLowerCase()
-      const reg = String(c.registrationNumber || '').trim().toLowerCase()
-      return appt === q || reg === q || (q.length > 5 && (appt.includes(q) || reg.includes(q)))
-    })
-
-    // If exact match found, but it's not in the current tab's items...
-    if (exactMatch && !baseFilteredItems.value.some(c => (c.id || c._id) === (exactMatch.id || exactMatch._id))) {
-      let targetStatus = String(exactMatch.auctionStatus || '').toLowerCase().trim()
-      if (targetStatus === 'liveauctionended')
-        targetStatus = 'ended'
-
-      if (['upcoming', 'live', 'otobuy', 'ended', 'sold', 'removed'].includes(targetStatus)) {
-        toast.success(`Found in ${targetStatus}, navigating...`)
-        sessionStorage.setItem('auction_last_viewed', String(exactMatch.id || exactMatch._id || ''))
-        router.push(`/auctions/${targetStatus}`)
-      }
+  if (searchDebounce) clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(() => {
+    if (newVal && newVal.trim().length > 0) {
+      searchCars(newVal.trim())
+    } else {
+      cancelSearch()
     }
-  }
+  }, 400)
 })
 
 function focusGlobalSearch() {
@@ -190,16 +154,12 @@ function handleGlobalKeydown(e: KeyboardEvent) {
   }
 }
 
-const totalFiltered = computed(() => filteredItems.value.length)
-const paginatedItems = computed(() => filteredItems.value.slice(0, visibleCount.value))
-const hasMore = computed(() => paginatedItems.value.length < filteredItems.value.length)
-
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 useIntersectionObserver(
   loadMoreTrigger,
   (entries) => {
-    if (entries?.[0]?.isIntersecting && hasMore.value) {
-      visibleCount.value += ITEMS_PER_PAGE
+    if (entries?.[0]?.isIntersecting && hasMore.value && !isLoadingMore.value) {
+      loadMore()
     }
   },
   { rootMargin: '400px' },
@@ -369,7 +329,7 @@ async function confirmCep(car: any) {
         </div>
       </div>
       <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
-        {{ totalFiltered }} car{{ totalFiltered !== 1 ? 's' : '' }}
+        {{ totalCount }} car{{ totalCount !== 1 ? 's' : '' }}
       </p>
       <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="handleRefresh">
         <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading }" />
@@ -406,9 +366,14 @@ async function confirmCep(car: any) {
     </div>
 
     <!-- Main Content -->
-    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 lg:p-6 pb-24">
+    <div v-else-if="!fetchError" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 lg:p-6 pb-24 relative">
+      <!-- Minimalist loading bar -->
+      <div v-if="isRefreshing || isLoadingMore" class="absolute top-0 left-0 right-0 h-1 bg-primary/20 overflow-hidden z-20">
+        <div class="h-full bg-primary origin-left animate-in fade-in duration-500 rounded-full" style="width: 30%; animation: indeterminate 1.5s infinite linear;" />
+      </div>
+
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 items-start transition-all duration-500 ease-in-out relative">
-        <template v-for="car in paginatedItems" :key="car.id || car._id">
+        <template v-for="car in allCars" :key="car.id || car._id">
           <!-- Normal Card -->
           <div
             v-if="expandedCarId !== (car.id || car._id)"
@@ -429,7 +394,7 @@ async function confirmCep(car: any) {
                   {{ formatCountdown(isUpcoming ? car.upcomingUntil : car.auctionEndTime) }}
                 </Badge>
                 <Badge v-else class="backdrop-blur-md bg-black/60 text-white font-semibold border-0 opacity-80">
-                  {{ getStatusLabel(car.auctionStatus || statusKey) }}
+                  {{ getStatusLabel(car.auctionStatus || activeTab) }}
                 </Badge>
               </div>
             </div>
@@ -573,7 +538,7 @@ async function confirmCep(car: any) {
 
                 <Badge class="font-semibold text-sm px-3 py-1 border-0" :class="isLive ? 'bg-emerald-800/90 text-white' : (isUpcoming ? 'bg-blue-500/10 text-blue-600' : 'bg-muted text-muted-foreground opacity-80')">
                   <span v-if="isLive" class="size-1.5 rounded-full bg-rose-500 animate-pulse mr-2 inline-block" />
-                  {{ isUpcoming || isLive ? formatCountdown(isUpcoming ? car.upcomingUntil : car.auctionEndTime) : getStatusLabel(car.auctionStatus || statusKey) }}
+                  {{ isUpcoming || isLive ? formatCountdown(isUpcoming ? car.upcomingUntil : car.auctionEndTime) : getStatusLabel(car.auctionStatus || activeTab) }}
                 </Badge>
               </div>
 
@@ -617,7 +582,7 @@ async function confirmCep(car: any) {
         </template>
       </div>
 
-      <div v-if="paginatedItems.length === 0 && !isLoading" class="col-span-full h-40 flex flex-col items-center justify-center text-muted-foreground">
+      <div v-if="allCars.length === 0 && !isLoading" class="col-span-full h-40 flex flex-col items-center justify-center text-muted-foreground">
         <Icon name="i-lucide-grid-2x2-x" class="size-10 mb-3 opacity-20" />
         <p>No auction listings found.</p>
       </div>
@@ -635,5 +600,10 @@ async function confirmCep(car: any) {
 }
 .scroller-none {
   scrollbar-width: none;
+}
+@keyframes indeterminate {
+  0% { transform: translateX(-100%) scaleX(0.2); }
+  50% { transform: translateX(0%) scaleX(0.5); }
+  100% { transform: translateX(200%) scaleX(0.2); }
 }
 </style>

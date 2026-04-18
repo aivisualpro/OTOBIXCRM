@@ -2,22 +2,25 @@
 const route = useRoute()
 const { activeWorkspace } = useWorkspace()
 
+const isBaseRoute = computed(() => {
+  return route.path === '/retail' || route.path === '/retail/'
+})
+
 const currentActiveId = computed(() => {
-  const path = route.path
-  return path.split('/').pop() || 'all'
+  return String(route.query.tab || 'all')
 })
 
 const ALL_RETAIL_TABS = [
-  { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/retail/all' },
-  { id: 'upcoming', title: 'Upcoming', icon: 'i-lucide-calendar-clock', link: '/retail/upcoming' },
-  { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/retail/live' },
-  { id: 'otobuy', title: 'Otobuy', icon: 'i-lucide-tag', link: '/retail/otobuy' },
-  { id: 'customer-activity', title: 'Customer Activity', icon: 'i-lucide-activity', link: '/retail/customer-activity' },
-  { id: 'dealer-activity', title: 'Dealer Activity', icon: 'i-lucide-users', link: '/retail/dealer-activity' },
-  { id: 'ended', title: 'Ended', icon: 'i-lucide-timer-off', link: '/retail/ended' },
-  { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/retail/sold' },
-  { id: 'removed', title: 'Removed', icon: 'i-lucide-trash-2', link: '/retail/removed' },
-  { id: 'followup', title: 'Followup', icon: 'i-lucide-phone-forwarded', link: '/retail/followup' },
+  { id: 'all', title: 'All', icon: 'i-lucide-list', link: '/retail?tab=all' },
+  { id: 'upcoming', title: 'Upcoming', icon: 'i-lucide-calendar-clock', link: '/retail?tab=upcoming' },
+  { id: 'live', title: 'Live', icon: 'i-lucide-radio', link: '/retail?tab=live' },
+  { id: 'otobuy', title: 'Otobuy', icon: 'i-lucide-tag', link: '/retail?tab=otobuy' },
+  { id: 'customer-activity', title: 'Customer Activity', icon: 'i-lucide-activity', link: '/retail?tab=customer-activity' },
+  { id: 'dealer-activity', title: 'Dealer Activity', icon: 'i-lucide-users', link: '/retail?tab=dealer-activity' },
+  { id: 'ended', title: 'Ended', icon: 'i-lucide-timer-off', link: '/retail?tab=ended' },
+  { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/retail?tab=sold' },
+  { id: 'removed', title: 'Removed', icon: 'i-lucide-trash-2', link: '/retail?tab=removed' },
+  { id: 'followup', title: 'Followup', icon: 'i-lucide-phone-forwarded', link: '/retail?tab=followup' },
 ]
 
 const navItems = computed(() => {
@@ -29,108 +32,22 @@ const navItems = computed(() => {
 })
 
 // ─── Live counts per tab ───
-const { allCars, isFetched, globalSearch } = useAuctionsApi()
+const { statusCounts, isFetched, fetchCounts } = useAuctionsApi()
 
 function getTabCount(filterId: string) {
-  if (!isFetched.value)
-    return undefined
-
-  let matches = allCars.value.filter((car) => {
-    // Exclude records with blank auction status altogether
-    if (!car.auctionStatus || car.auctionStatus.trim() === '') {
-      return false
-    }
-
-    let ok = true
-    if (filterId === 'all')
-      return ok
-
-    if (filterId === 'followup') {
-      if (car.dealStatus !== 'Under Negotiation')
-        return false
-      return true
-    }
-
-    if (filterId === 'customer-activity') {
-      if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy') {
-        ok = false
-      }
-      return ok
-    }
-
-    if (filterId === 'dealer-activity') {
-      if (car.auctionStatus !== 'live' && car.auctionStatus !== 'otobuy' && car.auctionStatus !== 'upcoming') {
-        ok = false
-      }
-      return ok
-    }
-
-    const statusMap: Record<string, string> = {
-      upcoming: 'upcoming',
-      live: 'live',
-      otobuy: 'otobuy',
-      ended: 'liveAuctionEnded',
-      sold: 'sold',
-      removed: 'removed',
-    }
-
-    if (statusMap[filterId]) {
-      if (car.auctionStatus !== statusMap[filterId]) {
-        ok = false
-      }
-    }
-
-    return ok
-  })
-
-  if (globalSearch.value) {
-    const q = globalSearch.value.toLowerCase()
-    matches = matches.filter(car =>
-      ['make', 'model', 'variant', 'registrationNumber', 'appointmentId', 'registeredRto', 'registrationState', 'roadTaxValidity', 'ownerSerialNumber', 'fuelType'].some(key =>
-        String(car[key] ?? '').toLowerCase().includes(q),
-      ),
-    )
-  }
-
-  return matches.length || undefined
+  if (!isFetched.value || !statusCounts.value) return undefined
+  return statusCounts.value[filterId] || 0
 }
 
-watch(globalSearch, (newVal) => {
-  if (newVal && newVal.trim().length > 3) {
-    const q = newVal.toLowerCase()
-    const globalMatches = allCars.value.filter((car) => {
-      return ['make', 'model', 'variant', 'registrationNumber', 'appointmentId', 'registeredRto', 'registrationState', 'roadTaxValidity', 'ownerSerialNumber', 'fuelType'].some(key =>
-        String(car[key] ?? '').toLowerCase().includes(q),
-      )
-    })
-
-    if (globalMatches.length === 1) {
-      const match = globalMatches[0]
-      if (!match)
-        return
-
-      const statusMapRevealed: Record<string, string> = {
-        upcoming: 'upcoming',
-        live: 'live',
-        otobuy: 'otobuy',
-        liveAuctionEnded: 'ended',
-        sold: 'sold',
-        removed: 'removed',
-      }
-      const targetTab = statusMapRevealed[match.auctionStatus] || 'all'
-
-      if (route.path !== `/retail/${targetTab}`) {
-        useRouter().push(`/retail/${targetTab}`)
-      }
-    }
-  }
+onMounted(() => {
+  if (isBaseRoute.value) fetchCounts()
 })
 </script>
 
 <template>
   <div class="-m-4 lg:-m-6 h-[calc(100%+2rem)] lg:h-[calc(100%+3rem)] flex flex-col overflow-hidden bg-background">
     <!-- Tab Navigation Bar -->
-    <div class="shrink-0 border-b bg-background/80 backdrop-blur-sm z-10">
+    <div v-if="isBaseRoute" class="shrink-0 border-b bg-background/80 backdrop-blur-sm z-10">
       <div class="flex items-center gap-2 px-4 lg:px-6 py-2 overflow-x-auto no-scrollbar">
         <NuxtLink
           v-for="item in navItems"

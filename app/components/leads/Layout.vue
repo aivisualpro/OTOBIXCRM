@@ -9,10 +9,7 @@ onMounted(() => fetchCounts())
 const { activeWorkspace } = useWorkspace()
 
 const currentActiveId = computed(() => {
-  const path = route.path
-  if (path === '/leads' || path === '/leads/')
-    return 'leads'
-  return path.split('/').pop() || 'leads'
+  return (route.query.tab as string) || 'all'
 })
 
 // For the search-results tab, use the live totalCount from the composable
@@ -29,17 +26,17 @@ function hasSearchMatches(itemId: string): boolean {
 }
 
 const navItems = [
-  { id: 'all', title: 'All Leads', icon: 'i-lucide-layers', color: 'text-indigo-400', link: '/leads/all' },
-  { id: 'pending', title: 'Pending', icon: 'i-lucide-magnet', color: 'text-blue-500', link: '/leads/pending' },
-  { id: 'scheduled', title: 'Scheduled', icon: 'i-lucide-calendar', color: 'text-indigo-500', link: '/leads/scheduled' },
-  { id: 're-scheduled', title: 'Re-Scheduled', icon: 'i-lucide-calendar-range', color: 'text-purple-500', link: '/leads/re-scheduled' },
-  { id: 'running', title: 'Running', icon: 'i-lucide-activity', color: 'text-green-500', link: '/leads/running' },
-  { id: 'cancelled', title: 'Cancelled', icon: 'i-lucide-ban', color: 'text-red-500', link: '/leads/cancelled' },
-  { id: 're-inspection', title: 'Re-Inspection', icon: 'i-lucide-rotate-ccw', color: 'text-amber-500', link: '/leads/re-inspection' },
-  { id: 'inspected', title: 'Inspected', icon: 'i-lucide-check-circle', color: 'text-emerald-500', link: '/leads/inspected' },
-  { id: 'under-review', title: 'Under Review', icon: 'i-lucide-eye', color: 'text-orange-500', link: '/leads/under-review' },
-  { id: 'quality-approved', title: 'Approved', icon: 'i-lucide-shield-check', color: 'text-teal-500', link: '/leads/quality-approved' },
-  { id: 'quality-rejected', title: 'Quality Rejected', icon: 'i-lucide-shield-x', color: 'text-rose-500', link: '/leads/quality-rejected' },
+  { id: 'all', title: 'All Leads', icon: 'i-lucide-layers', color: 'text-indigo-400', link: '/leads?tab=all' },
+  { id: 'pending', title: 'Pending', icon: 'i-lucide-magnet', color: 'text-blue-500', link: '/leads?tab=pending' },
+  { id: 'scheduled', title: 'Scheduled', icon: 'i-lucide-calendar', color: 'text-indigo-500', link: '/leads?tab=scheduled' },
+  { id: 're-scheduled', title: 'Re-Scheduled', icon: 'i-lucide-calendar-range', color: 'text-purple-500', link: '/leads?tab=re-scheduled' },
+  { id: 'running', title: 'Running', icon: 'i-lucide-activity', color: 'text-green-500', link: '/leads?tab=running' },
+  { id: 'cancelled', title: 'Cancelled', icon: 'i-lucide-ban', color: 'text-red-500', link: '/leads?tab=cancelled' },
+  { id: 're-inspection', title: 'Re-Inspection', icon: 'i-lucide-rotate-ccw', color: 'text-amber-500', link: '/leads?tab=re-inspection' },
+  { id: 'inspected', title: 'Inspected', icon: 'i-lucide-check-circle', color: 'text-emerald-500', link: '/leads?tab=inspected' },
+  { id: 'under-review', title: 'Under Review', icon: 'i-lucide-eye', color: 'text-orange-500', link: '/leads?tab=under-review' },
+  { id: 'quality-approved', title: 'Approved', icon: 'i-lucide-shield-check', color: 'text-teal-500', link: '/leads?tab=quality-approved' },
+  { id: 'quality-rejected', title: 'Quality Rejected', icon: 'i-lucide-shield-x', color: 'text-rose-500', link: '/leads?tab=quality-rejected' },
 ]
 
 const filteredNavItems = computed(() => {
@@ -50,13 +47,13 @@ const filteredNavItems = computed(() => {
     items = navItems.filter(item => allowed.includes(item.id))
   }
 
-  if (activeAdvancedFilterCount.value > 0 || serverSearch.value || route.path.includes('/search-results')) {
+  if (activeAdvancedFilterCount.value > 0 || serverSearch.value || route.query.tab === 'search-results') {
     items.unshift({
       id: 'search-results',
       title: 'Search Results',
       icon: 'i-lucide-list-filter',
       color: 'text-amber-500',
-      link: '/leads/search-results',
+      link: '/leads?tab=search-results',
     })
   }
 

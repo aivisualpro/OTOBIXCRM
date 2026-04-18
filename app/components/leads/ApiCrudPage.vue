@@ -50,6 +50,7 @@ const {
   hasMore: serverHasMore,
   isLoading,
   isLoadingMore,
+  isRefreshing,
   isFetched,
   fetchError,
   fetchLeads,
@@ -58,7 +59,6 @@ const {
   searchLeads,
   refreshLeads,
   fetchCounts,
-  setFilters,
   advancedFilters,
   setAdvancedFilters,
   serverSearch,
@@ -104,30 +104,21 @@ function handleGlobalKeydown(e: KeyboardEvent) {
   }
 }
 
-// Ensure data is loaded with server-side status filters
+// ─── Component mount ───
 onMounted(async () => {
   window.addEventListener('keydown', handleGlobalKeydown)
 
   if (router.currentRoute.value.path === '/leads/search-results' && serverSearch.value) {
     nextTick(() => { focusGlobalSearch() })
   }
-  if (props.filters) {
-    setFilters(props.filters)
-  }
-  else {
-    fetchLeads()
-  }
+  
+  // No longer rely on props.filters since useLeadsApi internally controls Tab/Page via query.tab
+  fetchLeads()
+  
   fetchCarDropdowns({ limit: 500 })
   await fetchDbDropdowns()
   bankSourceOptions.value = getDbOptions('Bank Source')
 })
-
-// Re-apply server filters when route changes (e.g. switching tabs)
-watch(() => props.filters, (newFilters) => {
-  if (newFilters) {
-    setFilters(newFilters)
-  }
-}, { deep: true })
 
 // ─── Instant Reveal Animation ───
 const isRevealed = ref(false)
@@ -557,54 +548,15 @@ function setDatePreset(preset: string) {
 }
 
 // ─── Sorted display (we rely on server-side status filtering implicitly) ───
+const { setSort } = useLeadsApi()
+
+// When the user clicks a column header, `sortKey` and `sortDir` are updated. We just sync it with the server!
+watch([sortKey, sortDir], ([newKey, newDir]) => {
+  setSort(newKey, newDir)
+})
+
 const filteredItems = computed(() => {
-  let result = allLeads.value as Record<string, any>[]
-
-  // Sort
-  const key = sortKey.value
-  const dir = sortDir.value
-  const colDef = props.columns.find((c: any) => c.key === key)
-  const isDateType = colDef?.type === 'date' || key.toLowerCase().includes('date') || key === 'createdAt' || key === 'timeStamp'
-
-  result = [...result].sort((a, b) => {
-    let av = a[key]
-    let bv = b[key]
-
-    // Fallback for createdAt in older legacy records
-    if (key === 'createdAt') {
-      av = av || a.timeStamp
-      bv = bv || b.timeStamp
-    }
-
-    if (isDateType) {
-      const ad = av ? new Date(av).getTime() : 0
-      const bd = bv ? new Date(bv).getTime() : 0
-      if (!Number.isNaN(ad) && !Number.isNaN(bd) && ad !== bd) {
-        return dir === 'asc' ? ad - bd : bd - ad
-      }
-    }
-
-    av = av ?? ''
-    bv = bv ?? ''
-
-    // Numeric sort for numbers/IDs like '26-100013'
-    const an = Number(String(av).replace(/\D/g, ''))
-    const bn = Number(String(bv).replace(/\D/g, ''))
-    if (!Number.isNaN(an) && !Number.isNaN(bn) && an !== bn && an !== 0 && bn !== 0) {
-      return dir === 'asc' ? an - bn : bn - an
-    }
-
-    // String sort
-    const as = String(av).toLowerCase()
-    const bs = String(bv).toLowerCase()
-    if (as < bs)
-      return dir === 'asc' ? -1 : 1
-    if (as > bs)
-      return dir === 'asc' ? 1 : -1
-    return 0
-  })
-
-  return result
+  return allLeads.value as Record<string, any>[]
 })
 
 const frontendDisplayLimit = ref(100)
@@ -613,8 +565,9 @@ watch(() => props.filters, () => {
   frontendDisplayLimit.value = 100
 }, { deep: true })
 
+// The backend handles ALL pagination now. We just display what was fetched.
 const displayedItems = computed(() => {
-  return filteredItems.value.slice(0, frontendDisplayLimit.value)
+  return filteredItems.value
 })
 
 const _totalFiltered = computed(() => filteredItems.value.length)
@@ -634,15 +587,15 @@ watch(search, async (q) => {
   if (trimmed) {
     // Navigate to search-results tab (if not already there)
     // searchLeads() will be called from the search-results page's onMounted/route watch
-    if (router.currentRoute.value.path !== '/leads/search-results') {
+    if (router.currentRoute.value.query.tab !== 'search-results') {
       serverSearch.value = trimmed
-      router.push({ path: '/leads/search-results', query: { search: trimmed } })
+      router.push({ path: '/leads', query: { tab: 'search-results', search: trimmed } })
     }
     else {
       // Already on search-results — debounce then hit server
       serverSearch.value = trimmed
-      router.replace({ query: { ...router.currentRoute.value.query, search: trimmed } })
       _localSearchDebounce = setTimeout(() => {
+        router.replace({ path: '/leads', query: { ...router.currentRoute.value.query, search: trimmed } })
         frontendDisplayLimit.value = 100
         searchLeads(trimmed)
       }, 400)
@@ -657,21 +610,13 @@ watch(search, async (q) => {
     const resetQuery = { ...router.currentRoute.value.query }
     delete resetQuery.search
 
-    if (router.currentRoute.value.path === '/leads/search-results' && activeFilterCount.value === 0) {
-      // Force re-fetch all data (search replaced _leads with filtered subset)
-      await refreshLeads()
-      router.push({ path: '/leads/all', query: resetQuery })
-    }
-    else if (router.currentRoute.value.path === '/leads/search-results') {
-      router.replace({ query: resetQuery })
-      searchLeads('')
+    if (router.currentRoute.value.query.tab === 'search-results') {
+      resetQuery.tab = 'all' // Fallback to all leads when search is cleared
+      router.push({ path: '/leads', query: resetQuery })
     }
     else {
-      router.replace({ query: resetQuery })
-      await refreshLeads()
-      if (props.filters) {
-        nextTick(() => setFilters(props.filters!))
-      }
+      router.replace({ path: '/leads', query: resetQuery })
+      refreshLeads()
     }
   }
 })
@@ -683,7 +628,7 @@ let observer: IntersectionObserver | null = null
 onMounted(() => {
   // On the search-results tab: read URL query and fire search
   const routeSearch = String(useRoute().query.search || '').trim()
-  if (routeSearch && router.currentRoute.value.path === '/leads/search-results') {
+  if (routeSearch && router.currentRoute.value.query.tab === 'search-results') {
     serverSearch.value = routeSearch
     search.value = routeSearch
     searchLeads(routeSearch)
@@ -1271,6 +1216,7 @@ function getInitials(name: string): string {
       </Badge>
     </div>
 
+    <BaseSyncIndicator :syncing="isRefreshing" />
     <Button v-if="hasAddPermission && router.currentRoute.value.path.startsWith('/leads')" size="sm" class="h-8" @click="openCreate">
       <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
       Add {{ entity }}
@@ -1309,7 +1255,12 @@ function getInitials(name: string): string {
     >
       <Table container-class="h-full pb-10 px-[19px]">
         <TableHeader class="sticky top-0 z-10 bg-muted border-b border-border">
-          <TableRow>
+          <TableRow relative>
+            <!-- Sleek inline loader requested by formatting rules -->
+            <div v-show="isRefreshing || isLoadingMore" class="absolute bottom-0 left-0 right-0 h-[2px] bg-primary/20 overflow-hidden z-20">
+              <div class="h-full bg-primary origin-left animate-in fade-in duration-500 rounded-full" style="width: 30%; animation: indeterminate 1.5s infinite linear;" />
+            </div>
+
             <TableHead
               v-for="col in columns"
               :key="col.key"
@@ -2020,5 +1971,10 @@ function getInitials(name: string): string {
     opacity: 0.6;
     transform: translateX(0);
   }
+}
+@keyframes indeterminate {
+  0% { transform: translateX(-100%) scaleX(0.2); }
+  50% { transform: translateX(0%) scaleX(0.5); }
+  100% { transform: translateX(200%) scaleX(0.2); }
 }
 </style>

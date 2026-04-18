@@ -51,7 +51,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
   { id: 'dashboard', title: 'Dashboard', icon: 'i-lucide-layout-dashboard', link: '/', group: 'Workspace' },
   { id: 'leads', title: 'Leads', icon: 'i-lucide-magnet', link: '/leads', group: 'Workspace' },
   { id: 'people', title: 'People', icon: 'i-lucide-users', link: '/people/dealer', group: 'Workspace' },
-  { id: 'auctions', title: 'Auctions', icon: 'i-lucide-gavel', link: '/auctions/upcoming', group: 'Workspace' },
+  { id: 'auctions', title: 'Auctions', icon: 'i-lucide-gavel', link: '/auctions?tab=upcoming', group: 'Workspace' },
   { id: 'sales', title: 'Sales', icon: 'i-lucide-circle-dollar-sign', link: '/sales', group: 'Workspace' },
   { id: 'retail', title: 'Retail', icon: 'i-lucide-store', link: '/retail', group: 'Workspace' },
   { id: 'notifications', title: 'Notifications', icon: 'i-lucide-bell', link: '/notifications', group: 'Workspace' },
@@ -207,7 +207,7 @@ export function useWorkspace() {
 
       // Dynamic Sidebar Redirect fallback for auctions
       if (item.id === 'auctions' && ws.auctionTabs && ws.auctionTabs.length > 0) {
-        link = ws.defaultRoutes?.[item.id] || `/auctions/${ws.auctionTabs[0]}`
+        link = ws.defaultRoutes?.[item.id] || `/auctions?tab=${ws.auctionTabs[0]}`
       }
 
       // Dynamic Sidebar Redirect fallback for sales
@@ -363,51 +363,6 @@ export function useWorkspace() {
     }
   }
 
-  // ─── Quick Sync Engine (Workspaces) ───
-  const _wsLastTs = useState('workspace_lastKnownTs', () => 0)
-  let _wsInterval: ReturnType<typeof setInterval> | null = null
-
-  async function _checkWsUpdates() {
-    if (!_wsLastTs.value)
-      return
-    try {
-      const since = _wsLastTs.value
-      const res = await $fetch<{ workspaces: any[], ts: number }>(`/api/workspaces/delta?since=${since}&t=${Date.now()}`)
-      if (res.workspaces && res.workspaces.length > 0) {
-        const changedMap = new Map(res.workspaces.map((w: any) => [w.workspaceId || String(w._id), w]))
-        _workspaces.value = _workspaces.value.map((existing: any) => {
-          const key = existing.workspaceId || String(existing._id)
-          const updated = changedMap.get(key)
-          if (updated) {
-            changedMap.delete(key)
-            return updated
-          }
-          return existing
-        })
-        for (const [, w] of changedMap) {
-          _workspaces.value.push(w)
-        }
-      }
-      _wsLastTs.value = Math.max(res.ts || since, since)
-    }
-    catch { /* silent */ }
-  }
-
-  function startWsQuickSync() {
-    if (_wsInterval)
-      return
-    if (!_wsLastTs.value)
-      _wsLastTs.value = Date.now()
-    _wsInterval = setInterval(_checkWsUpdates, 30000)
-  }
-
-  function stopWsQuickSync() {
-    if (_wsInterval) {
-      clearInterval(_wsInterval)
-      _wsInterval = null
-    }
-  }
-
   return {
     workspaces: availableWorkspaces,
     allWorkspaces: _workspaces,
@@ -423,7 +378,5 @@ export function useWorkspace() {
     removeWorkspace,
     updateWorkspace,
     resetWorkspaces,
-    startQuickSync: startWsQuickSync,
-    stopQuickSync: stopWsQuickSync,
   }
 }

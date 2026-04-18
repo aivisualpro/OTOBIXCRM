@@ -1,8 +1,71 @@
 export default defineEventHandler(async (event) => {
   try {
     const db = await getLeadsDb(event)
-    // Projection: only include fields used by Sales/Retail table views.
-    // This avoids pulling large embedded image arrays & inspection data on every load.
+    const queryParams = getQuery(event)
+
+    const page = Math.max(1, parseInt(String(queryParams.page)) || 1)
+    const limit = Math.max(1, Math.min(100, parseInt(String(queryParams.limit)) || 30))
+    const search = String(queryParams.search || '').trim()
+    const sortField = String(queryParams.sort || '_id')
+    const sortDir = String(queryParams.sortDir) === 'asc' ? 1 : -1
+    const tab = String(queryParams.tab || 'all')
+
+    // Parse userData cookie to enforce Role Base Access Control (RBAC)
+    const rawUserData = getCookie(event, 'userData')
+    let userEmail = ""
+    let userRole = ""
+    if (rawUserData) {
+      try {
+        const decoded = JSON.parse(decodeURIComponent(rawUserData))
+        userEmail = decoded.email || ""
+        userRole = decoded.userRole || decoded.role || ""
+      } catch (e) {
+        // Fallback or ignore
+      }
+    }
+
+    // 1. Build Query Filter based on tab
+    const filter: any = {}
+    
+    // Role-based visibility
+    if (userRole === 'Retailer' && userEmail) {
+      filter.retailAssociate = userEmail
+    }
+
+    // Always exclude blank auction statuses and 'inspected' based on legacy table logic
+    filter.auctionStatus = { $exists: true, $nin: ["", " ", "inspected"] }
+
+    if (tab === 'ended') {
+      filter.auctionStatus = 'liveAuctionEnded'
+    } else if (tab === 'customer-activity') {
+      filter.auctionStatus = { $in: ['live', 'otobuy'] }
+    } else if (tab === 'dealer-activity') {
+      filter.auctionStatus = { $in: ['live', 'otobuy', 'upcoming'] }
+    } else if (tab === 'followup') {
+      filter.dealStatus = 'Under Negotiation'
+    } else if (['upcoming', 'live', 'otobuy', 'sold', 'removed'].includes(tab)) {
+      filter.auctionStatus = tab
+    } // 'all' requires no additional filter
+
+    console.log('[API:cars] tab:', tab, 'limit:', limit, 'filter:', JSON.stringify(filter))
+
+    // 2. Add Search matches
+    if (search) {
+      // The search logic in UI matched these fields:
+      // 'make', 'model', 'variant', 'registrationNumber', 'city', 'fuelType', 'appointmentId'
+      const searchRegex = { $regex: new RegExp(search, 'i') }
+      filter.$or = [
+        { make: searchRegex },
+        { model: searchRegex },
+        { variant: searchRegex },
+        { registrationNumber: searchRegex },
+        { city: searchRegex },
+        { fuelType: searchRegex },
+        { appointmentId: searchRegex }
+      ]
+    }
+
+    // 3. Document Projection
     const projection = {
       _id: 1,
       appointmentId: 1,
@@ -33,6 +96,7 @@ export default defineEventHandler(async (event) => {
       otobuyOffer: 1,
       highestBid: 1,
       highestBidder: 1,
+      biddersCount: 1, // Need this too
       soldAt: 1,
       soldTo: 1,
       soldToName: 1,
@@ -44,7 +108,6 @@ export default defineEventHandler(async (event) => {
       retailAssociate: 1,
       saleReason: 1,
       tentativeHandoverDate: 1,
-      // Only the first/thumbnail image fields — not full arrays
       imageUrl: 1,
       frontMain: 1,
       frontMainImages: { $slice: 1 },
@@ -52,18 +115,23 @@ export default defineEventHandler(async (event) => {
       updatedAt: 1,
     }
 
-    // Fetch all cars descending from newest leveraging the native _id index to bypass sort memory limits entirely O(1)
-    const tId = Math.random().toString(36).substring(7)
-    console.time(`[API:cars:${tId}] find() execution`)
-    const cars = await db.collection('cars').find({}, { projection }).sort({ _id: -1 }).limit(3000).toArray()
-    console.timeEnd(`[API:cars:${tId}] find() execution`)
+    const skip = (page - 1) * limit
+    const sortParams: any = { [sortField]: sortDir }
+    if (sortField !== '_id') sortParams._id = -1 // secondary sort to stabilize
 
-    // NEW: Fetch all auto-bids to satisfy Sales/Retail auto-bid requirements
-    console.time(`[API:cars:${tId}] autoBids fetch execution`)
-    const autoBids = await db.collection('autoBidsForLiveSection').find({}).toArray()
-    console.timeEnd(`[API:cars:${tId}] autoBids fetch execution`)
+    const coll = db.collection('cars')
+    const [cars, totalCount] = await Promise.all([
+      coll.find(filter, { projection }).sort(sortParams).skip(skip).limit(limit).toArray(),
+      coll.countDocuments(filter)
+    ])
 
-    console.time(`[API:cars:${tId}] mappedCars mapping execution`)
+    // Load autobids for these specific chunk of cars only
+    const carIds = cars.map(c => c._id.toString())
+    let autoBids: any[] = []
+    if (carIds.length > 0) {
+      autoBids = await db.collection('autoBidsForLiveSection')
+        .find({ carId: { $in: carIds } }).toArray()
+    }
 
     const mappedCars = cars.map((car) => {
       const carIdStr = car._id.toString()
@@ -71,13 +139,17 @@ export default defineEventHandler(async (event) => {
         ...car,
         id: carIdStr,
         _id: carIdStr,
-        // Filter auto-bids matching this specific car
         autoBidsForLiveSection: autoBids.filter(b => String(b.carId) === carIdStr),
       }
     })
-    console.timeEnd(`[API:cars:${tId}] mappedCars mapping execution`)
 
-    return mappedCars
+    return {
+      items: mappedCars,
+      total: totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit)
+    }
   }
   catch (err: any) {
     console.error('[API:cars] Failed to fetch cars:', err.message)

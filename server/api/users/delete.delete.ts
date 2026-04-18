@@ -24,6 +24,9 @@ export default defineEventHandler(async (event) => {
 
     console.warn(`[API:users/delete] Deleted user ${userId}`)
 
+    // Broadcast: delete → null payload (only recordId needed)
+    broadcastChange('users', 'delete', userId)
+
     return {
       success: true,
       message: 'User deleted successfully',

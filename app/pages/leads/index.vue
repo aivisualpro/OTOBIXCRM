@@ -1,31 +1,58 @@
 <script setup lang="ts">
-const { activeWorkspace } = useWorkspace()
+import { leadsColumns, leadsFormFields, routeColumnsMap, routeFilters } from '~/constants/leads'
+import { watch } from 'vue'
 
+const { activeWorkspace } = useWorkspace()
 const ws = activeWorkspace.value
 const allowed = ws?.leadTabs || []
 
-const { serverSearch, activeAdvancedFilterCount } = useLeadsApi()
+const route = useRoute()
+const router = useRouter()
+const { serverSearch, activeAdvancedFilterCount, setTab } = useLeadsApi()
 
-let fallback = '/leads/all'
+// Default tab resolution logic
+let tabParam = computed(() => (route.query.tab as string) || '')
 
-if (serverSearch.value || activeAdvancedFilterCount.value > 0) {
-  fallback = '/leads/search-results'
-}
-else if (allowed.length > 0 && !allowed.includes('all') && !allowed.includes('pending')) {
-  fallback = ws?.defaultRoutes?.leads || `/leads/${allowed[0]}`
-}
-else if (allowed.includes('all')) {
-  fallback = '/leads/all'
-}
-else if (allowed.includes('pending')) {
-  fallback = '/leads/pending'
+// Auto-navigate to correct tab if none provided
+if (!tabParam.value) {
+  let fallback = 'all'
+  if (serverSearch.value || activeAdvancedFilterCount.value > 0) {
+    fallback = 'search-results'
+  }
+  else if (allowed.length > 0 && !allowed.includes('all') && !allowed.includes('pending')) {
+    fallback = ws?.defaultRoutes?.leads?.split('/').pop() || allowed[0] || 'all'
+  }
+  else if (allowed.includes('all')) {
+    fallback = 'all'
+  }
+  else if (allowed.includes('pending')) {
+    fallback = 'pending'
+  }
+  router.replace({ query: { ...route.query, tab: fallback } })
 }
 
-navigateTo(fallback, { replace: true })
+// Compute the active filter configuration from constants
+const filter = computed(() => routeFilters[tabParam.value as keyof typeof routeFilters] || routeFilters['all'])
+const activeColumns = computed(() => routeColumnsMap[tabParam.value] || leadsColumns)
+
+// When tab changes, update useLeadsApi's internal tab tracker
+watch(tabParam, (newTab) => {
+  if (newTab) {
+    setTab(newTab)
+  }
+}, { immediate: true })
 </script>
 
 <template>
-  <div class="flex items-center justify-center h-64 text-muted-foreground">
-    <Icon name="i-lucide-loader-2" class="size-6 animate-spin" />
-  </div>
+  <LeadsApiCrudPage
+    v-if="filter"
+    :title="`Leads - ${filter.label || 'All Leads'}`"
+    icon="i-lucide-magnet"
+    entity-name="Lead"
+    :columns="activeColumns"
+    :form-fields="leadsFormFields"
+    :clickable="tabParam === 'inspected'"
+    :default-sort-key="tabParam === 'inspected' ? 'createdAt' : 'appointmentId'"
+    default-sort-dir="desc"
+  />
 </template>

@@ -25,8 +25,8 @@ export default defineEventHandler(async (event) => {
       updateQuery,
     )
 
-    // Trigger SSE Live Sync for all connected browsers
-    broadcastChange('cars', 'update', objectId.toString())
+    // Broadcast: update → changed fields only
+    broadcastChange('cars', 'update', objectId.toString(), undefined, updateFields)
 
     return { success: true }
   }
