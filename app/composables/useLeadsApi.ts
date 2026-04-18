@@ -153,7 +153,7 @@ export function useLeadsApi() {
     try {
       const params = _buildFilterParams()
       params.t = String(Date.now())
-      const queryKey = QUERY_KEYS.leadsCount()
+      const queryKey = QUERY_KEYS.leadsCount(params)
       const res = await deduplicatedFetch(queryKey, () =>
         $fetch<CountsResponse>('/api/leads/counts', { params }))
       _counts.value = res.counts || {}

@@ -139,6 +139,8 @@ export default defineEventHandler(async (event) => {
         ],
       })
     }
+    
+    console.log(`[API:leads] tab: ${query.tab} limit: ${limit} search: ${search} filter:`, JSON.stringify(filter))
 
     // Determine sort
     const sortField = (query.sort as string || '_id').trim()
@@ -171,6 +173,10 @@ export default defineEventHandler(async (event) => {
       allocatedTo: 1,
       qcBy: 1,
       approvalStatus: 1,
+      carRegistrationNumber: 1,
+      ownershipSerialNumber: 1,
+      vehicleStatus: 1,
+      city: 1,
     }
 
     // Use find() with dynamic sort and projection
@@ -186,10 +192,30 @@ export default defineEventHandler(async (event) => {
     ])
 
     // Map _id to string id for frontend hydration
-    const finalData = data.map((doc) => {
+    const finalData = data.map((doc: any) => {
       const docId = doc._id?.toString()
       return { ...doc, _id: docId, id: docId }
     })
+
+    // Fetch `inspectionDate` and `qcBy` from the main `cars` collection
+    const appointmentIds = finalData.map((d: any) => d.appointmentId).filter(Boolean)
+    if (appointmentIds.length > 0) {
+      const carsData = await db.collection('cars').find(
+        { appointmentId: { $in: appointmentIds } },
+        { projection: { appointmentId: 1, inspectionDate: 1, qcBy: 1 } }
+      ).toArray()
+      
+      const carsMap = new Map()
+      carsData.forEach((c: any) => carsMap.set(c.appointmentId, c))
+      
+      finalData.forEach((d: any) => {
+        const car = carsMap.get(d.appointmentId)
+        if (car) {
+          if (car.inspectionDate) d.inspectionDate = car.inspectionDate
+          if (car.qcBy) d.qcBy = car.qcBy
+        }
+      })
+    }
 
     return {
       items: finalData,

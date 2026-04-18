@@ -199,6 +199,14 @@ export function useWorkspace() {
       const group = (groups[item.group] ??= [])
 
       let link = ws.defaultRoutes?.[item.id] || item.link
+      
+      // Auto-migrate legacy DB paths (e.g. /retail/all -> /retail?tab=all)
+      if (link && typeof link === 'string') {
+        const legacyMatch = link.match(/^(\/retail|\/sales|\/auctions|\/leads|\/people)\/([^/?]+)$/)
+        if (legacyMatch) {
+          link = `${legacyMatch[1]}?tab=${legacyMatch[2]}`
+        }
+      }
 
       // Dynamic Sidebar Redirect fallback to first tab if they explicitly lock out the index leads
       if (item.id === 'leads' && ws.leadTabs && ws.leadTabs.length > 0 && !ws.leadTabs.includes('leads')) {
@@ -212,12 +220,12 @@ export function useWorkspace() {
 
       // Dynamic Sidebar Redirect fallback for sales
       if (item.id === 'sales' && ws.salesTabs && ws.salesTabs.length > 0) {
-        link = ws.defaultRoutes?.[item.id] || `/sales/${ws.salesTabs[0]}`
+        link = ws.defaultRoutes?.[item.id] || `/sales?tab=${ws.salesTabs[0]}`
       }
 
       // Dynamic Sidebar Redirect fallback for retail
       if (item.id === 'retail' && ws.retailTabs && ws.retailTabs.length > 0) {
-        link = ws.defaultRoutes?.[item.id] || `/retail/${ws.retailTabs[0]}`
+        link = ws.defaultRoutes?.[item.id] || `/retail?tab=${ws.retailTabs[0]}`
       }
 
       // Dynamic Sidebar Redirect fallback for people

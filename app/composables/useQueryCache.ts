@@ -35,9 +35,9 @@ const _inflightFetches = new Map<string, Promise<any>>()
 // use the same key format and can find each other's cache entries.
 export const QUERY_KEYS = {
   leads: (params?: Record<string, any>) => buildQueryKey('leads', params),
-  leadsCount: () => 'leads:counts',
+  leadsCount: (params?: Record<string, any>) => buildQueryKey('leads:counts', params),
   cars: (params?: Record<string, any>) => buildQueryKey('cars', params),
-  carsCount: () => 'cars:counts',
+  carsCount: (params?: Record<string, any>) => buildQueryKey('cars:counts', params),
   users: (params?: Record<string, any>) => buildQueryKey('users', params),
   workspaces: () => 'workspaces',
   carDropdowns: (params?: Record<string, any>) => buildQueryKey('carDropdowns', params),

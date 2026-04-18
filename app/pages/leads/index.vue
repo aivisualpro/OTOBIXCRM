@@ -12,11 +12,12 @@ const { serverSearch, activeAdvancedFilterCount, setTab } = useLeadsApi()
 
 // Default tab resolution logic
 const tabParam = computed(() => (route.query.tab as string) || '')
+const searchParam = computed(() => (route.query.search as string) || '')
 
 // Auto-navigate to correct tab if none provided
 if (!tabParam.value) {
   let fallback = 'all'
-  if (serverSearch.value || activeAdvancedFilterCount.value > 0) {
+  if (searchParam.value || serverSearch.value || activeAdvancedFilterCount.value > 0) {
     fallback = 'search-results'
   }
   else if (allowed.length > 0 && !allowed.includes('all') && !allowed.includes('pending')) {
@@ -41,6 +42,13 @@ watch(tabParam, (newTab) => {
     setTab(newTab)
   }
 }, { immediate: true })
+
+watch(searchParam, (newSearch) => {
+  if (serverSearch.value !== newSearch) {
+    serverSearch.value = newSearch || ''
+  }
+}, { immediate: true })
+
 </script>
 
 <template>

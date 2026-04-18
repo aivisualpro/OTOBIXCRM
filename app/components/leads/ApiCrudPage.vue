@@ -39,7 +39,9 @@ const hasDeletePermission = computed(() => {
 const entity = computed(() => props.entityName || 'Lead')
 
 const { setHeader } = usePageHeader()
-setHeader({ title: props.title, description: props.description, icon: props.icon })
+watchEffect(() => {
+  setHeader({ title: props.title, description: props.description || '', icon: props.icon || '' })
+})
 
 // ─── Incremental data loading ───
 const {

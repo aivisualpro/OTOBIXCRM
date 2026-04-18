@@ -204,14 +204,15 @@ function localToggleAuctionTab(tabId: string) {
 
 // ─── Sales Tabs Sub-Config ───
 const SALES_TABS = [
-  { id: 'all', title: 'All', route: '/sales/all' },
-  { id: 'live', title: 'Live', route: '/sales/live' },
-  { id: 'otobuy', title: 'Otobuy', route: '/sales/otobuy' },
-  { id: 'customer-activity', title: 'Customer Activity', route: '/sales/customer-activity' },
-  { id: 'dealer-activity', title: 'Dealer Activity', route: '/sales/dealer-activity' },
-  { id: 'ended', title: 'Ended', route: '/sales/ended' },
-  { id: 'sold', title: 'Sold', route: '/sales/sold' },
-  { id: 'removed', title: 'Removed', route: '/sales/removed' },
+  { id: 'all', title: 'All', route: '/sales?tab=all' },
+  { id: 'upcoming', title: 'Upcoming', route: '/sales?tab=upcoming' },
+  { id: 'live', title: 'Live', route: '/sales?tab=live' },
+  { id: 'otobuy', title: 'Otobuy', route: '/sales?tab=otobuy' },
+  { id: 'customer-activity', title: 'Customer Activity', route: '/sales?tab=customer-activity' },
+  { id: 'dealer-activity', title: 'Dealer Activity', route: '/sales?tab=dealer-activity' },
+  { id: 'ended', title: 'Ended', route: '/sales?tab=ended' },
+  { id: 'sold', title: 'Sold', route: '/sales?tab=sold' },
+  { id: 'removed', title: 'Removed', route: '/sales?tab=removed' },
 ]
 
 function localToggleSalesTab(tabId: string) {
@@ -230,15 +231,16 @@ function localToggleSalesTab(tabId: string) {
 
 // ─── Retail Tabs Sub-Config ───
 const RETAIL_TABS = [
-  { id: 'all', title: 'All Vehicles', route: '/retail/all' },
-  { id: 'upcoming', title: 'Upcoming', route: '/retail/upcoming' },
-  { id: 'live', title: 'Live', route: '/retail/live' },
-  { id: 'otobuy', title: 'Otobuy', route: '/retail/otobuy' },
-  { id: 'customer-activity', title: 'Customer Activity', route: '/retail/customer-activity' },
-  { id: 'dealer-activity', title: 'Dealer Activity', route: '/retail/dealer-activity' },
-  { id: 'ended', title: 'Ended', route: '/retail/ended' },
-  { id: 'sold', title: 'Sold', route: '/retail/sold' },
-  { id: 'removed', title: 'Removed', route: '/retail/removed' },
+  { id: 'all', title: 'All Vehicles', route: '/retail?tab=all' },
+  { id: 'upcoming', title: 'Upcoming', route: '/retail?tab=upcoming' },
+  { id: 'live', title: 'Live', route: '/retail?tab=live' },
+  { id: 'otobuy', title: 'Otobuy', route: '/retail?tab=otobuy' },
+  { id: 'customer-activity', title: 'Customer Activity', route: '/retail?tab=customer-activity' },
+  { id: 'dealer-activity', title: 'Dealer Activity', route: '/retail?tab=dealer-activity' },
+  { id: 'ended', title: 'Ended', route: '/retail?tab=ended' },
+  { id: 'sold', title: 'Sold', route: '/retail?tab=sold' },
+  { id: 'removed', title: 'Removed', route: '/retail?tab=removed' },
+  { id: 'followup', title: 'Followup', route: '/retail?tab=followup' },
 ]
 
 function localToggleRetailTab(tabId: string) {

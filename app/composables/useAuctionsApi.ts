@@ -68,7 +68,7 @@ export function useAuctionsApi() {
   const _fetchError = useState<string | null>('auctions_fetchError', () => null)
 
   const _activeTab = useState<string>('auctions_activeTab', () => 'all')
-  const _sortKey = useState<string>('auctions_sortKey', () => '_id')
+  const _sortKey = useState<string>('auctions_sortKey', () => 'createdAt')
   const _sortDir = useState<'asc' | 'desc'>('auctions_sortDir', () => 'desc')
   const serverSearch = useState<string>('auctions_serverSearch', () => '')
 
