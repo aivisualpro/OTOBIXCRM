@@ -147,6 +147,7 @@ export default defineEventHandler(async (event) => {
       frontMainImages: { $slice: 1 },
       createdAt: 1,
       updatedAt: 1,
+      approvalDate: 1,
     }
 
     const skip = (page - 1) * limit

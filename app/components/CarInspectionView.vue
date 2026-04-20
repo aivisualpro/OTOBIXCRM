@@ -457,7 +457,15 @@ function formatDateYYYYMMDD(val: any) {
 }
 
 async function approveLead() {
+  const now = new Date()
+  const userCookie = useCookie('userData')
+  const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
+
   editForm.value.approvalStatus = 'Approved'
+  editForm.value.approvalDate = now.toISOString()
+  editForm.value.approvalTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  editForm.value.approvedBy = currentUser?.userName || currentUser?.fullName || currentUser?.email || 'QC User'
+  
   await saveQC()
   // Note: approveLead() without inline usually doesn't prompt for auction, 
   // but if needed we can trigger the modal here too.
@@ -663,6 +671,13 @@ async function confirmQCApproval() {
 
   editForm.value.priceDiscovery = qcForm.value.priceDiscovery
   editForm.value.retailAssociate = qcForm.value.retailAssociate
+
+  const now = new Date()
+  const userCookie = useCookie('userData')
+  const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
+  editForm.value.approvalDate = now.toISOString()
+  editForm.value.approvalTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  editForm.value.approvedBy = currentUser?.userName || currentUser?.fullName || currentUser?.email || 'QC User'
 
   // ── Compute auction lifecycle fields ──
   let startTimeDate: Date

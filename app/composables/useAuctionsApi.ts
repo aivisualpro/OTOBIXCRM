@@ -117,10 +117,16 @@ export function useAuctionsApi() {
     const params: Record<string, string> = { tab: _activeTab.value, module: currentModule }
     if (serverSearch.value)
       params.search = serverSearch.value
-    if (_sortKey.value)
-      params.sort = _sortKey.value
-    if (_sortDir.value)
-      params.sortDir = _sortDir.value
+      
+    if (currentModule === 'retail' || currentModule === 'sales') {
+      params.sort = 'approvalDate'
+      params.sortDir = 'desc'
+    } else {
+      if (_sortKey.value)
+        params.sort = _sortKey.value
+      if (_sortDir.value)
+        params.sortDir = _sortDir.value
+    }
       
     if (_activeTab.value.startsWith('similar-search') && _similarSearchCtx.value) {
       params.similarMake = _similarSearchCtx.value.make

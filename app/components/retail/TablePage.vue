@@ -816,10 +816,10 @@ async function fetchAndShowBids(car: any) {
         <div class="h-full bg-primary origin-left animate-in fade-in duration-500 rounded-full" style="width: 30%; animation: indeterminate 1.5s infinite linear;" />
       </div>
 
-      <Table container-class="h-full pb-10 px-[19px]">
+      <Table container-class="h-full pb-10">
         <TableHeader class="sticky top-0 z-20 bg-background border-b border-border shadow-sm">
           <TableRow>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap pl-[19px]">
               Date
             </TableHead>
             <TableHead class="whitespace-nowrap">
@@ -828,7 +828,7 @@ async function fetchAndShowBids(car: any) {
             <TableHead class="whitespace-nowrap">
               App ID
             </TableHead>
-            <TableHead class="whitespace-nowrap">
+            <TableHead class="whitespace-nowrap sticky left-0 z-50 bg-background border-r border-border/50 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
               Specs
             </TableHead>
             <TableHead class="whitespace-nowrap">
@@ -843,24 +843,23 @@ async function fetchAndShowBids(car: any) {
             <TableHead class="whitespace-nowrap">
               Act. CEP
             </TableHead>
-            <TableHead class="whitespace-nowrap">
-              1-Clik Price
-            </TableHead>
-            <TableHead class="whitespace-nowrap">
-              OtoBuy Offer
-            </TableHead>
             <TableHead class="whitespace-nowrap text-center">
               Deal Price
             </TableHead>
             <TableHead class="whitespace-nowrap text-center">
               HB
             </TableHead>
-
             <TableHead class="whitespace-nowrap text-center">
               GAP
             </TableHead>
             <TableHead class="whitespace-nowrap text-center">
               Overall Bids
+            </TableHead>
+            <TableHead class="whitespace-nowrap">
+              1-Clik Price
+            </TableHead>
+            <TableHead class="whitespace-nowrap">
+              OtoBuy Offer
             </TableHead>
             <TableHead class="whitespace-nowrap text-center">
               Current Margin
@@ -892,7 +891,7 @@ async function fetchAndShowBids(car: any) {
             <TableHead class="whitespace-nowrap text-center text-emerald-600 dark:text-emerald-400">
               RA
             </TableHead>
-            <TableHead class="w-10 text-center">
+            <TableHead class="w-10 text-center pr-[19px]">
               <Icon name="i-lucide-history" class="size-4" />
             </TableHead>
           </TableRow>
@@ -903,8 +902,8 @@ async function fetchAndShowBids(car: any) {
             :key="car.id || car._id"
             class="group hover:bg-muted/50 transition-all duration-300"
           >
-            <TableCell class="whitespace-nowrap text-xs text-muted-foreground">
-              {{ formatDate(car.createdAt) }}
+            <TableCell class="whitespace-nowrap text-xs text-muted-foreground pl-[19px]">
+              {{ formatDate((car.approvalDate && car.approvalDate !== 'null') ? car.approvalDate : ((car.auctionStartTime && car.auctionStartTime !== 'null') ? car.auctionStartTime : car.createdAt)) }}
             </TableCell>
             <TableCell class="w-24">
               <HoverCard :open-delay="200" :close-delay="100">
@@ -924,7 +923,7 @@ async function fetchAndShowBids(car: any) {
             <TableCell class="whitespace-nowrap text-xs font-mono">
               {{ car.appointmentId || '—' }}
             </TableCell>
-            <TableCell class="min-w-[260px] max-w-[320px] py-3">
+            <TableCell class="min-w-[260px] max-w-[320px] py-3 sticky left-0 z-40 bg-background group-hover:bg-muted transition-colors border-r border-border/50 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
               <p class="font-medium text-xs">
                 {{ car.make }} {{ car.model }}
               </p>
@@ -1021,12 +1020,6 @@ async function fetchAndShowBids(car: any) {
                 </template>
               </div>
             </TableCell>
-            <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
-              {{ formatCurrency(car.oneClickPrice) }}
-            </TableCell>
-            <TableCell class="text-xs whitespace-nowrap text-emerald-600 font-semibold dark:text-emerald-400">
-              {{ formatCurrency(getRetailOtobuyOffer(car)) }}
-            </TableCell>
             <TableCell class="text-xs text-center px-1">
               <Button variant="outline" class="h-6 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 border-blue-200 text-[10px] uppercase font-bold tracking-wider rounded-md" @click.stop="fetchAndShowBids(car)">
                 <Icon name="i-lucide-gavel" class="mr-1 size-3" />
@@ -1092,6 +1085,13 @@ async function fetchAndShowBids(car: any) {
               <template v-else>
                 {{ bidStats[String(car.id || car._id)]?.totalBids || 0 }} <span class="mx-0.5 text-muted-foreground/50">/</span> {{ bidStats[String(car.id || car._id)]?.uniqueDealers || 0 }}
               </template>
+            </TableCell>
+
+            <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
+              {{ formatCurrency(car.oneClickPrice) }}
+            </TableCell>
+            <TableCell class="text-xs whitespace-nowrap text-emerald-600 font-semibold dark:text-emerald-400">
+              {{ formatCurrency(getRetailOtobuyOffer(car)) }}
             </TableCell>
 
             <!-- Current Margin -->
@@ -1389,7 +1389,7 @@ async function fetchAndShowBids(car: any) {
               {{ resolveUserNameByEmail(car.retailAssociate) }}
             </TableCell>
 
-            <TableCell class="text-xs text-center px-1">
+            <TableCell class="text-xs text-center px-1 pr-[19px]">
               <Button variant="ghost" size="icon" class="size-7 hover:bg-primary/10 hover:text-primary transition-colors" @click="viewHistory(car)">
                 <Icon name="i-lucide-history" class="size-3.5" />
               </Button>
