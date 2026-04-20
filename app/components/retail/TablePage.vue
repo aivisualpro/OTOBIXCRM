@@ -554,6 +554,9 @@ function startSimulation(car: any) {
 function stepSimulation(car: any, step: number) {
   const current = Number(car.marginSimulation) || 0
   car.marginSimulation = Math.max(0, current + step).toFixed(1)
+  if (editingCell.value) {
+    editingCell.value = { ...editingCell.value }
+  }
 }
 
 function resetSimulation(car: any) {
