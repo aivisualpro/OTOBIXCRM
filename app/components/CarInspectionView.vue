@@ -797,6 +797,83 @@ async function confirmQCApproval() {
   }
 }
 
+async function fixLegacyFields() {
+  const forceSync = (item: any) => {
+    if (!item)
+      return
+    if (item.oldKey && item.oldKey !== 'new' && item.key) {
+      let val = editForm.value[item.key] ?? car.value?.[item.key]
+      if (val !== undefined && val !== null) {
+        if (Array.isArray(val) && !['engineVideo', 'exhaustSmokeVideo'].includes(item.key)) {
+          val = val.join(', ')
+        }
+        if (JSON.stringify(val) !== JSON.stringify(car.value?.[item.oldKey])) {
+          editForm.value[item.oldKey] = JSON.parse(JSON.stringify(val))
+        }
+      }
+    }
+    if (item.oldImageKey && item.oldImageKey !== 'new' && item.imageKey) {
+      const val = editForm.value[item.imageKey] ?? car.value?.[item.imageKey]
+      if (val !== undefined && val !== null && JSON.stringify(val) !== JSON.stringify(car.value?.[item.oldImageKey])) {
+        editForm.value[item.oldImageKey] = JSON.parse(JSON.stringify(val))
+      }
+    }
+    if (item.splitParts)
+      item.splitParts.forEach(forceSync)
+    if (item.rightParts)
+      item.rightParts.forEach(forceSync)
+    if (item.imageGroups)
+      item.imageGroups.forEach(forceSync)
+    if (item.fourPanels)
+      item.fourPanels.forEach(forceSync)
+    if (item.parts)
+      item.parts.forEach(forceSync)
+  }
+
+  exteriorSections.forEach((section) => {
+    if (section.parts)
+      section.parts.forEach(forceSync)
+    if (section.imageKeys) {
+      section.imageKeys.forEach((entry: any) => {
+        if (typeof entry !== 'string' && entry.old && entry.new) {
+          const val = editForm.value[entry.new] ?? car.value?.[entry.new]
+          if (val !== undefined && val !== null && JSON.stringify(val) !== JSON.stringify(car.value?.[entry.old])) {
+            editForm.value[entry.old] = JSON.parse(JSON.stringify(val))
+          }
+        }
+      })
+    }
+  })
+  if (typeof documentDetailFields !== 'undefined')
+    documentDetailFields.forEach(forceSync)
+  if (typeof engineVideoKeys !== 'undefined')
+    engineVideoKeys.forEach(forceSync)
+
+  const lhsApron = editForm.value.lhsApronImages ?? car.value?.lhsApronImages
+  const rhsApron = editForm.value.rhsApronImages ?? car.value?.rhsApronImages
+  if (Array.isArray(lhsApron) || Array.isArray(rhsApron)) {
+    const combinedApron = []
+    if (Array.isArray(lhsApron))
+      combinedApron.push(...lhsApron)
+    if (Array.isArray(rhsApron))
+      combinedApron.push(...rhsApron)
+    if (JSON.stringify(combinedApron) !== JSON.stringify(car.value?.apronLhsRhs || [])) {
+      editForm.value.apronLhsRhs = combinedApron
+    }
+  }
+
+  const loadingToast = toast.loading('Fixing up legacy fields...')
+  try {
+    await saveQC(false)
+    toast.dismiss(loadingToast)
+    toast.success('Fields strictly forced to sync and saved.')
+  }
+  catch (e) {
+    toast.dismiss(loadingToast)
+    toast.error('Failed to save legacy fields.')
+  }
+}
+
 const showRejectModal = ref(false)
 const rejectReason = ref('')
 
@@ -1312,7 +1389,7 @@ const tabs = [
   { id: 'electricals', label: 'Electricals', icon: 'i-lucide-zap' },
   { id: 'interior', label: 'Interior', icon: 'i-lucide-armchair' },
   { id: 'steering-suspension-brakes', label: 'Steering, Suspension, Brakes', icon: 'i-lucide-disc' },
-  { id: 'qc-logs', label: 'QC Audit Logs', icon: 'i-lucide-history' },
+  { id: 'qc-logs', label: 'QC log', icon: 'i-lucide-history' },
 ]
 
 // Route-driven tab: read from URL param, default to 'details'
@@ -1707,6 +1784,7 @@ const exteriorSections = [
       { new: 'lhsRearWheelImages', old: 'lhsRearAlloyImages' },
       { new: 'lhsRearTyreImages', old: 'lhsRearTyreImages' },
       { new: 'lhsQuarterPanelWithRearDoorClosedImages', old: 'lhsQuarterPanelImages' },
+      { new: 'lhsQuarterPanelWithRearDoorOpenImages', old: 'lhsQuarterPanelImages' },
     ],
     parts: [
       { key: 'lhsFullViewImages', oldKey: 'lhsFront45Degree', imageKey: 'lhsFullViewImages', oldImageKey: 'lhsFront45Degree', label: 'LHS Full View', isImageOnly: true },
@@ -1726,8 +1804,10 @@ const exteriorSections = [
         key: 'lhsQuarterPanelDropdownList',
         oldKey: 'lhsQuarterPanel',
         label: 'LHS Quarter Panel',
-        imageKey: 'lhsQuarterPanelWithRearDoorClosedImages',
-        oldImageKey: 'lhsQuarterPanelImages',
+        imageGroups: [
+          { key: 'lhsQuarterPanelWithRearDoorClosedImages', oldKey: 'lhsQuarterPanelImages', label: 'Rear Door Closed' },
+          { key: 'lhsQuarterPanelWithRearDoorOpenImages', oldKey: 'lhsQuarterPanelImages', label: 'Rear Door Open' },
+        ],
       },
     ],
   },
@@ -1786,6 +1866,7 @@ const exteriorSections = [
     imageKeys: [
       { new: 'rhsFullViewImages', old: 'rhsRear45Degree' },
       { new: 'rhsQuarterPanelWithRearDoorClosedImages', old: 'rhsQuarterPanelImages' },
+      { new: 'rhsQuarterPanelWithRearDoorOpenImages', old: 'rhsQuarterPanelImages' },
       { new: 'rhsRearWheelImages', old: 'rhsRearAlloyImages' },
       { new: 'rhsRearTyreImages', old: 'rhsRearTyreImages' },
       { new: 'rhsRunningBorderImages', old: 'rhsRunningBorderImages' },
@@ -1805,8 +1886,10 @@ const exteriorSections = [
         key: 'rhsQuarterPanelDropdownList',
         oldKey: 'rhsQuarterPanel',
         label: 'RHS Quarter Panel',
-        imageKey: 'rhsQuarterPanelWithRearDoorClosedImages',
-        oldImageKey: 'rhsQuarterPanelImages',
+        imageGroups: [
+          { key: 'rhsQuarterPanelWithRearDoorClosedImages', oldKey: 'rhsQuarterPanelImages', label: 'Rear Door Closed' },
+          { key: 'rhsQuarterPanelWithRearDoorOpenImages', oldKey: 'rhsQuarterPanelImages', label: 'Rear Door Open' },
+        ],
       },
       { key: 'rhsRearWheelDropdownList', oldKey: 'rhsRearAlloy', imageKey: 'rhsRearWheelImages', oldImageKey: 'rhsRearAlloyImages', label: 'RHS Rear Wheel' },
       { key: 'rhsRearTyreDropdownList', oldKey: 'rhsRearTyre', imageKey: 'rhsRearTyreImages', oldImageKey: 'rhsRearTyreImages', label: 'RHS Rear Tyre' },
@@ -2567,7 +2650,7 @@ watch(editForm, () => {
               @click="downloadPDF"
             >
               <Icon :name="isGeneratingPdf ? 'i-lucide-loader-2' : 'i-lucide-file-down'" :class="{ 'animate-spin': isGeneratingPdf }" class="mr-1.5 size-4" />
-              Inspection Report
+              PDF
             </Button>
             <Button
               v-if="!props.readonly && car.approvalStatus !== 'Approved'"
@@ -2594,6 +2677,15 @@ watch(editForm, () => {
               >
                 <Icon name="i-lucide-refresh-ccw" class="mr-1.5 size-4" />
                 Re-QC
+              </Button>
+              <Button
+                v-if="hasAction('re-qc-button')"
+                class="mr-2 h-8 text-xs font-bold shrink-0 border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20 shadow-sm"
+                variant="outline"
+                @click="fixLegacyFields"
+              >
+                <Icon name="i-lucide-wrench" class="mr-1.5 size-4" />
+                Fix
               </Button>
               <Button
                 v-if="hasAction('pd-button')"
@@ -3756,7 +3848,7 @@ watch(editForm, () => {
             </Card>
           </div>
 
-          <!-- ═══════ QC AUDIT LOGS TAB ═══════ -->
+          <!-- ═══════ QC LOGS TAB ═══════ -->
           <div v-else-if="activeTab === 'qc-logs'" class="space-y-6">
             <Card class="!py-0 !gap-0 overflow-hidden">
               <CardHeader class="pt-5 pb-3">

@@ -693,6 +693,57 @@ async function confirmCep(car: any) {
   }
 }
 
+// ─── Retail Associate Editing ───
+const raEditing = ref<Record<string, boolean>>({})
+const raValue = ref<Record<string, string>>({})
+const raSaving = ref<Record<string, boolean>>({})
+
+const retailersList = computed(() => allUsers.value.filter(u => String(u.userRole || '').toLowerCase() === 'retailer'))
+
+function openRa(car: any) {
+  if (loggedInUserRole.value !== 'Admin') return
+  const key = car._id || car.id
+  raValue.value[key] = car.retailAssociate || ''
+  raEditing.value[key] = true
+}
+
+function closeRa(car: any) {
+  const key = car._id || car.id
+  raEditing.value[key] = false
+  raValue.value[key] = ''
+}
+
+async function confirmRa(car: any) {
+  const key = car._id || car.id
+  const newVal = raValue.value[key]
+  
+  if (newVal === car.retailAssociate) {
+    closeRa(car)
+    return
+  }
+
+  raSaving.value[key] = true
+  try {
+    await $fetch('/api/leads/update', {
+      method: 'PUT',
+      body: {
+        telecallingId: car.appointmentId || car._id?.$oid || car.id || car._id,
+        retailAssociate: newVal
+      }
+    })
+    car.retailAssociate = newVal
+    toast.success('Retail Associate updated')
+    closeRa(car)
+  }
+  catch (err: any) {
+    toast.error(err?.data?.message || err?.message || 'Failed to update Retail Associate')
+  }
+  finally {
+    raSaving.value[key] = false
+  }
+}
+
+
 function getAuctionStatusColor(status: string) {
   if (!status)
     return 'bg-muted text-muted-foreground'
@@ -817,7 +868,7 @@ async function fetchAndShowBids(car: any) {
       </div>
 
       <Table container-class="h-full pb-10">
-        <TableHeader class="sticky top-0 z-20 bg-background border-b border-border shadow-sm">
+        <TableHeader class="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
           <TableRow>
             <TableHead class="whitespace-nowrap pl-[19px]">
               Date
@@ -1385,8 +1436,41 @@ async function fetchAndShowBids(car: any) {
             </TableCell>
 
             <!-- RA (Retail Associate) -->
-            <TableCell class="text-xs text-center px-1 whitespace-nowrap text-emerald-700 dark:text-emerald-300 font-medium">
-              {{ resolveUserNameByEmail(car.retailAssociate) }}
+            <TableCell class="text-xs align-middle px-1">
+              <div class="min-h-[36px] flex flex-col items-center justify-center gap-1 group rounded relative" :class="raEditing[car._id || car.id] || loggedInUserRole !== 'Admin' ? '' : 'hover:bg-muted/30 cursor-pointer'" @click="!raEditing[car._id || car.id] && openRa(car)">
+                <template v-if="!raEditing[car._id || car.id]">
+                  <div class="flex items-center gap-1.5 font-medium whitespace-nowrap text-emerald-700 dark:text-emerald-300" title="Retail Associate">
+                    <span>{{ resolveUserNameByEmail(car.retailAssociate) || '—' }}</span>
+                    <Icon v-if="loggedInUserRole === 'Admin'" name="i-lucide-pencil" class="size-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="flex flex-col items-center gap-1 w-full relative z-10" @click.stop>
+                    <div class="relative bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-md shadow-sm transition-all shadow-emerald-500/10 w-[110px]">
+                      <select
+                        v-model="raValue[car._id || car.id]"
+                        class="w-full bg-transparent text-emerald-700 dark:text-emerald-300 font-bold text-[10px] outline-none focus:ring-0 px-2 py-1 appearance-none cursor-pointer"
+                        @change="confirmRa(car)"
+                      >
+                        <option value="">Unassigned</option>
+                        <option v-for="user in retailersList" :key="user.email" :value="user.email || user.userName">
+                          {{ user.fullName || user.userName || user.email }}
+                        </option>
+                      </select>
+                      <Icon name="i-lucide-chevron-down" class="size-3 text-emerald-600/50 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                    <div class="flex items-center gap-1 mt-0.5 justify-center">
+                      <button class="size-[20px] flex items-center justify-center rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition-colors shadow-sm border border-emerald-200" @click.stop="confirmRa(car)">
+                        <Icon v-if="raSaving[car._id || car.id]" name="i-lucide-loader-2" class="size-2.5 animate-spin" />
+                        <Icon v-else name="i-lucide-check" class="size-2.5" />
+                      </button>
+                      <button class="size-[20px] flex items-center justify-center rounded-full bg-background hover:bg-muted text-muted-foreground transition-colors shadow-sm border border-border" @click.stop="closeRa(car)">
+                        <Icon name="i-lucide-x" class="size-2.5" />
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </div>
             </TableCell>
 
             <TableCell class="text-xs text-center px-1 pr-[19px]">
@@ -1493,7 +1577,7 @@ async function fetchAndShowBids(car: any) {
         </div>
 
         <Table v-else>
-          <TableHeader class="sticky top-0 z-20 bg-background border-b border-border shadow-sm">
+          <TableHeader class="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
             <TableRow>
               <TableHead class="w-16 text-center">
                 #

@@ -381,7 +381,7 @@ async function fetchAndShowBids(car: any) {
       </div>
 
       <Table container-class="h-full pb-10">
-        <TableHeader class="sticky top-0 z-20 bg-background border-b border-border shadow-sm">
+        <TableHeader class="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
           <TableRow>
             <TableHead class="whitespace-nowrap pl-[19px]">
               Date
@@ -676,7 +676,7 @@ async function fetchAndShowBids(car: any) {
         </div>
 
         <Table v-else>
-          <TableHeader class="sticky top-0 z-20 bg-background border-b border-border shadow-sm">
+          <TableHeader class="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
             <TableRow>
               <TableHead class="w-16 text-center">
                 #
