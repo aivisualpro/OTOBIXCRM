@@ -1388,7 +1388,7 @@ function getInitials(name: string): string {
                 </Badge>
               </div>
               <!-- User Identifiers -->
-              <span v-else-if="['createdBy', 'createdByFullName', 'addedBy', 'allocatedTo', 'qcBy'].includes(col.key)" class="text-sm font-medium">
+              <span v-else-if="['createdBy', 'createdByFullName', 'addedBy', 'allocatedTo', 'qcBy', 'emailAddress'].includes(col.key)" class="text-sm font-medium">
                 {{ getUserLabel(item[col.key]) }}
               </span>
               <!-- Default text -->
@@ -1399,7 +1399,7 @@ function getInitials(name: string): string {
                 <Button v-if="hasEditPermission && router.currentRoute.value.path.startsWith('/leads') && item.inspectionStatus !== 'Inspected'" variant="ghost" size="icon" class="size-8" @click.stop="openEdit(item)">
                   <Icon name="i-lucide-pencil" class="size-3.5" />
                 </Button>
-                <Button v-if="hasDeletePermission && router.currentRoute.value.path === '/leads'" variant="ghost" size="icon" class="size-8 text-destructive hover:bg-destructive/10" @click.stop="confirmDelete(item)">
+                <Button v-if="hasDeletePermission && router.currentRoute.value.path === '/leads' && item.inspectionStatus === 'Pending'" variant="ghost" size="icon" class="size-8 text-destructive hover:bg-destructive/10" @click.stop="confirmDelete(item)">
                   <Icon name="i-lucide-trash-2" class="size-3.5" />
                 </Button>
               </div>

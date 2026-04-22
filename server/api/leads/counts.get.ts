@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
 
     // Parse query parameters from frontend Advanced Filters seamlessly
     const query = getQuery(event)
-    const filter: Record<string, any> = {}
+    const filter: Record<string, any> = { isDeleted: { $ne: true } }
     const search = String(query.search || '').trim()
 
     // Security scope parsing

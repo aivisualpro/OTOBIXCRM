@@ -3,7 +3,7 @@ export default defineEventHandler(async (event) => {
   try {
     const db = await getLeadsDb(event)
     const col = db.collection('telecallings')
-    const count = await col.estimatedDocumentCount()
+    const count = await col.countDocuments({ isDeleted: { $ne: true } })
 
     return {
       total: count,

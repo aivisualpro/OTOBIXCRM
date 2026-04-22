@@ -16,7 +16,11 @@ export default defineEventHandler(async (event) => {
       ? { _id: new ObjectId(telecallingId) }
       : { appointmentId: telecallingId }
 
-    const result = await db.collection('telecallings').findOneAndDelete(filter)
+    const result = await db.collection('telecallings').findOneAndUpdate(
+      filter,
+      { $set: { isDeleted: true } },
+      { returnDocument: 'after' }
+    )
 
     if (!result) {
       throw createError({ statusCode: 404, message: 'Lead not found' })

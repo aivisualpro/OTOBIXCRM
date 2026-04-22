@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   try {
     const db = await getLeadsDb(event)
 
-    const filter: any = {}
+    const filter: any = { isDeleted: { $ne: true } }
     if (since > 0) {
       filter.updatedAt = { $gt: new Date(since).toISOString() }
     }

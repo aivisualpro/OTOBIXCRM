@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
     const search = (query.search as string || '').trim()
 
     // Build filter
-    const filter: Record<string, any> = {}
+    const filter: Record<string, any> = { isDeleted: { $ne: true } }
 
     // Security scope filtering for constrained roles
     const userCookieStr = getCookie(event, 'userData')
@@ -168,6 +168,7 @@ export default defineEventHandler(async (event) => {
       inspectionAddress: 1,
       addedBy: 1,
       createdByFullName: 1,
+      emailAddress: 1,
       createdAt: 1,
       timeStamp: 1,
       allocatedTo: 1,
@@ -197,12 +198,20 @@ export default defineEventHandler(async (event) => {
       return { ...doc, _id: docId, id: docId }
     })
 
-    // Fetch `inspectionDate` and `qcBy` from the main `cars` collection
+    // Fetch related data from the main `cars` collection
     const appointmentIds = finalData.map((d: any) => d.appointmentId).filter(Boolean)
     if (appointmentIds.length > 0) {
       const carsData = await db.collection('cars').find(
         { appointmentId: { $in: appointmentIds } },
-        { projection: { appointmentId: 1, inspectionDate: 1, qcBy: 1 } }
+        { projection: { 
+            appointmentId: 1, 
+            inspectionDate: 1, 
+            qcBy: 1,
+            registrationNumber: 1,
+            timestamp: 1,
+            approvedAt: 1
+          } 
+        }
       ).toArray()
       
       const carsMap = new Map()
@@ -213,6 +222,9 @@ export default defineEventHandler(async (event) => {
         if (car) {
           if (car.inspectionDate) d.inspectionDate = car.inspectionDate
           if (car.qcBy) d.qcBy = car.qcBy
+          if (car.registrationNumber) d.registrationNumber = car.registrationNumber
+          if (car.timestamp) d.timestamp = car.timestamp
+          if (car.approvedAt) d.approvedAt = car.approvedAt
         }
       })
     }

@@ -6,9 +6,9 @@ export default defineEventHandler(async (event) => {
     const col = db.collection('telecallings')
 
     const [emails, addedBys, cities] = await Promise.all([
-      col.distinct('emailAddress', { emailAddress: { $nin: [null, ''] } }),
-      col.distinct('addedBy', { addedBy: { $nin: [null, ''] } }),
-      col.distinct('city', { city: { $nin: [null, ''] } }),
+      col.distinct('emailAddress', { emailAddress: { $nin: [null, ''] }, isDeleted: { $ne: true } }),
+      col.distinct('addedBy', { addedBy: { $nin: [null, ''] }, isDeleted: { $ne: true } }),
+      col.distinct('city', { city: { $nin: [null, ''] }, isDeleted: { $ne: true } }),
     ])
 
     // Optional: Fetch matching full names from users collection strictly for the active distinct emails
