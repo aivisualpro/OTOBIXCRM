@@ -45,7 +45,12 @@ const loggedInUserRole = computed(() => {
   }
 })
 
-const { allCars, isLoading, isRefreshing, isFetched, fetchError, fetchCars, refreshCars, globalSearch, activeTab, searchCars, cancelSearch, loadMore, hasMore, isLoadingMore, totalCount, setSimilarSearchCtx } = useAuctionsApi()
+const { allCars, isLoading, isRefreshing, isFetched, fetchError, fetchCars, refreshCars, globalSearch, activeTab, searchCars, cancelSearch, loadMore, hasMore, isLoadingMore, totalCount, setSimilarSearchCtx, advancedFilters = ref({}), setAdvancedFilters = () => {}, facets = ref({
+  makes: [], models: [], cities: [], auctionStatuses: [], dealStatuses: [], leadSources: [], referredBys: [], ies: [], ras: []
+}) } = useAuctionsApi()
+
+const { makes, getModels, fetchCarDropdowns } = useCarDropdowns()
+fetchCarDropdowns()
 
 const router = useRouter()
 const route = useRoute()
@@ -89,6 +94,92 @@ useIntersectionObserver(
   },
   { rootMargin: '400px' },
 )
+
+const localFilters = ref({
+  make: '',
+  model: '',
+  city: '',
+  auctionStatus: '',
+  dealStatus: '',
+  leadSource: '',
+  referredBy: '',
+  ie: '',
+  ra: ''
+})
+
+const isAdvancedFilterOpen = ref(false)
+
+const userOptions = computed(() => {
+  const uniqueRA = facets.value?.ras || []
+  const uniqueIE = facets.value?.ies || []
+  
+  const emails = Array.from(new Set([...uniqueRA, ...uniqueIE]))
+  return emails.map(email => {
+    const u = allUsers.value.find(user => user.email === email)
+    if (u) return { label: u.userName ? `${u.userName} (${u.userRole || 'User'})` : u.email, value: u.email }
+    return { label: email as string, value: email as string }
+  }).sort((a, b) => a.label.localeCompare(b.label))
+})
+
+const viewMakes = computed(() => (facets.value?.makes || []))
+const viewModels = computed(() => (facets.value?.models || []))
+const viewCities = computed(() => (facets.value?.cities || []))
+const viewAuctionStatuses = computed(() => (facets.value?.auctionStatuses || []))
+const viewDealStatuses = computed(() => (facets.value?.dealStatuses || []))
+const viewLeadSources = computed(() => (facets.value?.leadSources || []))
+const viewReferredBys = computed(() => (facets.value?.referredBys || []))
+const viewIEs = computed(() => {
+  return (facets.value?.ies || [])
+    .map((email: string) => userOptions.value.find(u => u.value === email) || { label: email, value: email })
+    .sort((a: any, b: any) => a.label.localeCompare(b.label))
+})
+const viewRAs = computed(() => {
+  return (facets.value?.ras || [])
+    .map((email: string) => userOptions.value.find(u => u.value === email) || { label: email, value: email })
+    .sort((a: any, b: any) => a.label.localeCompare(b.label))
+})
+
+function clearAdvancedFilters() {
+  localFilters.value = { make: '', model: '', city: '', auctionStatus: '', dealStatus: '', leadSource: '', referredBy: '', ie: '', ra: '' }
+  setAdvancedFilters({})
+}
+
+watch(localFilters, (newVal) => {
+  const filtersToApply = { ...newVal }
+  Object.keys(filtersToApply).forEach(k => {
+    if (filtersToApply[k as keyof typeof filtersToApply] === 'ALL') {
+      filtersToApply[k as keyof typeof filtersToApply] = ''
+    }
+  })
+  
+  let changed = false
+  for (const k of Object.keys(filtersToApply)) {
+    if (filtersToApply[k as keyof typeof filtersToApply] !== ((advancedFilters.value as any)[k] || '')) {
+      changed = true
+      break
+    }
+  }
+  
+  if (changed) {
+    setAdvancedFilters(filtersToApply)
+  }
+}, { deep: true })
+
+watch(advancedFilters, (val) => {
+  if (val && Object.keys(val).length > 0) {
+    // Only update localFilters if they differ
+    let changed = false
+    for (const k of Object.keys(val)) {
+      if ((localFilters.value[k as keyof typeof localFilters.value] || '') !== (val as any)[k]) {
+        changed = true
+        break
+      }
+    }
+    if (changed) {
+      localFilters.value = { ...localFilters.value, ...val }
+    }
+  }
+}, { immediate: true, deep: true })
 
 let searchDebounce: ReturnType<typeof setTimeout> | null = null
 watch(globalSearch, (newVal) => {
@@ -828,9 +919,110 @@ async function fetchAndShowBids(car: any) {
 <template>
   <ClientOnly>
     <HeaderActions>
-      <div class="relative ml-auto sm:ml-0">
-        <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-        <Input v-model="globalSearch" placeholder="Search retail..." class="pl-8 h-8 w-40 text-sm" />
+      <div class="relative ml-auto sm:ml-0 flex items-center gap-2">
+        <div class="relative">
+          <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <Input v-model="globalSearch" placeholder="Search retail..." class="pl-8 h-8 w-40 text-sm" />
+        </div>
+        <Popover v-model:open="isAdvancedFilterOpen">
+          <PopoverTrigger as-child>
+            <button class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input border-dashed bg-muted/30 hover:bg-muted hover:text-foreground h-8 px-3 gap-1.5 relative pr-6">
+              <Icon name="i-lucide-list-filter" class="size-3.5 text-emerald-600" />
+              <span class="hidden sm:inline font-medium">Filter</span>
+              <span v-if="Object.values(advancedFilters || {}).filter(Boolean).length" class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] text-white font-bold ring-2 ring-background">{{ Object.values(advancedFilters || {}).filter(Boolean).length }}</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" class="w-[400px] p-4 rounded-xl shadow-2xl border border-border/50 bg-background/95 backdrop-blur-xl z-[200]">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-semibold text-sm">Advanced Filters</h4>
+              <Button variant="ghost" size="sm" class="h-6 px-2 text-xs text-muted-foreground hover:text-foreground" @click="clearAdvancedFilters">Clear All</Button>
+            </div>
+            <div class="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1">
+              <div class="space-y-1.5">
+                <Label class="text-xs font-medium text-muted-foreground">Make</Label>
+                <SearchableSelect
+                  v-model="localFilters.make"
+                  :options="[{label: 'Any Make', value: 'ALL'}, ...viewMakes.map((m: any) => ({label: m, value: m}))]"
+                  placeholder="Any Make"
+                  :use-pills="false"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <Label class="text-xs font-medium text-muted-foreground">Model</Label>
+                <SearchableSelect
+                  v-model="localFilters.model"
+                  :options="[{label: 'Any Model', value: 'ALL'}, ...viewModels.map((m: any) => ({label: m, value: m}))]"
+                  placeholder="Any Model"
+                  :disabled="!localFilters.make || localFilters.make === 'ALL'"
+                  :use-pills="false"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <Label class="text-xs font-medium text-muted-foreground">City</Label>
+                <SearchableSelect
+                  v-model="localFilters.city"
+                  :options="[{label: 'Any City', value: 'ALL'}, ...viewCities.map((m: any) => ({label: m, value: m}))]"
+                  placeholder="Any City"
+                  :use-pills="false"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <Label class="text-xs font-medium text-muted-foreground">Auction Status</Label>
+                <SearchableSelect
+                  v-model="localFilters.auctionStatus"
+                  :options="[{label: 'Any Status', value: 'ALL'}, ...viewAuctionStatuses.map((m: any) => ({label: m, value: m}))]"
+                  placeholder="Any Status"
+                  :use-pills="false"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <Label class="text-xs font-medium text-muted-foreground">Deal Status</Label>
+                <SearchableSelect
+                  v-model="localFilters.dealStatus"
+                  :options="[{label: 'Any Status', value: 'ALL'}, ...viewDealStatuses.map((m: any) => ({label: m, value: m}))]"
+                  placeholder="Any Status"
+                  :use-pills="false"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <Label class="text-xs font-medium text-muted-foreground">Lead Source</Label>
+                <SearchableSelect
+                  v-model="localFilters.leadSource"
+                  :options="[{label: 'Any Source', value: 'ALL'}, ...viewLeadSources.map((m: any) => ({label: m, value: m}))]"
+                  placeholder="Any Source"
+                  :use-pills="false"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <Label class="text-xs font-medium text-muted-foreground">Referred By</Label>
+                <SearchableSelect
+                  v-model="localFilters.referredBy"
+                  :options="[{label: 'Any Referrer', value: 'ALL'}, ...viewReferredBys.map((m: any) => ({label: m, value: m}))]"
+                  placeholder="Any Referrer"
+                  :use-pills="false"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <Label class="text-xs font-medium text-muted-foreground">IE (Inspector)</Label>
+                <SearchableSelect
+                  v-model="localFilters.ie"
+                  :options="[{label: 'Any IE', value: 'ALL'}, ...viewIEs]"
+                  placeholder="Any IE"
+                  :use-pills="false"
+                />
+              </div>
+              <div class="space-y-1.5">
+                <Label class="text-xs font-medium text-muted-foreground">RA (Associate)</Label>
+                <SearchableSelect
+                  v-model="localFilters.ra"
+                  :options="[{label: 'Any RA', value: 'ALL'}, ...viewRAs]"
+                  placeholder="Any RA"
+                  :use-pills="false"
+                />
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
       <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
         {{ totalCount }} record{{ totalCount !== 1 ? 's' : '' }}
@@ -888,7 +1080,7 @@ async function fetchAndShowBids(car: any) {
             <TableHead class="whitespace-nowrap">
               App ID
             </TableHead>
-            <TableHead class="whitespace-nowrap sticky left-0 z-50 bg-background border-r border-border/50 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
+            <TableHead class="whitespace-nowrap sticky left-0 z-50 bg-white dark:bg-[#09090b] border-r border-border/50 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
               Specs
             </TableHead>
             <TableHead class="whitespace-nowrap">
@@ -995,7 +1187,7 @@ async function fetchAndShowBids(car: any) {
             <TableCell class="whitespace-nowrap text-xs font-mono">
               {{ car.appointmentId || '—' }}
             </TableCell>
-            <TableCell class="min-w-[260px] max-w-[320px] py-3 sticky left-0 z-40 bg-background group-hover:bg-muted transition-colors border-r border-border/50 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
+            <TableCell class="min-w-[260px] max-w-[320px] py-3 sticky left-0 z-40 bg-white dark:bg-[#09090b] group-hover:bg-muted transition-colors border-r border-border/50 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
               <p class="font-medium text-xs">
                 {{ car.make }} {{ car.model }}
               </p>
@@ -1656,14 +1848,14 @@ async function fetchAndShowBids(car: any) {
               </TableCell>
               <TableCell>
                 <div v-if="bid.dealer" class="flex flex-col gap-0.5">
-                  <span class="text-sm font-semibold">{{ bid.dealer.shopName || bid.dealer.fullName || 'Unknown Dealer' }}</span>
+                  <span class="text-sm font-semibold capitalize">{{ String(bid.dealer.shopName || bid.dealer.fullName || 'Unknown Dealer').toLowerCase() }}</span>
                   <span v-if="bid.dealer.shopName && bid.dealer.fullName" class="text-[10px] text-muted-foreground w-max uppercase tracking-wider">{{ bid.dealer.fullName }}</span>
                 </div>
                 <span v-else class="text-muted-foreground italic text-xs">Unregistered User</span>
               </TableCell>
               <TableCell>
                 <div v-if="bid.dealer?.kamName || bid.dealer?.assignedKam" class="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                  <span>{{ bid.dealer.kamName || bid.dealer.assignedKam }}</span>
+                  <span class="capitalize">{{ String(bid.dealer.kamName || bid.dealer.assignedKam).toLowerCase() }}</span>
                 </div>
                 <span v-else class="text-muted-foreground">—</span>
               </TableCell>

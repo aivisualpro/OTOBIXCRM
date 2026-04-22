@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn, getConditionStyle } from '~/lib/utils'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   options: { label: string, value: string }[]
   modelValue?: any
   placeholder?: string
@@ -9,7 +9,10 @@ const props = defineProps<{
   emptyMessage?: string
   disabled?: boolean
   className?: string
-}>()
+  usePills?: boolean
+}>(), {
+  usePills: true
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
@@ -44,18 +47,19 @@ function handleSelect(val: string) {
         :class="cn('w-full justify-between font-normal h-9 px-3', !modelValue && 'text-muted-foreground', className)"
       >
         <span v-if="!selectedLabel" class="truncate opacity-70">{{ placeholder || 'Select option...' }}</span>
-        <div v-else class="flex items-center gap-1.5 px-2 py-0.5 rounded shadow-sm border min-w-0 flex-1 max-w-full" :class="getConditionStyle(selectedLabel).bg">
+        <div v-else-if="usePills" class="flex items-center gap-1.5 px-2 py-0.5 rounded shadow-sm border min-w-0 flex-1 max-w-full" :class="getConditionStyle(selectedLabel).bg">
           <Icon :name="getConditionStyle(selectedLabel).icon" class="size-3.5 shrink-0" />
           <span class="text-[12px] font-bold leading-tight truncate flex-1 text-left">{{ selectedLabel }}</span>
         </div>
+        <div v-else class="truncate text-sm flex-1 text-left text-foreground">{{ selectedLabel }}</div>
         <Icon name="i-lucide-chevrons-up-down" class="ml-2 size-4 shrink-0 opacity-50" />
       </Button>
     </PopoverTrigger>
-    <PopoverContent class="p-0 w-[--radix-popover-trigger-width] min-w-[200px]">
+    <PopoverContent class="p-0 w-[--radix-popover-trigger-width] min-w-[200px] z-[300] max-h-[40vh] overflow-hidden flex flex-col">
       <Command>
         <CommandInput :placeholder="searchPlaceholder || 'Search...'" class="h-9" />
         <CommandEmpty>{{ emptyMessage || 'No results found.' }}</CommandEmpty>
-        <CommandList>
+        <CommandList class="max-h-full overflow-y-auto">
           <CommandGroup>
             <CommandItem
               v-for="opt in options"
@@ -63,16 +67,24 @@ function handleSelect(val: string) {
               :value="opt.value"
               @select="handleSelect(String(opt.value))"
             >
-              <div
-                class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded shadow-sm w-full transition-all duration-200"
-                :class="[
-                  getConditionStyle(opt.label).bg,
-                  String(modelValue) === String(opt.value) ? '!border-foreground ring-1 ring-foreground ring-offset-1 ring-offset-background font-black scale-[1.02] z-10' : 'opacity-85 hover:opacity-100',
-                ]"
-              >
-                <Icon :name="getConditionStyle(opt.label).icon" class="size-4 shrink-0" />
-                <span class="text-[13px]" :class="String(modelValue) === String(opt.value) ? 'font-black' : 'font-bold'">{{ opt.label }}</span>
-              </div>
+              <template v-if="usePills">
+                <div
+                  class="flex-1 flex items-center gap-2 px-2 py-1.5 rounded shadow-sm w-full transition-all duration-200"
+                  :class="[
+                    getConditionStyle(opt.label).bg,
+                    String(modelValue) === String(opt.value) ? '!border-foreground ring-1 ring-foreground ring-offset-1 ring-offset-background font-black scale-[1.02] z-10' : 'opacity-85 hover:opacity-100',
+                  ]"
+                >
+                  <Icon :name="getConditionStyle(opt.label).icon" class="size-4 shrink-0" />
+                  <span class="text-[13px]" :class="String(modelValue) === String(opt.value) ? 'font-black' : 'font-bold'">{{ opt.label }}</span>
+                </div>
+              </template>
+              <template v-else>
+                <div class="flex-1 text-sm py-0.5 truncate" :class="String(modelValue) === String(opt.value) ? 'font-bold text-primary' : ''">
+                  {{ opt.label }}
+                </div>
+                <Icon v-if="String(modelValue) === String(opt.value)" name="i-lucide-check" class="size-4 ml-auto text-primary" />
+              </template>
             </CommandItem>
           </CommandGroup>
         </CommandList>

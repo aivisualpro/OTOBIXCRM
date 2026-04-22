@@ -17,8 +17,19 @@ export default defineEventHandler(async (event) => {
       catch (e) {}
     }
 
-    // Base filter excludes completely blank auction statuses and 'inspected' based on legacy table logic
+    // Base filter
     const matchQuery: any = { auctionStatus: { $exists: true, $nin: ['', ' ', 'inspected'] } }
+    
+    // Tab filtering from query params
+    const tab = (queryParams.tab || '').toLowerCase()
+    if (tab && tab !== 'all' && tab !== 'followup' && tab !== 'customer-activity') {
+      if (tab === 'ended') matchQuery.auctionStatus = 'liveAuctionEnded'
+      else matchQuery.auctionStatus = tab
+    } else if (tab === 'followup') {
+      matchQuery.dealStatus = 'Under Negotiation'
+    } else if (tab === 'customer-activity') {
+      matchQuery.auctionStatus = { $in: ['live', 'otobuy'] }
+    }
 
     // Role-based visibility
     if (userRole === 'Retailer' && userEmail && queryParams.module === 'retail') {
@@ -79,48 +90,62 @@ export default defineEventHandler(async (event) => {
     const aggregationPipeline = [
       { $match: matchQuery },
       {
-        $group: {
-          _id: '$auctionStatus',
-          count: { $sum: 1 },
-        },
+        $lookup: {
+          from: 'telecallings',
+          localField: 'appointmentId',
+          foreignField: 'appointmentId',
+          as: 'lead'
+        }
       },
+      {
+        $unwind: {
+          path: '$lead',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $facet: {
+          makes: [{ $group: { _id: { $toUpper: '$make' } } }],
+          models: [{ $group: { _id: { $toUpper: '$model' } } }],
+          cities: [{ $group: { _id: { $toUpper: '$city' } } }],
+          auctionStatuses: [{ $group: { _id: { $toUpper: '$auctionStatus' } } }],
+          dealStatuses: [{ $group: { _id: { $toUpper: '$dealStatus' } } }],
+          ras: [{ $group: { _id: { $toLower: '$retailAssociate' } } }],
+          leadSources: [{ $group: { _id: { $toUpper: '$lead.appointmentSource' } } }],
+          referredBys: [{ $group: { _id: { $toUpper: '$lead.referenceName' } } }],
+          ies: [{ $group: { _id: { $toLower: '$lead.allocatedTo' } } }]
+        }
+      }
     ]
-
-    // For 'followup' tab we need to count cars where dealStatus is Under Negotiation
-    const followupCountPipeline = [
-      { $match: { ...matchQuery, dealStatus: 'Under Negotiation' } },
-      { $count: 'count' },
-    ]
-    const followupRes = await coll.aggregate(followupCountPipeline).toArray()
-    const followupCount = followupRes[0]?.count || 0
 
     const result = await coll.aggregate(aggregationPipeline).toArray()
+    const facets = result[0] || {}
 
-    // Map backend statuses to simple count mapping
-    const rawCounts = result.reduce((acc, stage) => {
-      acc[stage._id] = stage.count
-      return acc
-    }, {} as Record<string, number>)
-
-    const counts: Record<string, number> = {
-      upcoming: rawCounts.upcoming || 0,
-      live: rawCounts.live || 0,
-      otobuy: rawCounts.otobuy || 0,
-      ended: rawCounts.liveAuctionEnded || 0,
-      sold: rawCounts.sold || 0,
-      removed: rawCounts.removed || 0,
+    const formatFacet = (facetArr: any[]) => {
+      if (!facetArr) return []
+      const items = facetArr
+        .map(item => typeof item._id === 'string' ? item._id.trim() : item._id)
+        .filter(id => id !== null && id !== undefined && id !== '')
+      return Array.from(new Set(items)).sort()
     }
 
-    // Aggregate complex tabs
-    counts['customer-activity'] = (counts.live || 0) + (counts.otobuy || 0)
-    counts['dealer-activity'] = (counts.live || 0) + (counts.otobuy || 0) + (counts.upcoming || 0)
-    counts.followup = followupCount
-    counts.all = Object.values(rawCounts).reduce((a, b) => a + b, 0)
+    return {
+      makes: formatFacet(facets.makes),
+      models: formatFacet(facets.models),
+      cities: formatFacet(facets.cities),
+      auctionStatuses: formatFacet(facets.auctionStatuses),
+      dealStatuses: formatFacet(facets.dealStatuses),
+      ras: formatFacet(facets.ras),
+      leadSources: formatFacet(facets.leadSources),
+      referredBys: formatFacet(facets.referredBys),
+      ies: formatFacet(facets.ies)
+    }
 
-    return counts
-  }
-  catch (err: any) {
-    console.error('Failed to fetch car counts:', err)
-    return {}
+  } catch (error: any) {
+    console.error('API Error in /cars/facets:', error)
+    return createError({
+      statusCode: 500,
+      message: error.message || 'Internal Server Error',
+    })
   }
 })

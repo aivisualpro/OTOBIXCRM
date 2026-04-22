@@ -1,3 +1,5 @@
+import { ObjectId } from 'mongodb'
+
 export default defineEventHandler(async (event) => {
   try {
     const db = await getLeadsDb(event)
@@ -98,6 +100,41 @@ export default defineEventHandler(async (event) => {
         { appointmentId: searchRegex },
         { retailAssociate: searchRegex },
       ]
+    }
+
+    // Advanced Filters
+    const filterMake = String(queryParams.filter_make || '').trim()
+    const filterModel = String(queryParams.filter_model || '').trim()
+    const filterCity = String(queryParams.filter_city || '').trim()
+    const filterAuctionStatus = String(queryParams.filter_auctionStatus || '').trim()
+    const filterDealStatus = String(queryParams.filter_dealStatus || '').trim()
+    const filterRA = String(queryParams.filter_ra || '').trim()
+    const filterLeadSource = String(queryParams.filter_leadSource || '').trim()
+    const filterReferredBy = String(queryParams.filter_referredBy || '').trim()
+    const filterIE = String(queryParams.filter_ie || '').trim()
+    
+    if (filterMake) filter.make = { $regex: new RegExp(filterMake, 'i') }
+    if (filterModel) filter.model = { $regex: new RegExp(filterModel, 'i') }
+    if (filterCity) filter.city = { $regex: new RegExp(filterCity, 'i') }
+    if (filterAuctionStatus) filter.auctionStatus = { $regex: new RegExp(`^${filterAuctionStatus}$`, 'i') }
+    if (filterDealStatus) filter.dealStatus = { $regex: new RegExp(`^${filterDealStatus}$`, 'i') }
+    if (filterRA) filter.retailAssociate = { $regex: new RegExp(`^${filterRA}$`, 'i') }
+
+    // If filtering by lead fields, intersect appointmentIds
+    if (filterLeadSource || filterReferredBy || filterIE) {
+      const leadFilter: Record<string, any> = {}
+      if (filterLeadSource) leadFilter.appointmentSource = { $regex: new RegExp(filterLeadSource, 'i') }
+      if (filterReferredBy) leadFilter.referenceName = { $regex: new RegExp(filterReferredBy, 'i') }
+      if (filterIE) leadFilter.allocatedTo = { $regex: new RegExp(filterIE, 'i') }
+      
+      const matchingLeads = await db.collection('telecallings').find(leadFilter, { projection: { appointmentId: 1 } }).toArray()
+      const matchingApptIds = matchingLeads.map(l => l.appointmentId).filter(Boolean)
+      
+      if (filter.appointmentId) {
+        filter.appointmentId = { ...filter.appointmentId, $in: matchingApptIds }
+      } else {
+        filter.appointmentId = { $in: matchingApptIds }
+      }
     }
 
     // 3. Document Projection
@@ -225,6 +262,40 @@ export default defineEventHandler(async (event) => {
       autoBids = await db.collection('autoBidsForLiveSection')
         .find({ carId: { $in: carIds } })
         .toArray()
+
+      if (autoBids.length > 0) {
+        const userIds = [...new Set(autoBids.map(b => b.userId).filter(Boolean))]
+        const queryUserIds = userIds.flatMap(id => [id, String(id).length === 24 ? new ObjectId(String(id)) : null]).filter(Boolean)
+        
+        const autoBidUsers = await db.collection('users')
+          .find({ _id: { $in: queryUserIds } })
+          .project({ shopName: 1, dealershipName: 1, fullName: 1, firstName: 1, lastName: 1, assignedKam: 1 })
+          .toArray()
+
+        const kamIds = [...new Set(autoBidUsers.map(u => u.assignedKam).filter(Boolean))]
+        const queryKamIds = kamIds.flatMap(id => [id, String(id).length === 24 ? new ObjectId(String(id)) : null]).filter(Boolean)
+        
+        let autoBidKams: any[] = []
+        if (queryKamIds.length > 0) {
+          autoBidKams = await db.collection('kams')
+            .find({ _id: { $in: queryKamIds } })
+            .project({ userName: 1, name: 1, fullName: 1 })
+            .toArray()
+        }
+
+        autoBids = autoBids.map(bid => {
+          const user = autoBidUsers.find(u => String(u._id) === String(bid.userId))
+          if (user) {
+            const kam = autoBidKams.find(k => String(k._id) === String(user.assignedKam))
+            return {
+              ...bid,
+              dealerName: user.shopName || user.dealershipName || user.fullName || [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Unknown Dealer',
+              kamName: kam ? (kam.userName || kam.name || kam.fullName) : user.assignedKam
+            }
+          }
+          return bid
+        })
+      }
     }
 
     // Load related telecallings for lead data

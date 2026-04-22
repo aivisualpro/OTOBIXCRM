@@ -58,6 +58,10 @@ export function useAuctionsApi() {
   const { currentEnv } = useApiEnvironment()
 
   const _cars = useState<AuctionCar[]>('auctions_data', () => shallowRef([]) as any)
+  const _advancedFilters = useState<Record<string, string>>('auctions_advancedFilters', () => ({}))
+  const _facets = useState<any>('auctions_facets', () => ({
+    makes: [], models: [], cities: [], auctionStatuses: [], dealStatuses: [], leadSources: [], referredBys: [], ies: [], ras: []
+  }))
   const _totalCount = useState<number>('auctions_total', () => 0)
   const _currentPage = useState<number>('auctions_page', () => 1)
 
@@ -133,6 +137,13 @@ export function useAuctionsApi() {
       params.similarModel = _similarSearchCtx.value.model
       params.similarYear = String(_similarSearchCtx.value.year || '')
     }
+
+    if (_advancedFilters.value) {
+      Object.entries(_advancedFilters.value).forEach(([k, v]) => {
+        if (v) params[`filter_${k}`] = v
+      })
+    }
+
     return params
   }
 
@@ -148,6 +159,20 @@ export function useAuctionsApi() {
     }
     catch (e) {
       console.warn('Failed to fetch car counts', e)
+    }
+  }
+
+  async function fetchFacets() {
+    try {
+      const params = _buildFilterParams()
+      const res = await deduplicatedFetch(QUERY_KEYS.carsCount(params) + '_facets', () =>
+        $fetch<any>('/api/cars/facets', { params })
+      )
+      _facets.value = res || {
+        makes: [], models: [], cities: [], auctionStatuses: [], dealStatuses: [], leadSources: [], referredBys: [], ies: [], ras: []
+      }
+    } catch (e) {
+      console.warn('Failed to fetch facets', e)
     }
   }
 
@@ -199,6 +224,7 @@ export function useAuctionsApi() {
 
       setCachedData(queryKey, response)
       fetchCounts()
+      fetchFacets()
       _prefetchNextPage(2)
     }
     catch (err: any) {
@@ -308,6 +334,16 @@ export function useAuctionsApi() {
     searchCars,
     cancelSearch,
     fetchCounts,
+
+    advancedFilters: computed(() => _advancedFilters.value),
+    facets: computed(() => _facets.value),
+    setAdvancedFilters: (filters: Record<string, string>) => {
+      _advancedFilters.value = filters
+      _currentPage.value = 1
+      fetchCars(true)
+      fetchCounts()
+      fetchFacets()
+    },
 
     // Alias to avoid renaming in templates immediately where possible
     globalSearch: serverSearch,

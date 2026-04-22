@@ -40,6 +40,26 @@ export default defineEventHandler(async (event) => {
         },
       },
       { $unwind: { path: '$dealer', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'kams',
+          let: { kamId: '$dealer.assignedKam' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$_id', '$$kamId'] },
+                    { $eq: [{ $toString: '$_id' }, { $toString: '$$kamId' }] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'kamDetails',
+        },
+      },
+      { $unwind: { path: '$kamDetails', preserveNullAndEmptyArrays: true } },
     ]).toArray()
 
     // Clean up recursive payload properties to avoid enormous network overhead
@@ -52,8 +72,10 @@ export default defineEventHandler(async (event) => {
       dealer: bid.dealer
         ? {
             fullName: bid.dealer.fullName || [bid.dealer.firstName, bid.dealer.lastName].filter(Boolean).join(' ') || null,
-            phone: bid.dealer.phone || bid.dealer.mobile || null,
+            phone: bid.dealer.primaryContactNumber || bid.dealer.phone || bid.dealer.mobile || null,
             shopName: bid.dealer.shopName || bid.dealer.dealershipName || null,
+            assignedKam: bid.dealer.assignedKam || null,
+            kamName: bid.kamDetails?.userName || bid.kamDetails?.name || bid.kamDetails?.fullName || bid.kamDetails?.firstName || null,
           }
         : null,
     }))
