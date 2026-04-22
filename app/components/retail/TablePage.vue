@@ -1617,17 +1617,17 @@ async function fetchAndShowBids(car: any) {
             </TableCell>
 
             <!-- Lead Source -->
-            <TableCell class="text-[10px] text-center px-1 text-muted-foreground whitespace-nowrap">
+            <TableCell class="text-xs font-medium text-center px-1 whitespace-nowrap">
               {{ car.leadSource || '—' }}
             </TableCell>
 
             <!-- Referred By -->
-            <TableCell class="text-[10px] text-center px-1 text-muted-foreground whitespace-nowrap">
+            <TableCell class="text-xs font-medium text-center px-1 whitespace-nowrap">
               {{ car.referredBy || '—' }}
             </TableCell>
 
             <!-- IE -->
-            <TableCell class="text-[10px] text-center px-1 text-muted-foreground whitespace-nowrap">
+            <TableCell class="text-xs font-medium text-center px-1 whitespace-nowrap">
               {{ resolveUserNameByEmail(car.inspectionEngineer) || car.inspectionEngineer || '—' }}
             </TableCell>
 

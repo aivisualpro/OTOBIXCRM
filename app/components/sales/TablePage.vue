@@ -408,6 +408,91 @@ function shareLink() {
   toast.success('Inspection link copied to clipboard!')
 }
 
+async function shareCarToWhatsApp(car: any) {
+  const imageUrl = getFirstImage(car) || ''
+  
+  const parts = []
+  parts.push(`🚗 *${car.make || ''} ${car.model || ''}*`)
+  if (car.variant) parts.push(`_${car.variant}_`)
+  parts.push('')
+  
+  parts.push(`*Specs:*`)
+  if (car.registrationDate) parts.push(`• Reg: ${formatYear(car.registrationDate)}`)
+  if (car.yearMonthOfManufacture) parts.push(`• Mfg: ${formatYear(car.yearMonthOfManufacture)}`)
+  if (car.odometerReadingInKms) parts.push(`• KMS: ${Number(car.odometerReadingInKms).toLocaleString()}`)
+  if (car.fuelType) parts.push(`• Fuel: ${car.fuelType}`)
+  if (car.ownerSerialNumber) parts.push(`• Owner: ${car.ownerSerialNumber}`)
+  if (car.registeredRto || car.registrationState) parts.push(`• Loc: ${car.registeredRto || ''} ${car.registrationState || ''}`.trim())
+  
+  if (car.priceDiscovery) {
+    parts.push('')
+    parts.push(`💰 *Expected Price:* ${formatCurrency(car.priceDiscovery)}`)
+  }
+  
+  const text = parts.join('\n')
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  
+  if (isMobile && imageUrl && navigator.share) {
+    try {
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      const ext = imageUrl.split('.').pop()?.split('?')[0] || 'jpg'
+      const file = new File([blob], `${car.make}_${car.model}.${ext}`, { type: blob.type })
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `${car.make} ${car.model}`,
+          text: text
+        })
+        return
+      }
+    } catch (err) {
+      console.error('Native share failed:', err)
+    }
+  } else if (!isMobile && imageUrl && navigator.clipboard) {
+    try {
+      const toastId = toast.loading('Copying image to clipboard...')
+      
+      await new Promise<void>((resolve, reject) => {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = img.width
+          canvas.height = img.height
+          const ctx = canvas.getContext('2d')
+          if (!ctx) return reject(new Error('No canvas context'))
+          
+          ctx.drawImage(img, 0, 0)
+          canvas.toBlob(async (blob) => {
+            if (!blob) return reject(new Error('Blob creation failed'))
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+              ])
+              resolve()
+            } catch (err) {
+              reject(err)
+            }
+          }, 'image/png')
+        }
+        img.onerror = () => reject(new Error('Failed to load image for clipboard'))
+        img.src = imageUrl
+      })
+      
+      toast.dismiss(toastId)
+      toast.success('Image copied! Press Cmd+V in WhatsApp to attach the photo.')
+    } catch (err) {
+      console.error('Clipboard copy failed:', err)
+      toast.error('Could not copy image automatically. You may need to attach it manually.')
+    }
+  }
+  
+  const fallbackText = encodeURIComponent(text)
+  window.open(`https://wa.me/?text=${fallbackText}`, '_blank')
+}
+
 const showBidsPopup = ref(false)
 const selectedCarForBids = ref<any>(null)
 const bidsLoading = ref(false)
@@ -658,10 +743,15 @@ async function fetchAndShowBids(car: any) {
             <TableCell class="w-24">
               <HoverCard :open-delay="200" :close-delay="100">
                 <HoverCardTrigger as-child>
-                  <div class="relative w-20 h-14 rounded-md overflow-hidden bg-muted border cursor-zoom-in">
-                    <img v-if="getFirstImage(car)" :src="getFirstImage(car)!" class="size-full object-cover">
+                  <div class="relative w-20 h-14 rounded-md overflow-hidden bg-muted border cursor-pointer group/pic" @click.stop="shareCarToWhatsApp(car)">
+                    <img v-if="getFirstImage(car)" :src="getFirstImage(car)!" class="size-full object-cover transition-transform duration-300 group-hover/pic:scale-110">
                     <div v-else class="size-full flex items-center justify-center">
                       <Icon name="i-lucide-car" class="size-5 text-muted-foreground" />
+                    </div>
+                    <!-- WhatsApp Share Overlay -->
+                    <div class="absolute inset-0 bg-black/50 opacity-0 group-hover/pic:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center backdrop-blur-[1px]">
+                      <Icon name="i-lucide-message-circle" class="size-5 text-emerald-400 drop-shadow-md mb-0.5" />
+                      <span class="text-[8px] font-bold text-white uppercase tracking-widest">Share</span>
                     </div>
                   </div>
                 </HoverCardTrigger>
