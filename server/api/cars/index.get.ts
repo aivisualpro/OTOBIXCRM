@@ -96,6 +96,7 @@ export default defineEventHandler(async (event) => {
         { city: searchRegex },
         { fuelType: searchRegex },
         { appointmentId: searchRegex },
+        { retailAssociate: searchRegex },
       ]
     }
 
@@ -148,6 +149,7 @@ export default defineEventHandler(async (event) => {
       createdAt: 1,
       updatedAt: 1,
       approvalDate: 1,
+      offeredPrice: 1,
     }
 
     const skip = (page - 1) * limit
@@ -225,13 +227,29 @@ export default defineEventHandler(async (event) => {
         .toArray()
     }
 
+    // Load related telecallings for lead data
+    const apptIds = cars.map(c => c.appointmentId).filter(Boolean)
+    let relatedLeads: any[] = []
+    if (apptIds.length > 0) {
+      relatedLeads = await db.collection('telecallings')
+        .find(
+          { appointmentId: { $in: apptIds } },
+          { projection: { appointmentId: 1, appointmentSource: 1, referenceName: 1, allocatedTo: 1 } }
+        )
+        .toArray()
+    }
+
     const mappedCars = cars.map((car) => {
       const carIdStr = car._id.toString()
+      const lead = relatedLeads.find(l => l.appointmentId === car.appointmentId) || {}
       return {
         ...car,
         id: carIdStr,
         _id: carIdStr,
         autoBidsForLiveSection: autoBids.filter(b => String(b.carId) === carIdStr),
+        leadSource: lead.appointmentSource || '',
+        referredBy: lead.referenceName || '',
+        inspectionEngineer: lead.allocatedTo || '',
       }
     })
 

@@ -109,6 +109,12 @@ function resolveUserNameByEmail(email: string) {
   return user?.userName || email
 }
 
+function resolveUserNameById(id: string) {
+  if (!id) return '—'
+  const user = allUsers.value.find(u => String(u._id) === String(id) || String(u.id) === String(id))
+  return user?.userName || id
+}
+
 const bidStats = ref<Record<string, { totalBids: number, uniqueDealers: number, lastBidAt?: string }>>({})
 const isStatsLoading = ref(false)
 
@@ -933,6 +939,18 @@ async function fetchAndShowBids(car: any) {
             <TableHead class="whitespace-nowrap text-center">
               Deal Status
             </TableHead>
+            <TableHead class="whitespace-nowrap text-center">
+              Lead Source
+            </TableHead>
+            <TableHead class="whitespace-nowrap text-center">
+              Referred By
+            </TableHead>
+            <TableHead class="whitespace-nowrap text-center">
+              IE
+            </TableHead>
+            <TableHead class="whitespace-nowrap text-center">
+              Offered Price
+            </TableHead>
             <TableHead v-if="activeTab === 'followup'" class="whitespace-nowrap text-center">
               Followup Time
             </TableHead>
@@ -1406,6 +1424,30 @@ async function fetchAndShowBids(car: any) {
               </div>
             </TableCell>
 
+            <!-- Lead Source -->
+            <TableCell class="text-[10px] text-center px-1 text-muted-foreground whitespace-nowrap">
+              {{ car.leadSource || '—' }}
+            </TableCell>
+
+            <!-- Referred By -->
+            <TableCell class="text-[10px] text-center px-1 text-muted-foreground whitespace-nowrap">
+              {{ car.referredBy || '—' }}
+            </TableCell>
+
+            <!-- IE -->
+            <TableCell class="text-[10px] text-center px-1 text-muted-foreground whitespace-nowrap">
+              {{ resolveUserNameByEmail(car.inspectionEngineer) || car.inspectionEngineer || '—' }}
+            </TableCell>
+
+            <!-- Offered Price -->
+            <TableCell class="text-xs text-center px-1">
+              <div class="min-h-[28px] min-w-[60px] flex items-center justify-center cursor-pointer group rounded hover:bg-muted/50 transition-colors" @click="startEdit(car, 'offeredPrice')">
+                <Input v-if="isEditing(car, 'offeredPrice')" v-model="car.offeredPrice" type="number" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'offeredPrice')" @keydown.enter="stopEdit(car, 'offeredPrice')" @keydown.esc="cancelEdit(car, 'offeredPrice')" />
+                <span v-else-if="car.offeredPrice" class="whitespace-nowrap font-semibold">{{ formatCurrency(car.offeredPrice) }}</span>
+                <Icon v-else name="i-lucide-pencil" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </TableCell>
+
             <!-- Followup Time -->
             <TableCell v-if="activeTab === 'followup'" class="text-xs text-center px-1 font-mono text-muted-foreground whitespace-nowrap">
               {{ car.followupTimeStamp ? formatDateTimeStr(car.followupTimeStamp) : '—' }}
@@ -1483,13 +1525,13 @@ async function fetchAndShowBids(car: any) {
             </TableCell>
           </TableRow>
           <TableRow v-if="allCars.length === 0">
-            <TableCell :colspan="(['ended', 'removed', 'sold', 'otobuy'].includes(activeTab) ? 22 : 23) + (activeTab === 'followup' ? 1 : 0)" class="h-32 text-center text-muted-foreground bg-muted/10">
+            <TableCell :colspan="(['ended', 'removed', 'sold', 'otobuy'].includes(activeTab) ? 26 : 27) + (activeTab === 'followup' ? 1 : 0)" class="h-32 text-center text-muted-foreground bg-muted/10">
               No matching records found
             </TableCell>
           </TableRow>
           <!-- Scroll Sentinel — MUST be inside the table's overflow-auto container -->
           <TableRow v-if="hasMore">
-            <TableCell :colspan="(['ended', 'removed', 'sold', 'otobuy'].includes(activeTab) ? 22 : 23) + (activeTab === 'followup' ? 1 : 0)" class="p-0 h-1">
+            <TableCell :colspan="(['ended', 'removed', 'sold', 'otobuy'].includes(activeTab) ? 26 : 27) + (activeTab === 'followup' ? 1 : 0)" class="p-0 h-1">
               <div ref="loadMoreTrigger" class="h-1 w-full" />
             </TableCell>
           </TableRow>
@@ -1588,6 +1630,7 @@ async function fetchAndShowBids(car: any) {
               <TableHead>Execution Time</TableHead>
               <TableHead>Bid Amount</TableHead>
               <TableHead>Dealer / Buyer</TableHead>
+              <TableHead>KAM</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead class="text-center">
                 System Bid
@@ -1617,6 +1660,12 @@ async function fetchAndShowBids(car: any) {
                   <span v-if="bid.dealer.shopName && bid.dealer.fullName" class="text-[10px] text-muted-foreground w-max uppercase tracking-wider">{{ bid.dealer.fullName }}</span>
                 </div>
                 <span v-else class="text-muted-foreground italic text-xs">Unregistered User</span>
+              </TableCell>
+              <TableCell>
+                <div v-if="bid.dealer?.kamName || bid.dealer?.assignedKam" class="flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                  <span>{{ bid.dealer.kamName || bid.dealer.assignedKam }}</span>
+                </div>
+                <span v-else class="text-muted-foreground">—</span>
               </TableCell>
               <TableCell>
                 <span v-if="bid.dealer?.phone" class="font-mono text-xs bg-muted/50 px-2 py-1 rounded-md">{{ bid.dealer.phone }}</span>

@@ -35,6 +35,7 @@ export default defineEventHandler(async (event) => {
         { city: regex },
         { fuelType: regex },
         { appointmentId: regex },
+        { retailAssociate: regex },
       ]
     }
 

@@ -100,10 +100,20 @@ watch(globalSearch, (newVal) => {
   }, 400)
 })
 
+const { allUsers, fetchAllUsers } = usePeopleApi()
+
+function resolveUserNameByEmail(email: string) {
+  if (!email)
+    return '—'
+  const user = allUsers.value.find(u => u.email === email)
+  return user?.userName || email
+}
+
 onMounted(() => {
   fetchCars()
   fetchBidStats()
   fetchDropdowns()
+  fetchAllUsers()
 })
 
 function formatCurrency(value: any): string {
@@ -431,6 +441,9 @@ async function fetchAndShowBids(car: any) {
             <TableHead class="whitespace-nowrap">
               Deal Status
             </TableHead>
+            <TableHead class="whitespace-nowrap">
+              RA
+            </TableHead>
 
             <TableHead class="whitespace-nowrap pr-[19px]">
               Remarks
@@ -574,18 +587,23 @@ async function fetchAndShowBids(car: any) {
                 <span class="truncate max-w-[80px]">{{ car.dealStatus || 'Set Status' }}</span>
               </div>
             </TableCell>
+            <TableCell class="text-xs align-middle px-1">
+              <div class="flex items-center justify-center gap-1.5 font-medium whitespace-nowrap text-emerald-700 dark:text-emerald-300" :title="car.retailAssociate">
+                <span>{{ resolveUserNameByEmail(car.retailAssociate) || '—' }}</span>
+              </div>
+            </TableCell>
             <TableCell class="text-xs text-muted-foreground text-center pr-[19px]">
               —
             </TableCell>
           </TableRow>
           <TableRow v-if="allCars.length === 0">
-            <TableCell :colspan="['ended', 'removed', 'sold', 'otobuy'].includes(activeTab) ? 15 : 16" class="h-32 text-center text-muted-foreground bg-muted/10">
+            <TableCell :colspan="['ended', 'removed', 'sold', 'otobuy'].includes(activeTab) ? 16 : 17" class="h-32 text-center text-muted-foreground bg-muted/10">
               No matching records found
             </TableCell>
           </TableRow>
           <!-- Scroll Sentinel — MUST be inside the table's overflow-auto container -->
           <TableRow v-if="hasMore">
-            <TableCell :colspan="['ended', 'removed', 'sold', 'otobuy'].includes(activeTab) ? 15 : 16" class="p-0 h-1">
+            <TableCell :colspan="['ended', 'removed', 'sold', 'otobuy'].includes(activeTab) ? 16 : 17" class="p-0 h-1">
               <div ref="loadMoreTrigger" class="h-1 w-full" />
             </TableCell>
           </TableRow>
