@@ -151,15 +151,70 @@ export default defineEventHandler(async (event) => {
     }
 
     const skip = (page - 1) * limit
-    const sortParams: any = { [sortField]: sortDir }
-    if (sortField !== '_id')
-      sortParams._id = -1 // secondary sort to stabilize
-
     const coll = db.collection('cars')
-    const [cars, totalCount] = await Promise.all([
-      coll.find(filter, { projection }).sort(sortParams).skip(skip).limit(limit).toArray(),
-      coll.countDocuments(filter),
-    ])
+    let cars: any[] = []
+    let totalCount = 0
+
+    if (sortField === 'approvalDate') {
+      const pipeline = [
+        { $match: filter },
+        {
+          $addFields: {
+            effectiveSortDate: {
+              $let: {
+                vars: {
+                  parsedApp: { $convert: { input: "$approvalDate", to: "date", onError: null, onNull: null } },
+                  parsedAuc: { $convert: { input: "$auctionStartTime", to: "date", onError: null, onNull: null } },
+                  parsedCre: { $convert: { input: "$createdAt", to: "date", onError: null, onNull: null } },
+                  fallbackId: { $convert: { input: "$_id", to: "date", onError: null, onNull: null } }
+                },
+                in: {
+                  $cond: {
+                    if: { $ne: ["$$parsedApp", null] },
+                    then: "$$parsedApp",
+                    else: {
+                      $cond: {
+                        if: { $ne: ["$$parsedAuc", null] },
+                        then: "$$parsedAuc",
+                        else: {
+                          $cond: {
+                            if: { $ne: ["$$parsedCre", null] },
+                            then: "$$parsedCre",
+                            else: "$$fallbackId"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        { $sort: { effectiveSortDate: sortDir, _id: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        { $project: { ...projection, frontMainImages: { $cond: { if: { $isArray: "$frontMainImages" }, then: { $slice: ["$frontMainImages", 1] }, else: "$frontMainImages" } } } }
+      ]
+
+      const [aggResult, count] = await Promise.all([
+        coll.aggregate(pipeline).toArray(),
+        coll.countDocuments(filter),
+      ])
+      cars = aggResult
+      totalCount = count
+    } else {
+      const sortParams: any = { [sortField]: sortDir }
+      if (sortField !== '_id')
+        sortParams._id = -1 // secondary sort to stabilize
+
+      const [findResult, count] = await Promise.all([
+        coll.find(filter, { projection }).sort(sortParams).skip(skip).limit(limit).toArray(),
+        coll.countDocuments(filter),
+      ])
+      cars = findResult
+      totalCount = count
+    }
 
     // Load autobids for these specific chunk of cars only
     const carIds = cars.map(c => c._id.toString())

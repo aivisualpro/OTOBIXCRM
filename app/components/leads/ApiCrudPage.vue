@@ -1342,7 +1342,7 @@ function getInitials(name: string): string {
                 </DropdownMenu>
                 <!-- Clickable when in inspected tab wrapper OR search results with correct status -->
                 <Badge
-                  v-else-if="col.key === 'inspectionStatus' && item.inspectionStatus === 'Inspected' && router.currentRoute.value.path.startsWith('/leads')"
+                  v-else-if="col.key === 'inspectionStatus' && item.inspectionStatus === 'Inspected' && router.currentRoute.value.path.startsWith('/leads') && item.approvalStatus !== 'Approved'"
                   variant="outline"
                   class="cursor-pointer hover:ring-1 hover:ring-orange-500/50 transition-all uppercase"
                   :class="getBadgeClass(item[col.key])"
