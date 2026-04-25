@@ -60,7 +60,15 @@ export function useAuctionsApi() {
   const _cars = useState<AuctionCar[]>('auctions_data', () => shallowRef([]) as any)
   const _advancedFilters = useState<Record<string, string>>('auctions_advancedFilters', () => ({}))
   const _facets = useState<any>('auctions_facets', () => ({
-    makes: [], models: [], cities: [], auctionStatuses: [], dealStatuses: [], leadSources: [], referredBys: [], ies: [], ras: []
+    makes: [],
+    models: [],
+    cities: [],
+    auctionStatuses: [],
+    dealStatuses: [],
+    leadSources: [],
+    referredBys: [],
+    ies: [],
+    ras: [],
   }))
   const _totalCount = useState<number>('auctions_total', () => 0)
   const _currentPage = useState<number>('auctions_page', () => 1)
@@ -117,21 +125,22 @@ export function useAuctionsApi() {
   function _buildFilterParams(): Record<string, string> {
     const route = useRoute()
     const currentModule = route.path.split('/')[1] || ''
-    
+
     const params: Record<string, string> = { tab: _activeTab.value, module: currentModule }
     if (serverSearch.value)
       params.search = serverSearch.value
-      
+
     if (currentModule === 'retail' || currentModule === 'sales') {
       params.sort = 'approvalDate'
       params.sortDir = 'desc'
-    } else {
+    }
+    else {
       if (_sortKey.value)
         params.sort = _sortKey.value
       if (_sortDir.value)
         params.sortDir = _sortDir.value
     }
-      
+
     if (_activeTab.value.startsWith('similar-search') && _similarSearchCtx.value) {
       params.similarMake = _similarSearchCtx.value.make
       params.similarModel = _similarSearchCtx.value.model
@@ -140,7 +149,8 @@ export function useAuctionsApi() {
 
     if (_advancedFilters.value) {
       Object.entries(_advancedFilters.value).forEach(([k, v]) => {
-        if (v) params[`filter_${k}`] = v
+        if (v)
+          params[`filter_${k}`] = v
       })
     }
 
@@ -165,13 +175,21 @@ export function useAuctionsApi() {
   async function fetchFacets() {
     try {
       const params = _buildFilterParams()
-      const res = await deduplicatedFetch(QUERY_KEYS.carsCount(params) + '_facets', () =>
-        $fetch<any>('/api/cars/facets', { params })
-      )
+      const res = await deduplicatedFetch(`${QUERY_KEYS.carsCount(params)}_facets`, () =>
+        $fetch<any>('/api/cars/facets', { params }))
       _facets.value = res || {
-        makes: [], models: [], cities: [], auctionStatuses: [], dealStatuses: [], leadSources: [], referredBys: [], ies: [], ras: []
+        makes: [],
+        models: [],
+        cities: [],
+        auctionStatuses: [],
+        dealStatuses: [],
+        leadSources: [],
+        referredBys: [],
+        ies: [],
+        ras: [],
       }
-    } catch (e) {
+    }
+    catch (e) {
       console.warn('Failed to fetch facets', e)
     }
   }

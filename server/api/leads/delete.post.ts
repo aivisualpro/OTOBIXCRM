@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     const result = await db.collection('telecallings').findOneAndUpdate(
       filter,
       { $set: { isDeleted: true } },
-      { returnDocument: 'after' }
+      { returnDocument: 'after' },
     )
 
     if (!result) {

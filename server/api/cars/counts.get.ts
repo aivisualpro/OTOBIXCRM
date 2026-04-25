@@ -49,27 +49,37 @@ export default defineEventHandler(async (event) => {
     const filterLeadSource = String(queryParams.filter_leadSource || '').trim()
     const filterReferredBy = String(queryParams.filter_referredBy || '').trim()
     const filterIE = String(queryParams.filter_ie || '').trim()
-    
-    if (filterMake) matchQuery.make = { $regex: new RegExp(filterMake, 'i') }
-    if (filterModel) matchQuery.model = { $regex: new RegExp(filterModel, 'i') }
-    if (filterCity) matchQuery.city = { $regex: new RegExp(filterCity, 'i') }
-    if (filterAuctionStatus) matchQuery.auctionStatus = { $regex: new RegExp(`^${filterAuctionStatus}$`, 'i') }
-    if (filterDealStatus) matchQuery.dealStatus = { $regex: new RegExp(`^${filterDealStatus}$`, 'i') }
-    if (filterRA) matchQuery.retailAssociate = { $regex: new RegExp(`^${filterRA}$`, 'i') }
+
+    if (filterMake)
+      matchQuery.make = { $regex: new RegExp(filterMake, 'i') }
+    if (filterModel)
+      matchQuery.model = { $regex: new RegExp(filterModel, 'i') }
+    if (filterCity)
+      matchQuery.city = { $regex: new RegExp(filterCity, 'i') }
+    if (filterAuctionStatus)
+      matchQuery.auctionStatus = { $regex: new RegExp(`^${filterAuctionStatus}$`, 'i') }
+    if (filterDealStatus)
+      matchQuery.dealStatus = { $regex: new RegExp(`^${filterDealStatus}$`, 'i') }
+    if (filterRA)
+      matchQuery.retailAssociate = { $regex: new RegExp(`^${filterRA}$`, 'i') }
 
     // If filtering by lead fields, intersect appointmentIds
     if (filterLeadSource || filterReferredBy || filterIE) {
       const leadFilter: Record<string, any> = {}
-      if (filterLeadSource) leadFilter.appointmentSource = { $regex: new RegExp(filterLeadSource, 'i') }
-      if (filterReferredBy) leadFilter.referenceName = { $regex: new RegExp(filterReferredBy, 'i') }
-      if (filterIE) leadFilter.allocatedTo = { $regex: new RegExp(filterIE, 'i') }
-      
+      if (filterLeadSource)
+        leadFilter.appointmentSource = { $regex: new RegExp(filterLeadSource, 'i') }
+      if (filterReferredBy)
+        leadFilter.referenceName = { $regex: new RegExp(filterReferredBy, 'i') }
+      if (filterIE)
+        leadFilter.allocatedTo = { $regex: new RegExp(filterIE, 'i') }
+
       const matchingLeads = await db.collection('telecallings').find(leadFilter, { projection: { appointmentId: 1 } }).toArray()
       const matchingApptIds = matchingLeads.map(l => l.appointmentId).filter(Boolean)
-      
+
       if (matchQuery.appointmentId) {
         matchQuery.appointmentId = { ...matchQuery.appointmentId, $in: matchingApptIds }
-      } else {
+      }
+      else {
         matchQuery.appointmentId = { $in: matchingApptIds }
       }
     }

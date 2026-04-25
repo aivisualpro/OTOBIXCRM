@@ -19,15 +19,18 @@ export default defineEventHandler(async (event) => {
 
     // Base filter
     const matchQuery: any = { auctionStatus: { $exists: true, $nin: ['', ' ', 'inspected'] } }
-    
+
     // Tab filtering from query params
     const tab = (queryParams.tab || '').toLowerCase()
     if (tab && tab !== 'all' && tab !== 'followup' && tab !== 'customer-activity') {
-      if (tab === 'ended') matchQuery.auctionStatus = 'liveAuctionEnded'
+      if (tab === 'ended')
+        matchQuery.auctionStatus = 'liveAuctionEnded'
       else matchQuery.auctionStatus = tab
-    } else if (tab === 'followup') {
+    }
+    else if (tab === 'followup') {
       matchQuery.dealStatus = 'Under Negotiation'
-    } else if (tab === 'customer-activity') {
+    }
+    else if (tab === 'customer-activity') {
       matchQuery.auctionStatus = { $in: ['live', 'otobuy'] }
     }
 
@@ -60,27 +63,37 @@ export default defineEventHandler(async (event) => {
     const filterLeadSource = String(queryParams.filter_leadSource || '').trim()
     const filterReferredBy = String(queryParams.filter_referredBy || '').trim()
     const filterIE = String(queryParams.filter_ie || '').trim()
-    
-    if (filterMake) matchQuery.make = { $regex: new RegExp(filterMake, 'i') }
-    if (filterModel) matchQuery.model = { $regex: new RegExp(filterModel, 'i') }
-    if (filterCity) matchQuery.city = { $regex: new RegExp(filterCity, 'i') }
-    if (filterAuctionStatus) matchQuery.auctionStatus = { $regex: new RegExp(`^${filterAuctionStatus}$`, 'i') }
-    if (filterDealStatus) matchQuery.dealStatus = { $regex: new RegExp(`^${filterDealStatus}$`, 'i') }
-    if (filterRA) matchQuery.retailAssociate = { $regex: new RegExp(`^${filterRA}$`, 'i') }
+
+    if (filterMake)
+      matchQuery.make = { $regex: new RegExp(filterMake, 'i') }
+    if (filterModel)
+      matchQuery.model = { $regex: new RegExp(filterModel, 'i') }
+    if (filterCity)
+      matchQuery.city = { $regex: new RegExp(filterCity, 'i') }
+    if (filterAuctionStatus)
+      matchQuery.auctionStatus = { $regex: new RegExp(`^${filterAuctionStatus}$`, 'i') }
+    if (filterDealStatus)
+      matchQuery.dealStatus = { $regex: new RegExp(`^${filterDealStatus}$`, 'i') }
+    if (filterRA)
+      matchQuery.retailAssociate = { $regex: new RegExp(`^${filterRA}$`, 'i') }
 
     // If filtering by lead fields, intersect appointmentIds
     if (filterLeadSource || filterReferredBy || filterIE) {
       const leadFilter: Record<string, any> = {}
-      if (filterLeadSource) leadFilter.appointmentSource = { $regex: new RegExp(filterLeadSource, 'i') }
-      if (filterReferredBy) leadFilter.referenceName = { $regex: new RegExp(filterReferredBy, 'i') }
-      if (filterIE) leadFilter.allocatedTo = { $regex: new RegExp(filterIE, 'i') }
-      
+      if (filterLeadSource)
+        leadFilter.appointmentSource = { $regex: new RegExp(filterLeadSource, 'i') }
+      if (filterReferredBy)
+        leadFilter.referenceName = { $regex: new RegExp(filterReferredBy, 'i') }
+      if (filterIE)
+        leadFilter.allocatedTo = { $regex: new RegExp(filterIE, 'i') }
+
       const matchingLeads = await db.collection('telecallings').find(leadFilter, { projection: { appointmentId: 1 } }).toArray()
       const matchingApptIds = matchingLeads.map(l => l.appointmentId).filter(Boolean)
-      
+
       if (matchQuery.appointmentId) {
         matchQuery.appointmentId = { ...matchQuery.appointmentId, $in: matchingApptIds }
-      } else {
+      }
+      else {
         matchQuery.appointmentId = { $in: matchingApptIds }
       }
     }
@@ -94,14 +107,14 @@ export default defineEventHandler(async (event) => {
           from: 'telecallings',
           localField: 'appointmentId',
           foreignField: 'appointmentId',
-          as: 'lead'
-        }
+          as: 'lead',
+        },
       },
       {
         $unwind: {
           path: '$lead',
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $facet: {
@@ -113,16 +126,17 @@ export default defineEventHandler(async (event) => {
           ras: [{ $group: { _id: { $toLower: '$retailAssociate' } } }],
           leadSources: [{ $group: { _id: { $toUpper: '$lead.appointmentSource' } } }],
           referredBys: [{ $group: { _id: { $toUpper: '$lead.referenceName' } } }],
-          ies: [{ $group: { _id: { $toLower: '$lead.allocatedTo' } } }]
-        }
-      }
+          ies: [{ $group: { _id: { $toLower: '$lead.allocatedTo' } } }],
+        },
+      },
     ]
 
     const result = await coll.aggregate(aggregationPipeline).toArray()
     const facets = result[0] || {}
 
     const formatFacet = (facetArr: any[]) => {
-      if (!facetArr) return []
+      if (!facetArr)
+        return []
       const items = facetArr
         .map(item => typeof item._id === 'string' ? item._id.trim() : item._id)
         .filter(id => id !== null && id !== undefined && id !== '')
@@ -138,10 +152,10 @@ export default defineEventHandler(async (event) => {
       ras: formatFacet(facets.ras),
       leadSources: formatFacet(facets.leadSources),
       referredBys: formatFacet(facets.referredBys),
-      ies: formatFacet(facets.ies)
+      ies: formatFacet(facets.ies),
     }
-
-  } catch (error: any) {
+  }
+  catch (error: any) {
     console.error('API Error in /cars/facets:', error)
     return createError({
       statusCode: 500,

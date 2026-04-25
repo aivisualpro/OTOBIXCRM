@@ -44,7 +44,7 @@ export const routeColumnsMap: Record<string, any[]> = {
     { key: 'allocatedTo', label: 'Inspected By' },
     { key: 'addedBy', label: 'Added By' },
     { key: 'createdAt', label: 'Created At', type: 'date' },
-    { key: 'qcBy', label: 'Qc By' }
+    { key: 'qcBy', label: 'Qc By' },
   ],
   'quality-approved': [
     { key: 'appointmentId', label: 'Appt. ID' },
@@ -68,7 +68,7 @@ export const routeColumnsMap: Record<string, any[]> = {
     { key: 'addedBy', label: 'Added By' },
     { key: 'createdAt', label: 'Created At', type: 'date' },
     { key: 'qcBy', label: 'Qc By' },
-    { key: 'approvedAt', label: 'Approved At', type: 'date' }
+    { key: 'approvedAt', label: 'Approved At', type: 'date' },
   ],
   'under-review': [
     { key: 'appointmentId', label: 'Appt. ID' },
@@ -89,9 +89,9 @@ export const routeColumnsMap: Record<string, any[]> = {
     { key: 'priority', label: 'Priority', type: 'badge' },
     { key: 'allocatedTo', label: 'Inspected By' },
     { key: 'addedBy', label: 'Added By' },
-    { key: 'createdAt', label: 'Created At', type: 'date' }
+    { key: 'createdAt', label: 'Created At', type: 'date' },
   ],
-  inspected: [
+  'inspected': [
     { key: 'appointmentId', label: 'Appt. ID' },
     { key: 'ownerName', label: 'Owner Name' },
     { key: 'customerContactNumber', label: 'Contact Number' },
@@ -110,7 +110,7 @@ export const routeColumnsMap: Record<string, any[]> = {
     { key: 'priority', label: 'Priority', type: 'badge' },
     { key: 'allocatedTo', label: 'Inspected By' },
     { key: 'addedBy', label: 'Added By' },
-    { key: 'createdAt', label: 'Created At', type: 'date' }
+    { key: 'createdAt', label: 'Created At', type: 'date' },
   ],
   're-inspection': [
     { key: 'appointmentId', label: 'Appt. ID' },
@@ -134,9 +134,9 @@ export const routeColumnsMap: Record<string, any[]> = {
     { key: 'addedBy', label: 'Added By' },
     { key: 'emailAddress', label: 'Created By' },
     { key: 'createdAt', label: 'Created At', type: 'date' },
-    { key: 'qcBy', label: 'Qc By' }
+    { key: 'qcBy', label: 'Qc By' },
   ],
-  cancelled: [
+  'cancelled': [
     { key: 'appointmentId', label: 'Appt. ID' },
     { key: 'ownerName', label: 'Owner Name' },
     { key: 'customerContactNumber', label: 'Contact Number' },
@@ -157,7 +157,7 @@ export const routeColumnsMap: Record<string, any[]> = {
     { key: 'allocatedTo', label: 'Inspected By' },
     { key: 'addedBy', label: 'Added By' },
     { key: 'emailAddress', label: 'Created By' },
-    { key: 'createdAt', label: 'Created At', type: 'date' }
+    { key: 'createdAt', label: 'Created At', type: 'date' },
   ],
   're-scheduled': [
     { key: 'appointmentId', label: 'Appt. ID' },
@@ -180,9 +180,9 @@ export const routeColumnsMap: Record<string, any[]> = {
     { key: 'allocatedTo', label: 'Inspected By' },
     { key: 'addedBy', label: 'Added By' },
     { key: 'emailAddress', label: 'Created By' },
-    { key: 'createdAt', label: 'Created At', type: 'date' }
+    { key: 'createdAt', label: 'Created At', type: 'date' },
   ],
-  scheduled: [
+  'scheduled': [
     { key: 'appointmentId', label: 'Appt. ID' },
     { key: 'ownerName', label: 'Owner Name' },
     { key: 'customerContactNumber', label: 'Contact Number' },
@@ -203,9 +203,9 @@ export const routeColumnsMap: Record<string, any[]> = {
     { key: 'allocatedTo', label: 'Inspected By' },
     { key: 'addedBy', label: 'Added By' },
     { key: 'emailAddress', label: 'Created By' },
-    { key: 'createdAt', label: 'Created At', type: 'date' }
+    { key: 'createdAt', label: 'Created At', type: 'date' },
   ],
-  pending: [
+  'pending': [
     { key: 'appointmentId', label: 'Appt. ID' },
     { key: 'ownerName', label: 'Owner Name' },
     { key: 'customerContactNumber', label: 'Contact Number' },
@@ -226,9 +226,9 @@ export const routeColumnsMap: Record<string, any[]> = {
     { key: 'allocatedTo', label: 'Inspected By' },
     { key: 'addedBy', label: 'Added By' },
     { key: 'emailAddress', label: 'Created By' },
-    { key: 'createdAt', label: 'Created At', type: 'date' }
+    { key: 'createdAt', label: 'Created At', type: 'date' },
   ],
-  all: [
+  'all': [
     { key: 'appointmentId', label: 'Appt. ID' },
     { key: 'ownerName', label: 'Owner Name' },
     { key: 'customerContactNumber', label: 'Contact Number' },
@@ -253,8 +253,8 @@ export const routeColumnsMap: Record<string, any[]> = {
     { key: 'emailAddress', label: 'Created By' },
     { key: 'createdAt', label: 'Created At', type: 'date' },
     { key: 'qcBy', label: 'Qc By' },
-    { key: 'approvedAt', label: 'Approved At', type: 'date' }
-  ]
+    { key: 'approvedAt', label: 'Approved At', type: 'date' },
+  ],
 }
 
 export const leadsFormFields = [

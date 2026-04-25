@@ -12,15 +12,16 @@ export default defineEventHandler(async (event) => {
   const rawUserData = getCookie(event, 'userData')
   let userEmail = ''
   let userRole = ''
-  
+
   if (rawUserData) {
     try {
       const decoded = JSON.parse(decodeURIComponent(rawUserData))
       userEmail = decoded.email || ''
       userRole = decoded.userRole || decoded.role || ''
-    } catch (e) {}
+    }
+    catch (e) {}
   }
-  
+
   if (!userRole) {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
@@ -51,7 +52,8 @@ export default defineEventHandler(async (event) => {
     try {
       // Role-based filtering
       if (userRole === 'Retailer') {
-        if (changeEvent.collection === 'users' || changeEvent.collection === 'workspaces') return
+        if (changeEvent.collection === 'users' || changeEvent.collection === 'workspaces')
+          return
         // Ideally we filter by retailAssociate but updates may not contain that field
       }
 

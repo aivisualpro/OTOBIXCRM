@@ -43,7 +43,15 @@ async function fetchBidStats() {
 }
 
 const { activeTab, searchCars, cancelSearch, loadMore, hasMore, isLoadingMore, totalCount, setSimilarSearchCtx, advancedFilters = ref({}), setAdvancedFilters = () => {}, facets = ref({
-  makes: [], models: [], cities: [], auctionStatuses: [], dealStatuses: [], leadSources: [], referredBys: [], ies: [], ras: []
+  makes: [],
+  models: [],
+  cities: [],
+  auctionStatuses: [],
+  dealStatuses: [],
+  leadSources: [],
+  referredBys: [],
+  ies: [],
+  ras: [],
 }) } = useAuctionsApi()
 
 const { makes, getModels, fetchCarDropdowns } = useCarDropdowns()
@@ -53,21 +61,24 @@ const router = useRouter()
 const route = useRoute()
 
 function handleSimilarSearch(car: any) {
-  const clean = (str: string) => String(str || '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/(^-|-$)/g, '').toLowerCase()
-  
+  const clean = (str: string) => String(str || '').replace(/[^a-z0-9]+/gi, '-').replace(/(^-|-$)/g, '').toLowerCase()
+
   const yearStr = String(car.yearMonthOfManufacture || '')
   let year = ''
   const d = new Date(yearStr)
-  if (!isNaN(d.getTime())) year = String(d.getFullYear())
+  if (!isNaN(d.getTime())) {
+    year = String(d.getFullYear())
+  }
   else {
     const m = yearStr.match(/\d{4}/)
-    if (m) year = m[0]
+    if (m)
+      year = m[0]
   }
 
   setSimilarSearchCtx({
     make: car.make,
     model: car.model,
-    year: year
+    year,
   })
 
   let yearDisplaySlug = year
@@ -102,19 +113,22 @@ const localFilters = ref({
   leadSource: '',
   referredBy: '',
   ie: '',
-  ra: ''
+  ra: '',
 })
 
 const isAdvancedFilterOpen = ref(false)
 
+const { allUsers, fetchAllUsers } = usePeopleApi()
+
 const userOptions = computed(() => {
   const uniqueRA = facets.value?.ras || []
   const uniqueIE = facets.value?.ies || []
-  
+
   const emails = Array.from(new Set([...uniqueRA, ...uniqueIE]))
-  return emails.map(email => {
+  return emails.map((email) => {
     const u = allUsers.value.find(user => user.email === email)
-    if (u) return { label: u.userName ? `${u.userName} (${u.userRole || 'User'})` : u.email, value: u.email }
+    if (u)
+      return { label: u.userName ? `${u.userName} (${u.userRole || 'User'})` : u.email, value: u.email }
     return { label: email as string, value: email as string }
   }).sort((a, b) => a.label.localeCompare(b.label))
 })
@@ -144,12 +158,12 @@ function clearAdvancedFilters() {
 
 watch(localFilters, (newVal) => {
   const filtersToApply = { ...newVal }
-  Object.keys(filtersToApply).forEach(k => {
+  Object.keys(filtersToApply).forEach((k) => {
     if (filtersToApply[k as keyof typeof filtersToApply] === 'ALL') {
       filtersToApply[k as keyof typeof filtersToApply] = ''
     }
   })
-  
+
   let changed = false
   for (const k of Object.keys(filtersToApply)) {
     if (filtersToApply[k as keyof typeof filtersToApply] !== ((advancedFilters.value as any)[k] || '')) {
@@ -157,7 +171,7 @@ watch(localFilters, (newVal) => {
       break
     }
   }
-  
+
   if (changed) {
     setAdvancedFilters(filtersToApply)
   }
@@ -192,8 +206,6 @@ watch(globalSearch, (newVal) => {
     }
   }, 400)
 })
-
-const { allUsers, fetchAllUsers } = usePeopleApi()
 
 function resolveUserNameByEmail(email: string) {
   if (!email)
@@ -410,50 +422,59 @@ function shareLink() {
 
 async function shareCarToWhatsApp(car: any) {
   const imageUrl = getFirstImage(car) || ''
-  
+
   const parts = []
   parts.push(`🚗 *${car.make || ''} ${car.model || ''}*`)
-  if (car.variant) parts.push(`_${car.variant}_`)
+  if (car.variant)
+    parts.push(`_${car.variant}_`)
   parts.push('')
-  
+
   parts.push(`*Specs:*`)
-  if (car.registrationDate) parts.push(`• Reg: ${formatYear(car.registrationDate)}`)
-  if (car.yearMonthOfManufacture) parts.push(`• Mfg: ${formatYear(car.yearMonthOfManufacture)}`)
-  if (car.odometerReadingInKms) parts.push(`• KMS: ${Number(car.odometerReadingInKms).toLocaleString()}`)
-  if (car.fuelType) parts.push(`• Fuel: ${car.fuelType}`)
-  if (car.ownerSerialNumber) parts.push(`• Owner: ${car.ownerSerialNumber}`)
-  if (car.registeredRto || car.registrationState) parts.push(`• Loc: ${car.registeredRto || ''} ${car.registrationState || ''}`.trim())
-  
+  if (car.registrationDate)
+    parts.push(`• Reg: ${formatYear(car.registrationDate)}`)
+  if (car.yearMonthOfManufacture)
+    parts.push(`• Mfg: ${formatYear(car.yearMonthOfManufacture)}`)
+  if (car.odometerReadingInKms)
+    parts.push(`• KMS: ${Number(car.odometerReadingInKms).toLocaleString()}`)
+  if (car.fuelType)
+    parts.push(`• Fuel: ${car.fuelType}`)
+  if (car.ownerSerialNumber)
+    parts.push(`• Owner: ${car.ownerSerialNumber}`)
+  if (car.registeredRto || car.registrationState)
+    parts.push(`• Loc: ${car.registeredRto || ''} ${car.registrationState || ''}`.trim())
+
   if (car.priceDiscovery) {
     parts.push('')
     parts.push(`💰 *Expected Price:* ${formatCurrency(car.priceDiscovery)}`)
   }
-  
+
   const text = parts.join('\n')
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
-  
+
   if (isMobile && imageUrl && navigator.share) {
     try {
       const response = await fetch(imageUrl)
       const blob = await response.blob()
       const ext = imageUrl.split('.').pop()?.split('?')[0] || 'jpg'
       const file = new File([blob], `${car.make}_${car.model}.${ext}`, { type: blob.type })
-      
+
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
           title: `${car.make} ${car.model}`,
-          text: text
+          text,
         })
         return
       }
-    } catch (err) {
+    }
+    catch (err) {
       console.error('Native share failed:', err)
     }
-  } else if (!isMobile && imageUrl && navigator.clipboard) {
+  }
+  else if (!isMobile && imageUrl && navigator.clipboard) {
     try {
       const toastId = toast.loading('Copying image to clipboard...')
-      
+
       await new Promise<void>((resolve, reject) => {
         const img = new Image()
         img.crossOrigin = 'anonymous'
@@ -462,17 +483,20 @@ async function shareCarToWhatsApp(car: any) {
           canvas.width = img.width
           canvas.height = img.height
           const ctx = canvas.getContext('2d')
-          if (!ctx) return reject(new Error('No canvas context'))
-          
+          if (!ctx)
+            return reject(new Error('No canvas context'))
+
           ctx.drawImage(img, 0, 0)
           canvas.toBlob(async (blob) => {
-            if (!blob) return reject(new Error('Blob creation failed'))
+            if (!blob)
+              return reject(new Error('Blob creation failed'))
             try {
               await navigator.clipboard.write([
-                new ClipboardItem({ 'image/png': blob })
+                new ClipboardItem({ 'image/png': blob }),
               ])
               resolve()
-            } catch (err) {
+            }
+            catch (err) {
               reject(err)
             }
           }, 'image/png')
@@ -480,15 +504,16 @@ async function shareCarToWhatsApp(car: any) {
         img.onerror = () => reject(new Error('Failed to load image for clipboard'))
         img.src = imageUrl
       })
-      
+
       toast.dismiss(toastId)
       toast.success('Image copied! Press Cmd+V in WhatsApp to attach the photo.')
-    } catch (err) {
+    }
+    catch (err) {
       console.error('Clipboard copy failed:', err)
       toast.error('Could not copy image automatically. You may need to attach it manually.')
     }
   }
-  
+
   const fallbackText = encodeURIComponent(text)
   window.open(`https://wa.me/?text=${fallbackText}`, '_blank')
 }
@@ -538,15 +563,19 @@ async function fetchAndShowBids(car: any) {
           </PopoverTrigger>
           <PopoverContent align="start" class="w-[400px] p-4 rounded-xl shadow-2xl border border-border/50 bg-background/95 backdrop-blur-xl z-[200]">
             <div class="flex items-center justify-between mb-4">
-              <h4 class="font-semibold text-sm">Advanced Filters</h4>
-              <Button variant="ghost" size="sm" class="h-6 px-2 text-xs text-muted-foreground hover:text-foreground" @click="clearAdvancedFilters">Clear All</Button>
+              <h4 class="font-semibold text-sm">
+                Advanced Filters
+              </h4>
+              <Button variant="ghost" size="sm" class="h-6 px-2 text-xs text-muted-foreground hover:text-foreground" @click="clearAdvancedFilters">
+                Clear All
+              </Button>
             </div>
             <div class="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1">
               <div class="space-y-1.5">
                 <Label class="text-xs font-medium text-muted-foreground">Make</Label>
                 <SearchableSelect
                   v-model="localFilters.make"
-                  :options="[{label: 'Any Make', value: 'ALL'}, ...viewMakes.map((m: any) => ({label: m, value: m}))]"
+                  :options="[{ label: 'Any Make', value: 'ALL' }, ...viewMakes.map((m: any) => ({ label: m, value: m }))]"
                   placeholder="Any Make"
                   :use-pills="false"
                 />
@@ -555,7 +584,7 @@ async function fetchAndShowBids(car: any) {
                 <Label class="text-xs font-medium text-muted-foreground">Model</Label>
                 <SearchableSelect
                   v-model="localFilters.model"
-                  :options="[{label: 'Any Model', value: 'ALL'}, ...viewModels.map((m: any) => ({label: m, value: m}))]"
+                  :options="[{ label: 'Any Model', value: 'ALL' }, ...viewModels.map((m: any) => ({ label: m, value: m }))]"
                   placeholder="Any Model"
                   :disabled="!localFilters.make || localFilters.make === 'ALL'"
                   :use-pills="false"
@@ -565,7 +594,7 @@ async function fetchAndShowBids(car: any) {
                 <Label class="text-xs font-medium text-muted-foreground">City</Label>
                 <SearchableSelect
                   v-model="localFilters.city"
-                  :options="[{label: 'Any City', value: 'ALL'}, ...viewCities.map((m: any) => ({label: m, value: m}))]"
+                  :options="[{ label: 'Any City', value: 'ALL' }, ...viewCities.map((m: any) => ({ label: m, value: m }))]"
                   placeholder="Any City"
                   :use-pills="false"
                 />
@@ -574,7 +603,7 @@ async function fetchAndShowBids(car: any) {
                 <Label class="text-xs font-medium text-muted-foreground">Auction Status</Label>
                 <SearchableSelect
                   v-model="localFilters.auctionStatus"
-                  :options="[{label: 'Any Status', value: 'ALL'}, ...viewAuctionStatuses.map((m: any) => ({label: m, value: m}))]"
+                  :options="[{ label: 'Any Status', value: 'ALL' }, ...viewAuctionStatuses.map((m: any) => ({ label: m, value: m }))]"
                   placeholder="Any Status"
                   :use-pills="false"
                 />
@@ -583,7 +612,7 @@ async function fetchAndShowBids(car: any) {
                 <Label class="text-xs font-medium text-muted-foreground">Deal Status</Label>
                 <SearchableSelect
                   v-model="localFilters.dealStatus"
-                  :options="[{label: 'Any Status', value: 'ALL'}, ...viewDealStatuses.map((m: any) => ({label: m, value: m}))]"
+                  :options="[{ label: 'Any Status', value: 'ALL' }, ...viewDealStatuses.map((m: any) => ({ label: m, value: m }))]"
                   placeholder="Any Status"
                   :use-pills="false"
                 />
@@ -592,7 +621,7 @@ async function fetchAndShowBids(car: any) {
                 <Label class="text-xs font-medium text-muted-foreground">Lead Source</Label>
                 <SearchableSelect
                   v-model="localFilters.leadSource"
-                  :options="[{label: 'Any Source', value: 'ALL'}, ...viewLeadSources.map((m: any) => ({label: m, value: m}))]"
+                  :options="[{ label: 'Any Source', value: 'ALL' }, ...viewLeadSources.map((m: any) => ({ label: m, value: m }))]"
                   placeholder="Any Source"
                   :use-pills="false"
                 />
@@ -601,7 +630,7 @@ async function fetchAndShowBids(car: any) {
                 <Label class="text-xs font-medium text-muted-foreground">Referred By</Label>
                 <SearchableSelect
                   v-model="localFilters.referredBy"
-                  :options="[{label: 'Any Referrer', value: 'ALL'}, ...viewReferredBys.map((m: any) => ({label: m, value: m}))]"
+                  :options="[{ label: 'Any Referrer', value: 'ALL' }, ...viewReferredBys.map((m: any) => ({ label: m, value: m }))]"
                   placeholder="Any Referrer"
                   :use-pills="false"
                 />
@@ -610,7 +639,7 @@ async function fetchAndShowBids(car: any) {
                 <Label class="text-xs font-medium text-muted-foreground">IE (Inspector)</Label>
                 <SearchableSelect
                   v-model="localFilters.ie"
-                  :options="[{label: 'Any IE', value: 'ALL'}, ...viewIEs]"
+                  :options="[{ label: 'Any IE', value: 'ALL' }, ...viewIEs]"
                   placeholder="Any IE"
                   :use-pills="false"
                 />
@@ -619,7 +648,7 @@ async function fetchAndShowBids(car: any) {
                 <Label class="text-xs font-medium text-muted-foreground">RA (Associate)</Label>
                 <SearchableSelect
                   v-model="localFilters.ra"
-                  :options="[{label: 'Any RA', value: 'ALL'}, ...viewRAs]"
+                  :options="[{ label: 'Any RA', value: 'ALL' }, ...viewRAs]"
                   placeholder="Any RA"
                   :use-pills="false"
                 />
@@ -814,12 +843,11 @@ async function fetchAndShowBids(car: any) {
               </div>
             </TableCell>
             <TableCell v-if="!['ended', 'removed', 'sold', 'otobuy'].includes(activeTab)" class="whitespace-nowrap text-xs">
-              <Badge v-if="car.auctionStatus === 'live' && car.auctionEndTime" variant="outline" class="font-bold tracking-wide bg-emerald-800 text-white border-transparent uppercase text-[10px]">
-                <span class="size-1.5 rounded-full mr-1.5 bg-red-500 animate-pulse" />
+              <Badge v-if="car.auctionStatus === 'live' && car.auctionEndTime" variant="outline" class="font-bold tracking-wide bg-[#EB4C4C] text-white border-transparent uppercase text-[10px] tabular-nums w-[84px] justify-center">
                 {{ formatCountdown(car.auctionEndTime) }}
               </Badge>
-              <Badge v-else variant="outline" class="font-bold uppercase tracking-wider text-[10px]" :class="getAuctionStatusColor(car.auctionStatus)">
-                {{ car.auctionStatus || '—' }}
+              <Badge v-else variant="outline" class="font-bold uppercase tracking-wider text-[10px] w-[84px] justify-center" :class="getAuctionStatusColor(car.auctionStatus)">
+                {{ car.auctionStatus?.toLowerCase() === 'liveauctionended' ? 'Ended' : (car.auctionStatus || '—') }}
               </Badge>
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap font-medium">

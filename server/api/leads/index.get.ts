@@ -139,7 +139,7 @@ export default defineEventHandler(async (event) => {
         ],
       })
     }
-    
+
     console.log(`[API:leads] tab: ${query.tab} limit: ${limit} search: ${search} filter:`, JSON.stringify(filter))
 
     // Determine sort
@@ -203,28 +203,32 @@ export default defineEventHandler(async (event) => {
     if (appointmentIds.length > 0) {
       const carsData = await db.collection('cars').find(
         { appointmentId: { $in: appointmentIds } },
-        { projection: { 
-            appointmentId: 1, 
-            inspectionDate: 1, 
-            qcBy: 1,
-            registrationNumber: 1,
-            timestamp: 1,
-            approvedAt: 1
-          } 
-        }
+        { projection: {
+          appointmentId: 1,
+          inspectionDate: 1,
+          qcBy: 1,
+          registrationNumber: 1,
+          timestamp: 1,
+          approvedAt: 1,
+        } },
       ).toArray()
-      
+
       const carsMap = new Map()
       carsData.forEach((c: any) => carsMap.set(c.appointmentId, c))
-      
+
       finalData.forEach((d: any) => {
         const car = carsMap.get(d.appointmentId)
         if (car) {
-          if (car.inspectionDate) d.inspectionDate = car.inspectionDate
-          if (car.qcBy) d.qcBy = car.qcBy
-          if (car.registrationNumber) d.registrationNumber = car.registrationNumber
-          if (car.timestamp) d.timestamp = car.timestamp
-          if (car.approvedAt) d.approvedAt = car.approvedAt
+          if (car.inspectionDate)
+            d.inspectionDate = car.inspectionDate
+          if (car.qcBy)
+            d.qcBy = car.qcBy
+          if (car.registrationNumber)
+            d.registrationNumber = car.registrationNumber
+          if (car.timestamp)
+            d.timestamp = car.timestamp
+          if (car.approvedAt)
+            d.approvedAt = car.approvedAt
         }
       })
     }

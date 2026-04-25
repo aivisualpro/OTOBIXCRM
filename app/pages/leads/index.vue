@@ -46,7 +46,6 @@ watch(tabParam, (newTab) => {
     setTab(newTab)
   }
 }, { immediate: true })
-
 </script>
 
 <template>

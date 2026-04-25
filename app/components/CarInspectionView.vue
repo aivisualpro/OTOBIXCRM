@@ -465,7 +465,7 @@ async function approveLead() {
   editForm.value.approvalDate = now.toISOString()
   editForm.value.approvalTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   editForm.value.approvedBy = currentUser?.userName || currentUser?.fullName || currentUser?.email || 'QC User'
-  
+
   await saveQC()
   // Note: approveLead() without inline usually doesn't prompt for auction, 
   // but if needed we can trigger the modal here too.

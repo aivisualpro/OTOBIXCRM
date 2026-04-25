@@ -199,7 +199,7 @@ export function useWorkspace() {
       const group = (groups[item.group] ??= [])
 
       let link = ws.defaultRoutes?.[item.id] || item.link
-      
+
       // Auto-migrate legacy DB paths (e.g. /retail/all -> /retail?tab=all)
       if (link && typeof link === 'string') {
         const legacyMatch = link.match(/^(\/retail|\/sales|\/auctions|\/leads|\/people)\/([^/?]+)$/)

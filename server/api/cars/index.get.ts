@@ -57,18 +57,22 @@ export default defineEventHandler(async (event) => {
       const sMake = queryParams.similarMake ? String(queryParams.similarMake) : ''
       const sModel = queryParams.similarModel ? String(queryParams.similarModel) : ''
       const sYearStr = queryParams.similarYear ? String(queryParams.similarYear) : ''
-      
-      if (sMake) filter.make = sMake
-      if (sModel) filter.model = sModel
-      
+
+      if (sMake)
+        filter.make = sMake
+      if (sModel)
+        filter.model = sModel
+
       let baseYear = parseInt(sYearStr)
       if (isNaN(baseYear) && sYearStr) {
         const d = new Date(sYearStr)
         if (!isNaN(d.getTime())) {
           baseYear = d.getFullYear()
-        } else {
+        }
+        else {
           const yMatch = sYearStr.match(/\d{4}/)
-          if (yMatch) baseYear = parseInt(yMatch[0])
+          if (yMatch)
+            baseYear = parseInt(yMatch[0])
         }
       }
       if (!isNaN(baseYear) && baseYear > 1900) {
@@ -78,7 +82,7 @@ export default defineEventHandler(async (event) => {
         const endYear = baseYear + 1
         filter.yearMonthOfManufacture = {
           $gte: new Date(`${startYear}-01-01T00:00:00.000Z`),
-          $lte: new Date(`${endYear}-12-31T23:59:59.999Z`)
+          $lte: new Date(`${endYear}-12-31T23:59:59.999Z`),
         }
       }
     } // 'all' requires no additional filter
@@ -112,27 +116,37 @@ export default defineEventHandler(async (event) => {
     const filterLeadSource = String(queryParams.filter_leadSource || '').trim()
     const filterReferredBy = String(queryParams.filter_referredBy || '').trim()
     const filterIE = String(queryParams.filter_ie || '').trim()
-    
-    if (filterMake) filter.make = { $regex: new RegExp(filterMake, 'i') }
-    if (filterModel) filter.model = { $regex: new RegExp(filterModel, 'i') }
-    if (filterCity) filter.city = { $regex: new RegExp(filterCity, 'i') }
-    if (filterAuctionStatus) filter.auctionStatus = { $regex: new RegExp(`^${filterAuctionStatus}$`, 'i') }
-    if (filterDealStatus) filter.dealStatus = { $regex: new RegExp(`^${filterDealStatus}$`, 'i') }
-    if (filterRA) filter.retailAssociate = { $regex: new RegExp(`^${filterRA}$`, 'i') }
+
+    if (filterMake)
+      filter.make = { $regex: new RegExp(filterMake, 'i') }
+    if (filterModel)
+      filter.model = { $regex: new RegExp(filterModel, 'i') }
+    if (filterCity)
+      filter.city = { $regex: new RegExp(filterCity, 'i') }
+    if (filterAuctionStatus)
+      filter.auctionStatus = { $regex: new RegExp(`^${filterAuctionStatus}$`, 'i') }
+    if (filterDealStatus)
+      filter.dealStatus = { $regex: new RegExp(`^${filterDealStatus}$`, 'i') }
+    if (filterRA)
+      filter.retailAssociate = { $regex: new RegExp(`^${filterRA}$`, 'i') }
 
     // If filtering by lead fields, intersect appointmentIds
     if (filterLeadSource || filterReferredBy || filterIE) {
       const leadFilter: Record<string, any> = {}
-      if (filterLeadSource) leadFilter.appointmentSource = { $regex: new RegExp(filterLeadSource, 'i') }
-      if (filterReferredBy) leadFilter.referenceName = { $regex: new RegExp(filterReferredBy, 'i') }
-      if (filterIE) leadFilter.allocatedTo = { $regex: new RegExp(filterIE, 'i') }
-      
+      if (filterLeadSource)
+        leadFilter.appointmentSource = { $regex: new RegExp(filterLeadSource, 'i') }
+      if (filterReferredBy)
+        leadFilter.referenceName = { $regex: new RegExp(filterReferredBy, 'i') }
+      if (filterIE)
+        leadFilter.allocatedTo = { $regex: new RegExp(filterIE, 'i') }
+
       const matchingLeads = await db.collection('telecallings').find(leadFilter, { projection: { appointmentId: 1 } }).toArray()
       const matchingApptIds = matchingLeads.map(l => l.appointmentId).filter(Boolean)
-      
+
       if (filter.appointmentId) {
         filter.appointmentId = { ...filter.appointmentId, $in: matchingApptIds }
-      } else {
+      }
+      else {
         filter.appointmentId = { $in: matchingApptIds }
       }
     }
@@ -202,38 +216,38 @@ export default defineEventHandler(async (event) => {
             effectiveSortDate: {
               $let: {
                 vars: {
-                  parsedApp: { $convert: { input: "$approvalDate", to: "date", onError: null, onNull: null } },
-                  parsedAuc: { $convert: { input: "$auctionStartTime", to: "date", onError: null, onNull: null } },
-                  parsedCre: { $convert: { input: "$createdAt", to: "date", onError: null, onNull: null } },
-                  fallbackId: { $convert: { input: "$_id", to: "date", onError: null, onNull: null } }
+                  parsedApp: { $convert: { input: '$approvalDate', to: 'date', onError: null, onNull: null } },
+                  parsedAuc: { $convert: { input: '$auctionStartTime', to: 'date', onError: null, onNull: null } },
+                  parsedCre: { $convert: { input: '$createdAt', to: 'date', onError: null, onNull: null } },
+                  fallbackId: { $convert: { input: '$_id', to: 'date', onError: null, onNull: null } },
                 },
                 in: {
                   $cond: {
-                    if: { $ne: ["$$parsedApp", null] },
-                    then: "$$parsedApp",
+                    if: { $ne: ['$$parsedApp', null] },
+                    then: '$$parsedApp',
                     else: {
                       $cond: {
-                        if: { $ne: ["$$parsedAuc", null] },
-                        then: "$$parsedAuc",
+                        if: { $ne: ['$$parsedAuc', null] },
+                        then: '$$parsedAuc',
                         else: {
                           $cond: {
-                            if: { $ne: ["$$parsedCre", null] },
-                            then: "$$parsedCre",
-                            else: "$$fallbackId"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
+                            if: { $ne: ['$$parsedCre', null] },
+                            then: '$$parsedCre',
+                            else: '$$fallbackId',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
         { $sort: { effectiveSortDate: sortDir, _id: -1 } },
         { $skip: skip },
         { $limit: limit },
-        { $project: { ...projection, frontMainImages: { $cond: { if: { $isArray: "$frontMainImages" }, then: { $slice: ["$frontMainImages", 1] }, else: "$frontMainImages" } } } }
+        { $project: { ...projection, frontMainImages: { $cond: { if: { $isArray: '$frontMainImages' }, then: { $slice: ['$frontMainImages', 1] }, else: '$frontMainImages' } } } },
       ]
 
       const [aggResult, count] = await Promise.all([
@@ -242,7 +256,8 @@ export default defineEventHandler(async (event) => {
       ])
       cars = aggResult
       totalCount = count
-    } else {
+    }
+    else {
       const sortParams: any = { [sortField]: sortDir }
       if (sortField !== '_id')
         sortParams._id = -1 // secondary sort to stabilize
@@ -266,7 +281,7 @@ export default defineEventHandler(async (event) => {
       if (autoBids.length > 0) {
         const userIds = [...new Set(autoBids.map(b => b.userId).filter(Boolean))]
         const queryUserIds = userIds.flatMap(id => [id, String(id).length === 24 ? new ObjectId(String(id)) : null]).filter(Boolean)
-        
+
         const autoBidUsers = await db.collection('users')
           .find({ _id: { $in: queryUserIds } })
           .project({ shopName: 1, dealershipName: 1, fullName: 1, firstName: 1, lastName: 1, assignedKam: 1 })
@@ -274,7 +289,7 @@ export default defineEventHandler(async (event) => {
 
         const kamIds = [...new Set(autoBidUsers.map(u => u.assignedKam).filter(Boolean))]
         const queryKamIds = kamIds.flatMap(id => [id, String(id).length === 24 ? new ObjectId(String(id)) : null]).filter(Boolean)
-        
+
         let autoBidKams: any[] = []
         if (queryKamIds.length > 0) {
           autoBidKams = await db.collection('kams')
@@ -283,14 +298,14 @@ export default defineEventHandler(async (event) => {
             .toArray()
         }
 
-        autoBids = autoBids.map(bid => {
+        autoBids = autoBids.map((bid) => {
           const user = autoBidUsers.find(u => String(u._id) === String(bid.userId))
           if (user) {
             const kam = autoBidKams.find(k => String(k._id) === String(user.assignedKam))
             return {
               ...bid,
               dealerName: user.shopName || user.dealershipName || user.fullName || [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Unknown Dealer',
-              kamName: kam ? (kam.userName || kam.name || kam.fullName) : user.assignedKam
+              kamName: kam ? (kam.userName || kam.name || kam.fullName) : user.assignedKam,
             }
           }
           return bid
@@ -305,7 +320,7 @@ export default defineEventHandler(async (event) => {
       relatedLeads = await db.collection('telecallings')
         .find(
           { appointmentId: { $in: apptIds } },
-          { projection: { appointmentId: 1, appointmentSource: 1, referenceName: 1, allocatedTo: 1 } }
+          { projection: { appointmentId: 1, appointmentSource: 1, referenceName: 1, allocatedTo: 1 } },
         )
         .toArray()
     }

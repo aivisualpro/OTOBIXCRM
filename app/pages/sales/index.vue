@@ -19,7 +19,7 @@ const tabParam = computed(() => String(route.query.tab || ''))
 if (!tabParam.value || (!tabParam.value.startsWith('similar-search') && !navItems.value.includes(tabParam.value))) {
   let fallback = 'all'
   const ws = activeWorkspace.value
-  
+
   if (ws?.defaultRoutes?.sales) {
     fallback = ws.defaultRoutes.sales.split('=').pop() || 'all'
   }

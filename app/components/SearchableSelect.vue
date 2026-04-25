@@ -11,7 +11,7 @@ const props = withDefaults(defineProps<{
   className?: string
   usePills?: boolean
 }>(), {
-  usePills: true
+  usePills: true,
 })
 
 const emit = defineEmits<{
@@ -51,7 +51,9 @@ function handleSelect(val: string) {
           <Icon :name="getConditionStyle(selectedLabel).icon" class="size-3.5 shrink-0" />
           <span class="text-[12px] font-bold leading-tight truncate flex-1 text-left">{{ selectedLabel }}</span>
         </div>
-        <div v-else class="truncate text-sm flex-1 text-left text-foreground">{{ selectedLabel }}</div>
+        <div v-else class="truncate text-sm flex-1 text-left text-foreground">
+          {{ selectedLabel }}
+        </div>
         <Icon name="i-lucide-chevrons-up-down" class="ml-2 size-4 shrink-0 opacity-50" />
       </Button>
     </PopoverTrigger>

@@ -43,8 +43,8 @@ Fix: whitelist the fields you actually need (`id`, `userName`, `email`, `userRol
 ### 5. NoSQL injection on every search field
 Most list endpoints feed user input straight into `$regex`:
 ```ts
-filter.make = { $regex: new RegExp(filterMake, 'i') }       // cars/index.get.ts
-{ ownerName: { $regex: search, $options: 'i' } }            // leads/index.get.ts
+filter.make = { $regex: new RegExp(filterMake, 'i') } // cars/index.get.ts
+const q = { ownerName: { $regex: search, $options: 'i' } } // leads/index.get.ts
 filter.$and.push({ addedBy: { $regex: filterAddedBy, $options: 'i' } })
 ```
 Crafted regex like `^(.*a){50}$` against a large collection causes a ReDoS that pins your Mongo CPU. The login regex in `users/login.post.ts` is the only one that escapes its input. Apply the same `replace(/[.*+?^${}()|[\]\\]/g, '\\$&')` everywhere before passing user strings into `$regex`.
@@ -109,7 +109,8 @@ The leads list and counts endpoints reimplement the same filter parser. Any chan
 ### 20. `cars/update.put.ts` accepts arbitrary `_push` payloads
 ```ts
 const { _id, id, _push, ...updateFields } = body
-if (_push) updateQuery.$push = _push
+if (_push)
+  updateQuery.$push = _push
 ```
 That's "push anything into any array on a car document," driven by the request body. Whitelist allowed `$push` fields.
 
