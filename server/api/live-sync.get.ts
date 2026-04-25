@@ -9,6 +9,22 @@
  * replays missed events from the in-memory ring buffer before streaming live.
  */
 export default defineEventHandler(async (event) => {
+  const rawUserData = getCookie(event, 'userData')
+  let userEmail = ''
+  let userRole = ''
+  
+  if (rawUserData) {
+    try {
+      const decoded = JSON.parse(decodeURIComponent(rawUserData))
+      userEmail = decoded.email || ''
+      userRole = decoded.userRole || decoded.role || ''
+    } catch (e) {}
+  }
+  
+  if (!userRole) {
+    throw createError({ statusCode: 401, message: 'Unauthorized' })
+  }
+
   // Prevent Node.js from tearing down the long-lived SSE socket
   if (event.node.req.socket) {
     event.node.req.socket.setTimeout(0)
@@ -23,34 +39,25 @@ export default defineEventHandler(async (event) => {
     'X-Accel-Buffering': 'no', // Disable Nginx buffering
   })
 
-  const currentSeq = getEventSequence()
-
-  // Check if client is reconnecting and missed events
-  const lastEventIdHeader = event.node.req.headers['last-event-id']
-  const lastEventId = lastEventIdHeader ? Number(lastEventIdHeader) : 0
-
-  // Send initial connection event with current sequence and timestamps
+  // Send initial connection event with timestamps
   const initData = JSON.stringify({
     type: 'connected',
-    currentVersion: currentSeq,
     timestamps: getLastChangeTimestamps(),
   })
-  event.node.res.write(`id: ${currentSeq}\ndata: ${initData}\n\n`)
-
-  // Replay missed events from ring buffer (if client reconnected)
-  if (lastEventId > 0 && lastEventId < currentSeq) {
-    const missed = getEventsSince(lastEventId)
-    for (const missedEvent of missed) {
-      const payload = JSON.stringify({ type: 'change', ...missedEvent })
-      event.node.res.write(`id: ${missedEvent.eventId}\ndata: ${payload}\n\n`)
-    }
-  }
+  event.node.res.write(`data: ${initData}\n\n`)
 
   // Subscribe to live change events
   const unsubscribe = onDataChange((changeEvent) => {
     try {
+      // Role-based filtering
+      if (userRole === 'Retailer') {
+        if (changeEvent.collection === 'users' || changeEvent.collection === 'workspaces') return
+        // Ideally we filter by retailAssociate but updates may not contain that field
+      }
+
       const payload = JSON.stringify({ type: 'change', ...changeEvent })
-      event.node.res.write(`id: ${changeEvent.eventId}\ndata: ${payload}\n\n`)
+      // We no longer send an `id:` field to avoid cross-instance eventId collisions on serverless
+      event.node.res.write(`data: ${payload}\n\n`)
     }
     catch {
       // Connection closed — will be cleaned up below

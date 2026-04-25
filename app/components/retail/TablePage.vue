@@ -412,7 +412,7 @@ function cancelFollowup() {
 
 async function updateCarField(car: any, fieldKey: string, newValue: any, overrideOldValue?: any) {
   try {
-    const oldVal = overrideOldValue !== undefined ? overrideOldValue : car[fieldKey]
+    const oldVal = arguments.length > 3 ? overrideOldValue : car[fieldKey]
     if (oldVal === newValue)
       return
     const log = buildLog(fieldKey, newValue, oldVal)
@@ -622,6 +622,7 @@ function getRetailOtobuyOffer(car: any): number {
 }
 
 function getSimulatedNetBid(car: any): number {
+  simulationTrigger.value // Track dependency
   const baseBid = Number(car.highestBid) || 0
   if (!baseBid)
     return 0
@@ -638,6 +639,26 @@ function getSimulatedNetBid(car: any): number {
   return Math.floor(netBid / 1000) * 1000
 }
 
+function getInflatedCep(car: any): number {
+  const basePrice = Number(car.customerExpectedPrice || car.cep || 0)
+  if (!basePrice)
+    return 0
+
+  const fixedMarginPct = Number(car.fixedMargin || 0)
+  const varMarginStr = String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')
+  const varMarginPct = Number(varMarginStr) || 0
+
+  const rawCep = basePrice + (basePrice * fixedMarginPct / 100) + (basePrice * varMarginPct / 100)
+  return Math.ceil(rawCep / 1000) * 1000
+}
+
+const simulationTrigger = ref(0)
+
+function hasSimulation(car: any) {
+  simulationTrigger.value // Track dependency
+  return car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''
+}
+
 function startSimulation(car: any) {
   if (car.marginSimulation === undefined || car.marginSimulation === null || car.marginSimulation === '') {
     const fixedMarginPct = Number(car.fixedMargin || 0)
@@ -645,12 +666,14 @@ function startSimulation(car: any) {
     const varMarginPct = Number(varMarginStr) || 0
     car.marginSimulation = (fixedMarginPct + varMarginPct).toFixed(1)
   }
+  simulationTrigger.value++
   startEdit(car, 'marginSimulation')
 }
 
 function stepSimulation(car: any, step: number) {
   const current = Number(car.marginSimulation) || 0
   car.marginSimulation = Math.max(0, current + step).toFixed(1)
+  simulationTrigger.value++
   if (editingCell.value) {
     editingCell.value = { ...editingCell.value }
   }
@@ -658,6 +681,7 @@ function stepSimulation(car: any, step: number) {
 
 function resetSimulation(car: any) {
   car.marginSimulation = undefined
+  simulationTrigger.value++
   stopEdit(car, 'marginSimulation')
 }
 
@@ -1080,7 +1104,7 @@ async function fetchAndShowBids(car: any) {
             <TableHead class="whitespace-nowrap">
               App ID
             </TableHead>
-            <TableHead class="whitespace-nowrap sticky left-0 z-50 bg-white dark:bg-[#09090b] border-r border-border/50 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
+            <TableHead class="whitespace-nowrap sticky left-0 z-50 bg-background border-r border-border/50 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
               Specs
             </TableHead>
             <TableHead class="whitespace-nowrap">
@@ -1094,6 +1118,9 @@ async function fetchAndShowBids(car: any) {
             </TableHead>
             <TableHead class="whitespace-nowrap">
               Act. CEP
+            </TableHead>
+            <TableHead class="whitespace-nowrap">
+              Del. CEP
             </TableHead>
             <TableHead class="whitespace-nowrap text-center">
               Deal Price
@@ -1187,7 +1214,7 @@ async function fetchAndShowBids(car: any) {
             <TableCell class="whitespace-nowrap text-xs font-mono">
               {{ car.appointmentId || '—' }}
             </TableCell>
-            <TableCell class="min-w-[260px] max-w-[320px] py-3 sticky left-0 z-40 bg-white dark:bg-[#09090b] group-hover:bg-muted transition-colors border-r border-border/50 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
+            <TableCell class="min-w-[260px] max-w-[320px] py-3 sticky left-0 z-40 bg-background group-hover:bg-muted transition-colors border-r border-border/50 shadow-[4px_0_12px_rgba(0,0,0,0.05)]">
               <p class="font-medium text-xs">
                 {{ car.make }} {{ car.model }}
               </p>
@@ -1284,6 +1311,9 @@ async function fetchAndShowBids(car: any) {
                 </template>
               </div>
             </TableCell>
+            <TableCell class="text-xs whitespace-nowrap font-medium" title="Inflated CEP">
+              {{ formatCurrency(getInflatedCep(car)) }}
+            </TableCell>
             <TableCell class="text-xs text-center px-1">
               <Button variant="outline" class="h-6 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 border-blue-200 text-[10px] uppercase font-bold tracking-wider rounded-md" @click.stop="fetchAndShowBids(car)">
                 <Icon name="i-lucide-gavel" class="mr-1 size-3" />
@@ -1306,7 +1336,7 @@ async function fetchAndShowBids(car: any) {
                   leave-to-class="opacity-0 -translate-y-2 scale-95"
                 >
                   <div
-                    v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''"
+                    v-if="hasSimulation(car)"
                     class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20 rounded-md"
                   >
                     <Icon name="i-lucide-activity" class="size-3" />
@@ -1332,7 +1362,7 @@ async function fetchAndShowBids(car: any) {
                   leave-to-class="opacity-0 -translate-y-2 scale-95"
                 >
                   <div
-                    v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''"
+                    v-if="hasSimulation(car)"
                     class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20 rounded-md"
                   >
                     <Icon name="i-lucide-activity" class="size-3" />
@@ -1384,7 +1414,7 @@ async function fetchAndShowBids(car: any) {
               <div class="min-h-[32px] min-w-[70px] flex items-center justify-center p-1 rounded group transition-colors relative" :class="isEditing(car, 'marginSimulation') ? '' : 'hover:bg-muted/30'">
                 <!-- Not Editing State -->
                 <div v-if="!isEditing(car, 'marginSimulation')" class="flex items-center gap-1.5 cursor-pointer w-full justify-center" @click="startSimulation(car)">
-                  <span v-if="car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''" class="font-bold text-primary bg-primary/10 px-2.5 py-0.5 tabular-nums rounded">
+                  <span v-if="hasSimulation(car)" class="font-bold text-primary bg-primary/10 px-2.5 py-0.5 tabular-nums rounded">
                     {{ Number(car.marginSimulation).toFixed(1) }}%
                   </span>
                   <span v-else class="text-muted-foreground/40">—</span>
@@ -1633,8 +1663,8 @@ async function fetchAndShowBids(car: any) {
 
             <!-- Offered Price -->
             <TableCell class="text-xs text-center px-1">
-              <div class="min-h-[28px] min-w-[60px] flex items-center justify-center cursor-pointer group rounded hover:bg-muted/50 transition-colors" @click="startEdit(car, 'offeredPrice')">
-                <Input v-if="isEditing(car, 'offeredPrice')" v-model="car.offeredPrice" type="number" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'offeredPrice')" @keydown.enter="stopEdit(car, 'offeredPrice')" @keydown.esc="cancelEdit(car, 'offeredPrice')" />
+              <div class="min-h-[28px] min-w-[60px] flex items-center justify-center cursor-pointer group rounded hover:bg-muted/50 transition-colors" @click="!isEditing(car, 'offeredPrice') && startEdit(car, 'offeredPrice')">
+                <Input v-if="isEditing(car, 'offeredPrice')" v-model.number="car.offeredPrice" type="number" autofocus class="h-6 w-20 text-[10px]" @blur="stopEdit(car, 'offeredPrice')" @keydown.enter="stopEdit(car, 'offeredPrice')" @keydown.esc="cancelEdit(car, 'offeredPrice')" @click.stop />
                 <span v-else-if="car.offeredPrice" class="whitespace-nowrap font-semibold">{{ formatCurrency(car.offeredPrice) }}</span>
                 <Icon v-else name="i-lucide-pencil" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>

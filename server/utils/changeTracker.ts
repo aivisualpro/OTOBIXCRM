@@ -43,33 +43,10 @@ const _lastChange: Record<string, number> = {}
 let _eventSequence = 0
 
 /**
- * Ring buffer of recent events for missed-event catch-up.
- * Holds the last 500 events so reconnecting clients can replay gaps
- * without hitting the database delta endpoints.
- */
-const EVENT_BUFFER_SIZE = 500
-const _eventBuffer: SyncEvent[] = []
-
-/**
  * Get the current event sequence number.
  */
 export function getEventSequence(): number {
   return _eventSequence
-}
-
-/**
- * Get events since a given eventId (for catch-up on reconnect).
- * Returns events with eventId > sinceId, in order.
- */
-export function getEventsSince(sinceId: number): SyncEvent[] {
-  if (sinceId <= 0 || _eventBuffer.length === 0)
-    return []
-
-  const idx = _eventBuffer.findIndex(e => e.eventId > sinceId)
-  if (idx === -1)
-    return [] // Client is already up to date
-
-  return _eventBuffer.slice(idx)
 }
 
 /**
@@ -105,12 +82,6 @@ export function broadcastChange(
   }
 
   _lastChange[collection] = Date.now()
-
-  // Add to ring buffer
-  _eventBuffer.push(event)
-  if (_eventBuffer.length > EVENT_BUFFER_SIZE) {
-    _eventBuffer.shift()
-  }
 
   // Fan out to all active SSE connections
   for (const listener of _listeners) {

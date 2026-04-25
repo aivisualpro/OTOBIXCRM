@@ -49,10 +49,10 @@ export default defineEventHandler(async (event) => {
 
       const newVal = updates[key]
 
-      const oldStr = JSON.stringify(oldVal) ?? '""'
-      const newStr = JSON.stringify(newVal) ?? '""'
+      const normalizedOld = oldVal === undefined || oldVal === null ? '' : oldVal
+      const normalizedNew = newVal === undefined || newVal === null ? '' : newVal
 
-      if (oldStr !== newStr) {
+      if (JSON.stringify(normalizedOld) !== JSON.stringify(normalizedNew)) {
         changes.push({
           field: key,
           oldValue: oldVal,
