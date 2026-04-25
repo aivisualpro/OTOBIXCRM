@@ -668,6 +668,19 @@ function getInflatedCep(car: any): number {
   return Math.ceil(rawCep / 1000) * 1000
 }
 
+function getSimulatedInflatedCep(car: any): number {
+  void simulationTrigger.value // Track dependency
+  const basePrice = Number(car.customerExpectedPrice || car.cep || 0)
+  if (!basePrice)
+    return 0
+
+  const simMarginStr = String(car.marginSimulation || '0').replace(/[^0-9.-]/g, '')
+  const simMarginPct = Number(simMarginStr) || 0
+
+  const rawCep = basePrice + (basePrice * simMarginPct / 100)
+  return Math.ceil(rawCep / 1000) * 1000
+}
+
 function hasSimulation(car: any) {
   void simulationTrigger.value // Track dependency
   return car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''
@@ -1328,8 +1341,30 @@ async function fetchAndShowBids(car: any) {
                 </template>
               </div>
             </TableCell>
-            <TableCell class="text-xs whitespace-nowrap font-medium" title="Inflated CEP">
-              {{ formatCurrency(getInflatedCep(car)) }}
+            <TableCell class="text-xs align-middle px-2">
+              <div class="flex flex-col items-center gap-1 w-full justify-center min-h-[44px] relative">
+                <span class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap transition-all" :class="hasSimulation(car) ? 'text-muted-foreground line-through opacity-50' : 'text-foreground'" title="Inflated CEP">
+                  {{ formatCurrency(getInflatedCep(car)) }}
+                </span>
+
+                <Transition
+                  enter-active-class="transition-all duration-300 ease-out z-10"
+                  enter-from-class="opacity-0 -translate-y-2 scale-95"
+                  enter-to-class="opacity-100 translate-y-0 scale-100"
+                  leave-active-class="transition-all duration-200 ease-in absolute z-0"
+                  leave-from-class="opacity-100 translate-y-0 scale-100"
+                  leave-to-class="opacity-0 -translate-y-2 scale-95"
+                >
+                  <div
+                    v-if="hasSimulation(car)"
+                    class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20 rounded-md"
+                    title="Simulated Del. CEP"
+                  >
+                    <Icon name="i-lucide-activity" class="size-3" />
+                    {{ formatCurrency(getSimulatedInflatedCep(car)) }}
+                  </div>
+                </Transition>
+              </div>
             </TableCell>
             <TableCell class="text-xs text-center px-1">
               <Button variant="outline" class="h-6 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 border-blue-200 text-[10px] uppercase font-bold tracking-wider rounded-md" @click.stop="fetchAndShowBids(car)">
