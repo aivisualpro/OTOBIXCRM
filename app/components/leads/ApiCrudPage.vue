@@ -490,8 +490,8 @@ watch(advancedFilters, (newF) => {
 function applyAdvancedFilters() {
   setAdvancedFilters(localFilters.value)
   showAdvancedFilters.value = false
-  if (router.currentRoute.value.path !== '/leads/search-results') {
-    router.push('/leads/search-results')
+  if (router.currentRoute.value.query.tab !== 'search-results') {
+    router.push({ path: '/leads', query: { ...router.currentRoute.value.query, tab: 'search-results' } })
   }
 }
 
@@ -500,8 +500,10 @@ function clearAdvancedFilters() {
   setAdvancedFilters({})
   showAdvancedFilters.value = false
   // Only leave search-results if there's also no active text search
-  if (router.currentRoute.value.path === '/leads/search-results' && !serverSearch.value) {
-    router.push('/leads')
+  if (router.currentRoute.value.query.tab === 'search-results' && !serverSearch.value) {
+    const resetQuery = { ...router.currentRoute.value.query }
+    resetQuery.tab = 'all'
+    router.push({ path: '/leads', query: resetQuery })
   }
 }
 
