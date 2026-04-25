@@ -1403,17 +1403,19 @@ const activeTab = computed(() => {
 watchEffect(() => {
   const currentTab = tabs.find(t => t.id === activeTab.value)
   if (currentTab && !props.headlessPdf) {
+    const basePath = props.readonly ? '/inspection' : '/qc'
     setHeader({
       title: props.readonly ? `Inspection: ${carId.value} / ${currentTab.label}` : `Quality Control: ${carId.value} / ${currentTab.label}`,
       icon: currentTab.icon || 'i-lucide-scan-eye',
       showBackButton: true,
+      backUrl: activeTab.value !== 'details' ? `${basePath}/${carId.value}/details` : ''
     })
   }
 })
 
 function setTab(tabId: string) {
   const basePath = props.readonly ? '/inspection' : '/qc'
-  router.push(`${basePath}/${carId.value}/${tabId}`)
+  router.replace(`${basePath}/${carId.value}/${tabId}`)
 }
 
 // ─── Auto-Scroll on Tab Navigation ───

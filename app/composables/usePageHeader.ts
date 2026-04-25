@@ -4,6 +4,7 @@ interface PageHeaderState {
   icon?: string
   badge?: string
   showBackButton?: boolean
+  backUrl?: string
 }
 
 const headerState = reactive<PageHeaderState>({
@@ -12,6 +13,7 @@ const headerState = reactive<PageHeaderState>({
   icon: '',
   badge: '',
   showBackButton: false,
+  backUrl: '',
 })
 
 export function usePageHeader() {
@@ -21,6 +23,7 @@ export function usePageHeader() {
     headerState.icon = opts.icon || ''
     headerState.badge = opts.badge || ''
     headerState.showBackButton = opts.showBackButton ?? false
+    headerState.backUrl = opts.backUrl || ''
   }
 
   function clearHeader() {
@@ -29,6 +32,7 @@ export function usePageHeader() {
     headerState.icon = ''
     headerState.badge = ''
     headerState.showBackButton = false
+    headerState.backUrl = ''
   }
 
   return {

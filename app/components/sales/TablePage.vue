@@ -114,6 +114,9 @@ const localFilters = ref({
   referredBy: '',
   ie: '',
   ra: '',
+  startDate: '',
+  endDate: '',
+  datePreset: '',
 })
 
 const isAdvancedFilterOpen = ref(false)
@@ -152,9 +155,72 @@ const viewRAs = computed(() => {
 })
 
 function clearAdvancedFilters() {
-  localFilters.value = { make: '', model: '', city: '', auctionStatus: '', dealStatus: '', leadSource: '', referredBy: '', ie: '', ra: '' }
+  localFilters.value = { make: '', model: '', city: '', auctionStatus: '', dealStatus: '', leadSource: '', referredBy: '', ie: '', ra: '', startDate: '', endDate: '', datePreset: '' }
   setAdvancedFilters({})
 }
+
+const activeFilterCount = computed(() => {
+  if (!advancedFilters.value) return 0
+  let count = 0
+  let hasDate = false
+  for (const [k, v] of Object.entries(advancedFilters.value)) {
+    if (!v) continue
+    if (k === 'startDate' || k === 'endDate' || k === 'datePreset') {
+      if (!hasDate) {
+        count++
+        hasDate = true
+      }
+    } else {
+      count++
+    }
+  }
+  return count
+})
+
+function setDatePreset(preset: string) {
+  const dt = new Date()
+  const tzo = dt.getTimezoneOffset() * 60000
+
+  const toLocalISOString = (d: Date) => new Date(d.getTime() - tzo).toISOString().split('T')[0] || ''
+
+  localFilters.value.datePreset = preset
+
+  if (preset === 'Today') {
+    localFilters.value.startDate = toLocalISOString(dt)
+    localFilters.value.endDate = toLocalISOString(dt)
+  }
+  else if (preset === 'Yesterday') {
+    const yest = new Date(dt)
+    yest.setDate(dt.getDate() - 1)
+    localFilters.value.startDate = toLocalISOString(yest)
+    localFilters.value.endDate = localFilters.value.startDate
+  }
+  else if (preset === 'Tomorrow') {
+    const tmrw = new Date(dt)
+    tmrw.setDate(dt.getDate() + 1)
+    localFilters.value.startDate = toLocalISOString(tmrw)
+    localFilters.value.endDate = localFilters.value.startDate
+  }
+  else if (preset === 'This Month') {
+    const firstDay = new Date(dt.getFullYear(), dt.getMonth(), 1)
+    const lastDay = new Date(dt.getFullYear(), dt.getMonth() + 1, 0)
+    localFilters.value.startDate = toLocalISOString(firstDay)
+    localFilters.value.endDate = toLocalISOString(lastDay)
+  }
+  else if (preset === 'This Year') {
+    const firstDay = new Date(dt.getFullYear(), 0, 1)
+    const lastDay = new Date(dt.getFullYear(), 11, 31)
+    localFilters.value.startDate = toLocalISOString(firstDay)
+    localFilters.value.endDate = toLocalISOString(lastDay)
+  }
+  else if (preset === 'Last Year') {
+    const firstDay = new Date(dt.getFullYear() - 1, 0, 1)
+    const lastDay = new Date(dt.getFullYear() - 1, 11, 31)
+    localFilters.value.startDate = toLocalISOString(firstDay)
+    localFilters.value.endDate = toLocalISOString(lastDay)
+  }
+}
+
 
 watch(localFilters, (newVal) => {
   const filtersToApply = { ...newVal }
@@ -283,48 +349,75 @@ onUnmounted(() => {
 })
 
 function getFirstImage(car: any): string | null {
-  // frontMainImages can be a native array OR a JSON string
   let images: any[] = []
   try {
-    if (Array.isArray(car.frontMainImages)) {
-      images = car.frontMainImages
-    }
-    else if (typeof car.frontMainImages === 'string' && car.frontMainImages !== '[]' && car.frontMainImages !== 'null' && car.frontMainImages !== '') {
+    if (Array.isArray(car.frontMainImages)) images = car.frontMainImages
+    else if (typeof car.frontMainImages === 'string' && car.frontMainImages.startsWith('[')) {
       const parsed = JSON.parse(car.frontMainImages)
-      if (Array.isArray(parsed))
-        images = parsed
+      if (Array.isArray(parsed)) images = parsed
     }
+  } catch (e) {}
+
+  if (images.length === 0 && Array.isArray(car.frontMain)) {
+    images = car.frontMain
+  } else if (images.length === 0 && typeof car.frontMain === 'string' && car.frontMain.startsWith('[')) {
+    try { images = JSON.parse(car.frontMain) } catch(e) {}
   }
-  catch (e) {}
 
-  const validImages = images
-    .map((item: any) => {
-      if (typeof item === 'string')
-        return item.trim()
-      if (item && typeof item === 'object' && typeof item.url === 'string')
-        return item.url.trim()
-      return null
-    })
-    .filter((url): url is string => !!url && url.length > 5 && url !== 'null' && url !== 'undefined')
-
-  if (validImages.length === 0) {
-    // frontMain can also be an array or string
-    const fb = car.frontMain
-    if (Array.isArray(fb)) {
-      const first = fb.find((x: any) => typeof x === 'string' && x.trim().length > 5 && x !== 'null')
-      if (first)
-        validImages.push(first.trim())
-    }
-    else if (fb && typeof fb === 'string' && fb.trim().length > 5 && fb !== 'null' && fb !== '[]') {
-      validImages.push(fb.trim())
+  for (const item of images) {
+    const v = typeof item === 'string' ? item : item?.url
+    if (v && typeof v === 'string' && v.trim().length > 5 && v !== 'null') {
+      if (v.startsWith('http')) return v.trim()
+      return `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.appointmentId}/${v.trim()}`
     }
   }
 
-  if (validImages.length === 0 && car.imageUrl && typeof car.imageUrl === 'string' && car.imageUrl.trim().length > 5) {
-    validImages.push(car.imageUrl.trim())
+  if (car.imageUrl && typeof car.imageUrl === 'string' && car.imageUrl.trim().length > 5) {
+    return car.imageUrl.trim()
   }
 
-  return validImages.length > 0 ? (validImages[0] ?? null) : null
+  const all = getAllImages(car)
+  return all.length > 0 ? (all[0] ?? null) : null
+}
+
+function getAllImages(car: any): string[] {
+  const urls = new Set<string>()
+  const prefix = `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.appointmentId}/`
+  
+  function scan(value: any, keyName?: string) {
+    if (!value) return
+    if (typeof value === 'string') {
+      const v = value.trim()
+      if (v === 'null' || v === 'undefined' || v === '[]' || v.length < 5) return
+      
+      if (v.toLowerCase().endsWith('.pdf') || v.toLowerCase().endsWith('.mp4') || v.toLowerCase().endsWith('.mov')) return
+      
+      if (v.startsWith('[') && v.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(v)
+          scan(parsed, keyName)
+          return
+        } catch(e) {}
+      }
+
+      if (v.startsWith('http')) {
+        urls.add(v)
+      } else if (keyName && (keyName.toLowerCase().includes('image') || keyName.toLowerCase().includes('photo') || keyName.toLowerCase().includes('apron') || keyName.toLowerCase().includes('main'))) {
+        urls.add(prefix + v)
+      } else if (v.toLowerCase().endsWith('.jpg') || v.toLowerCase().endsWith('.jpeg') || v.toLowerCase().endsWith('.png') || v.toLowerCase().endsWith('.webp')) {
+        urls.add(prefix + v)
+      }
+    } else if (Array.isArray(value)) {
+      value.forEach(item => scan(item, keyName))
+    } else if (typeof value === 'object') {
+      for (const [k, v] of Object.entries(value)) {
+        scan(v, k)
+      }
+    }
+  }
+  
+  scan(car)
+  return Array.from(urls)
 }
 
 function getInflatedCep(car: any): number {
@@ -563,6 +656,138 @@ async function fetchAndShowBids(car: any) {
     bidsLoading.value = false
   }
 }
+
+async function exportToGoogleSheets() {
+  if (!allCars.value || !allCars.value.length) {
+    toast.error('No data to export')
+    return
+  }
+  
+  const headers = [
+    'Date', 'App ID', 'Make', 'Model', 'Variant', 'Fuel', 'Reg Year', 'Mfg Year', 'Odometer (Kms)', 
+    'Auction Status', 'PD', 'CEP', 'Sim. CEP', 'HB', 'Auto Bid', 'GAP', 'Overall Bids', 
+    '1-Clik Price', 'OtoBuy Offer', 'Deal Status', 'RA', 'Remarks'
+  ]
+  
+  const rows = allCars.value.map((car: any) => {
+    const actCep = car.customerExpectedPrice || car.cep || 0
+    const delCep = getInflatedCep(car) || 0
+    const hb = car.highestBid || 0
+    const gap = delCep ? hb - delCep : 0
+    
+    return [
+      formatDate((car.approvalDate && car.approvalDate !== 'null') ? car.approvalDate : ((car.auctionStartTime && car.auctionStartTime !== 'null') ? car.auctionStartTime : car.createdAt)) || '',
+      car.appointmentId || '',
+      car.make || '',
+      car.model || '',
+      car.variant || '',
+      car.fuelType || '',
+      formatYear(car.registrationDate) || '',
+      formatYear(car.yearMonthOfManufacture) || '',
+      car.odometerReadingInKms || '',
+      car.auctionStatus || '',
+      car.priceDiscovery || '',
+      actCep,
+      delCep,
+      hb,
+      getHighestAutoBidObj(car)?.maxAmount || '',
+      gap,
+      bidStats.value[String(car.id || car._id)]?.totalBids || 0,
+      getSalesOneClickPrice(car) || '',
+      car.otobuyOffer || '',
+      car.dealStatus || '',
+      car.retailAssociate || '',
+      car.remarks || ''
+    ].map(v => String(v).replace(/\t/g, ' ')).join('\t')
+  })
+  
+  const tsvContent = [headers.join('\t'), ...rows].join('\n')
+  
+  try {
+    await navigator.clipboard.writeText(tsvContent)
+    toast.success('Data copied! Opening Google Sheets... Just press Ctrl+V / Cmd+V')
+    setTimeout(() => {
+      window.open('https://sheet.new', '_blank')
+    }, 1500)
+  } catch (err) {
+    toast.error('Failed to copy data to clipboard. You may need to export as CSV instead.')
+  }
+}
+
+const isZipping = ref<string>('')
+
+async function loadJSZip(): Promise<any> {
+  if ((window as any).JSZip) return (window as any).JSZip
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
+    script.onload = () => resolve((window as any).JSZip)
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+}
+
+async function downloadImagesZip(car: any) {
+  isZipping.value = car.appointmentId || car._id
+  toast.info('Fetching full inspection details...')
+  
+  let fullCar = car
+  try {
+    const response = await $fetch<any>(`/api/leads/${car.appointmentId}`)
+    if (response && response.carDetails) {
+      fullCar = response.carDetails
+    } else if (response) {
+      fullCar = response
+    }
+  } catch (err) {
+    console.error('Failed to fetch full car details, falling back to list data', err)
+  }
+
+  const images = getAllImages(fullCar)
+  if (!images.length) {
+    toast.error('No images available for this car')
+    isZipping.value = ''
+    return
+  }
+
+  toast.info(`Zipping ${images.length} images, please wait...`)
+  
+  try {
+    const JSZipCtor = await loadJSZip()
+    const zip = new JSZipCtor()
+    const folder = zip.folder(`${car.appointmentId}-images`)
+    
+    // Fetch all images concurrently
+    const promises = images.map(async (url: string, idx: number) => {
+      try {
+        const response = await fetch(url)
+        const blob = await response.blob()
+        const extension = url.split('.').pop()?.split('?')[0] || 'jpg'
+        folder?.file(`image-${idx + 1}.${extension}`, blob)
+      } catch (err) {
+        console.error(`Failed to fetch image ${url}`, err)
+      }
+    })
+    
+    await Promise.all(promises)
+    
+    const zipBlob = await zip.generateAsync({ type: 'blob' })
+    const url = URL.createObjectURL(zipBlob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${car.appointmentId}-images.zip`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    toast.success('Images downloaded successfully!')
+  } catch (err) {
+    toast.error('Failed to create zip file')
+  } finally {
+    isZipping.value = ''
+  }
+}
 </script>
 
 <template>
@@ -578,7 +803,7 @@ async function fetchAndShowBids(car: any) {
             <button class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input border-dashed bg-muted/30 hover:bg-muted hover:text-foreground h-8 px-3 gap-1.5 relative pr-6">
               <Icon name="i-lucide-list-filter" class="size-3.5 text-emerald-600" />
               <span class="hidden sm:inline font-medium">Filter</span>
-              <span v-if="Object.values(advancedFilters || {}).filter(Boolean).length" class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] text-white font-bold ring-2 ring-background">{{ Object.values(advancedFilters || {}).filter(Boolean).length }}</span>
+              <span v-if="activeFilterCount > 0" class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] text-white font-bold ring-2 ring-background">{{ activeFilterCount }}</span>
             </button>
           </PopoverTrigger>
           <PopoverContent align="start" class="w-[400px] p-4 rounded-xl shadow-2xl border border-border/50 bg-background/95 backdrop-blur-xl z-[200]">
@@ -590,7 +815,28 @@ async function fetchAndShowBids(car: any) {
                 Clear All
               </Button>
             </div>
-            <div class="grid grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1">
+            <div class="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
+              <!-- Date Filters -->
+              <div class="space-y-3 pb-2 border-b">
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1"><Icon name="i-lucide-calendar-days" class="size-3" /> Date Range</Label>
+                <div class="flex flex-wrap gap-1.5">
+                  <Badge v-for="p in ['Today', 'Yesterday', 'Tomorrow', 'This Month', 'This Year', 'Last Year']" :key="p" variant="secondary" class="cursor-pointer text-[10px] font-normal transition-colors" :class="localFilters.datePreset === p ? 'bg-primary text-primary-foreground' : 'hover:bg-primary/50 text-muted-foreground'" @click="setDatePreset(p)">
+                    {{ p }}
+                  </Badge>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="space-y-1.5">
+                    <Label class="text-[10px] uppercase text-muted-foreground">From</Label>
+                    <Input v-model="localFilters.startDate" type="date" class="h-8 text-xs bg-muted/30 focus:bg-background" @input="localFilters.datePreset = ''" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <Label class="text-[10px] uppercase text-muted-foreground">To</Label>
+                    <Input v-model="localFilters.endDate" type="date" class="h-8 text-xs bg-muted/30 focus:bg-background" @input="localFilters.datePreset = ''" />
+                  </div>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
               <div class="space-y-1.5">
                 <Label class="text-xs font-medium text-muted-foreground">Make</Label>
                 <SearchableSelect
@@ -672,10 +918,16 @@ async function fetchAndShowBids(car: any) {
                   placeholder="Any RA"
                   :use-pills="false"
                 />
+                </div>
               </div>
             </div>
           </PopoverContent>
         </Popover>
+
+        <!-- View in Google Sheets Button -->
+        <Button variant="outline" size="icon" class="h-8 w-8 shrink-0 border-dashed bg-[#E8F0FE] hover:bg-[#D2E3FC] text-[#1967D2] hover:text-[#174EA6] border-[#8AB4F8]/50 transition-colors" @click="exportToGoogleSheets" title="Open in Google Sheets">
+          <Icon name="i-lucide-file-spreadsheet" class="size-4" />
+        </Button>
       </div>
       <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
         {{ totalCount }} record{{ totalCount !== 1 ? 's' : '' }}
@@ -858,6 +1110,17 @@ async function fetchAndShowBids(car: any) {
                   @click.stop="openPreview(car.appointmentId)"
                 >
                   <Icon name="i-lucide-file-text" class="!size-8 text-red-500 shrink-0" />
+                </Button>
+                <Button
+                  v-if="car.appointmentId"
+                  variant="ghost"
+                  class="p-1 hover:bg-muted/50 rounded-md transition-colors w-12 h-12 flex items-center justify-center border border-transparent hover:border-border"
+                  title="Download Images"
+                  @click.stop="downloadImagesZip(car)"
+                  :disabled="isZipping === (car.appointmentId || car._id)"
+                >
+                  <Icon v-if="isZipping === (car.appointmentId || car._id)" name="i-lucide-loader-2" class="!size-6 text-blue-500 shrink-0 animate-spin" />
+                  <Icon v-else name="i-lucide-images" class="!size-8 text-blue-500 shrink-0" />
                 </Button>
                 <span v-else class="text-xs text-muted-foreground">—</span>
               </div>

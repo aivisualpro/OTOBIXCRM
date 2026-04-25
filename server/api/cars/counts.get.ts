@@ -63,6 +63,39 @@ export default defineEventHandler(async (event) => {
     if (filterRA)
       matchQuery.retailAssociate = { $regex: new RegExp(`^${filterRA}$`, 'i') }
 
+    const filterStartDate = String(queryParams.filter_startDate || '').trim()
+    const filterEndDate = String(queryParams.filter_endDate || '').trim()
+
+    if (filterStartDate || filterEndDate) {
+      const gteDate = filterStartDate ? new Date(filterStartDate) : null
+      let lteDate: Date | null = null
+
+      if (filterEndDate) {
+        const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(filterEndDate)
+        const endStr = isDateOnly ? `${filterEndDate}T23:59:59.999Z` : filterEndDate
+        lteDate = new Date(endStr)
+      }
+
+      const buildDateExpr = (fieldKey: string) => {
+        const fieldSelector = `$${fieldKey}`
+        const dateParserObj = { $convert: { input: fieldSelector, to: 'date', onError: null, onNull: null } }
+
+        const conditions = []
+        if (gteDate)
+          conditions.push({ $gte: [dateParserObj, gteDate] })
+        if (lteDate)
+          conditions.push({ $lte: [dateParserObj, lteDate] })
+        return { $and: conditions }
+      }
+
+      matchQuery.$and = matchQuery.$and || []
+      matchQuery.$and.push({
+        $expr: {
+          $or: [buildDateExpr('createdAt'), buildDateExpr('timestamp')],
+        },
+      })
+    }
+
     // If filtering by lead fields, intersect appointmentIds
     if (filterLeadSource || filterReferredBy || filterIE) {
       const leadFilter: Record<string, any> = {}
