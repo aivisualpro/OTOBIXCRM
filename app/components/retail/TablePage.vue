@@ -979,12 +979,13 @@ function getAuctionStatusColor(status: string) {
 // Tabs that should NOT show the button at all:
 const NO_TRANSITION_TABS = ['customer-activity', 'dealer-activity', 'removed', 'followup']
 
-// What each current status can transition to:
+// What each current status can transition to (keys are lowercase for matching):
 const STATUS_TRANSITIONS_BY_STATUS: Record<string, string[]> = {
   upcoming: ['live', 'removed', 'sold'],
   live: ['removed'],
   otobuy: ['removed', 'sold'],
-  liveAuctionEnded: ['upcoming', 'live', 'otobuy', 'sold', 'removed'],
+  liveauctionended: ['upcoming', 'live', 'otobuy', 'removed'],
+  otobuyended: ['upcoming', 'live', 'otobuy', 'removed'],
   sold: ['removed'],
 }
 

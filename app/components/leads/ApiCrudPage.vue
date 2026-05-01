@@ -67,13 +67,10 @@ const {
   cancelSearch,
 } = useLeadsApi()
 
-// Car dropdowns for Make / Model / Variant
+// Car dropdowns — use brandStats for all makes, dedicated endpoints for models/variants
 const {
-  makes: carMakes,
-  getModels: getCarModels,
-  getVariants: getCarVariants,
-  fetchCarDropdowns,
-  isLoading: isCarLoading,
+  brandStats: carBrandStats,
+  fetchBrandStats: fetchCarBrandStats,
 } = useCarDropdowns()
 
 // Dropdowns from DB
@@ -117,7 +114,7 @@ onMounted(async () => {
   // No longer rely on props.filters since useLeadsApi internally controls Tab/Page via query.tab
   fetchLeads()
 
-  fetchCarDropdowns({ limit: 500 })
+  fetchCarBrandStats()
   await fetchDbDropdowns()
   bankSourceOptions.value = getDbOptions('Bank Source')
 })
@@ -395,27 +392,48 @@ function isInspectionStatusEditable(item: Record<string, any>): boolean {
 }
 const formData = ref<Record<string, any>>({})
 
-// Cascading: computed models/variants based on current form selection
-const availableModels = computed(() => formData.value.make ? getCarModels(formData.value.make) : [])
-const availableVariants = computed(() =>
-  formData.value.make && formData.value.model
-    ? getCarVariants(formData.value.make, formData.value.model)
-    : [],
-)
+// ─── Server-fetched makes/models/variants ───
+const allCarMakes = computed(() => {
+  if (!carBrandStats.value?.brands) return []
+  return carBrandStats.value.brands.map(b => b.make).sort((a, b) => a.localeCompare(b))
+})
 
-// When make changes, fetch it and reset model + variant
+const serverModels = ref<string[]>([])
+const isLoadingModels = ref(false)
+const serverVariants = ref<string[]>([])
+const isLoadingVariants = ref(false)
+
+// When make changes, fetch models from server and reset model + variant
 watch(() => formData.value.make, async (newMake, oldMake) => {
+  serverModels.value = []
+  serverVariants.value = []
   if (newMake && oldMake !== undefined && newMake !== oldMake) {
     formData.value.model = ''
     formData.value.variant = ''
-    await fetchCarDropdowns({ search: newMake, limit: 1000 })
+  }
+  if (newMake) {
+    isLoadingModels.value = true
+    try {
+      const res = await $fetch<any>('/api/car-dropdowns/models-by-make', { query: { make: newMake } })
+      serverModels.value = res.models || []
+    } catch { /* silent */ }
+    finally { isLoadingModels.value = false }
   }
 })
 
-// When model changes, reset variant
-watch(() => formData.value.model, (newModel, oldModel) => {
+// When model changes, fetch variants from server and reset variant
+watch(() => formData.value.model, async (newModel, oldModel) => {
+  serverVariants.value = []
   if (oldModel !== undefined && newModel !== oldModel) {
     formData.value.variant = ''
+  }
+  if (newModel && formData.value.make) {
+    isLoadingVariants.value = true
+    try {
+      const res = await $fetch<any>('/api/car-dropdowns/variants-by-make-model', { query: { make: formData.value.make, model: newModel } })
+      serverVariants.value = res.variants || []
+    } catch { /* silent */ }
+    finally { isLoadingVariants.value = false }
   }
 })
 
@@ -1080,7 +1098,7 @@ function getInitials(name: string): string {
                         <SelectItem value=" ">
                           ANY MAKE
                         </SelectItem>
-                        <SelectItem v-for="make in carMakes" :key="make" :value="make">
+                        <SelectItem v-for="make in allCarMakes" :key="make" :value="make">
                           {{ make }}
                         </SelectItem>
                       </SelectContent>
@@ -1484,9 +1502,9 @@ function getInitials(name: string): string {
                 <SearchableSelect
                   v-if="field.key === 'make'"
                   v-model="formData.make"
-                  :options="carMakes.map(m => ({ label: m, value: m }))"
+                  :options="allCarMakes.map(m => ({ label: m, value: m }))"
                   placeholder="Select Make"
-                  search-placeholder="Search brands..."
+                  search-placeholder="Search makes..."
                   :class="{ 'ring-1 ring-destructive rounded-md': tabValidationErrors[field.key] }"
                 />
 
@@ -1494,9 +1512,9 @@ function getInitials(name: string): string {
                 <SearchableSelect
                   v-else-if="field.key === 'model'"
                   v-model="formData.model"
-                  :options="availableModels.map(m => ({ label: m, value: m }))"
-                  :disabled="!formData.make || isCarLoading"
-                  :placeholder="isCarLoading ? 'Loading models...' : (formData.make ? 'Select Model' : 'Select make first')"
+                  :options="serverModels.map(m => ({ label: m, value: m }))"
+                  :disabled="!formData.make || isLoadingModels"
+                  :placeholder="isLoadingModels ? 'Loading models...' : (formData.make ? 'Select Model' : 'Select make first')"
                   search-placeholder="Search models..."
                   :class="{ 'ring-1 ring-destructive rounded-md': tabValidationErrors[field.key] }"
                 />
@@ -1505,9 +1523,9 @@ function getInitials(name: string): string {
                 <SearchableSelect
                   v-else-if="field.key === 'variant'"
                   v-model="formData.variant"
-                  :options="availableVariants.map(v => ({ label: v, value: v }))"
-                  :disabled="!formData.model || isCarLoading"
-                  :placeholder="isCarLoading ? 'Loading variants...' : (formData.model ? 'Select Variant' : 'Select model first')"
+                  :options="serverVariants.map(v => ({ label: v, value: v }))"
+                  :disabled="!formData.model || isLoadingVariants"
+                  :placeholder="isLoadingVariants ? 'Loading variants...' : (formData.model ? 'Select Variant' : 'Select model first')"
                   search-placeholder="Search variants..."
                   :class="{ 'ring-1 ring-destructive rounded-md': tabValidationErrors[field.key] }"
                 />
