@@ -175,47 +175,30 @@ export function useCarDropdowns() {
     fetchCarDropdowns,
     fetchBrandStats,
     addDropdown: async (payload: { make: string, model: string, variant: string }) => {
-      const response = await $fetch<any>(`${apiBaseUrl.value}admin/customers/car-dropdowns/add`, {
+      const response = await $fetch<any>('/api/car-dropdowns/add', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${authToken.value}` },
         body: payload,
       })
       invalidateCachePrefix('carDropdowns')
       await Promise.all([fetchCarDropdowns({ append: false }), fetchBrandStats()])
       return response
     },
-    editDropdown: async (payload: { dropdownId: string, make: string, model: string, variant: string, isActive: boolean }) => {
-      const response = await $fetch<any>(`${apiBaseUrl.value}admin/customers/car-dropdowns/edit`, {
+    editDropdown: async (payload: { _id: string, make: string, model: string, variant: string }) => {
+      const response = await $fetch<any>('/api/car-dropdowns/edit', {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${authToken.value}` },
         body: payload,
       })
       invalidateCachePrefix('carDropdowns')
       await Promise.all([fetchCarDropdowns({ append: false }), fetchBrandStats()])
       return response
     },
-    deleteDropdown: async (dropdownId: string) => {
-      const response = await $fetch<any>(`${apiBaseUrl.value}admin/customers/car-dropdowns/delete`, {
+    deleteDropdown: async (_id: string) => {
+      const response = await $fetch<any>('/api/car-dropdowns/delete', {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${authToken.value}` },
-        body: { dropdownId },
+        body: { _id },
       })
       invalidateCachePrefix('carDropdowns')
       await Promise.all([fetchCarDropdowns({ append: false }), fetchBrandStats()])
-      return response
-    },
-    toggleStatus: async (dropdownId: string) => {
-      const response = await $fetch<any>(`${apiBaseUrl.value}admin/customers/car-dropdowns/toggle-status`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${authToken.value}` },
-        body: { dropdownId },
-      })
-      // Optimistic update
-      const item = _carDropdowns.value.find(d => d._id === dropdownId)
-      if (item)
-        item.isActive = !item.isActive
-      // Invalidate brand stats cache so next fetch picks up new active count
-      invalidateCache('carDropdowns:brandStats')
       return response
     },
   }

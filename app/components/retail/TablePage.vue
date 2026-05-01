@@ -974,6 +974,227 @@ function getAuctionStatusColor(status: string) {
   }
 }
 
+// ─── Auction Status Transitions ───
+// Transitions based on the car's CURRENT auctionStatus.
+// Tabs that should NOT show the button at all:
+const NO_TRANSITION_TABS = ['customer-activity', 'dealer-activity', 'removed', 'followup']
+
+// What each current status can transition to:
+const STATUS_TRANSITIONS_BY_STATUS: Record<string, string[]> = {
+  upcoming: ['live', 'removed', 'sold'],
+  live: ['removed'],
+  otobuy: ['removed', 'sold'],
+  liveAuctionEnded: ['upcoming', 'live', 'otobuy', 'sold', 'removed'],
+  sold: ['removed'],
+}
+
+const STATUS_META: Record<string, { label: string, icon: string, color: string, bg: string }> = {
+  upcoming: { label: 'Upcoming', icon: 'i-lucide-calendar-clock', color: 'text-amber-500', bg: 'hover:bg-amber-500/10 active:bg-amber-500/20' },
+  live: { label: 'Live', icon: 'i-lucide-radio', color: 'text-red-500', bg: 'hover:bg-red-500/10 active:bg-red-500/20' },
+  otobuy: { label: 'Otobuy', icon: 'i-lucide-tag', color: 'text-blue-500', bg: 'hover:bg-blue-500/10 active:bg-blue-500/20' },
+  liveAuctionEnded: { label: 'Ended', icon: 'i-lucide-timer-off', color: 'text-gray-500', bg: 'hover:bg-gray-500/10 active:bg-gray-500/20' },
+  sold: { label: 'Sold', icon: 'i-lucide-badge-check', color: 'text-emerald-500', bg: 'hover:bg-emerald-500/10 active:bg-emerald-500/20' },
+  removed: { label: 'Removed', icon: 'i-lucide-trash-2', color: 'text-zinc-500', bg: 'hover:bg-zinc-500/10 active:bg-zinc-500/20' },
+  otobuyEnded: { label: 'Otobuy Ended', icon: 'i-lucide-timer-off', color: 'text-gray-500', bg: 'hover:bg-gray-500/10 active:bg-gray-500/20' },
+}
+
+function canShowTransitionButton(tab: string): boolean {
+  return !NO_TRANSITION_TABS.includes(tab)
+}
+
+function getAvailableTransitionsForCar(car: any): string[] {
+  const status = (car.auctionStatus || '').toLowerCase()
+  return STATUS_TRANSITIONS_BY_STATUS[status] || []
+}
+
+const statusChangeLoading = ref<Record<string, boolean>>({})
+const statusPopoverOpen = ref<Record<string, boolean>>({})
+
+// ─── Transition Dialog State ───
+const transitionDialog = ref(false)
+const transitionTarget = ref<{ car: any, status: string } | null>(null)
+const transitionSubmitting = ref(false)
+
+// Form fields for different transitions
+const transitionForm = ref({
+  // upcoming / live
+  auctionDuration: 24,
+  auctionStartTime: '',
+  // otobuy
+  oneClickPrice: '',
+  // sold
+  soldTo: '',
+  soldAt: '',
+  // removed
+  reasonOfRemoval: '',
+})
+
+function resetTransitionForm() {
+  transitionForm.value = {
+    auctionDuration: 24,
+    auctionStartTime: '',
+    oneClickPrice: '',
+    soldTo: '',
+    soldAt: '',
+    reasonOfRemoval: '',
+  }
+}
+
+const transitionDialogTitle = computed(() => {
+  const s = transitionTarget.value?.status
+  if (!s) return ''
+  return `Move to ${STATUS_META[s]?.label || s}`
+})
+
+const transitionDialogIcon = computed(() => {
+  return STATUS_META[transitionTarget.value?.status || '']?.icon || 'i-lucide-arrow-right-left'
+})
+
+const transitionDialogColor = computed(() => {
+  return STATUS_META[transitionTarget.value?.status || '']?.color || 'text-foreground'
+})
+
+async function changeAuctionStatus(car: any, newStatus: string) {
+  const carId = car._id || car.id
+  statusPopoverOpen.value[carId] = false
+
+  // Statuses that need extra input → open dialog
+  if (['upcoming', 'live', 'otobuy', 'sold', 'removed'].includes(newStatus)) {
+    resetTransitionForm()
+
+    // Pre-fill defaults
+    if (newStatus === 'live' || newStatus === 'upcoming') {
+      transitionForm.value.auctionDuration = 24
+      if (newStatus === 'upcoming') {
+        // Default to tomorrow 10am
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        tomorrow.setHours(10, 0, 0, 0)
+        transitionForm.value.auctionStartTime = tomorrow.toISOString().slice(0, 16)
+      }
+    }
+    if (newStatus === 'otobuy') {
+      transitionForm.value.oneClickPrice = car.oneClickPrice ? String(car.oneClickPrice) : ''
+    }
+    if (newStatus === 'sold') {
+      transitionForm.value.soldAt = car.highestBid ? String(car.highestBid) : ''
+    }
+
+    transitionTarget.value = { car, status: newStatus }
+    transitionDialog.value = true
+    return
+  }
+
+  // Direct transition (no extra fields)
+  await executeTransition(car, newStatus)
+}
+
+async function submitTransition() {
+  if (!transitionTarget.value) return
+  const { car, status } = transitionTarget.value
+  transitionSubmitting.value = true
+
+  try {
+    await executeTransition(car, status)
+    transitionDialog.value = false
+  }
+  catch {
+    // error already handled inside executeTransition
+  }
+  finally {
+    transitionSubmitting.value = false
+  }
+}
+
+async function executeTransition(car: any, newStatus: string) {
+  const carId = car._id || car.id
+  statusChangeLoading.value[carId] = true
+
+  try {
+    if (newStatus === 'live') {
+      const startTime = new Date().toISOString()
+      const duration = transitionForm.value.auctionDuration || 24
+      const endTime = new Date(Date.now() + duration * 60 * 60 * 1000).toISOString()
+
+      await $fetch('/api/retail/schedule-auction', {
+        method: 'POST',
+        body: {
+          carId,
+          auctionStartTime: startTime,
+          auctionDuration: duration,
+          auctionEndTime: endTime,
+          auctionMode: 'makeLiveNow',
+        },
+      })
+    }
+    else if (newStatus === 'upcoming') {
+      const startStr = transitionForm.value.auctionStartTime
+      if (!startStr) { toast.error('Start time is required'); return }
+      const startTime = new Date(startStr).toISOString()
+      const duration = transitionForm.value.auctionDuration || 24
+      const endTime = new Date(new Date(startStr).getTime() + duration * 60 * 60 * 1000).toISOString()
+
+      await $fetch('/api/retail/schedule-auction', {
+        method: 'POST',
+        body: {
+          carId,
+          auctionStartTime: startTime,
+          auctionDuration: duration,
+          auctionEndTime: endTime,
+          auctionMode: 'scheduledForLater',
+        },
+      })
+    }
+    else if (newStatus === 'otobuy') {
+      if (!transitionForm.value.oneClickPrice) { toast.error('1-Click Price is required'); return }
+      await $fetch('/api/retail/move-to-otobuy', {
+        method: 'POST',
+        body: { carId, oneClickPrice: Number(transitionForm.value.oneClickPrice) },
+      })
+    }
+    else if (newStatus === 'sold') {
+      if (!transitionForm.value.soldTo) { toast.error('Sold To is required'); return }
+      if (!transitionForm.value.soldAt) { toast.error('Sold Price is required'); return }
+      await $fetch('/api/retail/mark-as-sold', {
+        method: 'POST',
+        body: {
+          carId,
+          soldBy: loggedInUserId.value,
+          soldTo: transitionForm.value.soldTo,
+          soldAt: Number(transitionForm.value.soldAt),
+        },
+      })
+    }
+    else if (newStatus === 'removed') {
+      await $fetch('/api/retail/remove-car', {
+        method: 'POST',
+        body: {
+          carId,
+          reasonOfRemoval: transitionForm.value.reasonOfRemoval || '',
+          removedBy: loggedInUserId.value,
+        },
+      })
+    }
+
+    // Optimistic UI update
+    const oldStatus = car.auctionStatus
+    car.auctionStatus = newStatus
+    const log = buildLog('auctionStatus', newStatus, oldStatus)
+    if (!car.retailChangeLog) car.retailChangeLog = []
+    car.retailChangeLog.unshift(log)
+
+    toast.success(`Moved to ${STATUS_META[newStatus]?.label || newStatus}`)
+  }
+  catch (err: any) {
+    toast.error(err?.data?.message || 'Failed to change status')
+    refreshCars()
+    throw err
+  }
+  finally {
+    statusChangeLoading.value[carId] = false
+  }
+}
+
 async function handleRefresh() {
   await refreshCars()
   toast.success('Retail data refreshed')
@@ -1298,7 +1519,7 @@ async function exportToGoogleSheets() {
               Specs
             </TableHead>
             <TableHead class="whitespace-nowrap">
-              Report
+              Actions
             </TableHead>
             <TableHead v-if="!['ended', 'removed', 'sold', 'otobuy'].includes(activeTab)" class="whitespace-nowrap">
               Auction Status
@@ -1451,7 +1672,50 @@ async function exportToGoogleSheets() {
                 >
                   <Icon name="i-lucide-file-text" class="!size-8 text-red-500 shrink-0" />
                 </Button>
-                <span v-else class="text-xs text-muted-foreground">—</span>
+                <!-- Status Transition Popover -->
+                <Popover v-if="canShowTransitionButton(activeTab) && getAvailableTransitionsForCar(car).length > 0" v-model:open="statusPopoverOpen[car._id || car.id]">
+                  <PopoverTrigger as-child>
+                    <Button
+                      variant="ghost"
+                      class="p-1 hover:bg-muted/50 rounded-md transition-all w-12 h-12 flex items-center justify-center border border-transparent hover:border-border group/status"
+                      title="Change Status"
+                      :disabled="statusChangeLoading[car._id || car.id]"
+                    >
+                      <Icon
+                        v-if="statusChangeLoading[car._id || car.id]"
+                        name="i-lucide-loader-2"
+                        class="!size-5 animate-spin text-muted-foreground"
+                      />
+                      <Icon
+                        v-else
+                        name="i-lucide-arrow-right-left"
+                        class="!size-5 text-purple-500 shrink-0 group-hover/status:rotate-180 transition-transform duration-300"
+                      />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" :side-offset="8" class="w-auto p-1.5 rounded-xl border-border/50 backdrop-blur-xl">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-muted-foreground px-2 pt-1 pb-2">
+                      Move to
+                    </p>
+                    <div class="flex flex-col gap-0.5">
+                      <button
+                        v-for="status in getAvailableTransitionsForCar(car)"
+                        :key="status"
+                        class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer"
+                        :class="[
+                          STATUS_META[status]?.color || 'text-foreground',
+                          STATUS_META[status]?.bg || 'hover:bg-muted',
+                        ]"
+                        :disabled="statusChangeLoading[car._id || car.id]"
+                        @click.stop="changeAuctionStatus(car, status)"
+                      >
+                        <Icon :name="STATUS_META[status]?.icon || 'i-lucide-circle'" class="size-4 shrink-0" />
+                        <span>{{ STATUS_META[status]?.label || status }}</span>
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <span v-if="!car.appointmentId && !canShowTransitionButton(activeTab)" class="text-xs text-muted-foreground">—</span>
               </div>
             </TableCell>
             <TableCell v-if="!['ended', 'removed', 'sold', 'otobuy'].includes(activeTab)" class="whitespace-nowrap text-xs">
@@ -2345,6 +2609,83 @@ async function exportToGoogleSheets() {
           </div>
         </div>
       </div>
+    </DialogContent>
+  </Dialog>
+
+  <!-- ─── Status Transition Dialog ─── -->
+  <Dialog v-model:open="transitionDialog">
+    <DialogContent class="sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle class="flex items-center gap-2">
+          <Icon :name="transitionDialogIcon" class="size-5" :class="transitionDialogColor" />
+          {{ transitionDialogTitle }}
+        </DialogTitle>
+        <DialogDescription v-if="transitionTarget?.car" class="text-xs">
+          {{ transitionTarget.car.make }} {{ transitionTarget.car.model }} — {{ transitionTarget.car.variant || '' }}
+        </DialogDescription>
+      </DialogHeader>
+
+      <div class="space-y-4 py-4">
+        <!-- Live: Duration only -->
+        <template v-if="transitionTarget?.status === 'live'">
+          <div class="space-y-2">
+            <Label class="text-xs font-bold">Auction Duration (hours)</Label>
+            <Input v-model.number="transitionForm.auctionDuration" type="number" min="1" max="168" placeholder="24" class="h-10" />
+            <p class="text-[10px] text-muted-foreground">Car will go live immediately for {{ transitionForm.auctionDuration || 24 }} hours</p>
+          </div>
+        </template>
+
+        <!-- Upcoming: Start time + Duration -->
+        <template v-if="transitionTarget?.status === 'upcoming'">
+          <div class="space-y-2">
+            <Label class="text-xs font-bold">Auction Start Time</Label>
+            <Input v-model="transitionForm.auctionStartTime" type="datetime-local" class="h-10" />
+          </div>
+          <div class="space-y-2">
+            <Label class="text-xs font-bold">Auction Duration (hours)</Label>
+            <Input v-model.number="transitionForm.auctionDuration" type="number" min="1" max="168" placeholder="24" class="h-10" />
+          </div>
+        </template>
+
+        <!-- Otobuy: Price -->
+        <template v-if="transitionTarget?.status === 'otobuy'">
+          <div class="space-y-2">
+            <Label class="text-xs font-bold">1-Click Price (₹)</Label>
+            <Input v-model="transitionForm.oneClickPrice" type="number" min="0" placeholder="580000" class="h-10" />
+          </div>
+        </template>
+
+        <!-- Sold: Buyer + Price -->
+        <template v-if="transitionTarget?.status === 'sold'">
+          <div class="space-y-2">
+            <Label class="text-xs font-bold">Sold To (User ID)</Label>
+            <Input v-model="transitionForm.soldTo" placeholder="Enter buyer user ID" class="h-10" />
+          </div>
+          <div class="space-y-2">
+            <Label class="text-xs font-bold">Sold Price (₹)</Label>
+            <Input v-model="transitionForm.soldAt" type="number" min="0" placeholder="580000" class="h-10" />
+          </div>
+        </template>
+
+        <!-- Removed: Reason -->
+        <template v-if="transitionTarget?.status === 'removed'">
+          <div class="space-y-2">
+            <Label class="text-xs font-bold">Reason for Removal</Label>
+            <Input v-model="transitionForm.reasonOfRemoval" placeholder="e.g. Customer sold outside" class="h-10" />
+          </div>
+        </template>
+      </div>
+
+      <DialogFooter class="gap-2">
+        <Button variant="ghost" @click="transitionDialog = false" :disabled="transitionSubmitting">
+          Cancel
+        </Button>
+        <Button @click="submitTransition" :disabled="transitionSubmitting" class="gap-2">
+          <Icon v-if="transitionSubmitting" name="i-lucide-loader-2" class="size-4 animate-spin" />
+          <Icon v-else :name="transitionDialogIcon" class="size-4" />
+          Confirm
+        </Button>
+      </DialogFooter>
     </DialogContent>
   </Dialog>
 </template>
