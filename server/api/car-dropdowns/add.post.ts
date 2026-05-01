@@ -1,8 +1,6 @@
 // POST /api/car-dropdowns/add
 // Direct MongoDB insert into carMakeModelVariant collection
 
-import { ObjectId } from 'mongodb'
-
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)

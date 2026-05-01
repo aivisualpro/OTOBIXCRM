@@ -160,17 +160,20 @@ function clearAdvancedFilters() {
 }
 
 const activeFilterCount = computed(() => {
-  if (!advancedFilters.value) return 0
+  if (!advancedFilters.value)
+    return 0
   let count = 0
   let hasDate = false
   for (const [k, v] of Object.entries(advancedFilters.value)) {
-    if (!v) continue
+    if (!v)
+      continue
     if (k === 'startDate' || k === 'endDate' || k === 'datePreset') {
       if (!hasDate) {
         count++
         hasDate = true
       }
-    } else {
+    }
+    else {
       count++
     }
   }
@@ -220,7 +223,6 @@ function setDatePreset(preset: string) {
     localFilters.value.endDate = toLocalISOString(lastDay)
   }
 }
-
 
 watch(localFilters, (newVal) => {
   const filtersToApply = { ...newVal }
@@ -351,23 +353,30 @@ onUnmounted(() => {
 function getFirstImage(car: any): string | null {
   let images: any[] = []
   try {
-    if (Array.isArray(car.frontMainImages)) images = car.frontMainImages
+    if (Array.isArray(car.frontMainImages)) {
+      images = car.frontMainImages
+    }
     else if (typeof car.frontMainImages === 'string' && car.frontMainImages.startsWith('[')) {
       const parsed = JSON.parse(car.frontMainImages)
-      if (Array.isArray(parsed)) images = parsed
+      if (Array.isArray(parsed))
+        images = parsed
     }
-  } catch (e) {}
+  }
+  catch (e) {}
 
   if (images.length === 0 && Array.isArray(car.frontMain)) {
     images = car.frontMain
-  } else if (images.length === 0 && typeof car.frontMain === 'string' && car.frontMain.startsWith('[')) {
-    try { images = JSON.parse(car.frontMain) } catch(e) {}
+  }
+  else if (images.length === 0 && typeof car.frontMain === 'string' && car.frontMain.startsWith('[')) {
+    try { images = JSON.parse(car.frontMain) }
+    catch (e) {}
   }
 
   for (const item of images) {
     const v = typeof item === 'string' ? item : item?.url
     if (v && typeof v === 'string' && v.trim().length > 5 && v !== 'null') {
-      if (v.startsWith('http')) return v.trim()
+      if (v.startsWith('http'))
+        return v.trim()
       return `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.appointmentId}/${v.trim()}`
     }
   }
@@ -383,39 +392,47 @@ function getFirstImage(car: any): string | null {
 function getAllImages(car: any): string[] {
   const urls = new Set<string>()
   const prefix = `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.appointmentId}/`
-  
+
   function scan(value: any, keyName?: string) {
-    if (!value) return
+    if (!value)
+      return
     if (typeof value === 'string') {
       const v = value.trim()
-      if (v === 'null' || v === 'undefined' || v === '[]' || v.length < 5) return
-      
-      if (v.toLowerCase().endsWith('.pdf') || v.toLowerCase().endsWith('.mp4') || v.toLowerCase().endsWith('.mov')) return
-      
+      if (v === 'null' || v === 'undefined' || v === '[]' || v.length < 5)
+        return
+
+      if (v.toLowerCase().endsWith('.pdf') || v.toLowerCase().endsWith('.mp4') || v.toLowerCase().endsWith('.mov'))
+        return
+
       if (v.startsWith('[') && v.endsWith(']')) {
         try {
           const parsed = JSON.parse(v)
           scan(parsed, keyName)
           return
-        } catch(e) {}
+        }
+        catch (e) {}
       }
 
       if (v.startsWith('http')) {
         urls.add(v)
-      } else if (keyName && (keyName.toLowerCase().includes('image') || keyName.toLowerCase().includes('photo') || keyName.toLowerCase().includes('apron') || keyName.toLowerCase().includes('main'))) {
-        urls.add(prefix + v)
-      } else if (v.toLowerCase().endsWith('.jpg') || v.toLowerCase().endsWith('.jpeg') || v.toLowerCase().endsWith('.png') || v.toLowerCase().endsWith('.webp')) {
+      }
+      else if (keyName && (keyName.toLowerCase().includes('image') || keyName.toLowerCase().includes('photo') || keyName.toLowerCase().includes('apron') || keyName.toLowerCase().includes('main'))) {
         urls.add(prefix + v)
       }
-    } else if (Array.isArray(value)) {
+      else if (v.toLowerCase().endsWith('.jpg') || v.toLowerCase().endsWith('.jpeg') || v.toLowerCase().endsWith('.png') || v.toLowerCase().endsWith('.webp')) {
+        urls.add(prefix + v)
+      }
+    }
+    else if (Array.isArray(value)) {
       value.forEach(item => scan(item, keyName))
-    } else if (typeof value === 'object') {
+    }
+    else if (typeof value === 'object') {
       for (const [k, v] of Object.entries(value)) {
         scan(v, k)
       }
     }
   }
-  
+
   scan(car)
   return Array.from(urls)
 }
@@ -662,19 +679,38 @@ async function exportToGoogleSheets() {
     toast.error('No data to export')
     return
   }
-  
+
   const headers = [
-    'Date', 'App ID', 'Make', 'Model', 'Variant', 'Fuel', 'Reg Year', 'Mfg Year', 'Odometer (Kms)', 
-    'Auction Status', 'PD', 'CEP', 'Sim. CEP', 'HB', 'Auto Bid', 'GAP', 'Overall Bids', 
-    '1-Clik Price', 'OtoBuy Offer', 'Deal Status', 'RA', 'Remarks'
+    'Date',
+    'App ID',
+    'Make',
+    'Model',
+    'Variant',
+    'Fuel',
+    'Reg Year',
+    'Mfg Year',
+    'Odometer (Kms)',
+    'Auction Status',
+    'PD',
+    'CEP',
+    'Sim. CEP',
+    'HB',
+    'Auto Bid',
+    'GAP',
+    'Overall Bids',
+    '1-Clik Price',
+    'OtoBuy Offer',
+    'Deal Status',
+    'RA',
+    'Remarks',
   ]
-  
+
   const rows = allCars.value.map((car: any) => {
     const actCep = car.customerExpectedPrice || car.cep || 0
     const delCep = getInflatedCep(car) || 0
     const hb = car.highestBid || 0
     const gap = delCep ? hb - delCep : 0
-    
+
     return [
       formatDate((car.approvalDate && car.approvalDate !== 'null') ? car.approvalDate : ((car.auctionStartTime && car.auctionStartTime !== 'null') ? car.auctionStartTime : car.createdAt)) || '',
       car.appointmentId || '',
@@ -697,19 +733,20 @@ async function exportToGoogleSheets() {
       car.otobuyOffer || '',
       car.dealStatus || '',
       car.retailAssociate || '',
-      car.remarks || ''
+      car.remarks || '',
     ].map(v => String(v).replace(/\t/g, ' ')).join('\t')
   })
-  
+
   const tsvContent = [headers.join('\t'), ...rows].join('\n')
-  
+
   try {
     await navigator.clipboard.writeText(tsvContent)
     toast.success('Data copied! Opening Google Sheets... Just press Ctrl+V / Cmd+V')
     setTimeout(() => {
       window.open('https://sheet.new', '_blank')
     }, 1500)
-  } catch (err) {
+  }
+  catch (err) {
     toast.error('Failed to copy data to clipboard. You may need to export as CSV instead.')
   }
 }
@@ -717,7 +754,8 @@ async function exportToGoogleSheets() {
 const isZipping = ref<string>('')
 
 async function loadJSZip(): Promise<any> {
-  if ((window as any).JSZip) return (window as any).JSZip
+  if ((window as any).JSZip)
+    return (window as any).JSZip
   return new Promise((resolve, reject) => {
     const script = document.createElement('script')
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'
@@ -730,16 +768,18 @@ async function loadJSZip(): Promise<any> {
 async function downloadImagesZip(car: any) {
   isZipping.value = car.appointmentId || car._id
   toast.info('Fetching full inspection details...')
-  
+
   let fullCar = car
   try {
     const response = await $fetch<any>(`/api/leads/${car.appointmentId}`)
     if (response && response.carDetails) {
       fullCar = response.carDetails
-    } else if (response) {
+    }
+    else if (response) {
       fullCar = response
     }
-  } catch (err) {
+  }
+  catch (err) {
     console.error('Failed to fetch full car details, falling back to list data', err)
   }
 
@@ -751,12 +791,12 @@ async function downloadImagesZip(car: any) {
   }
 
   toast.info(`Zipping ${images.length} images, please wait...`)
-  
+
   try {
     const JSZipCtor = await loadJSZip()
     const zip = new JSZipCtor()
     const folder = zip.folder(`${car.appointmentId}-images`)
-    
+
     // Fetch all images concurrently
     const promises = images.map(async (url: string, idx: number) => {
       try {
@@ -764,13 +804,14 @@ async function downloadImagesZip(car: any) {
         const blob = await response.blob()
         const extension = url.split('.').pop()?.split('?')[0] || 'jpg'
         folder?.file(`image-${idx + 1}.${extension}`, blob)
-      } catch (err) {
+      }
+      catch (err) {
         console.error(`Failed to fetch image ${url}`, err)
       }
     })
-    
+
     await Promise.all(promises)
-    
+
     const zipBlob = await zip.generateAsync({ type: 'blob' })
     const url = URL.createObjectURL(zipBlob)
     const a = document.createElement('a')
@@ -780,11 +821,13 @@ async function downloadImagesZip(car: any) {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    
+
     toast.success('Images downloaded successfully!')
-  } catch (err) {
+  }
+  catch (err) {
     toast.error('Failed to create zip file')
-  } finally {
+  }
+  finally {
     isZipping.value = ''
   }
 }
@@ -835,89 +878,89 @@ async function downloadImagesZip(car: any) {
                   </div>
                 </div>
               </div>
-              
+
               <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Make</Label>
-                <SearchableSelect
-                  v-model="localFilters.make"
-                  :options="[{ label: 'Any Make', value: 'ALL' }, ...viewMakes.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Make"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Model</Label>
-                <SearchableSelect
-                  v-model="localFilters.model"
-                  :options="[{ label: 'Any Model', value: 'ALL' }, ...viewModels.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Model"
-                  :disabled="!localFilters.make || localFilters.make === 'ALL'"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">City</Label>
-                <SearchableSelect
-                  v-model="localFilters.city"
-                  :options="[{ label: 'Any City', value: 'ALL' }, ...viewCities.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any City"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Auction Status</Label>
-                <SearchableSelect
-                  v-model="localFilters.auctionStatus"
-                  :options="[{ label: 'Any Status', value: 'ALL' }, ...viewAuctionStatuses.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Status"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Deal Status</Label>
-                <SearchableSelect
-                  v-model="localFilters.dealStatus"
-                  :options="[{ label: 'Any Status', value: 'ALL' }, ...viewDealStatuses.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Status"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Lead Source</Label>
-                <SearchableSelect
-                  v-model="localFilters.leadSource"
-                  :options="[{ label: 'Any Source', value: 'ALL' }, ...viewLeadSources.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Source"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Referred By</Label>
-                <SearchableSelect
-                  v-model="localFilters.referredBy"
-                  :options="[{ label: 'Any Referrer', value: 'ALL' }, ...viewReferredBys.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Referrer"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">IE (Inspector)</Label>
-                <SearchableSelect
-                  v-model="localFilters.ie"
-                  :options="[{ label: 'Any IE', value: 'ALL' }, ...viewIEs]"
-                  placeholder="Any IE"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">RA (Associate)</Label>
-                <SearchableSelect
-                  v-model="localFilters.ra"
-                  :options="[{ label: 'Any RA', value: 'ALL' }, ...viewRAs]"
-                  placeholder="Any RA"
-                  :use-pills="false"
-                />
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Make</Label>
+                  <SearchableSelect
+                    v-model="localFilters.make"
+                    :options="[{ label: 'Any Make', value: 'ALL' }, ...viewMakes.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Make"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Model</Label>
+                  <SearchableSelect
+                    v-model="localFilters.model"
+                    :options="[{ label: 'Any Model', value: 'ALL' }, ...viewModels.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Model"
+                    :disabled="!localFilters.make || localFilters.make === 'ALL'"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">City</Label>
+                  <SearchableSelect
+                    v-model="localFilters.city"
+                    :options="[{ label: 'Any City', value: 'ALL' }, ...viewCities.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any City"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Auction Status</Label>
+                  <SearchableSelect
+                    v-model="localFilters.auctionStatus"
+                    :options="[{ label: 'Any Status', value: 'ALL' }, ...viewAuctionStatuses.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Status"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Deal Status</Label>
+                  <SearchableSelect
+                    v-model="localFilters.dealStatus"
+                    :options="[{ label: 'Any Status', value: 'ALL' }, ...viewDealStatuses.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Status"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Lead Source</Label>
+                  <SearchableSelect
+                    v-model="localFilters.leadSource"
+                    :options="[{ label: 'Any Source', value: 'ALL' }, ...viewLeadSources.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Source"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Referred By</Label>
+                  <SearchableSelect
+                    v-model="localFilters.referredBy"
+                    :options="[{ label: 'Any Referrer', value: 'ALL' }, ...viewReferredBys.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Referrer"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">IE (Inspector)</Label>
+                  <SearchableSelect
+                    v-model="localFilters.ie"
+                    :options="[{ label: 'Any IE', value: 'ALL' }, ...viewIEs]"
+                    placeholder="Any IE"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">RA (Associate)</Label>
+                  <SearchableSelect
+                    v-model="localFilters.ra"
+                    :options="[{ label: 'Any RA', value: 'ALL' }, ...viewRAs]"
+                    placeholder="Any RA"
+                    :use-pills="false"
+                  />
                 </div>
               </div>
             </div>
@@ -925,7 +968,7 @@ async function downloadImagesZip(car: any) {
         </Popover>
 
         <!-- View in Google Sheets Button -->
-        <Button variant="outline" size="icon" class="h-8 w-8 shrink-0 border-dashed bg-[#E8F0FE] hover:bg-[#D2E3FC] text-[#1967D2] hover:text-[#174EA6] border-[#8AB4F8]/50 transition-colors" @click="exportToGoogleSheets" title="Open in Google Sheets">
+        <Button variant="outline" size="icon" class="h-8 w-8 shrink-0 border-dashed bg-[#E8F0FE] hover:bg-[#D2E3FC] text-[#1967D2] hover:text-[#174EA6] border-[#8AB4F8]/50 transition-colors" title="Open in Google Sheets" @click="exportToGoogleSheets">
           <Icon name="i-lucide-file-spreadsheet" class="size-4" />
         </Button>
       </div>
@@ -1116,8 +1159,8 @@ async function downloadImagesZip(car: any) {
                   variant="ghost"
                   class="p-1 hover:bg-muted/50 rounded-md transition-colors w-12 h-12 flex items-center justify-center border border-transparent hover:border-border"
                   title="Download Images"
-                  @click.stop="downloadImagesZip(car)"
                   :disabled="isZipping === (car.appointmentId || car._id)"
+                  @click.stop="downloadImagesZip(car)"
                 >
                   <Icon v-if="isZipping === (car.appointmentId || car._id)" name="i-lucide-loader-2" class="!size-6 text-blue-500 shrink-0 animate-spin" />
                   <Icon v-else name="i-lucide-images" class="!size-8 text-blue-500 shrink-0" />

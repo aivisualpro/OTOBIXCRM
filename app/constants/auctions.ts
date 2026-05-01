@@ -58,4 +58,10 @@ export const auctionRouteFilters: Record<string, AuctionRouteFilter> = {
     icon: 'i-lucide-trash-2',
     color: 'text-red-500',
   },
+  admin: {
+    label: 'Admin',
+    filterFn: () => true,
+    icon: 'i-lucide-shield',
+    color: 'text-purple-500',
+  },
 }

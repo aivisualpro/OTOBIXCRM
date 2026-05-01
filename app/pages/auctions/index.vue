@@ -23,6 +23,7 @@ if (!tabParam.value || !auctionRouteFilters[tabParam.value]) {
 }
 
 const filter = computed(() => auctionRouteFilters[tabParam.value] || auctionRouteFilters.upcoming)
+const isAdminTab = computed(() => tabParam.value === 'admin')
 
 watch(tabParam, (newTab) => {
   if (newTab && auctionRouteFilters[newTab]) {
@@ -32,8 +33,12 @@ watch(tabParam, (newTab) => {
 </script>
 
 <template>
+  <!-- Admin tab uses the dedicated table view -->
+  <AuctionsAdminTablePage v-if="isAdminTab" />
+
+  <!-- All other tabs use the standard card view -->
   <AuctionsTablePage
-    v-if="filter"
+    v-else-if="filter"
     :title="`Auctions / ${filter.label}`"
     description=""
     :icon="filter.icon"

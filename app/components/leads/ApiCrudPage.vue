@@ -394,7 +394,8 @@ const formData = ref<Record<string, any>>({})
 
 // ─── Server-fetched makes/models/variants ───
 const allCarMakes = computed(() => {
-  if (!carBrandStats.value?.brands) return []
+  if (!carBrandStats.value?.brands)
+    return []
   return carBrandStats.value.brands.map(b => b.make).sort((a, b) => a.localeCompare(b))
 })
 
@@ -416,7 +417,8 @@ watch(() => formData.value.make, async (newMake, oldMake) => {
     try {
       const res = await $fetch<any>('/api/car-dropdowns/models-by-make', { query: { make: newMake } })
       serverModels.value = res.models || []
-    } catch { /* silent */ }
+    }
+    catch { /* silent */ }
     finally { isLoadingModels.value = false }
   }
 })
@@ -432,7 +434,8 @@ watch(() => formData.value.model, async (newModel, oldModel) => {
     try {
       const res = await $fetch<any>('/api/car-dropdowns/variants-by-make-model', { query: { make: formData.value.make, model: newModel } })
       serverVariants.value = res.variants || []
-    } catch { /* silent */ }
+    }
+    catch { /* silent */ }
     finally { isLoadingVariants.value = false }
   }
 })

@@ -186,6 +186,7 @@ const AUCTION_TABS = [
   { id: 'ended', title: 'Ended', route: '/auctions?tab=ended' },
   { id: 'sold', title: 'Sold', route: '/auctions?tab=sold' },
   { id: 'removed', title: 'Removed', route: '/auctions?tab=removed' },
+  { id: 'admin', title: 'Admin', route: '/auctions?tab=admin' },
 ]
 
 function localToggleAuctionTab(tabId: string) {
