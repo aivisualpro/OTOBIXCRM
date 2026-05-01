@@ -41,7 +41,8 @@ const metrics = computed(() => {
 })
 
 const brandsWithCounts = computed(() => {
-  if (!brandStats.value?.brands) return []
+  if (!brandStats.value?.brands)
+    return []
   return brandStats.value.brands.map(b => [b.make, b.count] as [string, number])
 })
 
@@ -66,14 +67,16 @@ onMounted(async () => {
 const hasMore = computed(() => carDropdowns.value.length < totalCount.value)
 
 async function loadMore() {
-  if (isLoading.value || !hasMore.value) return
+  if (isLoading.value || !hasMore.value)
+    return
   currentPage.value++
   await fetchCarDropdowns({ page: currentPage.value, limit: pageSize, search: search.value, append: true })
 }
 
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 useIntersectionObserver(loadMoreTrigger, (entries) => {
-  if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value) loadMore()
+  if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value)
+    loadMore()
 }, { threshold: 0.1 })
 
 // ─── Dialog Logic ───
@@ -86,19 +89,26 @@ const form = ref({ _id: '', make: '', model: '', variant: '' })
 const makeSearch = ref('')
 const showMakeDropdown = ref(false)
 const allMakesFromStats = computed(() => {
-  if (!brandStats.value?.brands) return []
+  if (!brandStats.value?.brands)
+    return []
   return brandStats.value.brands.map(b => b.make).sort((a, b) => a.localeCompare(b))
 })
 const filteredMakes = computed(() => {
   const all = allMakesFromStats.value
-  if (!makeSearch.value) return all
+  if (!makeSearch.value)
+    return all
   const q = makeSearch.value.toLowerCase()
   return all.filter(m => m.toLowerCase().includes(q))
 })
 const canAddNewMake = computed(() => {
-  if (!makeSearch.value.trim()) return false
+  if (!makeSearch.value.trim())
+    return false
   return !allMakesFromStats.value.some(m => m.toLowerCase() === makeSearch.value.trim().toLowerCase())
 })
+
+// Model dropdown — declare early so make functions can reference
+const modelSearch = ref('')
+const showModelDropdown = ref(false)
 
 function selectMake(make: string) {
   form.value.make = make
@@ -111,7 +121,8 @@ function selectMake(make: string) {
 
 function addNewMake() {
   const newMake = makeSearch.value.trim()
-  if (!newMake) return
+  if (!newMake)
+    return
   form.value.make = newMake
   makeSearch.value = ''
   showMakeDropdown.value = false
@@ -120,15 +131,14 @@ function addNewMake() {
 }
 
 // Model dropdown — fetch ALL models for selected make from server
-const modelSearch = ref('')
-const showModelDropdown = ref(false)
 const allModelsForMake = ref<string[]>([])
 const isLoadingModels = ref(false)
 
 // Fetch models whenever the form make changes
 watch(() => form.value.make, async (newMake) => {
   allModelsForMake.value = []
-  if (!newMake) return
+  if (!newMake)
+    return
   isLoadingModels.value = true
   try {
     const res = await $fetch<any>('/api/car-dropdowns/models-by-make', { query: { make: newMake } })
@@ -139,14 +149,17 @@ watch(() => form.value.make, async (newMake) => {
 })
 
 const filteredModels = computed(() => {
-  if (!form.value.make) return []
+  if (!form.value.make)
+    return []
   const all = allModelsForMake.value
-  if (!modelSearch.value) return all
+  if (!modelSearch.value)
+    return all
   const q = modelSearch.value.toLowerCase()
   return all.filter(m => m.toLowerCase().includes(q))
 })
 const canAddNewModel = computed(() => {
-  if (!modelSearch.value.trim() || !form.value.make) return false
+  if (!modelSearch.value.trim() || !form.value.make)
+    return false
   return !allModelsForMake.value.some(m => m.toLowerCase() === modelSearch.value.trim().toLowerCase())
 })
 
@@ -158,7 +171,8 @@ function selectModel(model: string) {
 
 function addNewModel() {
   const newModel = modelSearch.value.trim()
-  if (!newModel) return
+  if (!newModel)
+    return
   form.value.model = newModel
   modelSearch.value = ''
   showModelDropdown.value = false
@@ -179,7 +193,8 @@ function openCreate() {
     setTimeout(() => {
       showModelDropdown.value = true
       const el = modelInputRef.value?.$el || modelInputRef.value
-      if (el?.focus) el.focus()
+      if (el?.focus)
+        el.focus()
     }, 150)
   }
 }
@@ -225,7 +240,8 @@ function confirmDelete(item: any) {
 }
 
 async function handleDelete() {
-  if (!deleteTarget.value) return
+  if (!deleteTarget.value)
+    return
   isDeleting.value = true
   try {
     await deleteDropdown(deleteTarget.value._id)
@@ -346,7 +362,7 @@ async function handleDelete() {
           <!-- Table skeleton -->
           <template v-if="isLoading && !initialLoaded">
             <div class="space-y-0">
-              <div class="flex items-center gap-4 px-4 py-3 border-b border-border/20" v-for="i in 12" :key="i">
+              <div v-for="i in 12" :key="i" class="flex items-center gap-4 px-4 py-3 border-b border-border/20">
                 <div class="w-8 h-4 bg-muted rounded animate-pulse" />
                 <div class="h-4 w-32 bg-muted rounded animate-pulse flex-1" />
                 <div class="h-4 w-24 bg-muted/50 rounded animate-pulse" />
@@ -410,7 +426,7 @@ async function handleDelete() {
               <TableRow v-if="hasMore" class="hover:bg-transparent">
                 <TableCell colspan="5" class="p-6">
                   <div ref="loadMoreTrigger" class="flex items-center justify-center gap-3">
-                    <Button variant="outline" size="sm" :disabled="isLoading" @click="loadMore" class="text-xs font-bold">
+                    <Button variant="outline" size="sm" :disabled="isLoading" class="text-xs font-bold" @click="loadMore">
                       <Icon v-if="isLoading" name="i-lucide-refresh-cw" class="mr-2 size-3.5 animate-spin" />
                       {{ isLoading ? 'Loading...' : 'Load More' }}
                     </Button>
@@ -521,7 +537,7 @@ async function handleDelete() {
           <Button variant="ghost" @click="showDialog = false">
             Cancel
           </Button>
-          <Button :disabled="isSubmitting" @click="handleSubmit" class="gap-2">
+          <Button :disabled="isSubmitting" class="gap-2" @click="handleSubmit">
             <Icon v-if="isSubmitting" name="i-lucide-loader-2" class="size-4 animate-spin" />
             {{ isEditing ? 'Save' : 'Add' }}
           </Button>

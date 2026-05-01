@@ -1408,7 +1408,7 @@ watchEffect(() => {
       title: props.readonly ? `Inspection: ${carId.value} / ${currentTab.label}` : `Quality Control: ${carId.value} / ${currentTab.label}`,
       icon: currentTab.icon || 'i-lucide-scan-eye',
       showBackButton: true,
-      backUrl: activeTab.value !== 'details' ? `${basePath}/${carId.value}/details` : ''
+      backUrl: activeTab.value !== 'details' ? `${basePath}/${carId.value}/details` : '',
     })
   }
 })

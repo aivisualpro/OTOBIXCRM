@@ -162,17 +162,20 @@ function clearAdvancedFilters() {
 }
 
 const activeFilterCount = computed(() => {
-  if (!advancedFilters.value) return 0
+  if (!advancedFilters.value)
+    return 0
   let count = 0
   let hasDate = false
   for (const [k, v] of Object.entries(advancedFilters.value)) {
-    if (!v) continue
+    if (!v)
+      continue
     if (k === 'startDate' || k === 'endDate' || k === 'datePreset') {
       if (!hasDate) {
         count++
         hasDate = true
       }
-    } else {
+    }
+    else {
       count++
     }
   }
@@ -1043,7 +1046,8 @@ function resetTransitionForm() {
 
 const transitionDialogTitle = computed(() => {
   const s = transitionTarget.value?.status
-  if (!s) return ''
+  if (!s)
+    return ''
   return `Move to ${STATUS_META[s]?.label || s}`
 })
 
@@ -1091,7 +1095,8 @@ async function changeAuctionStatus(car: any, newStatus: string) {
 }
 
 async function submitTransition() {
-  if (!transitionTarget.value) return
+  if (!transitionTarget.value)
+    return
   const { car, status } = transitionTarget.value
   transitionSubmitting.value = true
 
@@ -1130,7 +1135,10 @@ async function executeTransition(car: any, newStatus: string) {
     }
     else if (newStatus === 'upcoming') {
       const startStr = transitionForm.value.auctionStartTime
-      if (!startStr) { toast.error('Start time is required'); return }
+      if (!startStr) {
+        toast.error('Start time is required')
+        return
+      }
       const startTime = new Date(startStr).toISOString()
       const duration = transitionForm.value.auctionDuration || 24
       const endTime = new Date(new Date(startStr).getTime() + duration * 60 * 60 * 1000).toISOString()
@@ -1147,15 +1155,24 @@ async function executeTransition(car: any, newStatus: string) {
       })
     }
     else if (newStatus === 'otobuy') {
-      if (!transitionForm.value.oneClickPrice) { toast.error('1-Click Price is required'); return }
+      if (!transitionForm.value.oneClickPrice) {
+        toast.error('1-Click Price is required')
+        return
+      }
       await $fetch('/api/retail/move-to-otobuy', {
         method: 'POST',
         body: { carId, oneClickPrice: Number(transitionForm.value.oneClickPrice) },
       })
     }
     else if (newStatus === 'sold') {
-      if (!transitionForm.value.soldTo) { toast.error('Sold To is required'); return }
-      if (!transitionForm.value.soldAt) { toast.error('Sold Price is required'); return }
+      if (!transitionForm.value.soldTo) {
+        toast.error('Sold To is required')
+        return
+      }
+      if (!transitionForm.value.soldAt) {
+        toast.error('Sold Price is required')
+        return
+      }
       await $fetch('/api/retail/mark-as-sold', {
         method: 'POST',
         body: {
@@ -1181,7 +1198,8 @@ async function executeTransition(car: any, newStatus: string) {
     const oldStatus = car.auctionStatus
     car.auctionStatus = newStatus
     const log = buildLog('auctionStatus', newStatus, oldStatus)
-    if (!car.retailChangeLog) car.retailChangeLog = []
+    if (!car.retailChangeLog)
+      car.retailChangeLog = []
     car.retailChangeLog.unshift(log)
 
     toast.success(`Moved to ${STATUS_META[newStatus]?.label || newStatus}`)
@@ -1258,21 +1276,46 @@ async function exportToGoogleSheets() {
     toast.error('No data to export')
     return
   }
-  
+
   const headers = [
-    'Date', 'App ID', 'Make', 'Model', 'Variant', 'Fuel', 'Reg Year', 'Mfg Year', 'Odometer (Kms)', 
-    'Auction Status', 'PD', 'Act. CEP', 'Del. CEP', 'Deal Price', 'HB', 'GAP', 'Overall Bids', 
-    '1-Clik Price', 'OtoBuy Offer', 'Current Margin', 'Margin Simulation', 'Re-Set Var. Margin', 
-    'Retail Quality', 'Sale Reason', 'Deal Status', 'Lead Source', 'IE', 'RA', 'Remarks'
+    'Date',
+    'App ID',
+    'Make',
+    'Model',
+    'Variant',
+    'Fuel',
+    'Reg Year',
+    'Mfg Year',
+    'Odometer (Kms)',
+    'Auction Status',
+    'PD',
+    'Act. CEP',
+    'Del. CEP',
+    'Deal Price',
+    'HB',
+    'GAP',
+    'Overall Bids',
+    '1-Clik Price',
+    'OtoBuy Offer',
+    'Current Margin',
+    'Margin Simulation',
+    'Re-Set Var. Margin',
+    'Retail Quality',
+    'Sale Reason',
+    'Deal Status',
+    'Lead Source',
+    'IE',
+    'RA',
+    'Remarks',
   ]
-  
+
   const rows = allCars.value.map((car: any) => {
     const actCep = car.customerExpectedPrice || car.cep || 0
     const delCep = getInflatedCep(car) || 0
     const hb = car.highestBid || 0
     const gap = delCep ? hb - delCep : 0
     const currentMargin = actCep ? (hb - actCep) : 0
-    
+
     return [
       formatDate((car.approvalDate && car.approvalDate !== 'null') ? car.approvalDate : ((car.auctionStartTime && car.auctionStartTime !== 'null') ? car.auctionStartTime : car.createdAt)) || '',
       car.appointmentId || '',
@@ -1293,7 +1336,7 @@ async function exportToGoogleSheets() {
       bidStats.value[String(car.id || car._id)]?.totalBids || 0,
       car.oneClickPrice || '',
       getRetailOtobuyOffer(car) || '',
-      (Number(car.fixedMargin) || 0) + (Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')) || 0) + '%',
+      `${(Number(car.fixedMargin) || 0) + (Number(String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')) || 0)}%`,
       car.marginSimulation || '',
       car.variableMarginPercentage || '',
       car.retailQuality || '',
@@ -1302,23 +1345,23 @@ async function exportToGoogleSheets() {
       car.leadSource || '',
       car.allocatedTo || '',
       car.retailAssociate || '',
-      car.remarks || ''
+      car.remarks || '',
     ].map(v => String(v).replace(/\t/g, ' ')).join('\t')
   })
-  
+
   const tsvContent = [headers.join('\t'), ...rows].join('\n')
-  
+
   try {
     await navigator.clipboard.writeText(tsvContent)
     toast.success('Data copied! Opening Google Sheets... Just press Ctrl+V / Cmd+V')
     setTimeout(() => {
       window.open('https://sheet.new', '_blank')
     }, 1500)
-  } catch (err) {
+  }
+  catch (err) {
     toast.error('Failed to copy data to clipboard. You may need to export as CSV instead.')
   }
 }
-
 </script>
 
 <template>
@@ -1366,89 +1409,89 @@ async function exportToGoogleSheets() {
                   </div>
                 </div>
               </div>
-              
+
               <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Make</Label>
-                <SearchableSelect
-                  v-model="localFilters.make"
-                  :options="[{ label: 'Any Make', value: 'ALL' }, ...viewMakes.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Make"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Model</Label>
-                <SearchableSelect
-                  v-model="localFilters.model"
-                  :options="[{ label: 'Any Model', value: 'ALL' }, ...viewModels.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Model"
-                  :disabled="!localFilters.make || localFilters.make === 'ALL'"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">City</Label>
-                <SearchableSelect
-                  v-model="localFilters.city"
-                  :options="[{ label: 'Any City', value: 'ALL' }, ...viewCities.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any City"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Auction Status</Label>
-                <SearchableSelect
-                  v-model="localFilters.auctionStatus"
-                  :options="[{ label: 'Any Status', value: 'ALL' }, ...viewAuctionStatuses.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Status"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Deal Status</Label>
-                <SearchableSelect
-                  v-model="localFilters.dealStatus"
-                  :options="[{ label: 'Any Status', value: 'ALL' }, ...viewDealStatuses.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Status"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Lead Source</Label>
-                <SearchableSelect
-                  v-model="localFilters.leadSource"
-                  :options="[{ label: 'Any Source', value: 'ALL' }, ...viewLeadSources.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Source"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">Referred By</Label>
-                <SearchableSelect
-                  v-model="localFilters.referredBy"
-                  :options="[{ label: 'Any Referrer', value: 'ALL' }, ...viewReferredBys.map((m: any) => ({ label: m, value: m }))]"
-                  placeholder="Any Referrer"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">IE (Inspector)</Label>
-                <SearchableSelect
-                  v-model="localFilters.ie"
-                  :options="[{ label: 'Any IE', value: 'ALL' }, ...viewIEs]"
-                  placeholder="Any IE"
-                  :use-pills="false"
-                />
-              </div>
-              <div class="space-y-1.5">
-                <Label class="text-xs font-medium text-muted-foreground">RA (Associate)</Label>
-                <SearchableSelect
-                  v-model="localFilters.ra"
-                  :options="[{ label: 'Any RA', value: 'ALL' }, ...viewRAs]"
-                  placeholder="Any RA"
-                  :use-pills="false"
-                />
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Make</Label>
+                  <SearchableSelect
+                    v-model="localFilters.make"
+                    :options="[{ label: 'Any Make', value: 'ALL' }, ...viewMakes.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Make"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Model</Label>
+                  <SearchableSelect
+                    v-model="localFilters.model"
+                    :options="[{ label: 'Any Model', value: 'ALL' }, ...viewModels.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Model"
+                    :disabled="!localFilters.make || localFilters.make === 'ALL'"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">City</Label>
+                  <SearchableSelect
+                    v-model="localFilters.city"
+                    :options="[{ label: 'Any City', value: 'ALL' }, ...viewCities.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any City"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Auction Status</Label>
+                  <SearchableSelect
+                    v-model="localFilters.auctionStatus"
+                    :options="[{ label: 'Any Status', value: 'ALL' }, ...viewAuctionStatuses.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Status"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Deal Status</Label>
+                  <SearchableSelect
+                    v-model="localFilters.dealStatus"
+                    :options="[{ label: 'Any Status', value: 'ALL' }, ...viewDealStatuses.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Status"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Lead Source</Label>
+                  <SearchableSelect
+                    v-model="localFilters.leadSource"
+                    :options="[{ label: 'Any Source', value: 'ALL' }, ...viewLeadSources.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Source"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Referred By</Label>
+                  <SearchableSelect
+                    v-model="localFilters.referredBy"
+                    :options="[{ label: 'Any Referrer', value: 'ALL' }, ...viewReferredBys.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Referrer"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">IE (Inspector)</Label>
+                  <SearchableSelect
+                    v-model="localFilters.ie"
+                    :options="[{ label: 'Any IE', value: 'ALL' }, ...viewIEs]"
+                    placeholder="Any IE"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">RA (Associate)</Label>
+                  <SearchableSelect
+                    v-model="localFilters.ra"
+                    :options="[{ label: 'Any RA', value: 'ALL' }, ...viewRAs]"
+                    placeholder="Any RA"
+                    :use-pills="false"
+                  />
                 </div>
               </div>
             </div>
@@ -1456,7 +1499,7 @@ async function exportToGoogleSheets() {
         </Popover>
 
         <!-- View in Google Sheets Button -->
-        <Button variant="outline" size="icon" class="h-8 w-8 shrink-0 border-dashed bg-[#E8F0FE] hover:bg-[#D2E3FC] text-[#1967D2] hover:text-[#174EA6] border-[#8AB4F8]/50 transition-colors" @click="exportToGoogleSheets" title="Open in Google Sheets">
+        <Button variant="outline" size="icon" class="h-8 w-8 shrink-0 border-dashed bg-[#E8F0FE] hover:bg-[#D2E3FC] text-[#1967D2] hover:text-[#174EA6] border-[#8AB4F8]/50 transition-colors" title="Open in Google Sheets" @click="exportToGoogleSheets">
           <Icon name="i-lucide-file-spreadsheet" class="size-4" />
         </Button>
       </div>
@@ -2632,7 +2675,9 @@ async function exportToGoogleSheets() {
           <div class="space-y-2">
             <Label class="text-xs font-bold">Auction Duration (hours)</Label>
             <Input v-model.number="transitionForm.auctionDuration" type="number" min="1" max="168" placeholder="24" class="h-10" />
-            <p class="text-[10px] text-muted-foreground">Car will go live immediately for {{ transitionForm.auctionDuration || 24 }} hours</p>
+            <p class="text-[10px] text-muted-foreground">
+              Car will go live immediately for {{ transitionForm.auctionDuration || 24 }} hours
+            </p>
           </div>
         </template>
 
@@ -2678,10 +2723,10 @@ async function exportToGoogleSheets() {
       </div>
 
       <DialogFooter class="gap-2">
-        <Button variant="ghost" @click="transitionDialog = false" :disabled="transitionSubmitting">
+        <Button variant="ghost" :disabled="transitionSubmitting" @click="transitionDialog = false">
           Cancel
         </Button>
-        <Button @click="submitTransition" :disabled="transitionSubmitting" class="gap-2">
+        <Button :disabled="transitionSubmitting" class="gap-2" @click="submitTransition">
           <Icon v-if="transitionSubmitting" name="i-lucide-loader-2" class="size-4 animate-spin" />
           <Icon v-else :name="transitionDialogIcon" class="size-4" />
           Confirm
