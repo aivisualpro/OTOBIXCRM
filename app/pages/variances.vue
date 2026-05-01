@@ -1,73 +1,56 @@
 <script setup lang="ts">
-import { useDebounceFn } from '@vueuse/core'
+import { useDebounceFn, useIntersectionObserver } from '@vueuse/core'
 import { toast } from 'vue-sonner'
 
 definePageMeta({ layout: 'default' })
 useHead({ title: 'Variances Dashboard — OTOBIX' })
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Variances Analytics', icon: 'i-lucide-layers', description: 'Advanced control and distribution metrics for vehicle data' })
+setHeader({ title: 'Variances Analytics', icon: 'i-lucide-layers' })
 
 const {
   carDropdowns,
   totalCount,
   isLoading,
+  brandStats,
   fetchCarDropdowns,
+  fetchBrandStats,
   addDropdown,
   editDropdown,
   deleteDropdown,
-  toggleStatus,
 } = useCarDropdowns()
 
 const search = ref('')
 const selectedMake = ref<string | null>(null)
 const currentPage = ref(1)
 const pageSize = 50
+const initialLoaded = ref(false)
 
-// ─── Metrics Calculation ───
-// We use carDropdowns as a sample for distributions
+// ─── Server-side metrics (no client recomputation) ───
 const metrics = computed(() => {
-  const makes = new Set<string>()
-  const models = new Set<string>()
-  carDropdowns.value.forEach((item) => {
-    if (item.make)
-      makes.add(item.make)
-    if (item.model)
-      models.add(`${item.make}-${item.model}`)
-  })
-  return {
-    totalMakes: makes.size,
-    totalModels: models.size,
-    totalVariants: totalCount.value,
-    activeCount: carDropdowns.value.filter(d => d.isActive !== false).length,
+  if (brandStats.value) {
+    return {
+      totalMakes: brandStats.value.totalMakes,
+      totalModels: brandStats.value.totalModels,
+      totalVariants: brandStats.value.totalVariants,
+      activeCount: brandStats.value.activeCount,
+    }
   }
+  return { totalMakes: 0, totalModels: 0, totalVariants: 0, activeCount: 0 }
 })
 
-// Brand Distribution for the Top 5
-const brandDist = computed(() => {
-  const counts: Record<string, number> = {}
-  carDropdowns.value.forEach((item) => {
-    if (item.make)
-      counts[item.make] = (counts[item.make] || 0) + 1
-  })
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4)
-    .map(([make, count]) => ({
-      name: make,
-      percent: Math.round((count / carDropdowns.value.length) * 100) || 0,
-      count,
-    }))
+
+
+// Sidebar brands from server stats
+const brandsWithCounts = computed(() => {
+  if (!brandStats.value?.brands) return []
+  return brandStats.value.brands.map(b => [b.make, b.count] as [string, number])
 })
 
 // ─── Data State Management ───
 async function reload() {
   currentPage.value = 1
-  await fetchCarDropdowns({
-    page: 1,
-    limit: pageSize,
-    search: search.value,
-  })
+  await fetchCarDropdowns({ page: 1, limit: pageSize, search: search.value })
 }
 
 const debouncedSearch = useDebounceFn(() => reload(), 300)
@@ -77,33 +60,25 @@ watch(selectedMake, (newMake) => {
   search.value = newMake || ''
 })
 
+// Parallel boot: list + brand stats simultaneously
 onMounted(async () => {
-  await reload()
+  await Promise.all([reload(), fetchBrandStats()])
+  initialLoaded.value = true
 })
 
 const hasMore = computed(() => carDropdowns.value.length < totalCount.value)
 
 async function loadMore() {
-  if (isLoading.value || !hasMore.value)
-    return
+  if (isLoading.value || !hasMore.value) return
   currentPage.value++
-  await fetchCarDropdowns({
-    page: currentPage.value,
-    limit: pageSize,
-    search: search.value,
-    append: true,
-  })
+  await fetchCarDropdowns({ page: currentPage.value, limit: pageSize, search: search.value, append: true })
 }
 
-// ─── Sidebar Groups ───
-const brandsWithCounts = computed(() => {
-  const map: Record<string, number> = {}
-  carDropdowns.value.forEach((d) => {
-    if (d.make)
-      map[d.make] = (map[d.make] || 0) + 1
-  })
-  return Object.entries(map).sort((a, b) => b[1] - a[1])
-})
+// ─── Infinite Scroll via IntersectionObserver ───
+const loadMoreTrigger = ref<HTMLElement | null>(null)
+useIntersectionObserver(loadMoreTrigger, (entries) => {
+  if (entries[0]?.isIntersecting && hasMore.value && !isLoading.value) loadMore()
+}, { threshold: 0.1 })
 
 // ─── Dialog Logic ───
 const showDialog = ref(false)
@@ -154,8 +129,7 @@ function confirmDelete(item: any) {
 }
 
 async function handleDelete() {
-  if (!deleteTarget.value)
-    return
+  if (!deleteTarget.value) return
   isDeleting.value = true
   try {
     await deleteDropdown(deleteTarget.value._id)
@@ -166,86 +140,29 @@ async function handleDelete() {
   finally { isDeleting.value = false }
 }
 
-async function handleToggleStatus(item: any) {
-  try {
-    const prev = item.isActive !== false
-    await toggleStatus(item._id)
-    const target = carDropdowns.value.find(d => d._id === item._id)
-    if (target)
-      target.isActive = !prev
-    toast.success('Status broadcasted')
-  }
-  catch { toast.error('Toggle failed') }
-}
+
 </script>
 
 <template>
   <div class="h-full flex flex-col bg-background/50 backdrop-blur-3xl">
-    <!-- Super UI Header Actions -->
+    <!-- Header Actions -->
     <HeaderActions>
-      <Badge variant="outline" class="h-7 text-[10px] font-bold border-primary/20 bg-primary/5 hidden xl:flex">
-        DB SYNC OK
-      </Badge>
-      <Button variant="ghost" size="sm" class="h-8 hover:bg-muted/50 transition-all font-semibold" :disabled="isLoading" @click="reload">
-        <Icon name="i-lucide-refresh-cw" class="mr-1.5 size-3.5" :class="{ 'animate-spin': isLoading }" />
-        Hard Refresh
+      <Button variant="ghost" size="icon" class="size-8 hover:bg-muted/50 transition-all" :disabled="isLoading" @click="reload">
+        <Icon name="i-lucide-refresh-cw" class="size-3.5" :class="{ 'animate-spin': isLoading }" />
       </Button>
       <Button size="sm" class="h-8 shadow-[0_2px_10px_rgba(var(--primary-rgb),0.3)] hover:scale-105 active:scale-95 transition-all text-xs font-bold px-4" @click="openCreate">
-        <Icon name="i-lucide-zap" class="mr-1.5 size-3.5 fill-current" />
-        INIT NEW VARIANCE
+        <Icon name="i-lucide-plus" class="mr-1.5 size-3.5" />
+        New
       </Button>
     </HeaderActions>
 
-    <!-- Analytics Dashboard Bar -->
-    <section class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 lg:px-6">
-      <!-- Total Variants -->
-      <Card class="bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-primary/10 relative overflow-hidden group">
-        <div class="p-4 relative z-10">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[10px] font-black uppercase tracking-widest text-primary/70">Vehicle Variants</span>
-            <Icon name="i-lucide-activity" class="size-4 text-primary animate-pulse" />
-          </div>
-          <p class="text-3xl font-black tabular-nums tracking-tighter">
-            {{ totalCount }}
-          </p>
-          <div class="flex items-center gap-1.5 mt-2">
-            <div class="h-1 flex-1 bg-muted rounded-full overflow-hidden">
-              <div class="h-full bg-primary" :style="{ width: `${(carDropdowns.length / totalCount) * 100}%` }" />
-            </div>
-            <span class="text-[9px] font-bold text-muted-foreground">{{ Math.round((carDropdowns.length / totalCount) * 100) }}% Ready</span>
-          </div>
-        </div>
-      </Card>
 
-      <!-- Distribution Metrics -->
-      <Card v-for="brand in brandDist" :key="brand.name" class="hidden md:block bg-card/40 backdrop-blur-md border border-border/50 hover:border-primary/30 transition-all">
-        <div class="p-4">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{{ brand.name }} Distribution</span>
-            <span class="text-[10px] font-black text-primary">{{ brand.percent }}%</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="size-8 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-              <Icon name="i-lucide-car-front" class="size-4 text-muted-foreground" />
-            </div>
-            <div class="flex-1 space-y-1.5">
-              <div class="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                <div class="h-full bg-primary rounded-full transition-all duration-700" :style="{ width: `${brand.percent}%` }" />
-              </div>
-              <p class="text-[9px] font-bold text-muted-foreground uppercase flex justify-between">
-                {{ brand.count }} Models Indexed <Icon name="i-lucide-trending-up" class="size-2.5" />
-              </p>
-            </div>
-          </div>
-        </div>
-      </Card>
-    </section>
 
     <!-- Main Workspace -->
-    <div class="flex-1 flex overflow-hidden lg:px-6 pb-6 gap-6">
-      <!-- Awesome Sidebar Grouping -->
+    <div class="flex-1 flex overflow-hidden pb-6 gap-6">
+      <!-- Sidebar -->
       <aside class="w-64 shrink-0 flex flex-col gap-4">
-        <Card class="flex-1 overflow-hidden bg-white/5 dark:bg-black/5 shadow-xl border-border/50 backdrop-blur items-stretch flex flex-col">
+        <Card class="flex-1 overflow-hidden bg-white/5 dark:bg-black/5 border-border/50 backdrop-blur items-stretch flex flex-col">
           <div class="p-4 border-b flex items-center justify-between bg-muted/30">
             <h3 class="text-xs font-extra-bold uppercase tracking-[0.2em] text-foreground/70">
               Master Brands
@@ -255,13 +172,22 @@ async function handleToggleStatus(item: any) {
             </Badge>
           </div>
           <div class="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
-            <!-- Active Search Filter -->
             <div class="relative mb-6">
               <Icon name="i-lucide-filter" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
               <Input v-model="search" placeholder="Quick Filter..." class="pl-8 h-8 text-[11px] bg-muted/20 border-border/50 focus-visible:ring-primary/20" />
             </div>
 
-            <nav class="space-y-1">
+            <!-- Sidebar skeleton -->
+            <template v-if="!brandsWithCounts.length && !initialLoaded">
+              <div v-for="i in 8" :key="i" class="flex items-center justify-between p-2.5 rounded-xl">
+                <div class="flex items-center gap-2 px-1">
+                  <div class="size-6 rounded-md bg-muted/50 animate-pulse" />
+                  <div class="h-3 w-16 bg-muted rounded animate-pulse" />
+                </div>
+                <div class="h-4 w-6 bg-muted rounded animate-pulse" />
+              </div>
+            </template>
+            <nav v-else class="space-y-1">
               <button
                 class="w-full text-left p-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between group relative overflow-hidden"
                 :class="selectedMake === null ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25' : 'hover:bg-muted text-muted-foreground hover:text-foreground'"
@@ -271,7 +197,7 @@ async function handleToggleStatus(item: any) {
                   <Icon name="i-lucide-layers" class="size-3.5" />
                   All Distribution
                 </div>
-                <span class="text-[10px] tabular-nums font-black opacity-60">{{ totalCount }}</span>
+                <span class="text-[10px] tabular-nums font-black opacity-60">{{ metrics.totalVariants }}</span>
               </button>
 
               <div class="my-4 h-px bg-border/20 mx-2" />
@@ -299,117 +225,65 @@ async function handleToggleStatus(item: any) {
       </aside>
 
       <!-- Premium Data Matrix -->
-      <main class="flex-1 flex flex-col min-w-0 bg-white/5 dark:bg-black/5 rounded-3xl border border-border/50 shadow-2xl overflow-hidden backdrop-blur-sm">
-        <header class="p-6 border-b bg-muted/5 flex items-center justify-between">
-          <div class="space-y-1">
-            <h2 class="text-xl font-black tracking-tight text-foreground flex items-center gap-3">
-              {{ selectedMake || 'Complete Collection' }}
-              <Badge variant="outline" class="text-[10px] font-bold opacity-50">
-                {{ carDropdowns.length }} Indices
-              </Badge>
-            </h2>
-            <p class="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-              Global Aggregate Pipeline Active
-            </p>
-          </div>
-          <div class="flex items-center gap-3">
-            <div class="h-10 w-px bg-border/10" />
-            <div class="text-right">
-              <p class="text-[9px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">
-                Global Coverage
-              </p>
-              <div class="flex items-center gap-2">
-                <span class="text-lg font-black tabular-nums tracking-tighter">{{ metrics.activeCount }}</span>
-                <span class="text-[10px] text-emerald-500 font-black">+14%</span>
-              </div>
-            </div>
-          </div>
+      <main class="flex-1 flex flex-col min-w-0 bg-white/5 dark:bg-black/5 rounded-3xl border border-border/50 overflow-hidden backdrop-blur-sm">
+        <header class="px-6 py-4 border-b bg-muted/5 flex items-center justify-between">
+          <h2 class="text-lg font-black tracking-tight text-foreground flex items-center gap-3">
+            {{ selectedMake || 'All Brands' }}
+            <Badge variant="outline" class="text-[10px] font-bold opacity-50">
+              {{ carDropdowns.length }} of {{ metrics.totalVariants }}
+            </Badge>
+          </h2>
         </header>
 
         <div class="flex-1 overflow-auto custom-scrollbar p-1">
-          <Table class="relative">
+          <!-- Table skeleton on first load -->
+          <template v-if="isLoading && !initialLoaded">
+            <div class="space-y-0">
+              <div class="flex items-center gap-4 px-4 py-3 border-b border-border/20" v-for="i in 12" :key="i">
+                <div class="w-8 h-4 bg-muted rounded animate-pulse" />
+                <div class="h-4 w-32 bg-muted rounded animate-pulse flex-1" />
+                <div class="h-7 w-24 bg-muted/50 rounded-lg animate-pulse" />
+              </div>
+            </div>
+          </template>
+          <Table v-else class="relative">
             <TableHeader class="sticky top-0 z-30 bg-background/90 backdrop-blur-2xl">
               <TableRow class="hover:bg-transparent border-b-2 border-primary/5">
                 <TableHead class="w-14 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                  ID
+                  S.No.
                 </TableHead>
                 <TableHead class="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                  Structure
+                  Model
                 </TableHead>
                 <TableHead class="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                  Variant Logic
+                  Variant
                 </TableHead>
-                <TableHead class="w-32 text-center text-[10px] font-black uppercase text-muted-foreground tracking-widest px-0">
-                  Status
-                </TableHead>
-                <TableHead class="w-12 pr-6" />
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow v-for="(item, idx) in carDropdowns" :key="item._id" class="group transition-all hover:bg-muted/30 border-b border-border/20">
                 <TableCell class="text-center text-[10px] font-black text-muted-foreground/50 px-0 tabular-nums">
-                  #{{ idx + 1 + (currentPage - 1) * pageSize }}
+                  {{ idx + 1 + (currentPage - 1) * pageSize }}
                 </TableCell>
                 <TableCell>
-                  <div class="flex items-center gap-3 py-1">
-                    <div class="size-9 rounded-xl flex items-center justify-center bg-gradient-to-tr from-muted/50 to-transparent border border-border/50 text-[11px] font-black tracking-tighter text-muted-foreground group-hover:text-primary transition-colors">
-                      {{ item.make.substring(0, 2).toUpperCase() }}
-                    </div>
-                    <div>
-                      <p class="text-[10px] font-black text-primary/70 mb-0.5 uppercase tracking-wide">
-                        {{ item.make }}
-                      </p>
-                      <p class="text-[13px] font-black text-foreground tracking-tight group-hover:translate-x-1 transition-transform">
-                        {{ item.model }}
-                      </p>
-                    </div>
-                  </div>
+                  <span class="text-[13px] font-bold text-foreground tracking-tight">
+                    {{ item.model }}
+                  </span>
                 </TableCell>
                 <TableCell>
-                  <div class="py-1">
-                    <span class="px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/10 text-[11px] font-black text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-                      {{ item.variant }}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell class="text-center px-0">
-                  <div class="flex justify-center">
-                    <Switch
-                      :checked="item.isActive !== false"
-                      class="data-[state=checked]:bg-emerald-500 scale-90 border-transparent shadow-md"
-                      @update:checked="handleToggleStatus(item)"
-                    />
-                  </div>
-                </TableCell>
-                <TableCell class="text-right pr-6">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger as-child>
-                      <Button variant="ghost" size="icon" class="size-8 opacity-0 group-hover:opacity-100 transition-all rounded-lg">
-                        <Icon name="i-lucide-more-vertical" class="size-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" class="w-40 p-1.5 rounded-xl border-border/50 backdrop-blur-xl">
-                      <DropdownMenuItem class="rounded-lg h-9 text-xs font-bold gap-2" @click="openEdit(item)">
-                        <Icon name="i-lucide-pencil" class="size-3.5 text-muted-foreground" />
-                        Edit Metrics
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator class="bg-border/30" />
-                      <DropdownMenuItem class="rounded-lg h-9 text-xs font-bold gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive" @click="confirmDelete(item)">
-                        <Icon name="i-lucide-trash-2" class="size-3.5" />
-                        Purge Index
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <span class="text-[13px] font-bold text-foreground tracking-tight">
+                    {{ item.variant }}
+                  </span>
                 </TableCell>
               </TableRow>
 
-              <!-- Advanced Load Discovery -->
+              <!-- Infinite scroll trigger + load more fallback -->
               <TableRow v-if="hasMore" class="hover:bg-transparent">
-                <TableCell colspan="5" class="p-10">
-                  <div class="flex flex-col items-center gap-6">
+                <TableCell colspan="3" class="p-10">
+                  <div ref="loadMoreTrigger" class="flex flex-col items-center gap-6">
                     <div class="flex items-center gap-1.5 p-1 bg-muted/30 rounded-full border border-border/50">
                       <div class="px-6 py-2.5 rounded-full bg-background text-[11px] font-black text-muted-foreground border border-border/20 shadow-sm">
-                        TOTAL INDEXED: {{ totalCount }}
+                        TOTAL INDEXED: {{ metrics.totalVariants }}
                       </div>
                     </div>
                     <Button
