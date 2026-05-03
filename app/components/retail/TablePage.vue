@@ -305,13 +305,25 @@ async function fetchBidStats() {
   }
 }
 
+// ─── Car Simulation Persistence ───
+const { loadSimulations, hydrateSimulations, saveSimulation, deleteSimulation, isLoaded: simsLoaded } = useCarSimulations()
+
 onMounted(() => {
   fetchCars()
   if (!isUsersFetched.value)
     fetchAllUsers()
   fetchBidStats()
   fetchDropdowns()
+  loadSimulations()
 })
+
+// Hydrate simulations onto car objects once both data and sims are loaded
+watch([allCars, simsLoaded], () => {
+  if (simsLoaded.value && allCars.value.length) {
+    hydrateSimulations(allCars.value)
+    simulationTrigger.value++
+  }
+}, { immediate: true })
 
 function buildLog(fieldKey: string, newValue: any, oldValue: any) {
   return {
@@ -738,20 +750,34 @@ function getInflatedCep(car: any): number {
 
 function getSimulatedInflatedCep(car: any): number {
   void simulationTrigger.value // Track dependency
-  const basePrice = Number(car.customerExpectedPrice || car.cep || 0)
+  const basePrice = getEffectiveSimCep(car)
   if (!basePrice)
     return 0
 
   const simMarginStr = String(car.marginSimulation || '0').replace(/[^0-9.-]/g, '')
   const simMarginPct = Number(simMarginStr) || 0
 
-  const rawCep = basePrice + (basePrice * simMarginPct / 100)
+  if (simMarginPct) {
+    const rawCep = basePrice + (basePrice * simMarginPct / 100)
+    return Math.ceil(rawCep / 1000) * 1000
+  }
+
+  // No margin sim, but CEP sim active → use actual margins with simulated base
+  const fixedMarginPct = Number(car.fixedMargin || 0)
+  const varMarginStr = String(car.variableMargin || '0').replace(/[^0-9.-]/g, '')
+  const varMarginPct = Number(varMarginStr) || 0
+  const rawCep = basePrice + (basePrice * fixedMarginPct / 100) + (basePrice * varMarginPct / 100)
   return Math.ceil(rawCep / 1000) * 1000
+}
+
+function hasMarginSimulation(car: any) {
+  void simulationTrigger.value
+  return car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''
 }
 
 function hasSimulation(car: any) {
   void simulationTrigger.value // Track dependency
-  return car.marginSimulation !== undefined && car.marginSimulation !== null && car.marginSimulation !== ''
+  return hasMarginSimulation(car) || hasCepSimulation(car)
 }
 
 function startSimulation(car: any) {
@@ -774,10 +800,68 @@ function stepSimulation(car: any, step: number) {
   }
 }
 
+function getMarginSimValue(car: any): string {
+  void simulationTrigger.value
+  return Number(car.marginSimulation || 0).toFixed(1)
+}
+
 function resetSimulation(car: any) {
   car.marginSimulation = undefined
   simulationTrigger.value++
   stopEdit(car, 'marginSimulation')
+  saveSimulation(car)
+}
+
+// ─── CEP Value Simulation ───
+const cepSimEditing = ref<Record<string, boolean>>({})
+const cepSimValue = ref<Record<string, string>>({})
+
+function getEffectiveSimCep(car: any): number {
+  void simulationTrigger.value
+  const key = car._id || car.id
+  if (car._cepSimulation !== undefined && car._cepSimulation !== null && car._cepSimulation !== '') {
+    return Number(car._cepSimulation) || 0
+  }
+  return Number(car.customerExpectedPrice || car.cep || 0)
+}
+
+function hasCepSimulation(car: any): boolean {
+  void simulationTrigger.value
+  return car._cepSimulation !== undefined && car._cepSimulation !== null && car._cepSimulation !== ''
+}
+
+function openCepSim(car: any) {
+  const key = car._id || car.id
+  cepSimValue.value[key] = String(Number(car._cepSimulation || car.customerExpectedPrice || 0))
+  cepSimEditing.value[key] = true
+}
+
+function closeCepSim(car: any) {
+  const key = car._id || car.id
+  cepSimEditing.value[key] = false
+  cepSimValue.value[key] = ''
+}
+
+function confirmCepSim(car: any) {
+  const key = car._id || car.id
+  const newVal = Number(cepSimValue.value[key])
+  if (isNaN(newVal) || newVal <= 0) {
+    toast.error('Enter a valid price')
+    return
+  }
+  car._cepSimulation = newVal
+  simulationTrigger.value++
+  cepSimEditing.value[key] = false
+  saveSimulation(car)
+}
+
+function clearCepSimulation(car: any) {
+  const key = car._id || car.id
+  car._cepSimulation = undefined
+  cepSimEditing.value[key] = false
+  cepSimValue.value[key] = ''
+  simulationTrigger.value++
+  saveSimulation(car)
 }
 
 // ─── Re-Set Var. Margin ───
@@ -1773,15 +1857,78 @@ async function exportToGoogleSheets() {
             <TableCell class="text-xs whitespace-nowrap font-medium">
               {{ car.priceDiscovery ? formatCurrency(car.priceDiscovery) : '—' }}
             </TableCell>
-            <!-- Act. CEP Edit Workflow -->
+            <!-- Act. CEP Edit + Simulate Workflow -->
             <TableCell class="text-xs whitespace-nowrap align-middle px-2">
-              <div class="min-h-[36px] flex flex-col items-center justify-center gap-1 group rounded relative" :class="cepEditing[car._id || car.id] ? '' : 'hover:bg-muted/30 cursor-pointer'" @click="!cepEditing[car._id || car.id] && openCep(car)">
+              <div class="min-h-[36px] flex flex-col items-center justify-center gap-1 rounded relative">
+                <!-- Display mode (not editing CEP) -->
                 <template v-if="!cepEditing[car._id || car.id]">
-                  <div class="flex items-center gap-1.5 font-medium" title="Actual CEP">
+                  <!-- Actual value -->
+                  <div class="flex items-center gap-1.5 font-medium group cursor-pointer hover:bg-muted/30 rounded px-1 py-0.5 transition-all" :class="hasCepSimulation(car) ? 'text-muted-foreground line-through opacity-50' : 'text-foreground'" title="Actual CEP (click to edit)" @click="openCep(car)">
                     <span>{{ car.customerExpectedPrice ? formatCurrency(car.customerExpectedPrice) : '—' }}</span>
                     <Icon name="i-lucide-pencil" class="size-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
+
+                  <!-- CEP Simulation: idle / active / editing -->
+                  <div class="flex flex-col items-center gap-1" @click.stop>
+                    <!-- Simulated CEP value badge -->
+                    <Transition
+                      enter-active-class="transition-all duration-300 ease-out z-10"
+                      enter-from-class="opacity-0 -translate-y-2 scale-95"
+                      enter-to-class="opacity-100 translate-y-0 scale-100"
+                      leave-active-class="transition-all duration-200 ease-in absolute z-0"
+                      leave-from-class="opacity-100 translate-y-0 scale-100"
+                      leave-to-class="opacity-0 -translate-y-2 scale-95"
+                    >
+                      <div
+                        v-if="hasCepSimulation(car) && !cepSimEditing[car._id || car.id]"
+                        class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap flex items-center gap-1 text-amber-700 dark:text-amber-400 bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20 rounded-md cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors"
+                        title="Simulated CEP (click to adjust)"
+                        @click.stop="openCepSim(car)"
+                      >
+                        <Icon name="i-lucide-activity" class="size-3" />
+                        {{ formatCurrency(car._cepSimulation) }}
+                        <button class="ml-0.5 size-3.5 rounded-full bg-amber-200 hover:bg-red-400 hover:text-white text-amber-700 dark:bg-amber-800 dark:hover:bg-red-600 flex items-center justify-center transition-colors" title="Clear simulation" @click.stop="clearCepSimulation(car)">
+                          <Icon name="i-lucide-x" class="size-2" />
+                        </button>
+                      </div>
+                    </Transition>
+
+                    <!-- CEP Sim Input (editing mode) -->
+                    <div v-if="cepSimEditing[car._id || car.id]" class="flex items-center gap-1">
+                      <div class="relative bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-full flex items-center px-2 py-0.5 shadow-sm transition-all shadow-amber-500/10">
+                        <span class="text-amber-600 dark:text-amber-400 font-bold text-[10px] mr-1">₹</span>
+                        <input
+                          v-model="cepSimValue[car._id || car.id]"
+                          type="number"
+                          class="w-20 bg-transparent text-amber-700 dark:text-amber-300 font-bold tabular-nums text-xs border-none outline-none focus:ring-0 p-0 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder-amber-600/30"
+                          placeholder="Sim Price"
+                          @keydown.enter="confirmCepSim(car)"
+                          @click.stop
+                        >
+                      </div>
+                      <div class="flex flex-col gap-0.5 bg-muted/30 p-0.5 rounded-full border shadow-sm">
+                        <button class="size-[18px] flex items-center justify-center rounded-full bg-amber-50 hover:bg-amber-100 text-amber-600 transition-colors shadow-sm border border-amber-200 dark:bg-amber-950 dark:border-amber-800" @click.stop="confirmCepSim(car)">
+                          <Icon name="i-lucide-check" class="size-2.5" />
+                        </button>
+                        <button class="size-[18px] flex items-center justify-center rounded-full bg-background hover:bg-muted text-muted-foreground transition-colors shadow-sm border border-border" @click.stop="closeCepSim(car)">
+                          <Icon name="i-lucide-x" class="size-2.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Simulate button (when not editing) -->
+                    <button
+                      v-if="!cepSimEditing[car._id || car.id] && !hasCepSimulation(car)"
+                      class="inline-flex items-center gap-1 px-2 py-[3px] rounded-md text-[10px] font-semibold uppercase tracking-wider transition-all border bg-violet-50 hover:bg-violet-100 text-violet-600 border-violet-200 dark:bg-violet-950/40 dark:hover:bg-violet-950/60 dark:text-violet-400 dark:border-violet-800"
+                      @click.stop="openCepSim(car)"
+                    >
+                      <Icon name="i-lucide-activity" class="size-3" />
+                      Simulate
+                    </button>
+                  </div>
                 </template>
+
+                <!-- CEP Edit mode (actual value change) -->
                 <template v-else>
                   <div class="flex items-center gap-1">
                     <div class="relative bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 rounded-full flex items-center px-2 py-0.5 shadow-sm transition-all shadow-teal-500/10">
@@ -1855,7 +2002,7 @@ async function exportToGoogleSheets() {
                   leave-to-class="opacity-0 -translate-y-2 scale-95"
                 >
                   <div
-                    v-if="hasSimulation(car)"
+                    v-if="hasMarginSimulation(car)"
                     class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20 rounded-md"
                   >
                     <Icon name="i-lucide-activity" class="size-3" />
@@ -1867,7 +2014,7 @@ async function exportToGoogleSheets() {
 
             <TableCell class="text-xs align-middle">
               <div class="flex flex-col items-center gap-1 w-full justify-center min-h-[44px] relative">
-                <span v-if="(Number(car.customerExpectedPrice || 0) && car.highestBid)" class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap transition-all" :class="Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car) > 0 ? 'text-amber-600' : 'text-muted-foreground'">
+                <span v-if="(Number(car.customerExpectedPrice || 0) && car.highestBid)" class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap transition-all" :class="[hasSimulation(car) ? 'text-muted-foreground line-through opacity-50' : '', Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car) > 0 ? 'text-amber-600' : 'text-muted-foreground']">
                   {{ formatCurrency(Number(car.customerExpectedPrice || 0) - getNetBidAmount(car.highestBid, car, car)) }}
                 </span>
                 <span v-else class="text-muted-foreground/50">—</span>
@@ -1885,7 +2032,7 @@ async function exportToGoogleSheets() {
                     class="text-[11px] px-2 py-0.5 font-bold tabular-nums whitespace-nowrap flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20 rounded-md"
                   >
                     <Icon name="i-lucide-activity" class="size-3" />
-                    {{ formatCurrency(Number(car.customerExpectedPrice || 0) - getSimulatedNetBid(car)) }}
+                    {{ formatCurrency(getEffectiveSimCep(car) - (hasMarginSimulation(car) ? getSimulatedNetBid(car) : getNetBidAmount(car.highestBid, car, car))) }}
                   </div>
                 </Transition>
               </div>
@@ -1932,12 +2079,21 @@ async function exportToGoogleSheets() {
             <TableCell class="text-xs text-center px-1">
               <div class="min-h-[32px] min-w-[70px] flex items-center justify-center p-1 rounded group transition-colors relative" :class="isEditing(car, 'marginSimulation') ? '' : 'hover:bg-muted/30'">
                 <!-- Not Editing State -->
-                <div v-if="!isEditing(car, 'marginSimulation')" class="flex items-center gap-1.5 cursor-pointer w-full justify-center" @click="startSimulation(car)">
-                  <span v-if="hasSimulation(car)" class="font-bold text-primary bg-primary/10 px-2.5 py-0.5 tabular-nums rounded">
-                    {{ Number(car.marginSimulation).toFixed(1) }}%
+                <div v-if="!isEditing(car, 'marginSimulation')" class="flex flex-col items-center gap-1 w-full">
+                  <span v-if="hasMarginSimulation(car)" class="font-bold text-primary bg-primary/10 px-2.5 py-0.5 tabular-nums rounded cursor-pointer" @click="startSimulation(car)">
+                    {{ getMarginSimValue(car) }}%
                   </span>
                   <span v-else class="text-muted-foreground/40">—</span>
-                  <Icon name="i-lucide-activity" class="size-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <button
+                    class="inline-flex items-center gap-1 px-2 py-[3px] rounded-md text-[10px] font-semibold uppercase tracking-wider transition-all border"
+                    :class="hasMarginSimulation(car)
+                      ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-200 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800'
+                      : 'bg-violet-50 hover:bg-violet-100 text-violet-600 border-violet-200 dark:bg-violet-950/40 dark:hover:bg-violet-950/60 dark:text-violet-400 dark:border-violet-800'"
+                    @click.stop="startSimulation(car)"
+                  >
+                    <Icon name="i-lucide-activity" class="size-3" />
+                    {{ hasMarginSimulation(car) ? 'Adjust' : 'Simulate' }}
+                  </button>
                 </div>
 
                 <!-- Editing / Stepper State -->
@@ -1949,7 +2105,7 @@ async function exportToGoogleSheets() {
                     </button>
 
                     <div class="font-bold tabular-nums text-[11px] text-primary min-w-[36px] text-center">
-                      {{ Number(car.marginSimulation).toFixed(1) }}%
+                      {{ getMarginSimValue(car) }}%
                     </div>
 
                     <button class="size-6 flex items-center justify-center rounded-full bg-background hover:bg-emerald-50 hover:text-emerald-600 transition-colors shadow-sm border border-border/50 text-muted-foreground" @click.stop="stepSimulation(car, 0.5)">
@@ -1963,7 +2119,7 @@ async function exportToGoogleSheets() {
                     <button
                       class="size-5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center shadow-sm transition-colors"
                       title="Save simulation"
-                      @click.stop="stopEdit(car, 'marginSimulation')"
+                      @click.stop="stopEdit(car, 'marginSimulation'); saveSimulation(car)"
                     >
                       <Icon name="i-lucide-check" class="size-3" />
                     </button>

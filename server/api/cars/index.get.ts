@@ -210,7 +210,7 @@ export default defineEventHandler(async (event) => {
       cep: 1,
       fixedMargin: 1,
       variableMargin: 1,
-      marginSimulation: 1,
+
       oneClickPrice: 1,
       otobuyOffer: 1,
       highestBid: 1,
