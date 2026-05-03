@@ -12,7 +12,11 @@ import Draggable from 'vuedraggable'
 import { useKanban } from '~/composables/useKanban'
 import CardFooter from '../ui/card/CardFooter.vue'
 
-const { board, addTask, updateTask, removeTask, setColumns, addSubtask, toggleSubtask, removeSubtask, addComment, removeComment } = useKanban()
+const { board, addTask, updateTask, removeTask, setColumns, addSubtask, toggleSubtask, removeSubtask, addComment, removeComment, fetchTasks, isLoading: isBoardLoading } = useKanban()
+
+onMounted(() => {
+  fetchTasks()
+})
 
 // ── Pagination: show 20 tasks per column, load more on scroll ──
 const PAGE_SIZE = 20
@@ -232,163 +236,136 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
               @end="onTaskDrop"
             >
               <template #item="{ element: t }: { element: Task }">
-                <div v-if="visibleTasks(col).includes(t)" class="rounded-xl border bg-card px-3 py-2 shadow-sm hover:bg-accent/50 cursor-pointer">
-                  <div class="flex items-start justify-between gap-2">
-                    <div class="text-sm text-muted-foreground">
-                      {{ t.id }}
+                <div v-if="visibleTasks(col).includes(t)" class="rounded-xl border bg-card shadow-sm hover:bg-accent/50 cursor-pointer overflow-hidden transition-all hover:shadow-md">
+                  <!-- Car Image Banner -->
+                  <div v-if="(t as any).carImage" class="relative h-28 w-full overflow-hidden bg-muted">
+                    <img :src="(t as any).carImage" :alt="t.title" class="h-full w-full object-cover" loading="lazy">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div class="absolute bottom-2 left-2 flex items-center gap-1.5">
+                      <Badge v-if="(t as any).appointmentId" class="bg-white/90 text-zinc-900 text-[9px] font-bold shadow-sm border-0">
+                        <Icon name="lucide:hash" class="size-2.5 mr-0.5" />{{ (t as any).appointmentId }}
+                      </Badge>
+                      <Badge v-if="(t as any).carInfo?.make" class="bg-white/90 text-zinc-900 text-[9px] font-bold shadow-sm border-0">
+                        {{ (t as any).carInfo.make }} {{ (t as any).carInfo.model || '' }}
+                      </Badge>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger as-child>
-                        <Button size="icon-sm" variant="ghost" class="size-7 text-muted-foreground" title="More actions">
-                          <Icon name="lucide:ellipsis-vertical" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent class="w-20" align="start">
-                        <DropdownMenuItem @click="showEditTask(col.id, t.id)">
-                          <Icon name="lucide:edit-2" class="size-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                          <Icon name="lucide:copy" class="size-4" />
-                          Copy card
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Icon name="lucide:link" class="size-4" />
-                          Copy link
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem variant="destructive" class="text-destructive" @click="removeTask(col.id, t.id)">
-                          <Icon name="lucide:trash-2" class="size-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
-                  <p class="font-medium leading-5 mt-1">
-                    {{ t.title }}
-                  </p>
-                  <div v-if="t.labels?.length" class="mt-3 flex items-center gap-1.5 flex-wrap">
-                    <Badge v-for="label in t.labels" :key="label" variant="outline" class="text-xs">
-                      {{ label }}
-                    </Badge>
-                  </div>
-                  <div class="mt-3 flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2">
-                      <!-- Subtasks Popover -->
-                      <Popover>
-                        <PopoverTrigger as-child>
-                          <button class="flex items-center text-sm text-muted-foreground gap-1 hover:text-foreground transition-colors cursor-pointer">
-                            <Icon name="lucide:square-check-big" class="size-3.5" />
-                            <span class="tabular-nums">{{ t.subtasks?.filter(s => s.completed).length || 0 }}/{{ t.subtasks?.length || 0 }}</span>
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent class="w-72 p-0" align="start" @click.stop>
-                          <div class="px-3 py-2 border-b">
-                            <p class="text-sm font-semibold">
-                              Subtasks
-                            </p>
-                          </div>
-                          <div class="max-h-48 overflow-y-auto">
-                            <div v-if="!t.subtasks?.length" class="px-3 py-4 text-sm text-muted-foreground text-center">
-                              No subtasks yet
-                            </div>
-                            <div v-for="st in t.subtasks" :key="st.id" class="flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 group">
-                              <Checkbox :checked="st.completed" @update:checked="toggleSubtask(col.id, t.id, st.id)" />
-                              <span class="text-sm flex-1" :class="st.completed ? 'line-through text-muted-foreground' : ''">{{ st.title }}</span>
-                              <button class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all cursor-pointer" @click="removeSubtask(col.id, t.id, st.id)">
-                                <Icon name="lucide:x" class="size-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                          <div class="border-t px-2 py-2">
-                            <form class="flex gap-1.5" @submit.prevent="() => { if (newSubtaskTitle.trim()) { addSubtask(col.id, t.id, newSubtaskTitle.trim()); newSubtaskTitle = '' } }">
-                              <Input v-model="newSubtaskTitle" placeholder="Add subtask..." class="h-7 text-xs" />
-                              <Button type="submit" size="icon" variant="ghost" class="size-7 shrink-0">
-                                <Icon name="lucide:plus" class="size-3.5" />
-                              </Button>
-                            </form>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-
-                      <!-- Comments Popover -->
-                      <Popover>
-                        <PopoverTrigger as-child>
-                          <button class="flex items-center text-sm text-muted-foreground gap-1 hover:text-foreground transition-colors cursor-pointer">
-                            <Icon name="lucide:message-square" class="size-3.5" />
-                            <span class="tabular-nums">{{ t.comments?.length || 0 }}</span>
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent class="w-80 p-0" align="start" @click.stop>
-                          <div class="px-3 py-2 border-b">
-                            <p class="text-sm font-semibold">
-                              Comments
-                            </p>
-                          </div>
-                          <div class="max-h-56 overflow-y-auto">
-                            <div v-if="!t.comments?.length" class="px-3 py-4 text-sm text-muted-foreground text-center">
-                              No comments yet
-                            </div>
-                            <div v-for="cm in t.comments" :key="cm.id" class="px-3 py-2 border-b last:border-b-0 group">
-                              <div class="flex items-center justify-between gap-2">
-                                <div class="flex items-center gap-2">
-                                  <Avatar class="size-5">
-                                    <AvatarImage :src="cm.avatar || ''" :alt="cm.author" />
-                                    <AvatarFallback class="text-[8px]">
-                                      {{ cm.author?.slice(0, 2).toUpperCase() }}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span class="text-xs font-medium">{{ cm.author }}</span>
-                                </div>
-                                <div class="flex items-center gap-1">
-                                  <span class="text-[10px] text-muted-foreground">{{ useTimeAgo(cm.createdAt ?? '', OPTIONS) }}</span>
-                                  <button class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all cursor-pointer" @click="removeComment(col.id, t.id, cm.id)">
-                                    <Icon name="lucide:x" class="size-3" />
-                                  </button>
-                                </div>
+                  <div class="px-3 py-2">
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="text-[10px] text-muted-foreground font-mono">{{ (t as any).appointmentId || t.id?.slice(0, 8) }}</div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger as-child>
+                          <Button size="icon-sm" variant="ghost" class="size-7 text-muted-foreground" title="More actions">
+                            <Icon name="lucide:ellipsis-vertical" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent class="w-20" align="start">
+                          <DropdownMenuItem @click="showEditTask(col.id, t.id)">
+                            <Icon name="lucide:edit-2" class="size-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem variant="destructive" class="text-destructive" @click="removeTask(col.id, t.id)">
+                            <Icon name="lucide:trash-2" class="size-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <p class="font-medium leading-5 mt-1">{{ t.title }}</p>
+                    <p v-if="t.description" class="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{{ t.description }}</p>
+                    <div v-if="t.labels?.length" class="mt-2 flex items-center gap-1.5 flex-wrap">
+                      <Badge v-for="label in t.labels" :key="label" variant="outline" class="text-xs">{{ label }}</Badge>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-2">
+                        <Popover>
+                          <PopoverTrigger as-child>
+                            <button class="flex items-center text-sm text-muted-foreground gap-1 hover:text-foreground transition-colors cursor-pointer">
+                              <Icon name="lucide:square-check-big" class="size-3.5" />
+                              <span class="tabular-nums">{{ t.subtasks?.filter(s => s.completed).length || 0 }}/{{ t.subtasks?.length || 0 }}</span>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent class="w-72 p-0" align="start" @click.stop>
+                            <div class="px-3 py-2 border-b"><p class="text-sm font-semibold">Subtasks</p></div>
+                            <div class="max-h-48 overflow-y-auto">
+                              <div v-if="!t.subtasks?.length" class="px-3 py-4 text-sm text-muted-foreground text-center">No subtasks yet</div>
+                              <div v-for="st in t.subtasks" :key="st.id" class="flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 group">
+                                <Checkbox :checked="st.completed" @update:checked="toggleSubtask(col.id, t.id, st.id)" />
+                                <span class="text-sm flex-1" :class="st.completed ? 'line-through text-muted-foreground' : ''">{{ st.title }}</span>
+                                <button class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all cursor-pointer" @click="removeSubtask(col.id, t.id, st.id)"><Icon name="lucide:x" class="size-3.5" /></button>
                               </div>
-                              <p class="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                {{ cm.text }}
-                              </p>
                             </div>
-                          </div>
-                          <div class="border-t px-2 py-2">
-                            <form class="flex gap-1.5" @submit.prevent="() => { if (newCommentText.trim()) { addComment(col.id, t.id, newCommentText.trim()); newCommentText = '' } }">
-                              <Input v-model="newCommentText" placeholder="Write a comment..." class="h-7 text-xs" />
-                              <Button type="submit" size="icon" variant="ghost" class="size-7 shrink-0">
-                                <Icon name="lucide:send" class="size-3.5" />
-                              </Button>
-                            </form>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-
-                      <div v-if="t.dueDate" class="flex items-center text-sm text-muted-foreground gap-1">
-                        <Icon name="lucide:clock-fading" class="size-3.5" />
-                        <span>{{ useTimeAgo(t.dueDate ?? '', OPTIONS) }}</span>
+                            <div class="border-t px-2 py-2">
+                              <form class="flex gap-1.5" @submit.prevent="() => { if (newSubtaskTitle.trim()) { addSubtask(col.id, t.id, newSubtaskTitle.trim()); newSubtaskTitle = '' } }">
+                                <Input v-model="newSubtaskTitle" placeholder="Add subtask..." class="h-7 text-xs" />
+                                <Button type="submit" size="icon" variant="ghost" class="size-7 shrink-0"><Icon name="lucide:plus" class="size-3.5" /></Button>
+                              </form>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <Popover>
+                          <PopoverTrigger as-child>
+                            <button class="flex items-center text-sm text-muted-foreground gap-1 hover:text-foreground transition-colors cursor-pointer">
+                              <Icon name="lucide:message-square" class="size-3.5" />
+                              <span class="tabular-nums">{{ t.comments?.length || 0 }}</span>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent class="w-80 p-0" align="start" @click.stop>
+                            <div class="px-3 py-2 border-b"><p class="text-sm font-semibold">Comments</p></div>
+                            <div class="max-h-56 overflow-y-auto">
+                              <div v-if="!t.comments?.length" class="px-3 py-4 text-sm text-muted-foreground text-center">No comments yet</div>
+                              <div v-for="cm in t.comments" :key="cm.id" class="px-3 py-2 border-b last:border-b-0 group">
+                                <div class="flex items-center justify-between gap-2">
+                                  <span class="text-xs font-medium">{{ cm.author }}</span>
+                                  <div class="flex items-center gap-1">
+                                    <span class="text-[10px] text-muted-foreground">{{ useTimeAgo(cm.createdAt ?? '', OPTIONS) }}</span>
+                                    <button class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all cursor-pointer" @click="removeComment(col.id, t.id, cm.id)"><Icon name="lucide:x" class="size-3" /></button>
+                                  </div>
+                                </div>
+                                <p class="text-xs text-muted-foreground mt-1 leading-relaxed">{{ cm.text }}</p>
+                              </div>
+                            </div>
+                            <div class="border-t px-2 py-2">
+                              <form class="flex gap-1.5" @submit.prevent="() => { if (newCommentText.trim()) { addComment(col.id, t.id, newCommentText.trim()); newCommentText = '' } }">
+                                <Input v-model="newCommentText" placeholder="Write a comment..." class="h-7 text-xs" />
+                                <Button type="submit" size="icon" variant="ghost" class="size-7 shrink-0"><Icon name="lucide:send" class="size-3.5" /></Button>
+                              </form>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <div v-if="t.dueDate" class="flex items-center text-sm text-muted-foreground gap-1">
+                          <Icon name="lucide:clock-fading" class="size-3.5" />
+                          <span>{{ useTimeAgo(t.dueDate ?? '', OPTIONS) }}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <Tooltip>
-                        <TooltipTrigger as-child>
-                          <Icon v-if="t.priority" :name="iconPriority(t.priority)" class="size-4" :class="colorPriority(t.priority)" />
-                        </TooltipTrigger>
-                        <TooltipContent class="capitalize">
-                          {{ t.priority }}
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip v-if="t.assignee">
-                        <TooltipTrigger as-child>
-                          <Avatar class="size-6">
-                            <AvatarImage :src="t.assignee.avatar || '/avatars/avatartion.png'" :alt="t.assignee.name" />
-                            <AvatarFallback class="text-[10px]">
-                              {{ t.assignee.name?.slice(0, 2).toUpperCase() }}
-                            </AvatarFallback>
-                          </Avatar>
-                        </TooltipTrigger>
-                        <TooltipContent>{{ t.assignee.name }}</TooltipContent>
-                      </Tooltip>
+                      <div class="flex items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger as-child>
+                            <Icon v-if="t.priority" :name="iconPriority(t.priority)" class="size-4" :class="colorPriority(t.priority)" />
+                          </TooltipTrigger>
+                          <TooltipContent class="capitalize">{{ t.priority }}</TooltipContent>
+                        </Tooltip>
+                        <!-- Multi-assignee avatars -->
+                        <div v-if="(t as any).assignees?.length" class="flex -space-x-1.5">
+                          <Tooltip v-for="a in (t as any).assignees.slice(0, 3)" :key="a.email">
+                            <TooltipTrigger as-child>
+                              <Avatar class="size-5 ring-2 ring-card">
+                                <AvatarFallback class="text-[7px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">{{ a.name?.slice(0, 2).toUpperCase() || '?' }}</AvatarFallback>
+                              </Avatar>
+                            </TooltipTrigger>
+                            <TooltipContent>{{ a.name }} <span v-if="a.role" class="text-muted-foreground">({{ a.role }})</span></TooltipContent>
+                          </Tooltip>
+                          <div v-if="(t as any).assignees.length > 3" class="size-5 rounded-full bg-muted ring-2 ring-card flex items-center justify-center text-[7px] font-bold text-muted-foreground">+{{ (t as any).assignees.length - 3 }}</div>
+                        </div>
+                        <Tooltip v-else-if="t.assignee">
+                          <TooltipTrigger as-child>
+                            <Avatar class="size-6">
+                              <AvatarImage :src="t.assignee.avatar || '/avatars/avatartion.png'" :alt="t.assignee.name" />
+                              <AvatarFallback class="text-[10px]">{{ t.assignee.name?.slice(0, 2).toUpperCase() }}</AvatarFallback>
+                            </Avatar>
+                          </TooltipTrigger>
+                          <TooltipContent>{{ t.assignee.name }}</TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -17,12 +17,18 @@ const { bootPrefetch } = usePrefetch()
 // V2: Delta patching — receives changed document/fields and patches cache in-place
 const { startLiveSync } = useLiveSync()
 
+// ─── Version Check Engine ───
+// Polls build ID to detect new Vercel deployments
+const { startPolling: startVersionCheck } = useVersionCheck()
+
 onMounted(() => {
   // Kick off data prefetch silently — zero loading screens when user navigates
   bootPrefetch()
   // Start listening for real-time changes from other users
   // SSE replaces all polling — zero interval timers needed
   startLiveSync()
+  // Start polling for version updates
+  startVersionCheck()
 })
 
 useHead({
@@ -84,6 +90,7 @@ const dir = computed(() => textDirection.value === 'rtl' ? 'rtl' : 'ltr')
       <PwaServiceWorkerRegistration />
       <PwaInstallPrompt />
       <Analytics :debug="false" />
+      <GlobalVersionUpdateBanner />
     </ClientOnly>
   </Body>
 </template>

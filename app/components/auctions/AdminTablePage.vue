@@ -36,6 +36,19 @@ const {
   isLoadingMore,
   totalCount,
   setSimilarSearchCtx,
+  advancedFilters = ref({}),
+  setAdvancedFilters = () => {},
+  facets = ref({
+    makes: [],
+    models: [],
+    cities: [],
+    auctionStatuses: [],
+    dealStatuses: [],
+    leadSources: [],
+    referredBys: [],
+    ies: [],
+    ras: [],
+  }),
 } = useAuctionsApi()
 
 // ─── Car Simulation Persistence ───
@@ -68,12 +81,222 @@ watch(globalSearch, (v) => {
   }, 400)
 })
 
+// ─── Advanced Filters ───
+const localFilters = ref({
+  make: '',
+  model: '',
+  city: '',
+  auctionStatus: '',
+  dealStatus: '',
+  leadSource: '',
+  referredBy: '',
+  ie: '',
+  ra: '',
+  cepVsPd: '',
+  startDate: '',
+  endDate: '',
+  datePreset: '',
+})
+
+const isAdvancedFilterOpen = ref(false)
+
+const userOptions = computed(() => {
+  const uniqueRA = facets.value?.ras || []
+  const uniqueIE = facets.value?.ies || []
+  const emails = Array.from(new Set([...uniqueRA, ...uniqueIE]))
+  return emails.map((email) => {
+    const u = allUsers.value.find(user => user.email === email)
+    if (u)
+      return { label: u.userName ? `${u.userName} (${u.userRole || 'User'})` : u.email, value: u.email }
+    return { label: email as string, value: email as string }
+  }).sort((a, b) => a.label.localeCompare(b.label))
+})
+
+const viewMakes = computed(() => (facets.value?.makes || []))
+const viewModels = computed(() => (facets.value?.models || []))
+const viewCities = computed(() => (facets.value?.cities || []))
+const viewAuctionStatuses = computed(() => (facets.value?.auctionStatuses || []))
+const viewDealStatuses = computed(() => (facets.value?.dealStatuses || []))
+const viewLeadSources = computed(() => (facets.value?.leadSources || []))
+const viewReferredBys = computed(() => (facets.value?.referredBys || []))
+const viewIEs = computed(() => {
+  return (facets.value?.ies || [])
+    .map((email: string) => userOptions.value.find(u => u.value === email) || { label: email, value: email })
+    .sort((a: any, b: any) => a.label.localeCompare(b.label))
+})
+const viewRAs = computed(() => {
+  return (facets.value?.ras || [])
+    .map((email: string) => userOptions.value.find(u => u.value === email) || { label: email, value: email })
+    .sort((a: any, b: any) => a.label.localeCompare(b.label))
+})
+
+function clearAdvancedFilters() {
+  localFilters.value = { make: '', model: '', city: '', auctionStatus: '', dealStatus: '', leadSource: '', referredBy: '', ie: '', ra: '', cepVsPd: '', startDate: '', endDate: '', datePreset: '' }
+  setAdvancedFilters({})
+}
+
+const activeFilterCount = computed(() => {
+  if (!advancedFilters.value) return 0
+  let count = 0
+  let hasDate = false
+  for (const [k, v] of Object.entries(advancedFilters.value)) {
+    if (!v) continue
+    if (k === 'startDate' || k === 'endDate' || k === 'datePreset') {
+      if (!hasDate) { count++; hasDate = true }
+    }
+    else { count++ }
+  }
+  if (localFilters.value.cepVsPd) count++
+  return count
+})
+
+function setDatePreset(preset: string) {
+  const dt = new Date()
+  const tzo = dt.getTimezoneOffset() * 60000
+  const toLocalISOString = (d: Date) => new Date(d.getTime() - tzo).toISOString().split('T')[0] || ''
+  localFilters.value.datePreset = preset
+  if (preset === 'Today') {
+    localFilters.value.startDate = toLocalISOString(dt)
+    localFilters.value.endDate = toLocalISOString(dt)
+  }
+  else if (preset === 'Yesterday') {
+    const yest = new Date(dt); yest.setDate(dt.getDate() - 1)
+    localFilters.value.startDate = toLocalISOString(yest)
+    localFilters.value.endDate = localFilters.value.startDate
+  }
+  else if (preset === 'Tomorrow') {
+    const tmrw = new Date(dt); tmrw.setDate(dt.getDate() + 1)
+    localFilters.value.startDate = toLocalISOString(tmrw)
+    localFilters.value.endDate = localFilters.value.startDate
+  }
+  else if (preset === 'This Month') {
+    localFilters.value.startDate = toLocalISOString(new Date(dt.getFullYear(), dt.getMonth(), 1))
+    localFilters.value.endDate = toLocalISOString(new Date(dt.getFullYear(), dt.getMonth() + 1, 0))
+  }
+  else if (preset === 'This Year') {
+    localFilters.value.startDate = toLocalISOString(new Date(dt.getFullYear(), 0, 1))
+    localFilters.value.endDate = toLocalISOString(new Date(dt.getFullYear(), 11, 31))
+  }
+  else if (preset === 'Last Year') {
+    localFilters.value.startDate = toLocalISOString(new Date(dt.getFullYear() - 1, 0, 1))
+    localFilters.value.endDate = toLocalISOString(new Date(dt.getFullYear() - 1, 11, 31))
+  }
+}
+
+watch(localFilters, (newVal) => {
+  const filtersToApply: Record<string, string> = { ...newVal }
+  // Don't send cepVsPd to the server — it's client-side only
+  delete filtersToApply.cepVsPd
+  Object.keys(filtersToApply).forEach((k) => {
+    if (filtersToApply[k] === 'ALL') filtersToApply[k] = ''
+  })
+  let changed = false
+  for (const k of Object.keys(filtersToApply)) {
+    if (filtersToApply[k] !== ((advancedFilters.value as any)[k] || '')) {
+      changed = true; break
+    }
+  }
+  if (changed) setAdvancedFilters(filtersToApply)
+}, { deep: true })
+
+watch(advancedFilters, (val) => {
+  if (val && Object.keys(val).length > 0) {
+    let changed = false
+    for (const k of Object.keys(val)) {
+      if (k === 'cepVsPd') continue
+      if ((localFilters.value[k as keyof typeof localFilters.value] || '') !== (val as any)[k]) {
+        changed = true; break
+      }
+    }
+    if (changed) localFilters.value = { ...localFilters.value, ...val }
+  }
+}, { immediate: true, deep: true })
+
+// Client-side CEP vs PD filter
+const filteredCars = computed(() => {
+  const bucket = localFilters.value.cepVsPd
+  if (!bucket) return allCars.value
+  return allCars.value.filter((car: any) => {
+    const b = getCepPdBucket(car)
+    if (!b) return false
+    return b.label === bucket
+  })
+})
+
+// Bucket summary — live counts for each bucket
+const bucketSummary = computed(() => {
+  const counts: Record<string, number> = {
+    'Retail Bucket': 0,
+    'High Probability': 0,
+    'Sales Bucket': 0,
+    'Sales & Retail': 0,
+    'Uncategorized': 0,
+  }
+  for (const car of allCars.value) {
+    const b = getCepPdBucket(car)
+    if (b) counts[b.label] = (counts[b.label] || 0) + 1
+    else counts['Uncategorized'] = (counts['Uncategorized'] || 0) + 1
+  }
+  return counts
+})
 // ─── Infinite scroll ───
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 useIntersectionObserver(loadMoreTrigger, (e) => {
   if (e?.[0]?.isIntersecting && hasMore.value && !isLoadingMore.value)
     loadMore()
-}, { rootMargin: '400px' })
+}, { rootMargin: '800px' })
+
+// ─── Task Creation from Admin ───
+const { addTask: kanbanAddTask } = useKanban()
+const taskPopoverOpen = ref<Record<string, boolean>>({})
+const taskForm = ref<Record<string, any>>({})
+
+function initTaskForm(carId: string) {
+  taskForm.value[carId] = {
+    description: '',
+    priority: 'medium',
+    dueDate: '',
+    assignees: [] as string[],
+  }
+  taskPopoverOpen.value[carId] = true
+}
+
+function getTaskAssigneeOptions() {
+  const roles = ['inspection-engineer', 'retailer', 'sales-manager', 'qc']
+  return (allUsers.value || [])
+    .filter((u: any) => roles.some(r => u.role?.toLowerCase()?.includes(r) || u.department?.toLowerCase()?.includes(r)))
+    .map((u: any) => ({ email: u.email, name: u.name || u.email, role: u.role || u.department || '' }))
+}
+
+function toggleTaskAssignee(carId: string, assignee: any) {
+  const form = taskForm.value[carId]
+  if (!form) return
+  const idx = form.assignees.findIndex((a: string) => a === assignee.email)
+  if (idx > -1) form.assignees.splice(idx, 1)
+  else form.assignees.push(assignee.email)
+}
+
+async function submitTask(car: any) {
+  const carId = car._id || car.id
+  const form = taskForm.value[carId]
+  if (!form) return
+  const opts = getTaskAssigneeOptions()
+  const assignees = form.assignees.map((email: string) => opts.find((o: any) => o.email === email) || { email, name: email })
+  await kanbanAddTask('todo', {
+    title: car.appointmentId || carId,
+    description: form.description,
+    priority: form.priority,
+    dueDate: form.dueDate ? new Date(form.dueDate) : undefined,
+    assignees,
+    carId,
+    appointmentId: car.appointmentId || '',
+    carImage: car.frontMainImages?.[0] || car.carPics?.[0] || '',
+    carInfo: { make: car.make, model: car.model, year: car.modelYear || car.year, city: car.city },
+    labels: ['Auction'],
+  })
+  taskPopoverOpen.value[carId] = false
+  delete taskForm.value[carId]
+}
 
 // ─── Timer ───
 const now = ref(Date.now())
@@ -721,13 +944,181 @@ function getHighestAutoBidObj(car: any): any {
 <template>
   <ClientOnly>
     <HeaderActions>
-      <div class="relative">
-        <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-        <Input id="globalSearchInput" v-model="globalSearch" placeholder="Search..." class="pl-8 h-8 w-48 text-sm bg-muted/20" />
+      <div class="relative ml-auto sm:ml-0 flex items-center gap-2">
+        <div class="relative">
+          <Icon name="i-lucide-search" class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <Input id="globalSearchInput" v-model="globalSearch" placeholder="Search admin..." class="pl-8 h-8 w-40 text-sm" />
+        </div>
+        <Popover v-model:open="isAdvancedFilterOpen">
+          <PopoverTrigger as-child>
+            <button class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input border-dashed bg-muted/30 hover:bg-muted hover:text-foreground h-8 px-3 gap-1.5 relative pr-6">
+              <Icon name="i-lucide-list-filter" class="size-3.5 text-emerald-600" />
+              <span class="hidden sm:inline font-medium">Filter</span>
+              <span v-if="activeFilterCount > 0" class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-[9px] text-white font-bold ring-2 ring-background">{{ activeFilterCount }}</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" class="w-[420px] p-4 rounded-xl shadow-2xl border border-border/50 bg-background/95 backdrop-blur-xl z-[200]">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-semibold text-sm">
+                Advanced Filters
+              </h4>
+              <Button variant="ghost" size="sm" class="h-6 px-2 text-xs text-muted-foreground hover:text-foreground" @click="clearAdvancedFilters">
+                Clear All
+              </Button>
+            </div>
+            <div class="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
+              <!-- Date Filters -->
+              <div class="space-y-3 pb-2 border-b">
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1"><Icon name="i-lucide-calendar-days" class="size-3" /> Date Range</Label>
+                <div class="flex flex-wrap gap-1.5">
+                  <Badge v-for="p in ['Today', 'Yesterday', 'Tomorrow', 'This Month', 'This Year', 'Last Year']" :key="p" variant="secondary" class="cursor-pointer text-[10px] font-normal transition-colors" :class="localFilters.datePreset === p ? 'bg-primary text-primary-foreground' : 'hover:bg-primary/50 text-muted-foreground'" @click="setDatePreset(p)">
+                    {{ p }}
+                  </Badge>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="space-y-1.5">
+                    <Label class="text-[10px] uppercase text-muted-foreground">From</Label>
+                    <Input v-model="localFilters.startDate" type="date" class="h-8 text-xs bg-muted/30 focus:bg-background" @input="localFilters.datePreset = ''" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <Label class="text-[10px] uppercase text-muted-foreground">To</Label>
+                    <Input v-model="localFilters.endDate" type="date" class="h-8 text-xs bg-muted/30 focus:bg-background" @input="localFilters.datePreset = ''" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Make</Label>
+                  <SearchableSelect
+                    v-model="localFilters.make"
+                    :options="[{ label: 'Any Make', value: 'ALL' }, ...viewMakes.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Make"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Model</Label>
+                  <SearchableSelect
+                    v-model="localFilters.model"
+                    :options="[{ label: 'Any Model', value: 'ALL' }, ...viewModels.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Model"
+                    :disabled="!localFilters.make || localFilters.make === 'ALL'"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">City</Label>
+                  <SearchableSelect
+                    v-model="localFilters.city"
+                    :options="[{ label: 'Any City', value: 'ALL' }, ...viewCities.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any City"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Auction Status</Label>
+                  <SearchableSelect
+                    v-model="localFilters.auctionStatus"
+                    :options="[{ label: 'Any Status', value: 'ALL' }, ...viewAuctionStatuses.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Status"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Deal Status</Label>
+                  <SearchableSelect
+                    v-model="localFilters.dealStatus"
+                    :options="[{ label: 'Any Status', value: 'ALL' }, ...viewDealStatuses.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Status"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Lead Source</Label>
+                  <SearchableSelect
+                    v-model="localFilters.leadSource"
+                    :options="[{ label: 'Any Source', value: 'ALL' }, ...viewLeadSources.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Source"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">Referred By</Label>
+                  <SearchableSelect
+                    v-model="localFilters.referredBy"
+                    :options="[{ label: 'Any Referrer', value: 'ALL' }, ...viewReferredBys.map((m: any) => ({ label: m, value: m }))]"
+                    placeholder="Any Referrer"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">IE (Inspector)</Label>
+                  <SearchableSelect
+                    v-model="localFilters.ie"
+                    :options="[{ label: 'Any IE', value: 'ALL' }, ...viewIEs]"
+                    placeholder="Any IE"
+                    :use-pills="false"
+                  />
+                </div>
+                <div class="space-y-1.5">
+                  <Label class="text-xs font-medium text-muted-foreground">RA (Associate)</Label>
+                  <SearchableSelect
+                    v-model="localFilters.ra"
+                    :options="[{ label: 'Any RA', value: 'ALL' }, ...viewRAs]"
+                    placeholder="Any RA"
+                    :use-pills="false"
+                  />
+                </div>
+              </div>
+
+              <!-- CEP vs PD Bucket Filter -->
+              <div class="space-y-2.5 pt-2 border-t">
+                <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1"><Icon name="i-lucide-layers" class="size-3" /> CEP vs PD Bucket</Label>
+                <div class="flex flex-wrap gap-1.5">
+                  <button
+                    v-for="bucket in [
+                      { label: 'Retail Bucket', bg: 'bg-red-600', text: 'text-white' },
+                      { label: 'High Probability', bg: 'bg-emerald-700', text: 'text-white' },
+                      { label: 'Sales Bucket', bg: 'bg-emerald-400', text: 'text-emerald-950' },
+                      { label: 'Sales & Retail', bg: 'bg-blue-600', text: 'text-white' },
+                    ]"
+                    :key="bucket.label"
+                    class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all border shadow-sm flex items-center gap-1.5"
+                    :class="localFilters.cepVsPd === bucket.label
+                      ? [bucket.bg, bucket.text, 'border-transparent ring-2 ring-offset-1 ring-primary/40 scale-105']
+                      : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted'"
+                    @click="localFilters.cepVsPd = localFilters.cepVsPd === bucket.label ? '' : bucket.label"
+                  >
+                    {{ bucket.label }}
+                    <span class="px-1 py-0 rounded text-[8px] font-black tabular-nums" :class="localFilters.cepVsPd === bucket.label ? 'bg-white/20' : 'bg-muted'">
+                      {{ bucketSummary[bucket.label] || 0 }}
+                    </span>
+                  </button>
+                </div>
+                <p class="text-[9px] text-muted-foreground/70 leading-tight">
+                  Client-side filter: segments cars based on Act Bid, Act CEP, and Price Discovery relationships.
+                </p>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
-      <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
-        {{ totalCount }} car{{ totalCount !== 1 ? 's' : '' }}
-      </p>
+      <div class="flex items-center gap-2">
+        <p class="text-xs text-muted-foreground tabular-nums hidden sm:block whitespace-nowrap">
+          <span class="font-bold text-foreground">{{ filteredCars.length }}</span>
+          <span v-if="localFilters.cepVsPd" class="text-emerald-600 font-medium"> of {{ allCars.length }}</span>
+          <span v-if="allCars.length < totalCount" class="text-muted-foreground/60"> ({{ totalCount }} total)</span>
+          <span> car{{ filteredCars.length !== 1 ? 's' : '' }}</span>
+        </p>
+        <template v-if="activeFilterCount > 0">
+          <Badge variant="secondary" class="h-5 px-1.5 text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20">
+            <Icon name="i-lucide-filter" class="size-2.5 mr-0.5" />
+            {{ activeFilterCount }} active
+          </Badge>
+        </template>
+      </div>
+      <BaseSyncIndicator :syncing="isRefreshing" />
       <Button variant="ghost" size="sm" class="h-8" :disabled="isLoading" @click="handleRefresh">
         <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading }" />
         Refresh
@@ -830,11 +1221,14 @@ function getHighestAutoBidObj(car: any): any {
             <TableHead class="whitespace-nowrap text-center">
               CEP vs PD
             </TableHead>
+            <TableHead class="whitespace-nowrap text-center">
+              <Icon name="i-lucide-check-square" class="size-3.5 inline" /> Task
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="car in allCars"
+            v-for="car in filteredCars"
             :key="car.id || car._id"
             class="group hover:bg-muted/50 transition-all duration-300"
           >
@@ -1424,19 +1818,92 @@ function getHighestAutoBidObj(car: any): any {
               </HoverCard>
               <span v-else class="text-[10px] text-muted-foreground">—</span>
             </TableCell>
+
+            <!-- ══ TASK CREATION ══ -->
+            <TableCell class="text-center">
+              <Popover :open="taskPopoverOpen[car._id || car.id]" @update:open="(v: boolean) => { if (!v) { taskPopoverOpen[car._id || car.id] = false } }">
+                <PopoverTrigger as-child>
+                  <button
+                    class="size-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all cursor-pointer"
+                    @click="initTaskForm(car._id || car.id)"
+                  >
+                    <Icon name="i-lucide-check-square" class="size-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" side="left" class="w-[340px] p-0 rounded-xl shadow-2xl border border-border/50 bg-background/95 backdrop-blur-xl z-[200]">
+                  <div class="p-3 border-b bg-gradient-to-r from-violet-50/50 to-transparent dark:from-violet-500/5">
+                    <h4 class="text-sm font-bold flex items-center gap-1.5">
+                      <Icon name="i-lucide-check-square" class="size-4 text-violet-600" />
+                      Create Task
+                    </h4>
+                    <p class="text-[10px] text-muted-foreground mt-0.5">{{ car.appointmentId }} · {{ car.make }} {{ car.model }}</p>
+                  </div>
+                  <div v-if="taskForm[car._id || car.id]" class="p-3 flex flex-col gap-3">
+                    <!-- Assignees -->
+                    <div class="space-y-1.5">
+                      <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Assignees</Label>
+                      <div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                        <button
+                          v-for="opt in getTaskAssigneeOptions()"
+                          :key="opt.email"
+                          class="px-2 py-1 rounded-md text-[10px] font-medium transition-all border cursor-pointer flex items-center gap-1"
+                          :class="taskForm[car._id || car.id]?.assignees?.includes(opt.email) ? 'bg-violet-600 text-white border-violet-600 shadow-sm' : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted'"
+                          @click="toggleTaskAssignee(car._id || car.id, opt)"
+                        >
+                          <span class="size-4 rounded-full bg-white/20 flex items-center justify-center text-[7px] font-bold">{{ opt.name?.slice(0, 2).toUpperCase() }}</span>
+                          {{ opt.name }}
+                          <span class="text-[8px] opacity-60">({{ opt.role }})</span>
+                        </button>
+                        <span v-if="!getTaskAssigneeOptions().length" class="text-[10px] text-muted-foreground">No assignees found</span>
+                      </div>
+                    </div>
+                    <!-- Description -->
+                    <div class="space-y-1">
+                      <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Description</Label>
+                      <Textarea v-model="taskForm[car._id || car.id].description" placeholder="Task details..." rows="2" class="text-xs resize-none" />
+                    </div>
+                    <!-- Priority + Due Date -->
+                    <div class="grid grid-cols-2 gap-2">
+                      <div class="space-y-1">
+                        <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Priority</Label>
+                        <Select v-model="taskForm[car._id || car.id].priority">
+                          <SelectTrigger class="h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div class="space-y-1">
+                        <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Due Date</Label>
+                        <Input v-model="taskForm[car._id || car.id].dueDate" type="date" class="h-8 text-xs" />
+                      </div>
+                    </div>
+                    <!-- Submit -->
+                    <Button size="sm" class="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white hover:from-violet-500 hover:to-blue-500 shadow-lg" @click="submitTask(car)">
+                      <Icon name="i-lucide-check" class="size-3.5 mr-1" />
+                      Create Task
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </TableCell>
           </TableRow>
 
-          <TableRow v-if="allCars.length === 0 && !isLoading">
-            <TableCell :colspan="23" class="h-40 text-center text-muted-foreground">
+          <TableRow v-if="filteredCars.length === 0 && !isLoading">
+            <TableCell :colspan="24" class="h-40 text-center text-muted-foreground">
               No data found
+            </TableCell>
+          </TableRow>
+          <!-- Scroll Sentinel — MUST be inside the table's overflow-auto container -->
+          <TableRow v-if="hasMore">
+            <TableCell :colspan="24" class="p-0 h-1">
+              <div ref="loadMoreTrigger" class="h-1 w-full" />
             </TableCell>
           </TableRow>
         </TableBody>
       </Table>
-
-      <div v-if="hasMore" ref="loadMoreTrigger" class="h-20 flex items-center justify-center">
-        <Icon name="i-lucide-loader-2" class="size-5 animate-spin text-muted-foreground/50" />
-      </div>
     </div>
   </div>
 
