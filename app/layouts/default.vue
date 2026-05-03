@@ -1,4 +1,6 @@
 <script setup lang="ts">
+// Poll for new notifications and show toast banners
+useNotificationBanner()
 </script>
 
 <template>

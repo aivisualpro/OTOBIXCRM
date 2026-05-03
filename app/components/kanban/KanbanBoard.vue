@@ -334,8 +334,8 @@ const detailTask = ref<(Task & { _colId?: string }) | null>(null)
                     </div>
                     <div class="flex items-center justify-between pt-1 border-t border-border/40">
                       <div class="flex items-center gap-2">
-                        <span class="flex items-center text-[10px] text-muted-foreground gap-0.5"><Icon name="lucide:square-check-big" class="size-2.5" /> {{ t.subtasks?.filter(s => s.completed).length || 0 }}/{{ t.subtasks?.length || 0 }}</span>
-                        <span class="flex items-center text-[10px] text-muted-foreground gap-0.5"><Icon name="lucide:message-square" class="size-2.5" /> {{ t.comments?.length || 0 }}</span>
+                        <button class="flex items-center text-[10px] text-muted-foreground gap-0.5 hover:text-foreground transition-colors cursor-pointer" @click.stop="detailTask = { ...t, _colId: col.id } as any; showDetailDialog = true"><Icon name="lucide:square-check-big" class="size-2.5" /> {{ t.subtasks?.filter(s => s.completed).length || 0 }}/{{ t.subtasks?.length || 0 }}</button>
+                        <button class="flex items-center text-[10px] text-muted-foreground gap-0.5 hover:text-foreground transition-colors cursor-pointer" @click.stop="detailTask = { ...t, _colId: col.id } as any; showDetailDialog = true"><Icon name="lucide:message-square" class="size-2.5" /> {{ t.comments?.length || 0 }}</button>
                         <span class="text-[9px] text-muted-foreground/50">{{ (t as any).createdBy?.split('@')[0] || '' }}</span>
                       </div>
                       <button
