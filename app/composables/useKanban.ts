@@ -23,10 +23,27 @@ export function useKanban() {
   const _isFetched = useState('kanban_fetched', () => false)
   const _isLoading = useState('kanban_loading', () => false)
 
+  // Get current user context from cookie
+  function getCurrentUser() {
+    try {
+      const cookie = useCookie('userData')
+      const user = typeof cookie.value === 'string' ? JSON.parse(cookie.value) : cookie.value
+      return {
+        email: (user?.email || '').toLowerCase(),
+        role: (user?.userType || user?.userRole || user?.role || '').toLowerCase(),
+        name: user?.name || user?.email || 'Unknown',
+      }
+    }
+    catch { return { email: '', role: '', name: 'Unknown' } }
+  }
+
   async function fetchTasks() {
     _isLoading.value = true
     try {
-      const res = await $fetch<{ tasks: any[] }>('/api/tasks')
+      const user = getCurrentUser()
+      const res = await $fetch<{ tasks: any[] }>('/api/tasks', {
+        params: { email: user.email, role: user.role },
+      })
       const tasks = res?.tasks || []
 
       // Group tasks by status into columns
@@ -156,9 +173,10 @@ export function useKanban() {
         if (task.status !== col.id) {
           task.status = col.id
           try {
+            const user = getCurrentUser()
             await $fetch(`/api/tasks/${task.id}`, {
               method: 'PUT',
-              body: { status: col.id },
+              body: { status: col.id, changedBy: user.email },
             })
           }
           catch { /* silent — background persist */ }

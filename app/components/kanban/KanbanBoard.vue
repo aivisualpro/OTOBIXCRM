@@ -194,6 +194,49 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
   rounding: 'floor',
   updateInterval: 1000,
 }
+
+// ── Current user from cookie (for permission checks) ──
+const currentUserEmail = computed(() => {
+  try {
+    const cookie = useCookie('userData')
+    const user = typeof cookie.value === 'string' ? JSON.parse(cookie.value) : cookie.value
+    return (user?.email || '').toLowerCase()
+  }
+  catch { return '' }
+})
+
+function isTaskOwner(task: Task): boolean {
+  return !!currentUserEmail.value && (task as any).createdBy?.toLowerCase() === currentUserEmail.value
+}
+
+// ── Live remaining days ──
+const now = ref(Date.now())
+let _tickInterval: ReturnType<typeof setInterval> | null = null
+onMounted(() => { _tickInterval = setInterval(() => { now.value = Date.now() }, 60_000) })
+onUnmounted(() => { if (_tickInterval) clearInterval(_tickInterval) })
+
+function getDaysRemaining(dueDate: any): { days: number, label: string, color: string } | null {
+  if (!dueDate) return null
+  const due = new Date(dueDate).getTime()
+  const diff = due - now.value
+  const days = Math.ceil(diff / 86_400_000)
+  if (days < 0) return { days, label: `${Math.abs(days)}d overdue`, color: 'bg-red-500/15 text-red-600 border-red-500/20' }
+  if (days === 0) return { days, label: 'Due today', color: 'bg-amber-500/15 text-amber-600 border-amber-500/20' }
+  if (days === 1) return { days, label: 'Tomorrow', color: 'bg-amber-500/15 text-amber-600 border-amber-500/20' }
+  if (days <= 3) return { days, label: `${days}d left`, color: 'bg-orange-500/15 text-orange-600 border-orange-500/20' }
+  if (days <= 7) return { days, label: `${days}d left`, color: 'bg-blue-500/15 text-blue-600 border-blue-500/20' }
+  return { days, label: `${days}d left`, color: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/20' }
+}
+
+function formatShortDate(d: any): string {
+  if (!d) return ''
+  try { return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) }
+  catch { return '' }
+}
+
+// ── Detail Dialog ──
+const showDetailDialog = ref(false)
+const detailTask = ref<(Task & { _colId?: string }) | null>(null)
 </script>
 
 <template>
@@ -236,136 +279,72 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
               @end="onTaskDrop"
             >
               <template #item="{ element: t }: { element: Task }">
-                <div v-if="visibleTasks(col).includes(t)" class="rounded-xl border bg-card shadow-sm hover:bg-accent/50 cursor-pointer overflow-hidden transition-all hover:shadow-md">
-                  <!-- Car Image Banner -->
-                  <div v-if="(t as any).carImage" class="relative h-28 w-full overflow-hidden bg-muted">
-                    <img :src="(t as any).carImage" :alt="t.title" class="h-full w-full object-cover" loading="lazy">
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <div class="absolute bottom-2 left-2 flex items-center gap-1.5">
-                      <Badge v-if="(t as any).appointmentId" class="bg-white/90 text-zinc-900 text-[9px] font-bold shadow-sm border-0">
-                        <Icon name="lucide:hash" class="size-2.5 mr-0.5" />{{ (t as any).appointmentId }}
+                <div v-if="visibleTasks(col).includes(t)" class="rounded-xl border bg-card shadow-sm hover:shadow-lg cursor-pointer overflow-hidden transition-all duration-200 group/card">
+                  <!-- ═══ Car Image with ALL overlays ═══ -->
+                  <div v-if="(t as any).carImage" class="relative w-full aspect-[16/9] overflow-hidden bg-muted">
+                    <img :src="(t as any).carImage" :alt="t.title" class="size-full object-cover transition-transform duration-500 group-hover/card:scale-105" loading="lazy">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                    <!-- Top: Due date + Priority + Menu -->
+                    <div class="absolute top-0 left-0 right-0 p-2 flex items-start justify-between">
+                      <Badge v-if="getDaysRemaining(t.dueDate)" class="text-[9px] font-bold border-0 shadow-md backdrop-blur-md px-2 py-0.5 gap-1" :class="getDaysRemaining(t.dueDate)!.days < 0 ? 'bg-red-500/90 text-white' : getDaysRemaining(t.dueDate)!.days <= 3 ? 'bg-amber-500/90 text-white' : 'bg-white/90 text-zinc-900'">
+                        <Icon name="lucide:clock" class="size-2.5" />{{ getDaysRemaining(t.dueDate)!.label }} · {{ formatShortDate(t.dueDate) }}
                       </Badge>
-                      <Badge v-if="(t as any).carInfo?.make" class="bg-white/90 text-zinc-900 text-[9px] font-bold shadow-sm border-0">
-                        {{ (t as any).carInfo.make }} {{ (t as any).carInfo.model || '' }}
-                      </Badge>
+                      <div v-else />
+                      <div class="flex items-center gap-1">
+                        <Badge v-if="t.priority" class="text-[9px] font-bold border-0 shadow-md backdrop-blur-sm" :class="t.priority === 'high' ? 'bg-red-500/90 text-white' : t.priority === 'medium' ? 'bg-amber-500/90 text-white' : 'bg-blue-500/90 text-white'">
+                          <Icon :name="iconPriority(t.priority)" class="size-2.5 mr-0.5" />{{ t.priority }}
+                        </Badge>
+                        <DropdownMenu v-if="isTaskOwner(t)">
+                          <DropdownMenuTrigger as-child>
+                            <button class="size-5 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white cursor-pointer opacity-0 group-hover/card:opacity-100 transition-all"><Icon name="lucide:ellipsis-vertical" class="size-3" /></button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent class="w-28" align="end">
+                            <DropdownMenuItem @click="showEditTask(col.id, t.id)"><Icon name="lucide:edit-2" class="size-3.5" /> Edit</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem variant="destructive" class="text-destructive" @click="removeTask(col.id, t.id)"><Icon name="lucide:trash-2" class="size-3.5" /> Delete</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                    <!-- Bottom: Assignees + Car info -->
+                    <div class="absolute bottom-0 left-0 right-0 p-2 flex flex-col gap-1.5">
+                      <div v-if="(t as any).assignees?.length" class="flex items-center gap-1">
+                        <div class="flex -space-x-1">
+                          <Tooltip v-for="a in (t as any).assignees.slice(0, 4)" :key="a.email">
+                            <TooltipTrigger as-child><Avatar class="size-5 ring-1 ring-white/50"><AvatarFallback class="text-[7px] font-bold bg-violet-500 text-white">{{ a.name?.slice(0, 2).toUpperCase() || '?' }}</AvatarFallback></Avatar></TooltipTrigger>
+                            <TooltipContent side="bottom">{{ a.name }} <span v-if="a.role" class="text-muted-foreground text-[10px]">({{ a.role }})</span></TooltipContent>
+                          </Tooltip>
+                          <div v-if="(t as any).assignees.length > 4" class="size-5 rounded-full bg-black/50 ring-1 ring-white/30 flex items-center justify-center text-[7px] font-bold text-white">+{{ (t as any).assignees.length - 4 }}</div>
+                        </div>
+                        <span class="text-[9px] text-white/80 font-medium truncate">{{ (t as any).assignees.map((a: any) => a.name?.split(' ')[0]).slice(0, 2).join(', ') }}{{ (t as any).assignees.length > 2 ? ` +${(t as any).assignees.length - 2}` : '' }}</span>
+                      </div>
+                      <div class="flex items-center gap-1 flex-wrap">
+                        <Badge v-if="(t as any).appointmentId" class="bg-white/95 text-zinc-900 text-[9px] font-bold shadow border-0 px-1.5 py-0"><Icon name="lucide:hash" class="size-2 mr-0.5" />{{ (t as any).appointmentId }}</Badge>
+                        <Badge v-if="(t as any).carInfo?.make" class="bg-white/95 text-zinc-900 text-[9px] font-bold shadow border-0 px-1.5 py-0">{{ (t as any).carInfo.make }} {{ (t as any).carInfo.model || '' }}</Badge>
+                        <Badge v-if="(t as any).carInfo?.city" class="bg-white/85 text-zinc-700 text-[8px] shadow border-0 px-1 py-0"><Icon name="lucide:map-pin" class="size-2 mr-0.5" />{{ (t as any).carInfo.city }}</Badge>
+                      </div>
                     </div>
                   </div>
-                  <div class="px-3 py-2">
-                    <div class="flex items-start justify-between gap-2">
-                      <div class="text-[10px] text-muted-foreground font-mono">{{ (t as any).appointmentId || t.id?.slice(0, 8) }}</div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger as-child>
-                          <Button size="icon-sm" variant="ghost" class="size-7 text-muted-foreground" title="More actions">
-                            <Icon name="lucide:ellipsis-vertical" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent class="w-20" align="start">
-                          <DropdownMenuItem @click="showEditTask(col.id, t.id)">
-                            <Icon name="lucide:edit-2" class="size-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem variant="destructive" class="text-destructive" @click="removeTask(col.id, t.id)">
-                            <Icon name="lucide:trash-2" class="size-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+
+                  <!-- ═══ Body: description + compact footer ═══ -->
+                  <div class="px-3 py-2 space-y-1.5">
+                    <p v-if="t.description" class="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">{{ t.description }}</p>
+                    <div v-if="t.labels?.length" class="flex items-center gap-1 flex-wrap">
+                      <Badge v-for="label in t.labels" :key="label" variant="outline" class="text-[8px] px-1.5 py-0">{{ label }}</Badge>
                     </div>
-                    <p class="font-medium leading-5 mt-1">{{ t.title }}</p>
-                    <p v-if="t.description" class="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{{ t.description }}</p>
-                    <div v-if="t.labels?.length" class="mt-2 flex items-center gap-1.5 flex-wrap">
-                      <Badge v-for="label in t.labels" :key="label" variant="outline" class="text-xs">{{ label }}</Badge>
-                    </div>
-                    <div class="mt-3 flex items-center justify-between gap-2">
+                    <div class="flex items-center justify-between pt-1 border-t border-border/40">
                       <div class="flex items-center gap-2">
-                        <Popover>
-                          <PopoverTrigger as-child>
-                            <button class="flex items-center text-sm text-muted-foreground gap-1 hover:text-foreground transition-colors cursor-pointer">
-                              <Icon name="lucide:square-check-big" class="size-3.5" />
-                              <span class="tabular-nums">{{ t.subtasks?.filter(s => s.completed).length || 0 }}/{{ t.subtasks?.length || 0 }}</span>
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent class="w-72 p-0" align="start" @click.stop>
-                            <div class="px-3 py-2 border-b"><p class="text-sm font-semibold">Subtasks</p></div>
-                            <div class="max-h-48 overflow-y-auto">
-                              <div v-if="!t.subtasks?.length" class="px-3 py-4 text-sm text-muted-foreground text-center">No subtasks yet</div>
-                              <div v-for="st in t.subtasks" :key="st.id" class="flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 group">
-                                <Checkbox :checked="st.completed" @update:checked="toggleSubtask(col.id, t.id, st.id)" />
-                                <span class="text-sm flex-1" :class="st.completed ? 'line-through text-muted-foreground' : ''">{{ st.title }}</span>
-                                <button class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all cursor-pointer" @click="removeSubtask(col.id, t.id, st.id)"><Icon name="lucide:x" class="size-3.5" /></button>
-                              </div>
-                            </div>
-                            <div class="border-t px-2 py-2">
-                              <form class="flex gap-1.5" @submit.prevent="() => { if (newSubtaskTitle.trim()) { addSubtask(col.id, t.id, newSubtaskTitle.trim()); newSubtaskTitle = '' } }">
-                                <Input v-model="newSubtaskTitle" placeholder="Add subtask..." class="h-7 text-xs" />
-                                <Button type="submit" size="icon" variant="ghost" class="size-7 shrink-0"><Icon name="lucide:plus" class="size-3.5" /></Button>
-                              </form>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                        <Popover>
-                          <PopoverTrigger as-child>
-                            <button class="flex items-center text-sm text-muted-foreground gap-1 hover:text-foreground transition-colors cursor-pointer">
-                              <Icon name="lucide:message-square" class="size-3.5" />
-                              <span class="tabular-nums">{{ t.comments?.length || 0 }}</span>
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent class="w-80 p-0" align="start" @click.stop>
-                            <div class="px-3 py-2 border-b"><p class="text-sm font-semibold">Comments</p></div>
-                            <div class="max-h-56 overflow-y-auto">
-                              <div v-if="!t.comments?.length" class="px-3 py-4 text-sm text-muted-foreground text-center">No comments yet</div>
-                              <div v-for="cm in t.comments" :key="cm.id" class="px-3 py-2 border-b last:border-b-0 group">
-                                <div class="flex items-center justify-between gap-2">
-                                  <span class="text-xs font-medium">{{ cm.author }}</span>
-                                  <div class="flex items-center gap-1">
-                                    <span class="text-[10px] text-muted-foreground">{{ useTimeAgo(cm.createdAt ?? '', OPTIONS) }}</span>
-                                    <button class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all cursor-pointer" @click="removeComment(col.id, t.id, cm.id)"><Icon name="lucide:x" class="size-3" /></button>
-                                  </div>
-                                </div>
-                                <p class="text-xs text-muted-foreground mt-1 leading-relaxed">{{ cm.text }}</p>
-                              </div>
-                            </div>
-                            <div class="border-t px-2 py-2">
-                              <form class="flex gap-1.5" @submit.prevent="() => { if (newCommentText.trim()) { addComment(col.id, t.id, newCommentText.trim()); newCommentText = '' } }">
-                                <Input v-model="newCommentText" placeholder="Write a comment..." class="h-7 text-xs" />
-                                <Button type="submit" size="icon" variant="ghost" class="size-7 shrink-0"><Icon name="lucide:send" class="size-3.5" /></Button>
-                              </form>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                        <div v-if="t.dueDate" class="flex items-center text-sm text-muted-foreground gap-1">
-                          <Icon name="lucide:clock-fading" class="size-3.5" />
-                          <span>{{ useTimeAgo(t.dueDate ?? '', OPTIONS) }}</span>
-                        </div>
+                        <span class="flex items-center text-[10px] text-muted-foreground gap-0.5"><Icon name="lucide:square-check-big" class="size-2.5" /> {{ t.subtasks?.filter(s => s.completed).length || 0 }}/{{ t.subtasks?.length || 0 }}</span>
+                        <span class="flex items-center text-[10px] text-muted-foreground gap-0.5"><Icon name="lucide:message-square" class="size-2.5" /> {{ t.comments?.length || 0 }}</span>
+                        <span class="text-[9px] text-muted-foreground/50">{{ (t as any).createdBy?.split('@')[0] || '' }}</span>
                       </div>
-                      <div class="flex items-center gap-1">
-                        <Tooltip>
-                          <TooltipTrigger as-child>
-                            <Icon v-if="t.priority" :name="iconPriority(t.priority)" class="size-4" :class="colorPriority(t.priority)" />
-                          </TooltipTrigger>
-                          <TooltipContent class="capitalize">{{ t.priority }}</TooltipContent>
-                        </Tooltip>
-                        <!-- Multi-assignee avatars -->
-                        <div v-if="(t as any).assignees?.length" class="flex -space-x-1.5">
-                          <Tooltip v-for="a in (t as any).assignees.slice(0, 3)" :key="a.email">
-                            <TooltipTrigger as-child>
-                              <Avatar class="size-5 ring-2 ring-card">
-                                <AvatarFallback class="text-[7px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">{{ a.name?.slice(0, 2).toUpperCase() || '?' }}</AvatarFallback>
-                              </Avatar>
-                            </TooltipTrigger>
-                            <TooltipContent>{{ a.name }} <span v-if="a.role" class="text-muted-foreground">({{ a.role }})</span></TooltipContent>
-                          </Tooltip>
-                          <div v-if="(t as any).assignees.length > 3" class="size-5 rounded-full bg-muted ring-2 ring-card flex items-center justify-center text-[7px] font-bold text-muted-foreground">+{{ (t as any).assignees.length - 3 }}</div>
-                        </div>
-                        <Tooltip v-else-if="t.assignee">
-                          <TooltipTrigger as-child>
-                            <Avatar class="size-6">
-                              <AvatarImage :src="t.assignee.avatar || '/avatars/avatartion.png'" :alt="t.assignee.name" />
-                              <AvatarFallback class="text-[10px]">{{ t.assignee.name?.slice(0, 2).toUpperCase() }}</AvatarFallback>
-                            </Avatar>
-                          </TooltipTrigger>
-                          <TooltipContent>{{ t.assignee.name }}</TooltipContent>
-                        </Tooltip>
-                      </div>
+                      <button
+                        class="size-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all cursor-pointer"
+                        title="View details"
+                        @click.stop="detailTask = { ...t, _colId: col.id } as any; showDetailDialog = true"
+                      >
+                        <Icon name="lucide:eye" class="size-3.5" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -459,6 +438,87 @@ const OPTIONS: UseTimeAgoOptions<false, UseTimeAgoUnitNamesDefault> = {
           {{ showModalTask.type === 'create' ? 'Create' : 'Update' }}
         </Button>
       </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
+  <!-- ═══ Task Detail Dialog ═══ -->
+  <Dialog v-model:open="showDetailDialog">
+    <DialogContent class="sm:max-w-[640px] p-0 overflow-hidden">
+      <DialogHeader class="sr-only"><DialogTitle>Task Details</DialogTitle><DialogDescription>Full task information</DialogDescription></DialogHeader>
+      <template v-if="detailTask">
+        <div v-if="(detailTask as any).carImage" class="relative w-full h-48 overflow-hidden bg-muted">
+          <img :src="(detailTask as any).carImage" :alt="detailTask.title" class="size-full object-cover">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+          <div class="absolute bottom-3 left-4 right-4 flex items-end justify-between">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <Badge v-if="(detailTask as any).appointmentId" class="bg-white/95 text-zinc-900 text-xs font-bold shadow border-0 px-2.5 py-0.5"><Icon name="lucide:hash" class="size-3 mr-1" />{{ (detailTask as any).appointmentId }}</Badge>
+              <Badge v-if="(detailTask as any).carInfo?.make" class="bg-white/95 text-zinc-900 text-xs font-bold shadow border-0 px-2.5 py-0.5">{{ (detailTask as any).carInfo.make }} {{ (detailTask as any).carInfo.model || '' }}</Badge>
+              <Badge v-if="(detailTask as any).carInfo?.city" class="bg-white/90 text-zinc-700 text-[11px] shadow border-0 px-2 py-0.5"><Icon name="lucide:map-pin" class="size-3 mr-0.5" />{{ (detailTask as any).carInfo.city }}</Badge>
+            </div>
+            <Badge v-if="detailTask.priority" class="text-xs font-bold border-0 shadow-md shrink-0" :class="detailTask.priority === 'high' ? 'bg-red-500 text-white' : detailTask.priority === 'medium' ? 'bg-amber-500 text-white' : 'bg-blue-500 text-white'">{{ detailTask.priority }}</Badge>
+          </div>
+        </div>
+        <div class="p-5 space-y-5 max-h-[60vh] overflow-y-auto">
+          <div class="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" class="text-xs capitalize px-2.5 py-1"><Icon name="lucide:columns-3" class="size-3 mr-1" />{{ detailTask.status?.replace('-', ' ') || 'todo' }}</Badge>
+            <Badge v-if="getDaysRemaining(detailTask.dueDate)" variant="outline" class="text-xs font-semibold gap-1 px-2.5 py-1" :class="getDaysRemaining(detailTask.dueDate)!.color"><Icon name="lucide:clock" class="size-3" />{{ getDaysRemaining(detailTask.dueDate)!.label }} · {{ formatShortDate(detailTask.dueDate) }}</Badge>
+          </div>
+          <div v-if="detailTask.description" class="space-y-1">
+            <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Description</h4>
+            <p class="text-sm leading-relaxed">{{ detailTask.description }}</p>
+          </div>
+          <div v-if="(detailTask as any).assignees?.length" class="space-y-2">
+            <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Assignees</h4>
+            <div class="flex flex-wrap gap-2">
+              <div v-for="a in (detailTask as any).assignees" :key="a.email" class="flex items-center gap-2 rounded-lg border bg-muted/30 px-2.5 py-1.5">
+                <Avatar class="size-6"><AvatarFallback class="text-[9px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300">{{ a.name?.slice(0, 2).toUpperCase() }}</AvatarFallback></Avatar>
+                <div><p class="text-xs font-medium leading-none">{{ a.name }}</p><p v-if="a.role" class="text-[10px] text-muted-foreground">{{ a.role }}</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Subtasks ({{ detailTask.subtasks?.filter(s => s.completed).length || 0 }}/{{ detailTask.subtasks?.length || 0 }})</h4>
+            <div v-if="detailTask.subtasks?.length" class="space-y-1">
+              <div v-for="st in detailTask.subtasks" :key="st.id" class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent/50 group">
+                <Checkbox :checked="st.completed" @update:checked="toggleSubtask((detailTask as any)._colId, detailTask.id, st.id)" />
+                <span class="text-sm flex-1" :class="st.completed ? 'line-through text-muted-foreground' : ''">{{ st.title }}</span>
+                <button class="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive cursor-pointer transition-all" @click="removeSubtask((detailTask as any)._colId, detailTask.id, st.id)"><Icon name="lucide:x" class="size-3.5" /></button>
+              </div>
+            </div>
+            <form class="flex gap-1.5" @submit.prevent="() => { if (newSubtaskTitle.trim()) { addSubtask((detailTask as any)._colId, detailTask!.id, newSubtaskTitle.trim()); newSubtaskTitle = '' } }">
+              <Input v-model="newSubtaskTitle" placeholder="Add subtask..." class="h-8 text-xs" />
+              <Button type="submit" size="sm" variant="outline" class="h-8 shrink-0"><Icon name="lucide:plus" class="size-3.5 mr-1" />Add</Button>
+            </form>
+          </div>
+          <div class="space-y-2">
+            <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Comments ({{ detailTask.comments?.length || 0 }})</h4>
+            <div v-if="detailTask.comments?.length" class="space-y-2">
+              <div v-for="cm in detailTask.comments" :key="cm.id" class="rounded-lg border bg-muted/20 px-3 py-2 group">
+                <div class="flex items-center justify-between"><span class="text-xs font-semibold">{{ cm.author }}</span><span class="text-[10px] text-muted-foreground">{{ useTimeAgo(cm.createdAt ?? '', OPTIONS) }}</span></div>
+                <p class="text-xs text-muted-foreground mt-1 leading-relaxed">{{ cm.text }}</p>
+              </div>
+            </div>
+            <form class="flex gap-1.5" @submit.prevent="() => { if (newCommentText.trim()) { addComment((detailTask as any)._colId, detailTask!.id, newCommentText.trim()); newCommentText = '' } }">
+              <Input v-model="newCommentText" placeholder="Write a comment..." class="h-8 text-xs" />
+              <Button type="submit" size="sm" variant="outline" class="h-8 shrink-0"><Icon name="lucide:send" class="size-3.5 mr-1" />Send</Button>
+            </form>
+          </div>
+          <div v-if="(detailTask as any).activityLog?.length" class="space-y-2">
+            <h4 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Activity Log</h4>
+            <div class="relative pl-4 border-l-2 border-border/50 space-y-3">
+              <div v-for="(log, i) in (detailTask as any).activityLog" :key="i" class="relative">
+                <div class="absolute -left-[21px] top-0.5 size-3 rounded-full border-2 border-background" :class="log.action === 'created' ? 'bg-emerald-500' : 'bg-blue-500'" />
+                <div class="text-xs"><span class="font-medium">{{ log.by?.split('@')[0] || 'System' }}</span> <span class="text-muted-foreground">{{ log.detail }}</span></div>
+                <span class="text-[10px] text-muted-foreground/60">{{ formatShortDate(log.at) }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-3 border-t text-[11px] text-muted-foreground">
+            <div class="flex items-center gap-1"><Icon name="lucide:user-circle" class="size-3.5" />Created by <span class="font-medium text-foreground">{{ (detailTask as any).createdBy?.split('@')[0] || 'System' }}</span></div>
+            <span>{{ formatShortDate((detailTask as any).createdAt) }}</span>
+          </div>
+        </div>
+      </template>
     </DialogContent>
   </Dialog>
 </template>

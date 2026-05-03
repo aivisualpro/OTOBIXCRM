@@ -1,13 +1,29 @@
-// GET /api/notifications — list notifications (newest first)
+/**
+ * GET /api/notifications — list notifications with permission-based visibility
+ *
+ * Admin: sees all notifications
+ * Others: sees only their own notifications (by userId)
+ *
+ * Query: ?type=task|inspection|auction|system&email=xxx&role=xxx
+ */
 export default defineEventHandler(async (event) => {
   try {
     const db = await getLeadsDb(event)
     const query = getQuery(event)
+    const email = String(query.email || '').toLowerCase()
+    const role = String(query.role || '').toLowerCase()
 
-    // Optional filters
     const filter: Record<string, any> = {}
 
-    // Filter by type (inspection, auction, system, user)
+    // Permission filter: non-admin only sees their own
+    if (role !== 'admin' && email) {
+      filter.$or = [
+        { userId: email },
+        { isGlobal: true },
+      ]
+    }
+
+    // Filter by type (inspection, auction, system, task)
     if (query.type && query.type !== 'all') {
       filter.type = query.type
     }
@@ -24,6 +40,15 @@ export default defineEventHandler(async (event) => {
 
     const collection = db.collection('userNotifications')
 
+    // Build base filter for counts (same permission, no type filter)
+    const baseFilter: Record<string, any> = {}
+    if (role !== 'admin' && email) {
+      baseFilter.$or = [
+        { userId: email },
+        { isGlobal: true },
+      ]
+    }
+
     const [notifications, total] = await Promise.all([
       collection
         .aggregate([
@@ -36,12 +61,13 @@ export default defineEventHandler(async (event) => {
       collection.countDocuments(filter),
     ])
 
-    // Also get unread counts per type for tab badges
-    const [totalUnread, inspectionUnread, auctionUnread, systemUnread] = await Promise.all([
-      collection.countDocuments({ isRead: false }),
-      collection.countDocuments({ isRead: false, type: 'inspection' }),
-      collection.countDocuments({ isRead: false, type: 'auction' }),
-      collection.countDocuments({ isRead: false, type: 'system' }),
+    // Unread counts per type (with same permission filter)
+    const [totalUnread, inspectionUnread, auctionUnread, systemUnread, taskUnread] = await Promise.all([
+      collection.countDocuments({ ...baseFilter, isRead: false }),
+      collection.countDocuments({ ...baseFilter, isRead: false, type: 'inspection' }),
+      collection.countDocuments({ ...baseFilter, isRead: false, type: 'auction' }),
+      collection.countDocuments({ ...baseFilter, isRead: false, type: 'system' }),
+      collection.countDocuments({ ...baseFilter, isRead: false, type: 'task' }),
     ])
 
     return {
@@ -54,12 +80,12 @@ export default defineEventHandler(async (event) => {
         inspections: inspectionUnread,
         auctions: auctionUnread,
         system: systemUnread,
+        tasks: taskUnread,
       },
     }
   }
   catch (err: any) {
-    if (err.statusCode)
-      throw err
+    if (err.statusCode) throw err
     console.error('[API:notifications] GET failed:', err.message)
     throw createError({ statusCode: 500, message: err.message || 'Failed to fetch notifications' })
   }

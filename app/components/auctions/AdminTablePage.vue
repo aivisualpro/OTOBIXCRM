@@ -262,10 +262,27 @@ function initTaskForm(carId: string) {
 }
 
 function getTaskAssigneeOptions() {
-  const roles = ['inspection-engineer', 'retailer', 'sales-manager', 'qc']
+  const staffRoles = ['Inspection Engineer', 'Retailer', 'Sales Manager', 'QC']
   return (allUsers.value || [])
-    .filter((u: any) => roles.some(r => u.role?.toLowerCase()?.includes(r) || u.department?.toLowerCase()?.includes(r)))
-    .map((u: any) => ({ email: u.email, name: u.name || u.email, role: u.role || u.department || '' }))
+    .filter((u: any) => {
+      const role = u.userRole || u.role || ''
+      return staffRoles.some(r => role.toLowerCase() === r.toLowerCase()) || u.isStaff
+    })
+    .map((u: any) => ({
+      email: u.email,
+      name: u.userName || u.name || u.email,
+      role: u.userRole || u.role || '',
+    }))
+}
+
+/** Returns Set of emails related to this car (IE, RA, QC, allocatedTo) */
+function getCarRelatedEmails(car: any): Set<string> {
+  const emails = new Set<string>()
+  if (car.retailAssociate) emails.add(car.retailAssociate.toLowerCase())
+  if (car.qcBy) emails.add(car.qcBy.toLowerCase())
+  if (car.allocatedTo) emails.add(car.allocatedTo.toLowerCase())
+  if (car.inspectionEngineer) emails.add(car.inspectionEngineer.toLowerCase())
+  return emails
 }
 
 function toggleTaskAssignee(carId: string, assignee: any) {
@@ -282,6 +299,14 @@ async function submitTask(car: any) {
   if (!form) return
   const opts = getTaskAssigneeOptions()
   const assignees = form.assignees.map((email: string) => opts.find((o: any) => o.email === email) || { email, name: email })
+  // Get current user email for createdBy
+  let createdByEmail = ''
+  try {
+    const uc = useCookie('userData')
+    const u = typeof uc.value === 'string' ? JSON.parse(uc.value) : uc.value
+    createdByEmail = (u?.email || '').toLowerCase()
+  }
+  catch { /* ignore */ }
   await kanbanAddTask('todo', {
     title: car.appointmentId || carId,
     description: form.description,
@@ -293,6 +318,7 @@ async function submitTask(car: any) {
     carImage: car.frontMainImages?.[0] || car.carPics?.[0] || '',
     carInfo: { make: car.make, model: car.model, year: car.modelYear || car.year, city: car.city },
     labels: ['Auction'],
+    createdBy: createdByEmail,
   })
   taskPopoverOpen.value[carId] = false
   delete taskForm.value[carId]
@@ -1830,7 +1856,7 @@ function getHighestAutoBidObj(car: any): any {
                     <Icon name="i-lucide-check-square" class="size-4" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent align="end" side="left" class="w-[340px] p-0 rounded-xl shadow-2xl border border-border/50 bg-background/95 backdrop-blur-xl z-[200]">
+                <PopoverContent align="end" side="left" class="w-[340px] p-0 rounded-xl shadow-2xl border border-border/50 bg-background/95 backdrop-blur-xl z-[200]" style="overflow: visible">
                   <div class="p-3 border-b bg-gradient-to-r from-violet-50/50 to-transparent dark:from-violet-500/5">
                     <h4 class="text-sm font-bold flex items-center gap-1.5">
                       <Icon name="i-lucide-check-square" class="size-4 text-violet-600" />
@@ -1839,23 +1865,52 @@ function getHighestAutoBidObj(car: any): any {
                     <p class="text-[10px] text-muted-foreground mt-0.5">{{ car.appointmentId }} · {{ car.make }} {{ car.model }}</p>
                   </div>
                   <div v-if="taskForm[car._id || car.id]" class="p-3 flex flex-col gap-3">
-                    <!-- Assignees -->
+                    <!-- Assignees Dropdown -->
                     <div class="space-y-1.5">
                       <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Assignees</Label>
-                      <div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
-                        <button
-                          v-for="opt in getTaskAssigneeOptions()"
-                          :key="opt.email"
-                          class="px-2 py-1 rounded-md text-[10px] font-medium transition-all border cursor-pointer flex items-center gap-1"
-                          :class="taskForm[car._id || car.id]?.assignees?.includes(opt.email) ? 'bg-violet-600 text-white border-violet-600 shadow-sm' : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted'"
-                          @click="toggleTaskAssignee(car._id || car.id, opt)"
-                        >
-                          <span class="size-4 rounded-full bg-white/20 flex items-center justify-center text-[7px] font-bold">{{ opt.name?.slice(0, 2).toUpperCase() }}</span>
-                          {{ opt.name }}
-                          <span class="text-[8px] opacity-60">({{ opt.role }})</span>
-                        </button>
-                        <span v-if="!getTaskAssigneeOptions().length" class="text-[10px] text-muted-foreground">No assignees found</span>
+                      <!-- Selected pills -->
+                      <div v-if="taskForm[car._id || car.id]?.assignees?.length" class="flex flex-wrap gap-1 mb-1">
+                        <Badge v-for="email in taskForm[car._id || car.id].assignees" :key="email" variant="secondary" class="text-[10px] gap-1 pr-1">
+                          {{ getTaskAssigneeOptions().find(o => o.email === email)?.name || email }}
+                          <button class="hover:text-destructive cursor-pointer" @click.stop="toggleTaskAssignee(car._id || car.id, { email })">
+                            <Icon name="i-lucide-x" class="size-2.5" />
+                          </button>
+                        </Badge>
                       </div>
+                      <Popover>
+                        <PopoverTrigger as-child>
+                          <Button variant="outline" size="sm" class="w-full justify-between h-8 text-xs font-normal">
+                            <span class="text-muted-foreground">{{ taskForm[car._id || car.id]?.assignees?.length ? `${taskForm[car._id || car.id].assignees.length} selected` : 'Select assignees...' }}</span>
+                            <Icon name="i-lucide-chevrons-up-down" class="size-3 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent class="w-[--reka-popover-trigger-width] p-0 z-[300]" align="start" side="top">
+                          <div class="max-h-48 overflow-y-auto p-1">
+                            <template v-for="opt in (() => {
+                              const related = getCarRelatedEmails(car)
+                              const all = getTaskAssigneeOptions()
+                              const relevant = all.filter(o => related.has(o.email?.toLowerCase()))
+                              const others = all.filter(o => !related.has(o.email?.toLowerCase()))
+                              return [...relevant, ...others]
+                            })()" :key="opt.email">
+                              <button
+                                class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs cursor-pointer transition-colors"
+                                :class="taskForm[car._id || car.id]?.assignees?.includes(opt.email) ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300' : 'hover:bg-accent'"
+                                @click.stop="toggleTaskAssignee(car._id || car.id, opt)"
+                              >
+                                <Checkbox :checked="taskForm[car._id || car.id]?.assignees?.includes(opt.email)" class="pointer-events-none" />
+                                <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                                  <Icon v-if="getCarRelatedEmails(car).has(opt.email?.toLowerCase())" name="i-lucide-star" class="size-3 text-emerald-500 shrink-0" />
+                                  <span class="truncate font-medium">{{ opt.name }}</span>
+                                  <span class="text-[10px] text-muted-foreground shrink-0">({{ opt.role }})</span>
+                                </div>
+                                <Icon v-if="taskForm[car._id || car.id]?.assignees?.includes(opt.email)" name="i-lucide-check" class="size-3 text-violet-600 ml-auto shrink-0" />
+                              </button>
+                            </template>
+                            <div v-if="!getTaskAssigneeOptions().length" class="px-3 py-4 text-xs text-muted-foreground text-center">No assignees available</div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <!-- Description -->
                     <div class="space-y-1">
@@ -1868,7 +1923,7 @@ function getHighestAutoBidObj(car: any): any {
                         <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Priority</Label>
                         <Select v-model="taskForm[car._id || car.id].priority">
                           <SelectTrigger class="h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
+                          <SelectContent side="top" class="z-[300]">
                             <SelectItem value="low">Low</SelectItem>
                             <SelectItem value="medium">Medium</SelectItem>
                             <SelectItem value="high">High</SelectItem>
@@ -1877,7 +1932,7 @@ function getHighestAutoBidObj(car: any): any {
                       </div>
                       <div class="space-y-1">
                         <Label class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Due Date</Label>
-                        <Input v-model="taskForm[car._id || car.id].dueDate" type="date" class="h-8 text-xs" />
+                        <Input v-model="taskForm[car._id || car.id].dueDate" type="date" class="h-8 text-xs" :min="new Date().toISOString().split('T')[0]" />
                       </div>
                     </div>
                     <!-- Submit -->

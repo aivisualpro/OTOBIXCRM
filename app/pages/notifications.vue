@@ -5,6 +5,7 @@ useHead({ title: 'Notifications — OTOBIX' })
 const activeTab = ref('all')
 const tabs = [
   { id: 'all', label: 'All', icon: 'i-lucide-inbox' },
+  { id: 'tasks', label: 'Tasks', icon: 'i-lucide-check-square' },
   { id: 'inspections', label: 'Inspections', icon: 'i-lucide-scan-search' },
   { id: 'auctions', label: 'Auctions', icon: 'i-lucide-gavel' },
   { id: 'system', label: 'System', icon: 'i-lucide-settings' },
@@ -32,18 +33,35 @@ interface UserNotification {
 // Reactive state
 const notifications = ref<UserNotification[]>([])
 const loading = ref(false)
-const unreadCounts = ref({ all: 0, inspections: 0, auctions: 0, system: 0 })
+const unreadCounts = ref({ all: 0, tasks: 0, inspections: 0, auctions: 0, system: 0 })
+
+// Get current user for permission-based filtering
+function getCurrentUser() {
+  try {
+    const cookie = useCookie('userData')
+    const user = typeof cookie.value === 'string' ? JSON.parse(cookie.value) : cookie.value
+    return {
+      email: (user?.email || '').toLowerCase(),
+      role: (user?.userType || user?.userRole || user?.role || '').toLowerCase(),
+    }
+  }
+  catch { return { email: '', role: '' } }
+}
 
 // Fetch notifications from API
 async function fetchNotifications() {
   loading.value = true
   try {
     const typeMap: Record<string, string> = {
+      tasks: 'task',
       inspections: 'inspection',
       auctions: 'auction',
       system: 'system',
     }
     const params: Record<string, string> = {}
+    const user = getCurrentUser()
+    if (user.email) params.email = user.email
+    if (user.role) params.role = user.role
     if (activeTab.value !== 'all') {
       params.type = typeMap[activeTab.value] || activeTab.value
     }
@@ -51,7 +69,7 @@ async function fetchNotifications() {
     const { data } = await useFetch('/api/notifications', { params })
     if (data.value) {
       notifications.value = (data.value as any).notifications || []
-      unreadCounts.value = (data.value as any).unreadCounts || { all: 0, inspections: 0, auctions: 0, system: 0 }
+      unreadCounts.value = (data.value as any).unreadCounts || { all: 0, tasks: 0, inspections: 0, auctions: 0, system: 0 }
     }
   }
   catch (err) {
@@ -66,6 +84,7 @@ const filteredNotifications = computed(() => {
   if (activeTab.value === 'all')
     return notifications.value
   const typeMap: Record<string, string> = {
+    tasks: 'task',
     inspections: 'inspection',
     auctions: 'auction',
     system: 'system',
@@ -102,7 +121,7 @@ async function markAllRead() {
     })
     // Optimistic update
     notifications.value.forEach(n => n.isRead = true)
-    unreadCounts.value = { all: 0, inspections: 0, auctions: 0, system: 0 }
+    unreadCounts.value = { all: 0, tasks: 0, inspections: 0, auctions: 0, system: 0 }
   }
   catch (err) {
     console.error('Failed to mark all read:', err)
@@ -122,7 +141,7 @@ async function markRead(id: string) {
       notif.isRead = true
       unreadCounts.value.all = Math.max(0, unreadCounts.value.all - 1)
       // Decrement the type-specific count
-      const typeKey = notif.type === 'inspection' ? 'inspections' : notif.type === 'auction' ? 'auctions' : 'system'
+      const typeKey = notif.type === 'inspection' ? 'inspections' : notif.type === 'auction' ? 'auctions' : notif.type === 'task' ? 'tasks' : 'system'
       if (typeKey in unreadCounts.value) {
         (unreadCounts.value as any)[typeKey] = Math.max(0, (unreadCounts.value as any)[typeKey] - 1)
       }
@@ -144,7 +163,7 @@ async function dismiss(id: string) {
     const notif = notifications.value.find(n => n._id === id)
     if (notif && !notif.isRead) {
       unreadCounts.value.all = Math.max(0, unreadCounts.value.all - 1)
-      const typeKey = notif.type === 'inspection' ? 'inspections' : notif.type === 'auction' ? 'auctions' : 'system'
+      const typeKey = notif.type === 'inspection' ? 'inspections' : notif.type === 'auction' ? 'auctions' : notif.type === 'task' ? 'tasks' : 'system'
       if (typeKey in unreadCounts.value) {
         (unreadCounts.value as any)[typeKey] = Math.max(0, (unreadCounts.value as any)[typeKey] - 1)
       }
@@ -162,6 +181,7 @@ function typeColor(type: string) {
     case 'auction': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20'
     case 'system': return 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/20'
     case 'user': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+    case 'task': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
     default: return 'bg-muted text-muted-foreground'
   }
 }
@@ -171,6 +191,7 @@ function typeIconBg(type: string) {
     case 'inspection': return 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
     case 'auction': return 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
     case 'system': return 'bg-violet-500/15 text-violet-600 dark:text-violet-400'
+    case 'task': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
     case 'user': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
     default: return 'bg-muted text-muted-foreground'
   }
@@ -182,6 +203,7 @@ function typeIcon(type: string) {
     case 'auction': return 'i-lucide-gavel'
     case 'system': return 'i-lucide-settings'
     case 'user': return 'i-lucide-user'
+    case 'task': return 'i-lucide-check-square'
     default: return 'i-lucide-bell'
   }
 }

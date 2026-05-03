@@ -1,12 +1,5 @@
 /**
- * POST /api/tasks — Create a new task in otobixCRMTasks collection
- *
- * Body: {
- *   title, description, priority, dueDate, status,
- *   assignees: [{ email, name, role }],
- *   carId, appointmentId, carImage, carInfo: { make, model, year, city },
- *   createdBy, labels
- * }
+ * POST /api/tasks — Create a new task with activity log + notification
  */
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -17,6 +10,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     const db = await getLeadsDb(event)
+    const now = new Date()
 
     const task = {
       title: body.title.trim(),
@@ -33,19 +27,44 @@ export default defineEventHandler(async (event) => {
       labels: body.labels || [],
       subtasks: [],
       comments: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      activityLog: [{
+        action: 'created',
+        status: body.status || 'todo',
+        by: body.createdBy || 'System',
+        at: now,
+        detail: `Task created in "${body.status || 'todo'}"`,
+      }],
+      createdAt: now,
+      updatedAt: now,
     }
 
     const result = await db.collection('otobixCRMTasks').insertOne(task)
+    const taskId = result.insertedId.toString()
+
+    // Create notifications for all assignees
+    const notifications = (body.assignees || []).map((a: any) => ({
+      userId: a.email,
+      type: 'task',
+      title: `New Task Assigned: ${task.title}`,
+      body: `You've been assigned to "${task.title}"${task.appointmentId ? ` (${task.appointmentId})` : ''}. Priority: ${task.priority}. ${task.description ? `Description: ${task.description.slice(0, 100)}` : ''}`,
+      data: {
+        taskId,
+        carId: task.carId,
+        appointmentId: task.appointmentId,
+        action: 'created',
+        status: task.status,
+      },
+      isRead: false,
+      createdAt: now,
+    }))
+
+    if (notifications.length) {
+      await db.collection('userNotifications').insertMany(notifications)
+    }
 
     return {
       success: true,
-      task: {
-        ...task,
-        id: result.insertedId.toString(),
-        _id: result.insertedId.toString(),
-      },
+      task: { ...task, id: taskId, _id: taskId },
     }
   }
   catch (err: any) {
