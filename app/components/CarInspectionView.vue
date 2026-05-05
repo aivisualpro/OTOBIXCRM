@@ -68,7 +68,7 @@ async function savePD() {
 }
 
 const { fetchDropdowns, getOptions } = useDropdowns()
-const { fetchCarDropdowns, makes, getModels, getVariants } = useCarDropdowns()
+const { brandStats: carBrandStats, fetchBrandStats: fetchCarBrandStats } = useCarDropdowns()
 const { allUsers, fetchAllUsers } = usePeopleApi()
 const retailers = computed(() => allUsers.value.filter(u => u.userRole === 'Retailer'))
 
@@ -115,33 +115,76 @@ let _skipAutoSave = false
 let _skipCarWatch = false
 let _pendingSave = false // gates SSE re-fetches during ANY save (silent or manual)
 
+// ─── Server-fetched makes/models/variants (same pattern as /leads) ───
+const allCarMakes = computed(() => {
+  if (!carBrandStats.value?.brands)
+    return []
+  return carBrandStats.value.brands.map(b => b.make).sort((a, b) => a.localeCompare(b))
+})
+
+const serverModels = ref<string[]>([])
+const isLoadingModels = ref(false)
+const serverVariants = ref<string[]>([])
+const isLoadingVariants = ref(false)
+
 const makeOptions = computed(() => {
-  if (makes.value.length === 0 && editForm.value.make)
+  if (allCarMakes.value.length === 0 && editForm.value.make)
     return [{ label: editForm.value.make, value: editForm.value.make }]
-  return makes.value.map(m => ({ label: m, value: m }))
+  return allCarMakes.value.map(m => ({ label: m, value: m }))
 })
 
 const modelOptions = computed(() => {
-  const selectedMake = editForm.value.make
-  const models = selectedMake ? getModels(selectedMake) : []
-  if (models.length === 0 && editForm.value.model)
+  if (serverModels.value.length === 0 && editForm.value.model)
     return [{ label: editForm.value.model, value: editForm.value.model }]
-  return models.map(m => ({ label: m, value: m }))
+  return serverModels.value.map(m => ({ label: m, value: m }))
 })
 
 const variantOptions = computed(() => {
-  const selectedMake = editForm.value.make
-  const selectedModel = editForm.value.model
-  const variants = (selectedMake && selectedModel) ? getVariants(selectedMake, selectedModel) : []
-  if (variants.length === 0 && editForm.value.variant)
+  if (serverVariants.value.length === 0 && editForm.value.variant)
     return [{ label: editForm.value.variant, value: editForm.value.variant }]
-  return variants.map(v => ({ label: v, value: v }))
+  return serverVariants.value.map(v => ({ label: v, value: v }))
+})
+
+// When make changes, fetch models from server
+watch(() => editForm.value.make, async (newMake, oldMake) => {
+  serverModels.value = []
+  serverVariants.value = []
+  if (newMake && oldMake !== undefined && newMake !== oldMake) {
+    editForm.value.model = ''
+    editForm.value.variant = ''
+  }
+  if (newMake) {
+    isLoadingModels.value = true
+    try {
+      const res = await $fetch<any>('/api/car-dropdowns/models-by-make', { query: { make: newMake } })
+      serverModels.value = res.models || []
+    }
+    catch { /* silent */ }
+    finally { isLoadingModels.value = false }
+  }
+})
+
+// When model changes, fetch variants from server
+watch(() => editForm.value.model, async (newModel, oldModel) => {
+  serverVariants.value = []
+  if (oldModel !== undefined && newModel !== oldModel) {
+    editForm.value.variant = ''
+  }
+  if (newModel && editForm.value.make) {
+    isLoadingVariants.value = true
+    try {
+      const res = await $fetch<any>('/api/car-dropdowns/variants-by-make-model', { query: { make: editForm.value.make, model: newModel } })
+      serverVariants.value = res.variants || []
+    }
+    catch { /* silent */ }
+    finally { isLoadingVariants.value = false }
+  }
 })
 
 onMounted(() => {
   if (!props.readonly && !props.headlessPdf) {
     fetchDropdowns()
-    fetchCarDropdowns()
+    fetchCarBrandStats()
   }
   if (carId.value)
     fetchCarDetails(carId.value)
@@ -783,8 +826,9 @@ async function confirmQCApproval() {
     // 2. Local State - Only set to 'Approved' IF auction was successful
     editForm.value.approvalStatus = 'Approved'
 
-    // 3. Database DB Save - This will hit /api/leads/update which updates BOTH cars & telecalling collections
-    await saveQC(true)
+    // 3. Database DB Save - use non-silent save (same as Fix button) to ensure
+    //    all old-key fallback syncs are fully persisted via a refetch cycle
+    await saveQC(false)
 
     showQCModal.value = false
     toast.dismiss(loadingToast)
