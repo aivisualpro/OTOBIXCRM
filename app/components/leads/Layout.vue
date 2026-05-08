@@ -3,8 +3,21 @@ const route = useRoute()
 
 const { statusCounts, fetchCounts, activeAdvancedFilterCount, serverSearch, totalCount, matchingTabIds } = useLeadsApi()
 
+// Self-inspected count (separate collection)
+const selfInspectedCount = ref<number>(0)
+async function fetchSelfInspectedCount() {
+  try {
+    const data = await $fetch<any>('/api/self-inspected', { params: { limit: '1', auctionStatus: 'inspectionRequested' } })
+    selfInspectedCount.value = data.total || 0
+  }
+  catch { /* ignore */ }
+}
+
 // Fetch counts on mount (lightweight server call)
-onMounted(() => fetchCounts())
+onMounted(() => {
+  fetchCounts()
+  fetchSelfInspectedCount()
+})
 
 const { activeWorkspace } = useWorkspace()
 
@@ -16,6 +29,9 @@ const currentActiveId = computed(() => {
 function getTabCount(itemId: string): number | undefined {
   if (itemId === 'search-results') {
     return totalCount.value || undefined
+  }
+  if (itemId === 'self-inspected') {
+    return selfInspectedCount.value || undefined
   }
   return statusCounts.value[itemId]
 }
@@ -34,6 +50,7 @@ const navItems = [
   { id: 'cancelled', title: 'Cancelled', icon: 'i-lucide-ban', color: 'text-red-500', link: '/leads?tab=cancelled' },
   { id: 're-inspection', title: 'Re-Inspection', icon: 'i-lucide-rotate-ccw', color: 'text-amber-500', link: '/leads?tab=re-inspection' },
   { id: 'inspected', title: 'Inspected', icon: 'i-lucide-check-circle', color: 'text-emerald-500', link: '/leads?tab=inspected' },
+  { id: 'self-inspected', title: 'Self Inspected', icon: 'i-lucide-smartphone', color: 'text-violet-500', link: '/leads?tab=self-inspected' },
   { id: 'under-review', title: 'Under Review', icon: 'i-lucide-eye', color: 'text-orange-500', link: '/leads?tab=under-review' },
   { id: 'quality-approved', title: 'Approved', icon: 'i-lucide-shield-check', color: 'text-teal-500', link: '/leads?tab=quality-approved' },
   { id: 'quality-rejected', title: 'Quality Rejected', icon: 'i-lucide-shield-x', color: 'text-rose-500', link: '/leads?tab=quality-rejected' },

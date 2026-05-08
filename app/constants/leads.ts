@@ -479,5 +479,6 @@ export const routeFilters = {
   // /leads/under-review
   'under-review': { label: 'Under Review', inspectionStatus: 'Inspected', approvalStatus: 'Under Review' },
   'quality-rejected': { label: 'Quality Rejected', inspectionStatus: 'Inspected', approvalStatus: 'Quality Rejected' },
+  'self-inspected': { label: 'Self Inspected', inspectionStatus: '*', approvalStatus: '*' },
   'search-results': { label: 'Search Results', inspectionStatus: '*', approvalStatus: '*' },
 }

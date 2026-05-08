@@ -536,6 +536,19 @@ const qcForm = ref({
   auctionDuration: 24,
   auctionStartTime: '',
   retailAssociate: '',
+  retailAssociateContactNumber: '',
+})
+
+// Auto-fill contact number when retail associate changes
+watch(() => qcForm.value.retailAssociate, (email) => {
+  if (!email) {
+    qcForm.value.retailAssociateContactNumber = ''
+    return
+  }
+  const retailer = retailers.value.find((r: any) => r.email === email)
+  if (retailer?.phoneNumber) {
+    qcForm.value.retailAssociateContactNumber = retailer.phoneNumber
+  }
 })
 
 // ─── Pre-Approval Validation ───
@@ -704,9 +717,25 @@ function scrollToField(fieldKey: string) {
   }, 250)
 }
 
-function openQCModal() {
+async function openQCModal() {
   qcForm.value.priceDiscovery = editForm.value.priceDiscovery || car.value?.priceDiscovery || ''
   qcForm.value.retailAssociate = editForm.value.retailAssociate || car.value?.retailAssociate || ''
+  qcForm.value.retailAssociateContactNumber = editForm.value.retailAssociateContactNumber || car.value?.retailAssociateContactNumber || ''
+
+  // If no contact number yet, try to fetch from the last approved record
+  if (!qcForm.value.retailAssociateContactNumber) {
+    try {
+      const last = await $fetch<any>('/api/leads/last-approved-retailer')
+      if (last?.retailAssociateContactNumber) {
+        qcForm.value.retailAssociateContactNumber = last.retailAssociateContactNumber
+      }
+      if (!qcForm.value.retailAssociate && last?.retailAssociate) {
+        qcForm.value.retailAssociate = last.retailAssociate
+      }
+    }
+    catch { /* ignore */ }
+  }
+
   showQCModal.value = true
 }
 
@@ -727,6 +756,7 @@ async function confirmQCApproval() {
 
   editForm.value.priceDiscovery = qcForm.value.priceDiscovery
   editForm.value.retailAssociate = qcForm.value.retailAssociate
+  editForm.value.retailAssociateContactNumber = qcForm.value.retailAssociateContactNumber
 
   const now = new Date()
   const userCookie = useCookie('userData')
@@ -2483,27 +2513,39 @@ watch(editForm, () => {
             <!-- Retail Associate Dropdown -->
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Retail Associate</label>
-              <select v-model="qcForm.retailAssociate" class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                <option value="">
-                  Select Associate
-                </option>
-                <option v-for="r in retailers" :key="r.email" :value="r.email">
-                  {{ r.userName }}
-                </option>
-              </select>
+              <SearchableSelect
+                v-model="qcForm.retailAssociate"
+                :options="retailers.map((r: any) => ({ label: r.userName, value: r.email }))"
+                placeholder="Select Associate"
+                search-placeholder="Search retailers..."
+                empty-message="No retailers found."
+                :use-pills="false"
+              />
+            </div>
+
+            <!-- Retail Associate Contact Number -->
+            <div class="space-y-1.5">
+              <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Retail Associate Contact</label>
+              <Input
+                :model-value="qcForm.retailAssociateContactNumber"
+                type="tel"
+                inputmode="numeric"
+                placeholder="Contact Number"
+                maxlength="10"
+                class="h-10"
+                @input="(e: any) => { qcForm.retailAssociateContactNumber = (e.target?.value || '').replace(/\D/g, '').slice(0, 10); e.target.value = qcForm.retailAssociateContactNumber }"
+              />
             </div>
 
             <!-- Auction Mode -->
             <div class="space-y-1.5">
               <label class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Auction Mode</label>
-              <select v-model="qcForm.auctionMode" class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                <option value="makeLiveNow">
-                  Make Live Now
-                </option>
-                <option value="scheduledForLater">
-                  Scheduled For Later
-                </option>
-              </select>
+              <SearchableSelect
+                v-model="qcForm.auctionMode"
+                :options="[{ label: 'Make Live Now', value: 'makeLiveNow' }, { label: 'Scheduled For Later', value: 'scheduledForLater' }]"
+                placeholder="Select Mode"
+                :use-pills="false"
+              />
             </div>
 
             <!-- Auction Start Time (If scheduled) -->

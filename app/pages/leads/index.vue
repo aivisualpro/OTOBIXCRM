@@ -36,6 +36,9 @@ if (!tabParam.value) {
 const filter = computed(() => routeFilters[tabParam.value as keyof typeof routeFilters] || routeFilters.all)
 const activeColumns = computed(() => routeColumnsMap[tabParam.value] || leadsColumns)
 
+// Is self-inspected tab active?
+const isSelfInspected = computed(() => tabParam.value === 'self-inspected')
+
 if (searchParam.value && !serverSearch.value) {
   serverSearch.value = searchParam.value
 }
@@ -49,8 +52,12 @@ watch(tabParam, (newTab) => {
 </script>
 
 <template>
+  <!-- Self Inspected tab renders its own component -->
+  <LeadsSelfInspectedTable v-if="isSelfInspected" />
+
+  <!-- All other tabs render the standard CRUD page -->
   <LeadsApiCrudPage
-    v-if="filter"
+    v-else-if="filter"
     :title="`Leads - ${filter.label || 'All Leads'}`"
     icon="i-lucide-magnet"
     entity-name="Lead"
