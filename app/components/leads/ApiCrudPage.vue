@@ -196,6 +196,11 @@ const cancelNotes = ref('')
 const showQcReviewDialog = ref(false)
 const qcReviewingLead = ref<any>(null)
 
+// ─── Approval Status Change Dialogs ───
+const showRejectDialog = ref(false)
+const rejectingLead = ref<any>(null)
+const rejectReason = ref('')
+
 const showInspectedActionDialog = ref(false)
 const inspectedActionLead = ref<any>(null)
 
@@ -283,7 +288,58 @@ async function updateLeadStatus(lead: any, field: string, newStatus: string) {
     showCancelDialog.value = true
     return
   }
+
+  // ─── Approval Status transitions (match detail page logic) ───
+  if (field === 'approvalStatus') {
+    const userCookie = useCookie('userData')
+    const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {} as any
+    const qcByEmail = currentUser?.email || ''
+
+    if (newStatus === 'Under Review') {
+      // Set qcBy to current user (same as QC review dialog)
+      await doStatusUpdate(lead, { approvalStatus: 'Under Review', qcBy: qcByEmail })
+      return
+    }
+    if (newStatus === 'Approved') {
+      // Set approvedAt + qcBy (same as QC approve flow)
+      await doStatusUpdate(lead, {
+        approvalStatus: 'Approved',
+        qcBy: qcByEmail,
+        approvedAt: new Date().toISOString(),
+      })
+      return
+    }
+    if (newStatus === 'Rejected') {
+      // Open rejection reason dialog (same as QC reject flow)
+      rejectingLead.value = lead
+      rejectReason.value = ''
+      showRejectDialog.value = true
+      return
+    }
+  }
+
   await doStatusUpdate(lead, { [field]: newStatus })
+}
+
+async function confirmRejectFromDropdown() {
+  if (!rejectingLead.value) return
+  if (!rejectReason.value.trim()) {
+    toast.error('Rejection reason is required')
+    return
+  }
+  const lead = rejectingLead.value
+  const userCookie = useCookie('userData')
+  const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {} as any
+
+  await doStatusUpdate(lead, {
+    approvalStatus: 'Rejected',
+    rejectionReason: rejectReason.value,
+    qcBy: currentUser?.email || '',
+  })
+
+  showRejectDialog.value = false
+  rejectingLead.value = null
+  rejectReason.value = ''
 }
 
 async function confirmAssignInspector() {
@@ -1944,6 +2000,59 @@ function getInitials(name: string): string {
           <Button :disabled="!reAllocatedTo || !reInspectionDateTime || isUpdatingStatus" class="bg-blue-600 hover:bg-blue-700 text-white" @click="confirmReInspection">
             <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
             Confirm Re-Inspection
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    <!-- Reject Reason Dialog -->
+    <Dialog v-model:open="showRejectDialog">
+      <DialogContent class="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2">
+            <Icon name="i-lucide-x-circle" class="size-5 text-red-500" />
+            Reject Inspection
+          </DialogTitle>
+          <DialogDescription>
+            Provide a reason for rejecting this inspection.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-4 py-4">
+          <div v-if="rejectingLead" class="rounded-lg border bg-muted/30 p-3 space-y-1">
+            <p class="text-sm font-medium">
+              {{ rejectingLead.ownerName || 'Unknown' }}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              {{ rejectingLead.make }} {{ rejectingLead.model }} — {{ rejectingLead.appointmentId }}
+            </p>
+          </div>
+
+          <div class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 flex items-start gap-3">
+            <Icon name="i-lucide-alert-triangle" class="size-5 text-red-500 shrink-0 mt-0.5" />
+            <p class="text-xs text-muted-foreground">
+              This will mark the inspection as rejected. The record will appear in the Quality Rejected tab.
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="reject-reason">Rejection Reason</Label>
+            <Textarea
+              id="reject-reason"
+              v-model="rejectReason"
+              placeholder="e.g. Incomplete inspection, missing photos..."
+              rows="3"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" @click="showRejectDialog = false">
+            Cancel
+          </Button>
+          <Button :disabled="!rejectReason.trim() || isUpdatingStatus" class="bg-red-600 hover:bg-red-700 text-white" @click="confirmRejectFromDropdown">
+            <Icon v-if="isUpdatingStatus" name="i-lucide-loader-2" class="mr-2 size-4 animate-spin" />
+            <Icon v-else name="i-lucide-x-circle" class="mr-2 size-4" />
+            Reject
           </Button>
         </DialogFooter>
       </DialogContent>
