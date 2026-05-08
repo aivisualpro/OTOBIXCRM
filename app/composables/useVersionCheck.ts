@@ -5,12 +5,16 @@
  * On first load, captures the build ID.
  * If a subsequent poll returns a different build ID → new deployment detected.
  * Exposes reactive state for a global update banner.
+ *
+ * Fix: once the user dismisses the banner for a given buildId, it stays
+ * dismissed for that build (no re-show on subsequent polls).
  */
 export function useVersionCheck() {
   const _knownBuildId = useState<string>('version_knownBuildId', () => '')
   const _updateAvailable = useState<boolean>('version_updateAvailable', () => false)
   const _newBuildId = useState<string>('version_newBuildId', () => '')
-  const _dismissed = useState<boolean>('version_dismissed', () => false)
+  /** Stores the buildId the user dismissed, so we never re-show for the same build */
+  const _dismissedBuildId = useState<string>('version_dismissedBuildId', () => '')
   const _started = useState<boolean>('version_started', () => false)
   const _checking = useState<boolean>('version_checking', () => false)
 
@@ -32,7 +36,7 @@ export function useVersionCheck() {
       if (res.buildId !== _knownBuildId.value) {
         _newBuildId.value = res.buildId
         _updateAvailable.value = true
-        _dismissed.value = false
+        // Do NOT reset dismissed — if user already dismissed this exact build, keep it dismissed
       }
     }
     catch {
@@ -66,7 +70,8 @@ export function useVersionCheck() {
   }
 
   function dismissUpdate() {
-    _dismissed.value = true
+    // Remember which build was dismissed so it doesn't come back
+    _dismissedBuildId.value = _newBuildId.value
   }
 
   function applyUpdate() {
@@ -76,9 +81,12 @@ export function useVersionCheck() {
   }
 
   return {
-    updateAvailable: computed(() => _updateAvailable.value && !_dismissed.value),
+    // Show the banner only when there's an update AND it hasn't been dismissed for this build
+    updateAvailable: computed(() =>
+      _updateAvailable.value && _dismissedBuildId.value !== _newBuildId.value,
+    ),
     isUpdateAvailable: _updateAvailable,
-    dismissed: _dismissed,
+    dismissed: computed(() => _dismissedBuildId.value === _newBuildId.value),
     checking: _checking,
     startPolling,
     dismissUpdate,

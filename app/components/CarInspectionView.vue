@@ -273,30 +273,40 @@ async function saveQC(silent = false) {
     const userCookie = useCookie('userData')
     const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {}
 
-    // ── GENERIC FALLBACK SYNC: forward changes from new keys to fallback (old) keys ──
+    // ── COMPREHENSIVE FALLBACK SYNC: forward new keys → old keys ──
+    // Uses the same forceSync strategy as fixLegacyFields: pulls from
+    // car.value when editForm doesn't have the field, so ALL legacy old-key
+    // fields are populated on every save — not just the ones the user touched.
     // IMPORTANT: Clone to avoid mutating the reactive editForm directly,
     // which would re-trigger the deep watcher and create an infinite save loop.
     const edited = JSON.parse(JSON.stringify(editForm.value || {}))
+    const carData = car.value || {}
 
     const syncFallbacks = (item: any) => {
       if (!item)
         return
-      if (item.oldKey && item.oldKey !== 'new' && item.key && item.key in edited) {
-        let val = edited[item.key]
-        // Ensure dropdown arrays flatten into comma-separated strings for legacy fields
-        // IMPORTANT: Skip joining for array fields like videos/images that must remain arrays
-        if (Array.isArray(val) && !['engineVideo', 'exhaustSmokeVideo'].includes(item.key)) {
-          val = val.join(', ')
-        }
-
-        if (JSON.stringify(val) !== JSON.stringify(edited[item.oldKey])) {
-          edited[item.oldKey] = val === undefined ? undefined : JSON.parse(JSON.stringify(val))
+      if (item.oldKey && item.oldKey !== 'new' && item.key) {
+        // Pull from edited (user changes) first, then fall back to car data
+        let val = (item.key in edited) ? edited[item.key] : carData[item.key]
+        if (val !== undefined && val !== null) {
+          // Ensure dropdown arrays flatten into comma-separated strings for legacy fields
+          // IMPORTANT: Skip joining for array fields like videos/images that must remain arrays
+          if (Array.isArray(val) && !['engineVideo', 'exhaustSmokeVideo'].includes(item.key)) {
+            val = val.join(', ')
+          }
+          const oldVal = (item.oldKey in edited) ? edited[item.oldKey] : carData[item.oldKey]
+          if (JSON.stringify(val) !== JSON.stringify(oldVal)) {
+            edited[item.oldKey] = JSON.parse(JSON.stringify(val))
+          }
         }
       }
-      if (item.oldImageKey && item.oldImageKey !== 'new' && item.imageKey && item.imageKey in edited) {
-        const val = edited[item.imageKey]
-        if (JSON.stringify(val) !== JSON.stringify(edited[item.oldImageKey])) {
-          edited[item.oldImageKey] = val === undefined ? undefined : JSON.parse(JSON.stringify(val))
+      if (item.oldImageKey && item.oldImageKey !== 'new' && item.imageKey) {
+        const val = (item.imageKey in edited) ? edited[item.imageKey] : carData[item.imageKey]
+        if (val !== undefined && val !== null) {
+          const oldVal = (item.oldImageKey in edited) ? edited[item.oldImageKey] : carData[item.oldImageKey]
+          if (JSON.stringify(val) !== JSON.stringify(oldVal)) {
+            edited[item.oldImageKey] = JSON.parse(JSON.stringify(val))
+          }
         }
       }
       if (item.splitParts)
@@ -316,10 +326,13 @@ async function saveQC(silent = false) {
         section.parts.forEach(syncFallbacks)
       if (section.imageKeys) {
         section.imageKeys.forEach((entry: any) => {
-          if (typeof entry !== 'string' && entry.old && entry.new && entry.new in edited) {
-            const val = edited[entry.new]
-            if (JSON.stringify(val) !== JSON.stringify(edited[entry.old])) {
-              edited[entry.old] = val === undefined ? undefined : JSON.parse(JSON.stringify(val))
+          if (typeof entry !== 'string' && entry.old && entry.new) {
+            const val = (entry.new in edited) ? edited[entry.new] : carData[entry.new]
+            if (val !== undefined && val !== null) {
+              const oldVal = (entry.old in edited) ? edited[entry.old] : carData[entry.old]
+              if (JSON.stringify(val) !== JSON.stringify(oldVal)) {
+                edited[entry.old] = JSON.parse(JSON.stringify(val))
+              }
             }
           }
         })
@@ -941,7 +954,7 @@ async function confirmReject() {
     showRejectModal.value = false
     toast.dismiss(loadingToast)
     toast.success('Vehicle successfully marked as Rejected!')
-    router.push('/leads/rejected')
+    router.push('/leads?tab=quality-rejected')
   }
   catch (err: any) {
     toast.dismiss(loadingToast)
@@ -2700,6 +2713,16 @@ watch(editForm, () => {
               <Icon :name="isGeneratingPdf ? 'i-lucide-loader-2' : 'i-lucide-file-down'" :class="{ 'animate-spin': isGeneratingPdf }" class="mr-1.5 size-4" />
               PDF
             </Button>
+            <!-- Fix button — always visible so legacy fields can be synced at any time -->
+            <Button
+              v-if="!props.readonly"
+              class="mr-2 h-8 text-xs font-bold shrink-0 border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20 shadow-sm"
+              variant="outline"
+              @click="fixLegacyFields"
+            >
+              <Icon name="i-lucide-wrench" class="mr-1.5 size-4" />
+              Fix
+            </Button>
             <Button
               v-if="!props.readonly && car.approvalStatus !== 'Approved'"
               class="mr-2 bg-red-500 hover:bg-red-600 focus:ring-red-500 text-white font-bold shadow-sm h-8 text-xs shrink-0 px-4"
@@ -2716,7 +2739,7 @@ watch(editForm, () => {
               <Icon name="i-lucide-check-circle-2" class="mr-1.5 size-4" />
               Approve
             </Button>
-            <template v-else-if="car.approvalStatus === 'Approved'">
+            <template v-if="car.approvalStatus === 'Approved'">
               <Button
                 v-if="hasAction('re-qc-button')"
                 class="mr-2 h-8 text-xs font-bold shrink-0 border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-900/20 shadow-sm"
@@ -2725,15 +2748,6 @@ watch(editForm, () => {
               >
                 <Icon name="i-lucide-refresh-ccw" class="mr-1.5 size-4" />
                 Re-QC
-              </Button>
-              <Button
-                v-if="hasAction('re-qc-button')"
-                class="mr-2 h-8 text-xs font-bold shrink-0 border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20 shadow-sm"
-                variant="outline"
-                @click="fixLegacyFields"
-              >
-                <Icon name="i-lucide-wrench" class="mr-1.5 size-4" />
-                Fix
               </Button>
               <Button
                 v-if="hasAction('pd-button')"

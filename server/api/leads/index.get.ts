@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
       'inspected': { inspectionStatus: 'Inspected', approvalStatus: 'Pending' },
       'under-review': { inspectionStatus: 'Inspected', approvalStatus: 'Under Review' },
       'quality-approved': { inspectionStatus: 'Inspected', approvalStatus: 'Approved' },
-      'quality-rejected': { inspectionStatus: 'Inspected', approvalStatus: 'Quality Rejected' },
+      'quality-rejected': { inspectionStatus: 'Inspected', approvalStatus: 'Quality Rejected|Rejected' },
       'search-results': { inspectionStatus: '*', approvalStatus: '*' },
     }
 
@@ -49,7 +49,14 @@ export default defineEventHandler(async (event) => {
       filter.inspectionStatus = { $regex: `^\\s*${inspectionStatus}\\s*$`, $options: 'i' }
     }
     if (approvalStatus && approvalStatus !== '*') {
-      filter.approvalStatus = { $regex: `^\\s*${approvalStatus}\\s*$`, $options: 'i' }
+      // Support pipe-separated multi-value matching (e.g. "Quality Rejected|Rejected")
+      if (approvalStatus.includes('|')) {
+        const patterns = approvalStatus.split('|').map(s => ({ approvalStatus: { $regex: `^\\s*${s.trim()}\\s*$`, $options: 'i' } }))
+        filter.$or = [...(filter.$or || []), ...patterns]
+      }
+      else {
+        filter.approvalStatus = { $regex: `^\\s*${approvalStatus}\\s*$`, $options: 'i' }
+      }
 
       // Strict isolation for "Under Review" records
       if (approvalStatus.toLowerCase() === 'under review' && !isAdmin && currentUserEmail) {

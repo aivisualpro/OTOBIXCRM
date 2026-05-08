@@ -15,7 +15,7 @@ const props = defineProps<{
   defaultSortDir?: 'asc' | 'desc'
 }>()
 const inspectionStatuses = ['Pending', 'Scheduled', 'Re-Scheduled', 'Re-Inspection', 'Cancelled']
-const approvalStatuses = ['Pending', 'Under Review', 'Approved', 'Quality Rejected']
+const approvalStatuses = ['Pending', 'Under Review', 'Approved', 'Rejected']
 
 const router = useRouter()
 
@@ -1319,7 +1319,7 @@ function getInitials(name: string): string {
             :key="item.id || item._id"
             class="group"
             :class="{ 'cursor-pointer hover:bg-muted/50': props.clickable || item.inspectionStatus === 'Inspected' }"
-            @click="(props.clickable || item.inspectionStatus === 'Inspected') && item.appointmentId ? (item.approvalStatus === 'Under Review' ? router.push(`/qc/${item.appointmentId}`) : router.push(`/inspection/${item.appointmentId}`)) : undefined"
+            @click="(props.clickable || item.inspectionStatus === 'Inspected') && item.appointmentId ? (['Under Review', 'Rejected', 'Quality Rejected'].includes(item.approvalStatus) ? router.push(`/qc/${item.appointmentId}`) : router.push(`/inspection/${item.appointmentId}`)) : undefined"
           >
             <TableCell v-for="col in columns" :key="col.key">
               <!-- Avatar -->
@@ -1340,6 +1340,7 @@ function getInitials(name: string): string {
                       variant="outline"
                       class="cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all"
                       :class="[getBadgeClass(item[col.key]), col.key === 'inspectionStatus' ? 'uppercase' : '']"
+                      @click.stop
                     >
                       {{ item[col.key] || '—' }}
                       <Icon name="i-lucide-chevron-down" class="size-3 ml-1 opacity-50" />

@@ -1068,12 +1068,13 @@ const NO_TRANSITION_TABS = ['customer-activity', 'dealer-activity', 'removed', '
 
 // What each current status can transition to (keys are lowercase for matching):
 const STATUS_TRANSITIONS_BY_STATUS: Record<string, string[]> = {
-  upcoming: ['live', 'removed', 'sold'],
-  live: ['removed'],
-  otobuy: ['removed', 'sold'],
-  liveauctionended: ['upcoming', 'live', 'otobuy', 'removed'],
-  otobuyended: ['upcoming', 'live', 'otobuy', 'removed'],
-  sold: ['removed'],
+  live: ['upcoming', 'otobuy', 'sold', 'removed'],
+  upcoming: ['live', 'otobuy', 'sold', 'removed'],
+  otobuy: ['upcoming', 'live', 'sold', 'removed'],
+  liveauctionended: ['upcoming', 'live', 'otobuy', 'sold', 'removed'],
+  otobuyended: ['upcoming', 'live', 'otobuy', 'sold', 'removed'],
+  sold: ['upcoming', 'live', 'otobuy', 'removed'],
+  removed: ['upcoming', 'live', 'otobuy', 'sold'],
 }
 
 const STATUS_META: Record<string, { label: string, icon: string, color: string, bg: string }> = {
@@ -1082,7 +1083,7 @@ const STATUS_META: Record<string, { label: string, icon: string, color: string, 
   otobuy: { label: 'Otobuy', icon: 'i-lucide-tag', color: 'text-blue-500', bg: 'hover:bg-blue-500/10 active:bg-blue-500/20' },
   liveAuctionEnded: { label: 'Ended', icon: 'i-lucide-timer-off', color: 'text-gray-500', bg: 'hover:bg-gray-500/10 active:bg-gray-500/20' },
   sold: { label: 'Sold', icon: 'i-lucide-badge-check', color: 'text-emerald-500', bg: 'hover:bg-emerald-500/10 active:bg-emerald-500/20' },
-  removed: { label: 'Removed', icon: 'i-lucide-trash-2', color: 'text-zinc-500', bg: 'hover:bg-zinc-500/10 active:bg-zinc-500/20' },
+  removed: { label: 'Removed', icon: 'i-lucide-trash-2', color: 'text-red-600', bg: 'hover:bg-red-500/10 active:bg-red-500/20' },
   otobuyEnded: { label: 'Otobuy Ended', icon: 'i-lucide-timer-off', color: 'text-gray-500', bg: 'hover:bg-gray-500/10 active:bg-gray-500/20' },
 }
 
@@ -1826,20 +1827,24 @@ async function exportToGoogleSheets() {
                       Move to
                     </p>
                     <div class="flex flex-col gap-0.5">
-                      <button
-                        v-for="status in getAvailableTransitionsForCar(car)"
-                        :key="status"
-                        class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer"
-                        :class="[
-                          STATUS_META[status]?.color || 'text-foreground',
-                          STATUS_META[status]?.bg || 'hover:bg-muted',
-                        ]"
-                        :disabled="statusChangeLoading[car._id || car.id]"
-                        @click.stop="changeAuctionStatus(car, status)"
-                      >
-                        <Icon :name="STATUS_META[status]?.icon || 'i-lucide-circle'" class="size-4 shrink-0" />
-                        <span>{{ STATUS_META[status]?.label || status }}</span>
-                      </button>
+                      <template v-for="status in getAvailableTransitionsForCar(car)" :key="status">
+                        <!-- Separator before Removed -->
+                        <div v-if="status === 'removed'" class="my-1 h-px bg-border/60" />
+                        <button
+                          class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer"
+                          :class="status === 'removed'
+                            ? 'text-red-600 hover:bg-red-500/10 active:bg-red-500/20'
+                            : [
+                                STATUS_META[status]?.color || 'text-foreground',
+                                STATUS_META[status]?.bg || 'hover:bg-muted',
+                              ]"
+                          :disabled="statusChangeLoading[car._id || car.id]"
+                          @click.stop="changeAuctionStatus(car, status)"
+                        >
+                          <Icon :name="STATUS_META[status]?.icon || 'i-lucide-circle'" class="size-4 shrink-0" />
+                          <span>{{ STATUS_META[status]?.label || status }}</span>
+                        </button>
+                      </template>
                     </div>
                   </PopoverContent>
                 </Popover>
@@ -2869,8 +2874,19 @@ async function exportToGoogleSheets() {
           </div>
         </template>
 
-        <!-- Removed: Reason -->
+        <!-- Removed: Warning + Reason -->
         <template v-if="transitionTarget?.status === 'removed'">
+          <div class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 flex items-start gap-3">
+            <Icon name="i-lucide-alert-triangle" class="size-5 text-red-500 shrink-0 mt-0.5" />
+            <div>
+              <p class="text-sm font-bold text-red-600 dark:text-red-400">
+                Are you sure you want to remove this car?
+              </p>
+              <p class="text-xs text-muted-foreground mt-1">
+                This will remove the car from all active listings. This action can be reversed later.
+              </p>
+            </div>
+          </div>
           <div class="space-y-2">
             <Label class="text-xs font-bold">Reason for Removal</Label>
             <Input v-model="transitionForm.reasonOfRemoval" placeholder="e.g. Customer sold outside" class="h-10" />
@@ -2882,10 +2898,15 @@ async function exportToGoogleSheets() {
         <Button variant="ghost" :disabled="transitionSubmitting" @click="transitionDialog = false">
           Cancel
         </Button>
-        <Button :disabled="transitionSubmitting" class="gap-2" @click="submitTransition">
+        <Button
+          :disabled="transitionSubmitting"
+          class="gap-2"
+          :class="transitionTarget?.status === 'removed' ? 'bg-red-600 hover:bg-red-700 text-white' : ''"
+          @click="submitTransition"
+        >
           <Icon v-if="transitionSubmitting" name="i-lucide-loader-2" class="size-4 animate-spin" />
           <Icon v-else :name="transitionDialogIcon" class="size-4" />
-          Confirm
+          {{ transitionTarget?.status === 'removed' ? 'Remove Car' : 'Confirm' }}
         </Button>
       </DialogFooter>
     </DialogContent>
