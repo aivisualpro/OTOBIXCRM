@@ -1,9 +1,23 @@
-// GET /api/leads/last-approved-retailer — Fetch the retailAssociateContactNumber from the last Approved car
+// GET /api/leads/last-approved-retailer — Fetch the retailAssociateContactNumber from the last car record
+// Optional query param: ?retailAssociate=<email> to filter by a specific retailer
 export default defineEventHandler(async (event) => {
   try {
+    const query = getQuery(event)
     const db = await getLeadsDb(event)
-    const doc = await db.collection('telecallings')
-      .find({ approvalStatus: 'Approved', retailAssociateContactNumber: { $exists: true, $ne: '' } })
+
+    const filter: Record<string, any> = {
+      retailAssociateContactNumber: { $exists: true, $ne: '' },
+    }
+
+    // If a specific retailAssociate is requested, filter by it
+    if (query.retailAssociate) {
+      filter.retailAssociate = query.retailAssociate
+    } else {
+      filter.approvalStatus = 'Approved'
+    }
+
+    const doc = await db.collection('cars')
+      .find(filter)
       .sort({ _id: -1 })
       .limit(1)
       .project({ retailAssociate: 1, retailAssociateContactNumber: 1 })

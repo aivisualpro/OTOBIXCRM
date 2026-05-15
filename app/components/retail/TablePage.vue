@@ -1003,6 +1003,13 @@ const raSaving = ref<Record<string, boolean>>({})
 
 const retailersList = computed(() => allUsers.value.filter(u => String(u.userRole || '').toLowerCase() === 'retailer'))
 
+// Approved dealers for "Sold To" dropdown (people/dealer where Status="Approved")
+const approvedDealers = computed(() =>
+  allUsers.value
+    .filter(u => String(u.userRole || '').toLowerCase() === 'dealer' && String(u.approvalStatus || '').toLowerCase() === 'approved')
+    .map(u => ({ label: `${u.userName || u.dealershipName || u.email}`, value: u._id || u.id }))
+)
+
 function openRa(car: any) {
   if (loggedInUserRole.value !== 'Admin')
     return
@@ -2862,11 +2869,17 @@ async function exportToGoogleSheets() {
           </div>
         </template>
 
-        <!-- Sold: Buyer + Price -->
+        <!-- Sold: Buyer (Approved Dealer) + Price -->
         <template v-if="transitionTarget?.status === 'sold'">
           <div class="space-y-2">
-            <Label class="text-xs font-bold">Sold To (User ID)</Label>
-            <Input v-model="transitionForm.soldTo" placeholder="Enter buyer user ID" class="h-10" />
+            <Label class="text-xs font-bold">Sold To (Dealer)</Label>
+            <SearchableSelect
+              v-model="transitionForm.soldTo"
+              :options="approvedDealers"
+              placeholder="Select dealer..."
+              search-placeholder="Search approved dealers..."
+              empty-message="No approved dealers found."
+            />
           </div>
           <div class="space-y-2">
             <Label class="text-xs font-bold">Sold Price (₹)</Label>

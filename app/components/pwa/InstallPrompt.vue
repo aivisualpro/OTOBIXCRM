@@ -6,6 +6,10 @@ const showBanner = ref(false)
 const dismissed = ref(false)
 const isInstalled = ref(false)
 
+// Hide the install banner if a version update banner is on screen,
+// so the two never stack on top of each other.
+const { updateAvailable } = useVersionCheck()
+
 // Check if already installed via display-mode
 if (import.meta.client) {
   isInstalled.value = window.matchMedia('(display-mode: standalone)').matches
@@ -63,82 +67,60 @@ function handleDismiss() {
   dismissed.value = true
   localStorage.setItem('pwa-install-dismissed', Date.now().toString())
 }
+
+const visible = computed(() => showBanner.value && !updateAvailable.value)
 </script>
 
 <template>
   <Transition
-    enter-active-class="transition-all duration-500 ease-out"
-    enter-from-class="translate-y-full opacity-0"
+    enter-active-class="transition-all duration-200 ease-out"
+    enter-from-class="translate-y-2 opacity-0"
     enter-to-class="translate-y-0 opacity-100"
-    leave-active-class="transition-all duration-300 ease-in"
+    leave-active-class="transition-all duration-150 ease-in"
     leave-from-class="translate-y-0 opacity-100"
-    leave-to-class="translate-y-full opacity-0"
+    leave-to-class="translate-y-2 opacity-0"
   >
     <div
-      v-if="showBanner"
-      class="fixed bottom-4 left-4 right-4 z-[100] mx-auto max-w-md"
+      v-if="visible"
+      class="fixed bottom-4 right-4 z-[100] w-[360px] max-w-[calc(100vw-2rem)]"
     >
-      <div
-        class="relative overflow-hidden rounded-2xl border border-border/50
-               bg-gradient-to-br from-background via-background to-muted/30
-               shadow-2xl shadow-black/10 dark:shadow-black/40
-               backdrop-blur-xl"
-      >
-        <!-- Decorative gradient bar at top -->
-        <div class="h-1 w-full bg-gradient-to-r from-yellow-500 via-red-500 to-green-500" />
-
-        <div class="p-4">
-          <div class="flex items-start gap-3">
-            <!-- Icon -->
-            <div
-              class="flex h-12 w-12 shrink-0 items-center justify-center
-                     rounded-xl bg-primary/10 text-primary"
-            >
-              <Smartphone class="h-6 w-6" />
-            </div>
-
-            <!-- Content -->
-            <div class="flex-1 min-w-0">
-              <h3 class="text-sm font-semibold text-foreground">
-                Install OTOBIX CRM
-              </h3>
-              <p class="mt-0.5 text-xs text-muted-foreground leading-relaxed">
-                Add to your home screen for a faster, app-like experience with offline access.
-              </p>
-            </div>
-
-            <!-- Close button -->
-            <button
-              class="shrink-0 rounded-lg p-1 text-muted-foreground/60
-                     hover:bg-muted hover:text-foreground transition-colors"
-              @click="handleDismiss"
-            >
-              <X class="h-4 w-4" />
-            </button>
+      <div class="rounded-lg border border-border bg-card text-card-foreground shadow-md">
+        <div class="flex items-start gap-3 p-3">
+          <div class="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
+            <Smartphone class="size-4 text-muted-foreground" />
           </div>
 
-          <!-- Actions -->
-          <div class="mt-3 flex items-center gap-2">
-            <button
-              class="flex-1 flex items-center justify-center gap-2
-                     rounded-xl bg-primary px-4 py-2.5
-                     text-sm font-medium text-primary-foreground
-                     hover:bg-primary/90 transition-colors
-                     active:scale-[0.98] transform"
-              @click="handleInstall"
-            >
-              <Download class="h-4 w-4" />
-              Install App
-            </button>
-            <button
-              class="rounded-xl px-4 py-2.5 text-sm font-medium
-                     text-muted-foreground hover:text-foreground
-                     hover:bg-muted transition-colors"
-              @click="handleDismiss"
-            >
-              Not now
-            </button>
+          <div class="min-w-0 flex-1">
+            <h3 class="text-sm font-medium text-foreground">
+              Install OTOBIX CRM
+            </h3>
+            <p class="mt-0.5 text-xs text-muted-foreground">
+              Add to home screen for app-like access.
+            </p>
           </div>
+
+          <button
+            class="-m-1 flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            @click="handleDismiss"
+          >
+            <X class="size-3.5" />
+          </button>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 px-3 pb-3">
+          <button
+            class="h-8 rounded-md px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            @click="handleDismiss"
+          >
+            Not now
+          </button>
+          <button
+            class="inline-flex h-8 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            @click="handleInstall"
+          >
+            <Download class="size-3.5" />
+            Install
+          </button>
         </div>
       </div>
     </div>

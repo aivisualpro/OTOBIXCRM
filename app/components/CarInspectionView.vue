@@ -282,31 +282,33 @@ async function saveQC(silent = false) {
     const edited = JSON.parse(JSON.stringify(editForm.value || {}))
     const carData = car.value || {}
 
+    // NOTE: this mirrors the old "Fix" button's forceSync exactly so saveQC
+    // alone is as aggressive as the manual Fix button used to be:
+    //   - val uses ?? so empty/null in edited falls back to carData
+    //   - comparison is against carData[oldKey] (the DB original), not
+    //     edited[oldKey]. This catches the case where editForm.value already
+    //     has a stale old-key value that drifted from the DB.
     const syncFallbacks = (item: any) => {
       if (!item)
         return
       if (item.oldKey && item.oldKey !== 'new' && item.key) {
-        // Pull from edited (user changes) first, then fall back to car data
-        let val = (item.key in edited) ? edited[item.key] : carData[item.key]
+        let val = edited[item.key] ?? carData[item.key]
         if (val !== undefined && val !== null) {
           // Ensure dropdown arrays flatten into comma-separated strings for legacy fields
           // IMPORTANT: Skip joining for array fields like videos/images that must remain arrays
           if (Array.isArray(val) && !['engineVideo', 'exhaustSmokeVideo'].includes(item.key)) {
             val = val.join(', ')
           }
-          const oldVal = (item.oldKey in edited) ? edited[item.oldKey] : carData[item.oldKey]
-          if (JSON.stringify(val) !== JSON.stringify(oldVal)) {
+          if (JSON.stringify(val) !== JSON.stringify(carData[item.oldKey])) {
             edited[item.oldKey] = JSON.parse(JSON.stringify(val))
           }
         }
       }
       if (item.oldImageKey && item.oldImageKey !== 'new' && item.imageKey) {
-        const val = (item.imageKey in edited) ? edited[item.imageKey] : carData[item.imageKey]
-        if (val !== undefined && val !== null) {
-          const oldVal = (item.oldImageKey in edited) ? edited[item.oldImageKey] : carData[item.oldImageKey]
-          if (JSON.stringify(val) !== JSON.stringify(oldVal)) {
-            edited[item.oldImageKey] = JSON.parse(JSON.stringify(val))
-          }
+        const val = edited[item.imageKey] ?? carData[item.imageKey]
+        if (val !== undefined && val !== null
+          && JSON.stringify(val) !== JSON.stringify(carData[item.oldImageKey])) {
+          edited[item.oldImageKey] = JSON.parse(JSON.stringify(val))
         }
       }
       if (item.splitParts)
@@ -327,12 +329,12 @@ async function saveQC(silent = false) {
       if (section.imageKeys) {
         section.imageKeys.forEach((entry: any) => {
           if (typeof entry !== 'string' && entry.old && entry.new) {
-            const val = (entry.new in edited) ? edited[entry.new] : carData[entry.new]
-            if (val !== undefined && val !== null) {
-              const oldVal = (entry.old in edited) ? edited[entry.old] : carData[entry.old]
-              if (JSON.stringify(val) !== JSON.stringify(oldVal)) {
-                edited[entry.old] = JSON.parse(JSON.stringify(val))
-              }
+            // Same alignment with the old Fix button: use ?? fallback and
+            // compare against carData (DB original), not edited.
+            const val = edited[entry.new] ?? carData[entry.new]
+            if (val !== undefined && val !== null
+              && JSON.stringify(val) !== JSON.stringify(carData[entry.old])) {
+              edited[entry.old] = JSON.parse(JSON.stringify(val))
             }
           }
         })
@@ -512,6 +514,83 @@ function formatDateYYYYMMDD(val: any) {
   return `${y}-${m}-${day}`
 }
 
+/**
+ * ─── Legacy field sync (single source of truth) ───
+ * Mutates editForm.value so the UI immediately reflects synced values, mirroring
+ * the new-key data into legacy old-key columns the rest of the system still reads.
+ *
+ * This used to be duplicated inline in confirmQCApproval(), fixLegacyFields(),
+ * and was missing from approveLead(). Now every approval path calls this once,
+ * and saveQC() still runs its own defensive copy on top — so there's no need
+ * for a separate "Fix" button anymore.
+ */
+function applyLegacyFieldSync() {
+  const forceSync = (item: any) => {
+    if (!item)
+      return
+    if (item.oldKey && item.oldKey !== 'new' && item.key) {
+      let val = editForm.value[item.key] ?? car.value?.[item.key]
+      if (val !== undefined && val !== null) {
+        if (Array.isArray(val) && !['engineVideo', 'exhaustSmokeVideo'].includes(item.key)) {
+          val = val.join(', ')
+        }
+        if (JSON.stringify(val) !== JSON.stringify(car.value?.[item.oldKey])) {
+          editForm.value[item.oldKey] = JSON.parse(JSON.stringify(val))
+        }
+      }
+    }
+    if (item.oldImageKey && item.oldImageKey !== 'new' && item.imageKey) {
+      const val = editForm.value[item.imageKey] ?? car.value?.[item.imageKey]
+      if (val !== undefined && val !== null && JSON.stringify(val) !== JSON.stringify(car.value?.[item.oldImageKey])) {
+        editForm.value[item.oldImageKey] = JSON.parse(JSON.stringify(val))
+      }
+    }
+    if (item.splitParts)
+      item.splitParts.forEach(forceSync)
+    if (item.rightParts)
+      item.rightParts.forEach(forceSync)
+    if (item.imageGroups)
+      item.imageGroups.forEach(forceSync)
+    if (item.fourPanels)
+      item.fourPanels.forEach(forceSync)
+    if (item.parts)
+      item.parts.forEach(forceSync)
+  }
+
+  exteriorSections.forEach((section) => {
+    if (section.parts)
+      section.parts.forEach(forceSync)
+    if (section.imageKeys) {
+      section.imageKeys.forEach((entry: any) => {
+        if (typeof entry !== 'string' && entry.old && entry.new) {
+          const val = editForm.value[entry.new] ?? car.value?.[entry.new]
+          if (val !== undefined && val !== null && JSON.stringify(val) !== JSON.stringify(car.value?.[entry.old])) {
+            editForm.value[entry.old] = JSON.parse(JSON.stringify(val))
+          }
+        }
+      })
+    }
+  })
+  if (typeof documentDetailFields !== 'undefined')
+    documentDetailFields.forEach(forceSync)
+  if (typeof engineVideoKeys !== 'undefined')
+    engineVideoKeys.forEach(forceSync)
+
+  // Custom manual fallback for apron which spans lhs and rhs
+  const lhsApron = editForm.value.lhsApronImages ?? car.value?.lhsApronImages
+  const rhsApron = editForm.value.rhsApronImages ?? car.value?.rhsApronImages
+  if (Array.isArray(lhsApron) || Array.isArray(rhsApron)) {
+    const combinedApron = []
+    if (Array.isArray(lhsApron))
+      combinedApron.push(...lhsApron)
+    if (Array.isArray(rhsApron))
+      combinedApron.push(...rhsApron)
+    if (JSON.stringify(combinedApron) !== JSON.stringify(car.value?.apronLhsRhs || [])) {
+      editForm.value.apronLhsRhs = combinedApron
+    }
+  }
+}
+
 async function approveLead() {
   const now = new Date()
   const userCookie = useCookie('userData')
@@ -521,6 +600,10 @@ async function approveLead() {
   editForm.value.approvalDate = now.toISOString()
   editForm.value.approvalTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   editForm.value.approvedBy = currentUser?.userName || currentUser?.fullName || currentUser?.email || 'QC User'
+
+  // Run the same legacy-field sync the QC modal does, so this path doesn't
+  // leave old-key columns stale.
+  applyLegacyFieldSync()
 
   await saveQC()
   // Note: approveLead() without inline usually doesn't prompt for auction, 
@@ -540,14 +623,27 @@ const qcForm = ref({
 })
 
 // Auto-fill contact number when retail associate changes
-watch(() => qcForm.value.retailAssociate, (email) => {
+// Fetches from the last car record's retailAssociateContactNumber for the selected retailer
+watch(() => qcForm.value.retailAssociate, async (email) => {
   if (!email) {
     qcForm.value.retailAssociateContactNumber = ''
     return
   }
-  const retailer = retailers.value.find((r: any) => r.email === email)
-  if (retailer?.phoneNumber) {
-    qcForm.value.retailAssociateContactNumber = retailer.phoneNumber
+  try {
+    const last = await $fetch<any>('/api/leads/last-approved-retailer', {
+      params: { retailAssociate: email },
+    })
+    if (last?.retailAssociateContactNumber) {
+      qcForm.value.retailAssociateContactNumber = last.retailAssociateContactNumber
+    } else {
+      // Fallback: try the retailer's own phone number from the users list
+      const retailer = retailers.value.find((r: any) => r.email === email)
+      qcForm.value.retailAssociateContactNumber = retailer?.phoneNumber || ''
+    }
+  } catch {
+    // Fallback on error: try the retailer's own phone number
+    const retailer = retailers.value.find((r: any) => r.email === email)
+    qcForm.value.retailAssociateContactNumber = retailer?.phoneNumber || ''
   }
 })
 
@@ -719,18 +815,20 @@ function scrollToField(fieldKey: string) {
 
 async function openQCModal() {
   qcForm.value.priceDiscovery = editForm.value.priceDiscovery || car.value?.priceDiscovery || ''
-  qcForm.value.retailAssociate = editForm.value.retailAssociate || car.value?.retailAssociate || ''
-  qcForm.value.retailAssociateContactNumber = editForm.value.retailAssociateContactNumber || car.value?.retailAssociateContactNumber || ''
 
-  // If no contact number yet, try to fetch from the last approved record
-  if (!qcForm.value.retailAssociateContactNumber) {
+  // Setting retailAssociate triggers the watcher which fetches the contact number
+  // from the last car record in the cars collection
+  const ra = editForm.value.retailAssociate || car.value?.retailAssociate || ''
+  if (ra) {
+    qcForm.value.retailAssociate = ra
+    // Watcher will auto-fetch contact number from cars collection
+  } else {
+    // No retailer on this car — try to fetch the last approved one
     try {
       const last = await $fetch<any>('/api/leads/last-approved-retailer')
-      if (last?.retailAssociateContactNumber) {
-        qcForm.value.retailAssociateContactNumber = last.retailAssociateContactNumber
-      }
-      if (!qcForm.value.retailAssociate && last?.retailAssociate) {
+      if (last?.retailAssociate) {
         qcForm.value.retailAssociate = last.retailAssociate
+        // Watcher will fire and fetch contact from cars collection
       }
     }
     catch { /* ignore */ }
@@ -789,70 +887,7 @@ async function confirmQCApproval() {
   editForm.value.sendToAuctionApk = new Date().toISOString()
 
   // ── Force Sync all 'new' to 'old' keys for legacy compatibility during Approval ──
-  const forceSync = (item: any) => {
-    if (!item)
-      return
-    if (item.oldKey && item.oldKey !== 'new' && item.key) {
-      let val = editForm.value[item.key] ?? car.value?.[item.key]
-      if (val !== undefined && val !== null) {
-        if (Array.isArray(val) && !['engineVideo', 'exhaustSmokeVideo'].includes(item.key)) {
-          val = val.join(', ')
-        }
-        if (JSON.stringify(val) !== JSON.stringify(car.value?.[item.oldKey])) {
-          editForm.value[item.oldKey] = JSON.parse(JSON.stringify(val))
-        }
-      }
-    }
-    if (item.oldImageKey && item.oldImageKey !== 'new' && item.imageKey) {
-      const val = editForm.value[item.imageKey] ?? car.value?.[item.imageKey]
-      if (val !== undefined && val !== null && JSON.stringify(val) !== JSON.stringify(car.value?.[item.oldImageKey])) {
-        editForm.value[item.oldImageKey] = JSON.parse(JSON.stringify(val))
-      }
-    }
-    if (item.splitParts)
-      item.splitParts.forEach(forceSync)
-    if (item.rightParts)
-      item.rightParts.forEach(forceSync)
-    if (item.imageGroups)
-      item.imageGroups.forEach(forceSync)
-    if (item.fourPanels)
-      item.fourPanels.forEach(forceSync)
-    if (item.parts)
-      item.parts.forEach(forceSync)
-  }
-
-  exteriorSections.forEach((section) => {
-    if (section.parts)
-      section.parts.forEach(forceSync)
-    if (section.imageKeys) {
-      section.imageKeys.forEach((entry: any) => {
-        if (typeof entry !== 'string' && entry.old && entry.new) {
-          const val = editForm.value[entry.new] ?? car.value?.[entry.new]
-          if (val !== undefined && val !== null && JSON.stringify(val) !== JSON.stringify(car.value?.[entry.old])) {
-            editForm.value[entry.old] = JSON.parse(JSON.stringify(val))
-          }
-        }
-      })
-    }
-  })
-  if (typeof documentDetailFields !== 'undefined')
-    documentDetailFields.forEach(forceSync)
-  if (typeof engineVideoKeys !== 'undefined')
-    engineVideoKeys.forEach(forceSync)
-
-  // Custom manual fallback for apron which spans lhs and rhs
-  const lhsApron = editForm.value.lhsApronImages ?? car.value?.lhsApronImages
-  const rhsApron = editForm.value.rhsApronImages ?? car.value?.rhsApronImages
-  if (Array.isArray(lhsApron) || Array.isArray(rhsApron)) {
-    const combinedApron = []
-    if (Array.isArray(lhsApron))
-      combinedApron.push(...lhsApron)
-    if (Array.isArray(rhsApron))
-      combinedApron.push(...rhsApron)
-    if (JSON.stringify(combinedApron) !== JSON.stringify(car.value?.apronLhsRhs || [])) {
-      editForm.value.apronLhsRhs = combinedApron
-    }
-  }
+  applyLegacyFieldSync()
 
   // ── Strip +91 from contactNumber for the cars collection ──
   let rawContact = editForm.value.customerContactNumber || editForm.value.contactNumber || ''
@@ -884,82 +919,10 @@ async function confirmQCApproval() {
   }
 }
 
-async function fixLegacyFields() {
-  const forceSync = (item: any) => {
-    if (!item)
-      return
-    if (item.oldKey && item.oldKey !== 'new' && item.key) {
-      let val = editForm.value[item.key] ?? car.value?.[item.key]
-      if (val !== undefined && val !== null) {
-        if (Array.isArray(val) && !['engineVideo', 'exhaustSmokeVideo'].includes(item.key)) {
-          val = val.join(', ')
-        }
-        if (JSON.stringify(val) !== JSON.stringify(car.value?.[item.oldKey])) {
-          editForm.value[item.oldKey] = JSON.parse(JSON.stringify(val))
-        }
-      }
-    }
-    if (item.oldImageKey && item.oldImageKey !== 'new' && item.imageKey) {
-      const val = editForm.value[item.imageKey] ?? car.value?.[item.imageKey]
-      if (val !== undefined && val !== null && JSON.stringify(val) !== JSON.stringify(car.value?.[item.oldImageKey])) {
-        editForm.value[item.oldImageKey] = JSON.parse(JSON.stringify(val))
-      }
-    }
-    if (item.splitParts)
-      item.splitParts.forEach(forceSync)
-    if (item.rightParts)
-      item.rightParts.forEach(forceSync)
-    if (item.imageGroups)
-      item.imageGroups.forEach(forceSync)
-    if (item.fourPanels)
-      item.fourPanels.forEach(forceSync)
-    if (item.parts)
-      item.parts.forEach(forceSync)
-  }
-
-  exteriorSections.forEach((section) => {
-    if (section.parts)
-      section.parts.forEach(forceSync)
-    if (section.imageKeys) {
-      section.imageKeys.forEach((entry: any) => {
-        if (typeof entry !== 'string' && entry.old && entry.new) {
-          const val = editForm.value[entry.new] ?? car.value?.[entry.new]
-          if (val !== undefined && val !== null && JSON.stringify(val) !== JSON.stringify(car.value?.[entry.old])) {
-            editForm.value[entry.old] = JSON.parse(JSON.stringify(val))
-          }
-        }
-      })
-    }
-  })
-  if (typeof documentDetailFields !== 'undefined')
-    documentDetailFields.forEach(forceSync)
-  if (typeof engineVideoKeys !== 'undefined')
-    engineVideoKeys.forEach(forceSync)
-
-  const lhsApron = editForm.value.lhsApronImages ?? car.value?.lhsApronImages
-  const rhsApron = editForm.value.rhsApronImages ?? car.value?.rhsApronImages
-  if (Array.isArray(lhsApron) || Array.isArray(rhsApron)) {
-    const combinedApron = []
-    if (Array.isArray(lhsApron))
-      combinedApron.push(...lhsApron)
-    if (Array.isArray(rhsApron))
-      combinedApron.push(...rhsApron)
-    if (JSON.stringify(combinedApron) !== JSON.stringify(car.value?.apronLhsRhs || [])) {
-      editForm.value.apronLhsRhs = combinedApron
-    }
-  }
-
-  const loadingToast = toast.loading('Fixing up legacy fields...')
-  try {
-    await saveQC(false)
-    toast.dismiss(loadingToast)
-    toast.success('Fields strictly forced to sync and saved.')
-  }
-  catch (e) {
-    toast.dismiss(loadingToast)
-    toast.error('Failed to save legacy fields.')
-  }
-}
+// Note: fixLegacyFields() was removed. Its only job — mirror new keys into
+// legacy old-key columns — now runs automatically on every approve path (see
+// applyLegacyFieldSync above) and again defensively inside saveQC() on every
+// save. There's no longer a code path where the old keys can drift.
 
 const showRejectModal = ref(false)
 const rejectReason = ref('')
@@ -977,6 +940,8 @@ async function confirmReject() {
 
   editForm.value.rejectionReason = rejectReason.value
   editForm.value.approvalStatus = 'Rejected'
+  editForm.value.inspectionStatus = 'Rejected'
+  editForm.value.remarks = rejectReason.value
 
   const loadingToast = toast.loading('Rejecting inspection...')
   try {
@@ -2399,12 +2364,19 @@ watch(() => car.value, (newVal) => {
 
     const isFieldEmpty = (val: any) => val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)
 
+    // Track whether applyFallback actually copied anything from old → new.
+    // If it did, the DB still holds stale (empty) new keys and needs a save.
+    // This is what the manual "Fix" button used to handle — we now do it
+    // automatically once per load.
+    let didBackfill = false
+
     // Automatically map old keys to new keys based on exteriorSections config & documentDetailFields
     const applyFallback = (item: any) => {
       if (!item)
         return
       if (item.oldKey && item.oldKey !== 'new' && isFieldEmpty(clone[item.key]) && clone[item.oldKey]) {
         clone[item.key] = clone[item.oldKey]
+        didBackfill = true
       }
       if (item.splitParts)
         item.splitParts.forEach(applyFallback)
@@ -2429,7 +2401,16 @@ watch(() => car.value, (newVal) => {
     }
 
     editForm.value = clone
-    nextTick(() => { _skipAutoSave = false })
+    nextTick(() => {
+      _skipAutoSave = false
+      // If we filled any new keys from old keys during load, persist them
+      // silently. This is what the Fix button used to do for stale records,
+      // but it now runs automatically and only when something actually needs
+      // syncing. Readonly /inspection/ pages skip this — they shouldn't write.
+      if (didBackfill && !props.readonly) {
+        saveQC(true).catch(() => { /* silent: don't bother the user */ })
+      }
+    })
   }
 }, { immediate: true })
 
@@ -2755,16 +2736,9 @@ watch(editForm, () => {
               <Icon :name="isGeneratingPdf ? 'i-lucide-loader-2' : 'i-lucide-file-down'" :class="{ 'animate-spin': isGeneratingPdf }" class="mr-1.5 size-4" />
               PDF
             </Button>
-            <!-- Fix button — always visible so legacy fields can be synced at any time -->
-            <Button
-              v-if="!props.readonly"
-              class="mr-2 h-8 text-xs font-bold shrink-0 border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20 shadow-sm"
-              variant="outline"
-              @click="fixLegacyFields"
-            >
-              <Icon name="i-lucide-wrench" class="mr-1.5 size-4" />
-              Fix
-            </Button>
+            <!-- Fix button removed: legacy-key sync now runs automatically on
+                 every approve path and inside saveQC, so the manual button is
+                 no longer needed. See applyLegacyFieldSync() in the script. -->
             <Button
               v-if="!props.readonly && car.approvalStatus !== 'Approved'"
               class="mr-2 bg-red-500 hover:bg-red-600 focus:ring-red-500 text-white font-bold shadow-sm h-8 text-xs shrink-0 px-4"

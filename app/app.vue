@@ -88,7 +88,6 @@ const dir = computed(() => textDirection.value === 'rtl' ? 'rtl' : 'ltr')
     <ClientOnly>
       <Toaster :theme="colorMode.preference as any || 'system'" />
       <PwaServiceWorkerRegistration />
-      <PwaInstallPrompt />
       <Analytics :debug="false" />
       <GlobalVersionUpdateBanner />
     </ClientOnly>
