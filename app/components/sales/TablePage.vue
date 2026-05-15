@@ -1240,8 +1240,13 @@ async function downloadImagesZip(car: any) {
             <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
               {{ formatCurrency(getSalesOneClickPrice(car)) }}
             </TableCell>
-            <TableCell class="text-xs whitespace-nowrap text-emerald-600 font-semibold dark:text-emerald-400">
-              {{ formatCurrency(car.otobuyOffer) }}
+            <TableCell class="text-xs whitespace-nowrap font-semibold dark:text-emerald-400 text-center">
+              <div v-if="car.otobuyOffer" class="flex flex-col gap-0.5 items-center">
+                <span v-if="car.highestBidderDealerName" class="text-[10px] text-muted-foreground font-semibold capitalize whitespace-nowrap">{{ String(car.highestBidderDealerName).toLowerCase() }}</span>
+                <span class="text-emerald-600">{{ formatCurrency(car.otobuyOffer) }}</span>
+                <span v-if="car.highestBidderKamName" class="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium capitalize whitespace-nowrap">{{ String(car.highestBidderKamName).toLowerCase() }}</span>
+              </div>
+              <span v-else class="text-muted-foreground">—</span>
             </TableCell>
 
             <TableCell class="text-xs text-center px-1">

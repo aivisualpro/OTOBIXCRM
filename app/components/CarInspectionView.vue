@@ -2892,7 +2892,7 @@ watch(editForm, () => {
                       <div v-if="props.readonly" class="text-2xl font-black text-foreground mt-auto tracking-tight break-words">
                         {{ car.yearMonthOfManufacture ? `${String(new Date(car.yearMonthOfManufacture).getMonth() + 1).padStart(2, '0')} / ${new Date(car.yearMonthOfManufacture).getFullYear()}` : '—' }}
                       </div>
-                      <Input v-else :model-value="editForm.yearMonthOfManufacture ? new Date(editForm.yearMonthOfManufacture).toISOString().slice(0, 7) : ''" type="month" class="h-8 mt-auto text-lg font-black border-none bg-transparent p-0 focus-visible:ring-0 shadow-none w-full text-foreground" @update:model-value="editForm.yearMonthOfManufacture = $event ? new Date($event).toISOString() : ''" />
+                      <Input v-else :model-value="editForm.yearMonthOfManufacture ? `${new Date(editForm.yearMonthOfManufacture).getFullYear()}-${String(new Date(editForm.yearMonthOfManufacture).getMonth() + 1).padStart(2, '0')}` : ''" type="month" class="h-8 mt-auto text-lg font-black border-none bg-transparent p-0 focus-visible:ring-0 shadow-none w-full text-foreground" @update:model-value="editForm.yearMonthOfManufacture = $event ? new Date($event + '-01T00:00:00').toISOString() : ''" />
                     </div>
                   </div>
 

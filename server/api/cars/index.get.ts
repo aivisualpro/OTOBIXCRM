@@ -8,9 +8,11 @@ export default defineEventHandler(async (event) => {
     const page = Math.max(1, parseInt(String(queryParams.page)) || 1)
     const limit = Math.max(1, Math.min(100, parseInt(String(queryParams.limit)) || 30))
     const search = String(queryParams.search || '').trim()
-    const sortField = String(queryParams.sort || '_id')
-    const sortDir = String(queryParams.sortDir) === 'asc' ? 1 : -1
     const tab = String(queryParams.tab || 'all')
+
+    // For 'live' tab, always sort by soonest-ending first (auctionEndTime ascending)
+    const sortField = tab === 'live' ? 'auctionEndTime' : String(queryParams.sort || '_id')
+    const sortDir = tab === 'live' ? 1 : (String(queryParams.sortDir) === 'asc' ? 1 : -1)
 
     // Parse userData cookie to enforce Role Base Access Control (RBAC)
     const rawUserData = getCookie(event, 'userData')
@@ -275,9 +277,13 @@ export default defineEventHandler(async (event) => {
                 },
               },
             },
+            // Live cars get priority 0 (top), everything else gets 1
+            _sortPriority: { $cond: { if: { $eq: ['$auctionStatus', 'live'] }, then: 0, else: 1 } },
+            // Parse auctionEndTime for live car secondary sort (soonest ending first)
+            _parsedEndTime: { $convert: { input: '$auctionEndTime', to: 'date', onError: new Date('2099-01-01'), onNull: new Date('2099-01-01') } },
           },
         },
-        { $sort: { effectiveSortDate: sortDir, _id: -1 } },
+        { $sort: { _sortPriority: 1, _parsedEndTime: 1, effectiveSortDate: sortDir, _id: -1 } },
         { $skip: skip },
         { $limit: limit },
         { $project: { ...projection, frontMainImages: { $cond: { if: { $isArray: '$frontMainImages' }, then: { $slice: ['$frontMainImages', 1] }, else: '$frontMainImages' } } } },
@@ -346,6 +352,36 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // Enrich highestBidder (userId) → dealer name + KAM name
+    const bidderIds = [...new Set(cars.map(c => c.highestBidder).filter(Boolean))]
+    let bidderMap: Record<string, { dealerName: string, kamName: string }> = {}
+    if (bidderIds.length > 0) {
+      const queryBidderIds = bidderIds.flatMap(id => [id, String(id).length === 24 ? new ObjectId(String(id)) : null]).filter(Boolean)
+      const bidderUsers = await db.collection('users')
+        .find({ _id: { $in: queryBidderIds } })
+        .project({ shopName: 1, dealershipName: 1, fullName: 1, firstName: 1, lastName: 1, assignedKam: 1 })
+        .toArray()
+
+      const bidderKamIds = [...new Set(bidderUsers.map(u => u.assignedKam).filter(Boolean))]
+      const queryBidderKamIds = bidderKamIds.flatMap(id => [id, String(id).length === 24 ? new ObjectId(String(id)) : null]).filter(Boolean)
+
+      let bidderKams: any[] = []
+      if (queryBidderKamIds.length > 0) {
+        bidderKams = await db.collection('kams')
+          .find({ _id: { $in: queryBidderKamIds } })
+          .project({ userName: 1, name: 1, fullName: 1 })
+          .toArray()
+      }
+
+      for (const user of bidderUsers) {
+        const kam = bidderKams.find(k => String(k._id) === String(user.assignedKam))
+        bidderMap[String(user._id)] = {
+          dealerName: user.shopName || user.dealershipName || user.fullName || [user.firstName, user.lastName].filter(Boolean).join(' ') || '',
+          kamName: kam ? (kam.userName || kam.name || kam.fullName || '') : (user.assignedKam || ''),
+        }
+      }
+    }
+
     // Load related telecallings for lead data
     const apptIds = cars.map(c => c.appointmentId).filter(Boolean)
     let relatedLeads: any[] = []
@@ -361,11 +397,14 @@ export default defineEventHandler(async (event) => {
     const mappedCars = cars.map((car) => {
       const carIdStr = car._id.toString()
       const lead = relatedLeads.find(l => l.appointmentId === car.appointmentId) || {}
+      const bidderInfo = car.highestBidder ? bidderMap[String(car.highestBidder)] : null
       return {
         ...car,
         id: carIdStr,
         _id: carIdStr,
         autoBidsForLiveSection: autoBids.filter(b => String(b.carId) === carIdStr),
+        highestBidderDealerName: bidderInfo?.dealerName || '',
+        highestBidderKamName: bidderInfo?.kamName || '',
         leadSource: lead.appointmentSource || '',
         referredBy: lead.referenceName || '',
         inspectionEngineer: lead.allocatedTo || '',

@@ -929,12 +929,34 @@ const showBidsPopup = ref(false)
 const selectedCarForBids = ref<any>(null)
 const bidsLoading = ref(false)
 const carBids = ref<any[]>([])
+const selectedBidIds = ref<Set<string>>(new Set())
+const isDeletingBids = ref(false)
+const isDeletingAllBids = ref(false)
+
+const allBidsSelected = computed({
+  get: () => carBids.value.length > 0 && selectedBidIds.value.size === carBids.value.length,
+  set: (val: boolean) => {
+    if (val) {
+      selectedBidIds.value = new Set(carBids.value.map((b: any) => b._id))
+    } else {
+      selectedBidIds.value = new Set()
+    }
+  },
+})
+
+function toggleBidSelection(bidId: string) {
+  const s = new Set(selectedBidIds.value)
+  if (s.has(bidId)) s.delete(bidId)
+  else s.add(bidId)
+  selectedBidIds.value = s
+}
 
 async function fetchAndShowBids(car: any) {
   selectedCarForBids.value = car
   showBidsPopup.value = true
   bidsLoading.value = true
   carBids.value = []
+  selectedBidIds.value = new Set()
 
   try {
     const rawId = car._id?.$oid || car._id || car.id
@@ -948,6 +970,68 @@ async function fetchAndShowBids(car: any) {
   }
   finally {
     bidsLoading.value = false
+  }
+}
+
+async function deleteSelectedBids() {
+  if (selectedBidIds.value.size === 0) {
+    toast.error('No bids selected')
+    return
+  }
+  isDeletingBids.value = true
+  const loadingToast = toast.loading(`Deleting ${selectedBidIds.value.size} bid(s)...`)
+  let deleted = 0
+  let failed = 0
+  try {
+    for (const bidId of selectedBidIds.value) {
+      try {
+        await $fetch(`${OTOBIX_API_BASE}/otobix/delete-single-bid`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer QmFwR0RjLjJmMzkyMjJw98UNpMGFqpgGJV6BXgQ1ye12d100f5c` },
+          body: { bidId },
+        })
+        deleted++
+      } catch {
+        failed++
+      }
+    }
+    toast.dismiss(loadingToast)
+    if (deleted > 0) toast.success(`${deleted} bid(s) deleted successfully`)
+    if (failed > 0) toast.error(`${failed} bid(s) failed to delete`)
+    selectedBidIds.value = new Set()
+    // Refresh the bids list
+    if (selectedCarForBids.value) await fetchAndShowBids(selectedCarForBids.value)
+  } catch {
+    toast.dismiss(loadingToast)
+    toast.error('Failed to delete bids')
+  } finally {
+    isDeletingBids.value = false
+  }
+}
+
+async function deleteAllBids() {
+  const carId = selectedCarForBids.value?._id?.$oid || selectedCarForBids.value?._id || selectedCarForBids.value?.id
+  if (!carId) {
+    toast.error('Car ID not found')
+    return
+  }
+  isDeletingAllBids.value = true
+  const loadingToast = toast.loading('Deleting all bids...')
+  try {
+    await $fetch(`${OTOBIX_API_BASE}/otobix/delete-all-bids`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer QmFwR0RjLjJmMzkyMjJw98UNpMGFqpgGJV6BXgQ1ye12d100f5c` },
+      body: { carId },
+    })
+    toast.dismiss(loadingToast)
+    toast.success('All bids deleted successfully')
+    selectedBidIds.value = new Set()
+    carBids.value = []
+  } catch (err: any) {
+    toast.dismiss(loadingToast)
+    toast.error(err?.data?.message || 'Failed to delete all bids')
+  } finally {
+    isDeletingAllBids.value = false
   }
 }
 function getHighestAutoBidObj(car: any): any {
@@ -1979,6 +2063,32 @@ function getHighestAutoBidObj(car: any): any {
             </Badge>
           </DialogDescription>
         </div>
+        <div class="flex items-center gap-2">
+          <Button
+            v-if="selectedBidIds.size > 0"
+            variant="destructive"
+            size="sm"
+            class="h-8 gap-1.5 text-xs"
+            :disabled="isDeletingBids"
+            @click="deleteSelectedBids"
+          >
+            <Icon v-if="isDeletingBids" name="i-lucide-loader-2" class="size-3.5 animate-spin" />
+            <Icon v-else name="i-lucide-trash-2" class="size-3.5" />
+            Delete Selected ({{ selectedBidIds.size }})
+          </Button>
+          <Button
+            v-if="carBids.length > 0"
+            variant="outline"
+            size="sm"
+            class="h-8 gap-1.5 text-xs border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+            :disabled="isDeletingAllBids"
+            @click="deleteAllBids"
+          >
+            <Icon v-if="isDeletingAllBids" name="i-lucide-loader-2" class="size-3.5 animate-spin" />
+            <Icon v-else name="i-lucide-trash" class="size-3.5" />
+            Delete All
+          </Button>
+        </div>
       </div>
 
       <div class="flex-1 overflow-y-auto min-h-[300px] p-0 relative">
@@ -2004,7 +2114,15 @@ function getHighestAutoBidObj(car: any): any {
         <Table v-else>
           <TableHeader class="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
             <TableRow>
-              <TableHead class="w-16 text-center">
+              <TableHead class="w-10 text-center px-2">
+                <input
+                  type="checkbox"
+                  class="size-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  :checked="allBidsSelected"
+                  @change="allBidsSelected = ($event.target as HTMLInputElement).checked"
+                >
+              </TableHead>
+              <TableHead class="w-12 text-center">
                 #
               </TableHead>
               <TableHead>Execution Time</TableHead>
@@ -2022,6 +2140,14 @@ function getHighestAutoBidObj(car: any): any {
           </TableHeader>
           <TableBody>
             <TableRow v-for="(bid, idx) in carBids" :key="bid._id" class="group transition-colors hover:bg-blue-50/30">
+              <TableCell class="text-center px-2">
+                <input
+                  type="checkbox"
+                  class="size-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  :checked="selectedBidIds.has(bid._id)"
+                  @change="toggleBidSelection(bid._id)"
+                >
+              </TableCell>
               <TableCell class="text-center text-xs text-muted-foreground font-mono">
                 {{ idx + 1 }}
               </TableCell>
