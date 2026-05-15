@@ -10,22 +10,6 @@ function openLightbox(idx: number) {
   lightboxIndex.value = idx
   showLightbox.value = true
 }
-
-function prev() {
-  lightboxIndex.value = (lightboxIndex.value - 1 + props.images.length) % props.images.length
-}
-function next() {
-  lightboxIndex.value = (lightboxIndex.value + 1) % props.images.length
-}
-
-function onKeydown(e: KeyboardEvent) {
-  if (!showLightbox.value) return
-  if (e.key === 'ArrowLeft') prev()
-  if (e.key === 'ArrowRight') next()
-}
-
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
@@ -45,42 +29,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
       </button>
     </div>
 
-    <!-- Lightbox -->
-    <Dialog v-model:open="showLightbox">
-      <DialogContent class="max-w-4xl p-0 bg-black/95 border-0 overflow-hidden [&>button]:text-white">
-        <div class="relative">
-          <img
-            v-if="images[lightboxIndex]"
-            :src="images[lightboxIndex]?.url"
-            :alt="images[lightboxIndex]?.label"
-            class="w-full max-h-[80vh] object-contain"
-          >
-          <div class="absolute top-3 left-3">
-            <Badge class="bg-black/60 text-white border-0 backdrop-blur-sm">
-              {{ images[lightboxIndex]?.label }}
-            </Badge>
-          </div>
-          <div class="absolute top-3 right-12">
-            <Badge class="bg-black/60 text-white border-0 backdrop-blur-sm font-mono text-xs">
-              {{ lightboxIndex + 1 }} / {{ images.length }}
-            </Badge>
-          </div>
-          <button
-            v-if="images.length > 1"
-            class="absolute left-3 top-1/2 -translate-y-1/2 size-10 rounded-full bg-white/10 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/20 transition-colors"
-            @click="prev"
-          >
-            <Icon name="i-lucide-chevron-left" class="size-5" />
-          </button>
-          <button
-            v-if="images.length > 1"
-            class="absolute right-3 top-1/2 -translate-y-1/2 size-10 rounded-full bg-white/10 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/20 transition-colors"
-            @click="next"
-          >
-            <Icon name="i-lucide-chevron-right" class="size-5" />
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <!-- Shared Lightbox -->
+    <InspectionPhotoLightbox
+      v-model:open="showLightbox"
+      v-model:index="lightboxIndex"
+      :images="images"
+    />
   </div>
 </template>

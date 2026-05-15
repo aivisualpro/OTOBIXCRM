@@ -994,6 +994,79 @@ function _conditionPdfCss(val: any) {
   return ''
 }
 
+// Returns inline style object for PDF condition pills (Design Spec v1.0)
+// Uses flat hex backgrounds from the spec's semantic tints — no oklch, no alpha
+function pdfConditionPillStyle(val: string): string {
+  const lower = val.toLowerCase().trim()
+  const good = ['ok', 'good', 'normal', 'safe', 'satisfactory', 'clean', 'clear', 'working', 'effective', 'no mismatch', 'no blow by', 'yes']
+  const bad = ['major', 'tear', 'missing', 'broken', 'damage', 'dent', 'rust', 'cracked', 'abnormal', 'bad']
+  const warn = ['scratch', 'minor', 'fade', 'worn', 'repaint', 'chipped', 'hazy', 'low', 'dirty', 'weak', 'torn', 'dented', 'leaking']
+  const info = ['repair', 'replace', 'changed', 'service', 'dry']
+  const na = ['not applicable', 'n/a', 'na']
+  if (good.some(k => lower.includes(k)))
+    return 'background-color: #DCFCE7; border: 1px solid #BBF7D0; color: #0F172A;'
+  if (bad.some(k => lower.includes(k)))
+    return 'background-color: #FEE2E2; border: 1px solid #FECACA; color: #0F172A;'
+  if (warn.some(k => lower.includes(k)))
+    return 'background-color: #FEF9C3; border: 1px solid #FDE68A; color: #0F172A;'
+  if (info.some(k => lower.includes(k)))
+    return 'background-color: #DBEAFE; border: 1px solid #BFDBFE; color: #0F172A;'
+  if (na.some(k => lower.includes(k)))
+    return 'background-color: #F1F5F9; border: 1px solid #E2E8F0; color: #0F172A;'
+  return 'background-color: #F1F5F9; border: 1px solid #E2E8F0; color: #0F172A;'
+}
+
+// Collects all renderable parts from a pdfSection, flattening splitParts and fourPanels
+// Filters out imageSlot-type parts (they contain URLs, not condition values)
+function pdfFlatParts(sec: any): any[] {
+  const out: any[] = []
+  for (const p of (sec.parts || [])) {
+    if (p.isVideoBox) continue
+    if (p.isImageOnly) { out.push(p); continue }
+    if (p.splitParts) {
+      for (const sp of p.splitParts) {
+        if (sp.type === 'imageSlot') continue
+        out.push(sp)
+      }
+      continue
+    }
+    if (p.isFourPanel && p.fourPanels) {
+      for (const fp of p.fourPanels) {
+        if (fp.type === 'imageSlot') continue
+        out.push(fp)
+      }
+      continue
+    }
+    out.push(p)
+  }
+  return out
+}
+
+// Collects images for a section's photo grid
+function pdfSectionImages(sec: any): { url: string; label: string }[] {
+  const imgs: { url: string; label: string }[] = []
+  for (const p of pdfFlatParts(sec)) {
+    const key = p.imageKey || p.key
+    const oldKey = p.oldImageKey || p.oldKey
+    const urls = getImages(car.value, key, oldKey)
+    for (const u of urls) {
+      if (u && !String(u).match(/\.(mp4|webm|ogg|mov)$/i))
+        imgs.push({ url: u, label: p.label || key })
+    }
+    // Also check imageGroups
+    if (p.imageGroups) {
+      for (const g of p.imageGroups) {
+        const gUrls = getImages(car.value, g.key, g.oldKey)
+        for (const u of gUrls) {
+          if (u && !String(u).match(/\.(mp4|webm|ogg|mov)$/i))
+            imgs.push({ url: u, label: g.label || p.label || g.key })
+        }
+      }
+    }
+  }
+  return imgs
+}
+
 function formatPdfValue(val: any): string {
   if (val === null || val === undefined || val === '')
     return '—'
@@ -1016,12 +1089,22 @@ function getPdfFields(partsArray: any[]) {
 }
 
 async function downloadPDF(action: 'save' | 'blob' = 'save') {
+  // ─── Isolated-iframe PDF strategy ───
+  // Previous attempts patched the live DOM (inline color bake-in, stylesheet
+  // disable, custom-property override) and either crashed on oklch from a
+  // path we missed or visibly mutated the live UI during generation.
+  //
+  // The clean approach: render the PDF template in a brand-new hidden iframe
+  // with NO Tailwind v4 stylesheet attached. Inside that iframe there's no
+  // oklch anywhere — only the inline styles we authored in the template.
+  // The live page is never touched. html2canvas runs against the iframe's
+  // document, which contains only our minimal CSS reset.
   isGeneratingPdf.value = true
   await nextTick()
-  await new Promise(r => setTimeout(r, props.headlessPdf ? 1000 : 200)) // give DOM time to append images structurally
+  await new Promise(r => setTimeout(r, props.headlessPdf ? 1500 : 600))
 
-  const element = document.getElementById('pdf-container')
-  if (!element) {
+  const source = document.getElementById('pdf-container')
+  if (!source) {
     isGeneratingPdf.value = false
     toast.error('Template missing!')
     return
@@ -1029,64 +1112,157 @@ async function downloadPDF(action: 'save' | 'blob' = 'save') {
 
   const loadingToast = toast.loading('Generating PDF Report... Please wait.')
 
-  // MUST INTERCEPT COMPUTED STYLES: 
-  // Tailwind v4 uses OKLCH natively, which immediately crashes html2canvas 1.4.1.
-  // CRITICAL: Native browser functions MUST be called with their original `this` context
-  // (window for getComputedStyle, CSSStyleDeclaration for getPropertyValue) or they throw
-  // "Illegal invocation". We use .call() and .bind() to preserve these bindings.
-  const originalGetComputedStyle = window.getComputedStyle
-  window.getComputedStyle = function (el: Element, pseudoElt?: string | null) {
-    const css = originalGetComputedStyle.call(window, el, pseudoElt)
-    return new Proxy(css, {
-      get(target, prop) {
-        if (prop === 'getPropertyValue') {
-          const boundFn = target.getPropertyValue.bind(target)
-          return function (key: string) {
-            const val = boundFn(key)
-            if (typeof val === 'string' && val.includes('oklch'))
-              return 'rgb(128, 128, 128)'
-            return val
-          }
-        }
-        const raw = (target as any)[prop]
-        // Bind native methods to their target to prevent Illegal invocation
-        if (typeof raw === 'function') {
-          return raw.bind(target)
-        }
-        if (typeof raw === 'string' && raw.includes('oklch')) {
-          return 'rgb(128, 128, 128)'
-        }
-        return raw
-      },
-    })
-  }
+  // Build the isolated iframe.
+  const iframe = document.createElement('iframe')
+  iframe.setAttribute('aria-hidden', 'true')
+  iframe.style.position = 'fixed'
+  iframe.style.left = '-10000px'
+  iframe.style.top = '0'
+  iframe.style.width = '210mm'
+  iframe.style.height = '297mm'
+  iframe.style.border = '0'
+  iframe.style.opacity = '0'
+  iframe.style.pointerEvents = 'none'
+  document.body.appendChild(iframe)
 
   try {
-    if (typeof window !== 'undefined' && !(window as any).html2pdf) {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script')
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
-        script.onload = resolve
-        script.onerror = reject
-        document.head.appendChild(script)
-      })
+    const doc = iframe.contentDocument
+    if (!doc)
+      throw new Error('Could not access iframe document')
+
+    doc.open()
+    doc.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #ffffff; color: #0F172A;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  img { max-width: 100%; }
+</style>
+</head>
+<body></body>
+</html>`)
+    doc.close()
+
+    // Clone the rendered PDF container into the iframe.
+    const clone = source.cloneNode(true) as HTMLElement
+    // Strip every class attribute. Tailwind v4's oklch-laden classes are
+    // the entire reason this whole problem exists; the PDF template already
+    // styles itself via inline `style` attributes, so classes are redundant.
+    clone.removeAttribute('class')
+    clone.querySelectorAll('[class]').forEach(el => el.removeAttribute('class'))
+
+    // ── OKLCH NUCLEAR SANITIZER ──
+    // html2canvas 1.4.1 calls getComputedStyle() on every element and tries
+    // to parse every color value. Tailwind v4 injects oklch() via --tw-*
+    // CSS custom properties that survive even after class removal (they
+    // cascade through inheritance). We must:
+    //   1. Strip all --tw-* and --color-* CSS variables from inline styles
+    //   2. Force-override all color-related properties with safe hex values
+    //   3. Patch the iframe's getComputedStyle to intercept any remaining oklch
+    const sanitizeElement = (el: HTMLElement) => {
+      const s = el.style
+      // Remove all Tailwind CSS custom properties
+      const propsToRemove: string[] = []
+      for (let i = 0; i < s.length; i++) {
+        const prop = s[i]
+        if (prop && (prop.startsWith('--tw') || prop.startsWith('--color') || prop.startsWith('--un')))
+          propsToRemove.push(prop)
+      }
+      propsToRemove.forEach(p => s.removeProperty(p))
+
+      // Force color-related properties to safe values if they contain oklch
+      const colorProps = [
+        'color', 'background-color', 'border-color', 'border-top-color',
+        'border-right-color', 'border-bottom-color', 'border-left-color',
+        'outline-color', 'text-decoration-color', 'caret-color',
+        'column-rule-color', 'fill', 'stroke',
+      ]
+      for (const prop of colorProps) {
+        const val = s.getPropertyValue(prop)
+        if (val && (val.includes('oklch') || val.includes('color-mix'))) {
+          if (prop === 'background-color') s.setProperty(prop, '#ffffff', 'important')
+          else if (prop === 'color') s.setProperty(prop, '#0F172A', 'important')
+          else s.setProperty(prop, 'transparent', 'important')
+        }
+      }
     }
+    sanitizeElement(clone)
+    clone.querySelectorAll('*').forEach(el => sanitizeElement(el as HTMLElement))
+
+    doc.body.appendChild(clone)
+
+    // Wait for the cloned images to load inside the iframe.
+    const cloneImgs = Array.from(doc.querySelectorAll('img')) as HTMLImageElement[]
+    const imgBatch = Promise.all(cloneImgs.map(img => {
+      if (img.complete)
+        return Promise.resolve()
+      return new Promise<void>((resolve) => {
+        img.addEventListener('load', () => resolve(), { once: true })
+        img.addEventListener('error', () => resolve(), { once: true })
+        setTimeout(() => resolve(), 1500)
+      })
+    }))
+    await Promise.race([imgBatch, new Promise(r => setTimeout(r, 8000))])
+
+    // ── CRITICAL: Load html2pdf INSIDE the iframe ──
+    // html2canvas reads styles from `element.ownerDocument.defaultView.getComputedStyle()`.
+    // If html2pdf runs in the parent window, it reads the parent's Tailwind v4
+    // stylesheets which contain oklch(). By loading html2pdf INSIDE the iframe,
+    // html2canvas runs in a window with ZERO Tailwind CSS — only our clean
+    // inline-style-only elements exist. This is the only bulletproof fix.
+    const iframeWin = iframe.contentWindow as any
+    await new Promise<void>((resolve, reject) => {
+      const script = doc.createElement('script')
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+      script.onload = () => resolve()
+      script.onerror = () => reject(new Error('Failed to load html2pdf'))
+      doc.head.appendChild(script)
+    })
 
     const opt = {
-      margin: [10, 0, 10, 0],
+      margin: [10, 10, 10, 10],
       filename: `Inspection_Report_${carId.value}.pdf`,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      image: { type: 'jpeg', quality: 0.92 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        imageTimeout: 15000,
+        backgroundColor: '#ffffff',
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
     }
 
+    // Reconstruct opt inside the iframe's JS context so arrays (like margin)
+    // have the iframe's Array prototype — fixes Array.isArray() cross-realm check.
+    const iframeOpt = iframeWin.JSON.parse(JSON.stringify(opt))
+
+    // Execute html2pdf inside the iframe's context — totally isolated from Tailwind
+    // Always use .output('blob') — .save() would try to download from inside the
+    // hidden iframe, which browsers silently block.
+    const pdfBlob = await iframeWin.html2pdf().set(iframeOpt).from(clone).output('blob')
+
     if (action === 'blob') {
-      const pdfBlob = await (window as any).html2pdf().set(opt).from(element).output('blob')
       toast.dismiss(loadingToast)
       return URL.createObjectURL(pdfBlob)
     }
 
-    await (window as any).html2pdf().set(opt).from(element).save()
+    // Trigger the download from the parent window
+    const blobUrl = URL.createObjectURL(pdfBlob)
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = `Inspection_Report_${carId.value}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(blobUrl)
+
     toast.dismiss(loadingToast)
     if (!props.headlessPdf)
       toast.success('PDF Downloaded successfully!')
@@ -1098,7 +1274,9 @@ async function downloadPDF(action: 'save' | 'blob' = 'save') {
   }
   finally {
     isGeneratingPdf.value = false
-    window.getComputedStyle = originalGetComputedStyle
+    // Always remove the iframe — even on success, even on error.
+    if (iframe.parentNode)
+      iframe.parentNode.removeChild(iframe)
   }
 }
 
@@ -1520,6 +1698,23 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+/**
+ * Guard: tell a real image filename apart from a dropdown text value.
+ * Real entries are either absolute URLs (start with http) or filenames with
+ * an image/video extension. Anything else (e.g. "Dent, Rust", "FWD", "Manual")
+ * is a dropdown value that was wrongly piped through an image key — drop it.
+ */
+function _looksLikeImageRef(u: string): boolean {
+  if (!u || typeof u !== 'string')
+    return false
+  const s = u.trim()
+  if (s === '')
+    return false
+  if (s.startsWith('http'))
+    return true
+  return /\.(png|jpe?g|gif|webp|svg|bmp|heic|heif|mp4|webm|ogg|mov)$/i.test(s)
+}
+
 function getImages(obj: Record<string, any> | null, key: string, fallbackKey?: string, imageIndex?: number): string[] {
   let val = obj?.[key]
   // If new key is empty, try fallback (old) key
@@ -1527,15 +1722,16 @@ function getImages(obj: Record<string, any> | null, key: string, fallbackKey?: s
     val = obj?.[fallbackKey]
   if (!val)
     return []
+  const cloudinaryPrefix = `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.value?.appointmentId}/`
+  const toUrl = (u: string) => u.startsWith('http') ? u : `${cloudinaryPrefix}${u}`
   if (Array.isArray(val)) {
     if (imageIndex !== undefined) {
       const u = val[imageIndex]
-      if (typeof u === 'string' && u.trim() !== '') {
-        return [u.startsWith('http') ? u : `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.value?.appointmentId}/${u}`]
-      }
+      if (_looksLikeImageRef(u))
+        return [toUrl(u)]
       return []
     }
-    return val.filter((u: string) => u && typeof u === 'string' && u.trim() !== '').map((u: string) => u.startsWith('http') ? u : `https://res.cloudinary.com/dwunzqigc/image/upload/Otobix%20Auction%20App/Car%20Images/${car.value?.appointmentId}/${u}`)
+    return val.filter(_looksLikeImageRef).map(toUrl)
   }
   if (typeof val === 'string' && val.startsWith('http'))
     return [val]
@@ -2917,6 +3113,9 @@ watch(editForm, () => {
                         <div class="text-sm font-bold text-violet-600 dark:text-violet-400 truncate mt-0.5" :title="car.appointmentSource">
                           {{ car.appointmentSource || '—' }}
                         </div>
+                        <div v-if="car.referenceName" class="text-xs font-semibold text-muted-foreground truncate mt-0.5" :title="car.referenceName">
+                          {{ car.referenceName }}
+                        </div>
                       </div>
                     </div>
 
@@ -4243,228 +4442,335 @@ watch(editForm, () => {
       </div>
     </template>
 
-    <!-- Gallery Lightbox -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div v-if="showLightbox" class="fixed inset-0 z-[100] bg-black/95 flex flex-col" @click.self="closeLightbox">
-          <!-- Top bar: title + close -->
-          <div class="shrink-0 flex items-center justify-between px-6 py-3 bg-black/60 backdrop-blur-sm border-b border-white/10">
-            <div class="flex items-center gap-3 min-w-0">
-              <Badge variant="outline" class="border-white/20 text-white/70 text-xs shrink-0">
-                {{ lightboxIndex + 1 }} / {{ lightboxImages.length }}
-              </Badge>
-              <h3 class="text-white text-sm font-medium truncate">
-                {{ lightboxImages[lightboxIndex]?.label || 'Image' }}
-              </h3>
-            </div>
-            <button class="text-white/60 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10" @click="closeLightbox">
-              <Icon name="i-lucide-x" class="size-5" />
-            </button>
-          </div>
-
-          <!-- Main image area -->
-          <div class="flex-1 min-h-0 flex items-center justify-center relative px-16" @click.self="closeLightbox">
-            <!-- Prev -->
-            <button
-              v-if="lightboxImages.length > 1"
-              class="absolute left-3 top-1/2 -translate-y-1/2 size-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all z-10 backdrop-blur-sm"
-              @click="prevImage"
-            >
-              <Icon name="i-lucide-chevron-left" class="size-5" />
-            </button>
-
-            <!-- Image -->
-            <img
-              :key="lightboxIndex"
-              :src="lightboxImages[lightboxIndex]?.url"
-              :alt="lightboxImages[lightboxIndex]?.label"
-              class="max-w-full max-h-full object-contain rounded-lg select-none animate-in fade-in duration-200"
-            >
-
-            <!-- Next -->
-            <button
-              v-if="lightboxImages.length > 1"
-              class="absolute right-3 top-1/2 -translate-y-1/2 size-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all z-10 backdrop-blur-sm"
-              @click="nextImage"
-            >
-              <Icon name="i-lucide-chevron-right" class="size-5" />
-            </button>
-          </div>
-
-          <!-- Thumbnail strip -->
-          <div v-if="lightboxImages.length > 1" class="shrink-0 bg-black/60 backdrop-blur-sm border-t border-white/10 px-6 py-3">
-            <div class="flex gap-2 overflow-x-auto no-scrollbar justify-center max-w-full">
-              <button
-                v-for="(thumb, ti) in lightboxImages"
-                :key="ti"
-                :data-thumb-idx="ti"
-                class="shrink-0 size-14 rounded-lg overflow-hidden border-2 transition-all duration-200"
-                :class="ti === lightboxIndex ? 'border-primary ring-2 ring-primary/30 scale-105' : 'border-white/10 hover:border-white/30 opacity-60 hover:opacity-100'"
-                @click="goToImage(ti)"
-              >
-                <img :src="thumb.url" :alt="thumb.label" class="w-full h-full object-cover" loading="lazy">
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <!-- Shared Photo Lightbox -->
+    <InspectionPhotoLightbox
+      v-model:open="showLightbox"
+      v-model:index="lightboxIndex"
+      :images="lightboxImages"
+    />
 
     <!-- HIDDEN PDF REPORT CONTAINER -->
     <div v-if="isGeneratingPdf" style="position: absolute; top: -15000px; left: 0; width: 210mm; z-index: -10; pointer-events: none;" class="bg-white text-black">
       <div id="pdf-container" class="w-[210mm] bg-white p-[10mm] font-sans text-gray-900 mx-auto" style="min-height: 297mm; display: flex; flex-direction: column;">
-        <!-- HEADER -->
-        <div class="flex justify-between items-end border-b-2 border-slate-600 pb-2 mb-4">
-          <div>
-            <div class="flex items-center">
-              <img src="/apple-touch-icon.png" class="h-28 w-auto object-contain">
+        <!-- ═══════════════════════════════════════════════════════════════
+             COVER PAGE  (Design Spec v1.0 — Ink/Paper/Accent/Muted)
+             Palette:  Ink #0F172A · Paper #FFFFFF · Accent #2563EB · Muted #F1F5F9
+             Font:     Inter, SF Pro Display, Segoe UI, system-ui, sans-serif
+             ═══════════════════════════════════════════════════════════════ -->
+        <div style="min-height: 277mm; display: flex; flex-direction: column; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, -apple-system, sans-serif;">
+
+          <!-- ── TOP BAR: Logo + Report Meta ── -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #0F172A; padding-bottom: 8px;">
+            <!-- Left: Logo + Tag -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <img src="/apple-touch-icon.png" style="height: 24mm; width: auto; object-fit: contain;" crossorigin="anonymous">
+              <span style="font-size: 7px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: #0F172A; opacity: 0.5; margin-top: 2px;">Vehicle Inspection Report</span>
+            </div>
+            <!-- Right: Report metadata -->
+            <div style="text-align: right; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 7px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #0F172A; opacity: 0.5;">Report ID</span>
+              <span style="font-size: 9px; font-weight: 700; color: #0F172A; letter-spacing: 0.02em;">{{ car?.appointmentId || car?._id || '—' }}</span>
+              <span style="font-size: 7px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #0F172A; opacity: 0.5; margin-top: 4px;">Inspected</span>
+              <span style="font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatDateMMDDYYYY(car?.inspectionDate || car?.createdAt) }}{{ car?.city ? ` · ${String(car.city).toUpperCase()}` : '' }}</span>
             </div>
           </div>
-          <div class="text-right">
-            <h1 class="text-xl font-bold text-blue-700 uppercase tracking-wide">
-              Vehicle Inspection Report
+
+          <!-- ── HERO IMAGE ── -->
+          <div style="margin-top: 24px; width: 100%; height: 110mm; background-color: #F1F5F9; border: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+            <img
+              v-if="getImages(car, 'frontMainImages', 'frontMain').length"
+              :src="getImages(car, 'frontMainImages', 'frontMain')[0]"
+              style="max-width: 100%; max-height: 100%; object-fit: contain;"
+              crossorigin="anonymous"
+            >
+            <span v-else style="font-size: 7px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #0F172A; opacity: 0.3;">No Image Available</span>
+          </div>
+
+          <!-- ── VEHICLE HEADLINE ── -->
+          <div style="margin-top: 16px; text-align: center;">
+            <h1 style="font-size: 20px; font-weight: 800; color: #2563EB; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.1; margin: 0;">
+              {{ (car?.make || '').toUpperCase() }} {{ (car?.model || '').toUpperCase() }}
             </h1>
-            <p class="text-[12px] font-bold text-slate-700 mt-0.5">
-              {{ car?.yearMonthOfManufacture ? new Date(car?.yearMonthOfManufacture).getFullYear() : '' }} {{ (car?.make || '').toUpperCase() }}, {{ (car?.model || '').toUpperCase() }}, {{ (car?.variant || '').toUpperCase() }}
-            </p>
-            <p class="text-[10px] text-slate-500">
-              Inspected: {{ formatDateMMDDYYYY(car?.inspectionDate || car?.createdAt) }} {{ car?.city ? `, ${String(car.city).toUpperCase()}` : '' }}
+            <p style="font-size: 11px; font-weight: 700; color: #0F172A; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px; line-height: 1.3;">
+              {{ (car?.variant || '').toUpperCase() }}{{ car?.yearMonthOfManufacture ? ` · ${new Date(car.yearMonthOfManufacture).getFullYear()}` : '' }}
             </p>
           </div>
-        </div>
 
-        <!-- CAR MAIN PICS IN HEADER -->
-        <div v-if="(getImages(car, 'frontMainImages', 'frontMain').length) || (getImages(car, 'rearMainImages', 'rearMain').length)" class="flex gap-4 mb-6">
-          <div v-if="getImages(car, 'frontMainImages', 'frontMain').length" class="flex-1 h-[60mm] bg-[#f9fafb] border border-gray-300 rounded overflow-hidden flex items-center justify-center p-1">
-            <img :src="getImages(car, 'frontMainImages', 'frontMain')[0]" class="w-full h-full object-contain" crossorigin="anonymous">
-          </div>
-          <div v-if="getImages(car, 'rearMainImages', 'rearMain').length" class="flex-1 h-[60mm] bg-[#f9fafb] border border-gray-300 rounded overflow-hidden flex items-center justify-center p-1">
-            <img :src="getImages(car, 'rearMainImages', 'rearMain')[0]" class="w-full h-full object-contain" crossorigin="anonymous">
-          </div>
-        </div>
-
-        <!-- A. GENERAL INFO & DOCS -->
-        <div class="mb-6 break-inside-avoid">
-          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-2 rounded-t tracking-widest uppercase">
-            A. GENERAL INFORMATION & DOCUMENTATION
-          </h2>
-          <!-- Table -->
-          <div class="grid grid-cols-4 border-l border-t border-gray-300">
-            <template v-for="fieldItem in documentDetailFields.flatMap(f => [...(f.splitParts || []), ...(f.rightParts || [])]).filter(f => f.label)" :key="fieldItem.key">
-              <div class="border-r border-b border-gray-300 p-1.5 text-[9px] bg-[#f8fafc] font-semibold text-[#1e293b]">
-                {{ fieldItem.label }}
+          <!-- ── KPI STRIP (4 tiles) ── -->
+          <div style="margin-top: 24px; display: flex; border-top: 1px solid #0F172A; border-bottom: 1px solid #0F172A;">
+            <!-- Registration No -->
+            <div style="flex: 1; padding: 8px 8px; text-align: center; border-right: 1px solid #F1F5F9;">
+              <div style="font-size: 18px; font-weight: 800; color: #2563EB; letter-spacing: -0.02em; line-height: 1.0; word-break: break-all;">
+                {{ car?.registrationNumber || '—' }}
               </div>
-              <div class="border-r border-b border-gray-300 p-1.5 text-[9px] truncate">
-                {{ fieldItem.type === 'date' ? (formatDateMMDDYYYY(car?.[fieldItem.key] || car?.[fieldItem.oldKey]) || '—') : formatPdfValue(car?.[fieldItem.dropdownName || fieldItem.key] || car?.[fieldItem.key] || car?.[fieldItem.oldKey] || '') }}
+              <div style="font-size: 7px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: #0F172A; margin-top: 4px;">
+                Registration No.
               </div>
-            </template>
+            </div>
+            <!-- Odometer -->
+            <div style="flex: 1; padding: 8px 8px; text-align: center; border-right: 1px solid #F1F5F9;">
+              <div style="font-size: 18px; font-weight: 800; color: #2563EB; letter-spacing: -0.02em; line-height: 1.0;">
+                {{ car?.odometerReadingInKms ? Number(car.odometerReadingInKms).toLocaleString('en-IN') : '—' }}
+              </div>
+              <div style="font-size: 7px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: #0F172A; margin-top: 4px;">
+                Odometer (KMs)
+              </div>
+            </div>
+            <!-- Owners -->
+            <div style="flex: 1; padding: 8px 8px; text-align: center; border-right: 1px solid #F1F5F9;">
+              <div style="font-size: 18px; font-weight: 800; color: #2563EB; letter-spacing: -0.02em; line-height: 1.0;">
+                {{ car?.ownerSerialNumber ? `${car.ownerSerialNumber}${Number(car.ownerSerialNumber) === 1 ? 'st' : Number(car.ownerSerialNumber) === 2 ? 'nd' : Number(car.ownerSerialNumber) === 3 ? 'rd' : 'th'}` : '—' }}
+              </div>
+              <div style="font-size: 7px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: #0F172A; margin-top: 4px;">
+                Owner
+              </div>
+            </div>
+            <!-- Overall Grade -->
+            <div style="flex: 1; padding: 8px 8px; text-align: center;">
+              <div style="font-size: 18px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.0;" :style="{ color: (car?.approvalStatus || '').toLowerCase().includes('approved') ? '#059669' : (car?.approvalStatus || '').toLowerCase().includes('reject') ? '#DC2626' : '#2563EB' }">
+                {{ (car?.approvalStatus || 'Under Review').toUpperCase() }}
+              </div>
+              <div style="font-size: 7px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: #0F172A; margin-top: 4px;">
+                QC Status
+              </div>
+            </div>
+          </div>
+
+
+
+          <!-- ── COVER PAGE FOOTER ── -->
+          <div style="margin-top: 12px; border-top: 0.5px solid #F1F5F9; padding-top: 4px; display: flex; justify-content: space-between; align-items: flex-end;">
+            <span style="font-size: 7px; font-weight: 600; color: #0F172A; opacity: 0.4; letter-spacing: 0.06em; text-transform: uppercase;">Report ID: {{ car?.appointmentId || car?._id || '' }}</span>
+            <span style="font-size: 6px; font-weight: 500; color: #0F172A; opacity: 0.3; letter-spacing: 0.04em;">Generated {{ new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) }}</span>
           </div>
         </div>
 
-        <!-- B. INSPECTION ITEMS & CONDITION -->
-        <div class="mb-4">
-          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-4 rounded-t tracking-widest uppercase">
-            B. VEHICLE CONDITION & IMAGES
-          </h2>
-          <div class="space-y-4">
-            <template v-for="sec in pdfSections" :key="sec.title">
-              <div class="break-inside-avoid">
-                <h3 class="bg-[#eff6ff] text-[#1d4ed8] font-bold text-[9px] px-2 py-1.5 border border-[#d1d5db] uppercase tracking-widest mb-2 rounded shadow-sm">
-                  {{ sec.title }}
-                </h3>
-                <div class="grid grid-cols-2 gap-2">
-                  <template v-for="part in sec.parts" :key="part.key">
-                    <!-- Normal parts -->
-                    <template v-if="!(part as any).isVideoBox && !(part as any).splitParts">
-                      <div class="border border-[#d1d5db] rounded shadow-sm overflow-hidden flex flex-row min-h-[22mm] bg-white break-inside-avoid">
-                        <div class="flex-1 flex flex-col">
-                          <div class="bg-[#f8fafc] border-b border-[#d1d5db] px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider text-[#334155] truncate">
-                            {{ part.label }}
-                          </div>
-                          <div class="p-1 px-1.5 flex flex-wrap gap-1 mt-auto mb-auto">
-                            <template v-if="(part as any).isImageOnly">
-                              <div class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">
-                                Images Only Section
-                              </div>
-                            </template>
-                            <template v-else-if="getDisplayValues(car, (part as any).dropdownName || part.key, (part as any).oldKey).length">
-                              <div v-for="val in getDisplayValues(car, (part as any).dropdownName || part.key, (part as any).oldKey)" :key="val" class="border px-1 py-0.5 rounded flex items-center gap-1 shadow-sm" :class="getConditionStyle(val).bg">
-                                <span class="text-[8px]">{{ getConditionStyle(val).emoji }}</span>
-                                <span class="text-[7.5px] font-bold leading-none">{{ val }}</span>
-                              </div>
-                            </template>
-                            <div v-else class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">
-                              Condition Okay
-                            </div>
-                          </div>
-                        </div>
-                        <div class="w-[32mm] border-l border-[#d1d5db] bg-[#f9fafb] p-0.5 flex items-center justify-center shrink-0">
-                          <img v-if="getImages(car, (part as any).imageKey || part.key, (part as any).oldImageKey || (part as any).oldKey).length && !getImages(car, (part as any).imageKey || part.key, (part as any).oldImageKey || (part as any).oldKey)[0]?.match(/\.(mp4|webm|ogg|mov)$/i)" :src="getImages(car, (part as any).imageKey || part.key, (part as any).oldImageKey || (part as any).oldKey)[0]!" class="max-w-full max-h-full object-contain" crossorigin="anonymous">
-                          <div v-else class="text-[6px] text-[#9ca3af] uppercase tracking-widest text-center">
-                            No Image
-                          </div>
-                        </div>
-                      </div>
-                    </template>
-                    <!-- Split Parts -->
-                    <template v-else-if="(part as any).splitParts">
-                      <template v-for="spart in (part as any).splitParts" :key="spart.key">
-                        <div class="border border-[#d1d5db] rounded shadow-sm overflow-hidden flex flex-row min-h-[22mm] bg-white break-inside-avoid">
-                          <div class="flex-1 flex flex-col">
-                            <div class="bg-[#f8fafc] border-b border-[#d1d5db] px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider text-[#334155] truncate">
-                              {{ spart.label }}
-                            </div>
-                            <div class="p-1 px-1.5 flex flex-wrap gap-1 mt-auto mb-auto">
-                              <template v-if="(spart as any).isImageOnly">
-                                <div class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">
-                                  Images Only Section
-                                </div>
-                              </template>
-                              <template v-else-if="getDisplayValues(car, spart.dropdownName || spart.key, spart.oldKey).length">
-                                <div v-for="val in getDisplayValues(car, spart.dropdownName || spart.key, spart.oldKey)" :key="val" class="border px-1 py-0.5 rounded flex items-center gap-1 shadow-sm" :class="getConditionStyle(val).bg">
-                                  <span class="text-[8px]">{{ getConditionStyle(val).emoji }}</span>
-                                  <span class="text-[7.5px] font-bold leading-none">{{ val }}</span>
-                                </div>
-                              </template>
-                              <div v-else class="text-[7.5px] text-[#64748b] italic px-1 py-0.5">
-                                Condition Okay
-                              </div>
-                            </div>
-                          </div>
-                          <div class="w-[32mm] border-l border-[#d1d5db] bg-[#f9fafb] p-0.5 flex items-center justify-center shrink-0">
-                            <img v-if="getImages(car, spart.imageKey || spart.key, spart.oldImageKey || spart.oldKey).length && !getImages(car, spart.imageKey || spart.key, spart.oldImageKey || spart.oldKey)[0]?.match(/\.(mp4|webm|ogg|mov)$/i)" :src="getImages(car, spart.imageKey || spart.key, spart.oldImageKey || spart.oldKey)[0]!" class="max-w-full max-h-full object-contain" crossorigin="anonymous">
-                            <div v-else class="text-[6px] text-[#9ca3af] uppercase tracking-widest text-center">
-                              No Image
-                            </div>
-                          </div>
-                        </div>
-                      </template>
-                    </template>
+        <!-- Force page break after cover page -->
+        <div class="html2pdf__page-break" />
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             SECTION A — GENERAL INFORMATION (3 Data Cards)
+             Design Spec v1.0 · Ink #0F172A · Paper #FFFFFF · Accent #2563EB · Muted #F1F5F9
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Section Banner -->
+        <div style="background-color: #0F172A; color: #FFFFFF; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 0; margin-bottom: 16px; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+          A. General Information &amp; Documentation
+        </div>
+
+        <!-- Card 1: Vehicle Identity -->
+        <div style="border: 1px solid #F1F5F9; margin-bottom: 12px; page-break-inside: avoid; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+          <div style="background-color: #F1F5F9; padding: 4px 8px; font-size: 8px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #0F172A; border-bottom: 1px solid #F1F5F9;">
+            Vehicle Identity
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr;">
+            <!-- Left column -->
+            <div style="border-right: 1px solid #F1F5F9;">
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Make</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ car?.make || '—' }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Model</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ car?.model || '—' }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Variant</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ car?.variant || '—' }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">MFG Year/Month</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ car?.yearMonthOfManufacture ? `${String(new Date(car.yearMonthOfManufacture).getMonth() + 1).padStart(2, '0')} / ${new Date(car.yearMonthOfManufacture).getFullYear()}` : '—' }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Fuel Type</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.fuelType) }}</div></div>
+              <div style="display: flex;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Transmission</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.['Transmission Type'] || car?.transmissionTypeDropdownList) }}</div></div>
+            </div>
+            <!-- Right column -->
+            <div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Registration No.</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 700; color: #0F172A;">{{ car?.registrationNumber || '—' }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Color</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.color) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Cubic Capacity</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ car?.cubicCapacity ? `${car.cubicCapacity} cc` : '—' }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Seating Capacity</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.seatingCapacity) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Norms</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.norms) }}</div></div>
+              <div style="display: flex;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Odometer (KMs)</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ car?.odometerReadingInKms ? Number(car.odometerReadingInKms).toLocaleString('en-IN') : '—' }}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Registration & Documents -->
+        <div style="border: 1px solid #F1F5F9; margin-bottom: 12px; page-break-inside: avoid; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+          <div style="background-color: #F1F5F9; padding: 4px 8px; font-size: 8px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #0F172A; border-bottom: 1px solid #F1F5F9;">
+            Registration &amp; Documents
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr;">
+            <!-- Left column -->
+            <div style="border-right: 1px solid #F1F5F9;">
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Registration Date</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatDateMMDDYYYY(car?.registrationDate) || '—' }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Registration State</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.registrationState) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Registered RTO</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.registeredRto) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">RC Book Availability</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.['RC Book Availability'] || car?.rcBookAvailabilityDropdownList || car?.rcBookAvailability) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">RC Condition</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.['RC Condition'] || car?.rcCondition) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Mismatch in RC</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.['Mismatch in RC'] || car?.mismatchInRcDropdownList || car?.mismatchInRc) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">RC Status</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.['RC Status'] || car?.rcStatus) }}</div></div>
+              <div style="display: flex;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Engine Number</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.engineNumber) }}</div></div>
+            </div>
+            <!-- Right column -->
+            <div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Chassis Number</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.chassisNumber) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Insurance Type</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.['Insurance'] || car?.insuranceDropdownList || car?.insurance) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Insured By</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.insurer) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Insurance Valid Till</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatDateMMDDYYYY(car?.insuranceValidity) || '—' }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Hypothecation</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.['Hypothecation Details'] || car?.hypothecationDetails) }}{{ car?.hypothecatedTo ? ` — ${car.hypothecatedTo}` : '' }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Fitness Valid Till</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatDateMMDDYYYY(car?.fitnessValidity || car?.fitnessTill) || '—' }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Road Tax Valid Till</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatDateMMDDYYYY(car?.taxValidTill) || '—' }}</div></div>
+              <div style="display: flex;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">PUC Valid Till</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatDateMMDDYYYY(car?.pucValidity) || '—' }}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Ownership & Usage -->
+        <div style="border: 1px solid #F1F5F9; margin-bottom: 16px; page-break-inside: avoid; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+          <div style="background-color: #F1F5F9; padding: 4px 8px; font-size: 8px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #0F172A; border-bottom: 1px solid #F1F5F9;">
+            Ownership &amp; Usage
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr;">
+            <!-- Left column -->
+            <div style="border-right: 1px solid #F1F5F9;">
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Owner Serial No.</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 700; color: #0F172A;">{{ car?.ownerSerialNumber ? `${car.ownerSerialNumber}${Number(car.ownerSerialNumber) === 1 ? 'st' : Number(car.ownerSerialNumber) === 2 ? 'nd' : Number(car.ownerSerialNumber) === 3 ? 'rd' : 'th'} Owner` : '—' }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Registered Owner</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.registeredOwner) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Odometer (KMs)</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ car?.odometerReadingInKms ? Number(car.odometerReadingInKms).toLocaleString('en-IN') : '—' }}</div></div>
+              <div style="display: flex;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">City</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.city) }}</div></div>
+            </div>
+            <!-- Right column -->
+            <div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Blacklist Status</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.blacklistStatus) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">RTO NOC</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.['RTO NOC'] || car?.rtoNoc) }}</div></div>
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">RTO Form 28</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.['RTO Form 28 (2 copies)'] || car?.rtoForm28) }}</div></div>
+              <div style="display: flex;"><div style="width: 45%; padding: 3px 8px; font-size: 9px; font-weight: 600; color: #0F172A; background-color: #F1F5F9;">Duplicate Key</div><div style="width: 55%; padding: 3px 8px; font-size: 9px; font-weight: 500; color: #0F172A;">{{ formatPdfValue(car?.['Duplicate Key'] || car?.duplicateKey) }}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             SECTION B — VEHICLE CONDITION & IMAGES
+             Design Spec v1.0 · Flat condition pills · 3-col table + 3-up photo grid
+             Now includes isFourPanel parts (Interior airbags/seats)
+             ═══════════════════════════════════════════════════════════════ -->
+
+        <!-- Section Banner -->
+        <div style="background-color: #0F172A; color: #FFFFFF; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 0; margin-bottom: 16px; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+          B. Vehicle Condition &amp; Images
+        </div>
+
+        <template v-for="sec in pdfSections" :key="sec.title">
+          <!-- Sub-section header — page-break-after:avoid keeps it glued to the table -->
+          <div style="margin-bottom: 8px; page-break-after: avoid; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #2563EB; padding-bottom: 4px; border-bottom: 1px solid #2563EB;">
+              {{ sec.title }}
+            </div>
+          </div>
+
+          <!-- 3-column condition table — allow breaking inside for long tables -->
+          <div style="border: 1px solid #F1F5F9; margin-bottom: 8px; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+            <!-- Table header -->
+            <div style="display: flex; background-color: #F1F5F9; border-bottom: 1px solid #E2E8F0;">
+              <div style="width: 35%; padding: 3px 8px; font-size: 7px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: #0F172A;">Part</div>
+              <div style="width: 40%; padding: 3px 8px; font-size: 7px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: #0F172A;">Condition</div>
+              <div style="width: 25%; padding: 3px 8px; font-size: 7px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: #0F172A;">Image</div>
+            </div>
+            <!-- Table rows -->
+            <template v-for="part in pdfFlatParts(sec)" :key="part.key">
+              <div style="display: flex; border-bottom: 1px solid #F1F5F9; min-height: 18px; align-items: center;">
+                <!-- Part name -->
+                <div style="width: 35%; padding: 2px 8px; font-size: 8px; font-weight: 600; color: #0F172A; text-transform: uppercase; letter-spacing: 0.05em;">
+                  {{ part.label }}
+                </div>
+                <!-- Condition pills -->
+                <div style="width: 40%; padding: 2px 8px; display: flex; flex-wrap: wrap; gap: 2px;">
+                  <template v-if="(part as any).isImageOnly">
+                    <span style="font-size: 7px; font-weight: 500; color: #0F172A; opacity: 0.4; font-style: italic;">Photo only</span>
                   </template>
+                  <template v-else-if="getDisplayValues(car, (part as any).dropdownName || part.key, (part as any).oldKey).length">
+                    <span
+                      v-for="val in getDisplayValues(car, (part as any).dropdownName || part.key, (part as any).oldKey)"
+                      :key="val"
+                      :style="pdfConditionPillStyle(val) + ' padding: 1px 4px; border-radius: 4px; font-size: 7px; font-weight: 700; display: inline-block;'"
+                    >{{ val }}</span>
+                  </template>
+                  <span v-else style="background-color: #DCFCE7; border: 1px solid #BBF7D0; color: #0F172A; padding: 1px 4px; border-radius: 4px; font-size: 7px; font-weight: 700;">OK</span>
+                </div>
+                <!-- Thumbnail -->
+                <div style="width: 25%; padding: 2px 4px; display: flex; align-items: center; justify-content: center;">
+                  <template v-if="(part as any).imageKey && getImages(car, (part as any).imageKey, (part as any).oldImageKey).length && !getImages(car, (part as any).imageKey, (part as any).oldImageKey)[0]?.match(/\.(mp4|webm|ogg|mov)$/i)">
+                    <img
+                      :src="getImages(car, (part as any).imageKey, (part as any).oldImageKey)[0]!"
+                      style="max-height: 14mm; max-width: 100%; object-fit: contain;"
+                      crossorigin="anonymous"
+                    >
+                  </template>
+                  <span v-else style="font-size: 6px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #0F172A; opacity: 0.25;">—</span>
                 </div>
               </div>
             </template>
           </div>
+
+          <!-- 3-up photo grid for this section -->
+          <div v-if="pdfSectionImages(sec).length" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 24px; page-break-inside: avoid; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+            <div
+              v-for="(img, imgIdx) in pdfSectionImages(sec)"
+              :key="imgIdx"
+              style="border: 1px solid #F1F5F9; overflow: hidden; page-break-inside: avoid;"
+            >
+              <div style="width: 100%; height: 40mm; background-color: #F1F5F9; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                <img :src="img.url" style="width: 100%; height: 100%; object-fit: cover;" crossorigin="anonymous">
+              </div>
+              <div style="background-color: #F1F5F9; padding: 2px 4px; text-align: center; font-size: 6px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #0F172A; border-top: 1px solid #E2E8F0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                {{ img.label }}
+              </div>
+            </div>
+          </div>
+          <div v-else style="margin-bottom: 24px;" />
+        </template>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             SECTION C — PHOTO GALLERY
+             Design Spec v1.0 · 3-up grid · 60×40mm tiles · Grouped by section
+             ═══════════════════════════════════════════════════════════════ -->
+        <div class="html2pdf__page-break" />
+
+        <!-- Section Banner -->
+        <div style="background-color: #0F172A; color: #FFFFFF; text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 0; margin-bottom: 16px; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+          C. Photo Gallery
         </div>
 
-        <!-- C. EXTRA IMAGE GALLERY -->
-        <div class="html2pdf__page-break" />
-        <div class="mt-8 mb-4 break-inside-avoid">
-          <h2 class="bg-[#1e293b] text-white text-center text-[10px] font-bold py-1.5 mb-6 rounded-t uppercase tracking-widest">
-            C. IMAGE GALLERY (EXTRAS)
-          </h2>
-          <div class="grid grid-cols-4 gap-2">
-            <template v-for="(img, idx) in allPdfImages" :key="idx">
-              <div class="flex flex-col border border-[#d1d5db] rounded overflow-hidden break-inside-avoid h-[30mm]">
-                <div class="bg-[#f8fafc] text-center text-[6px] font-bold py-1 px-1 uppercase truncate border-b border-[#d1d5db] text-[#1e293b]">
+        <!-- Document Images -->
+        <template v-if="sectionImages(documentImageKeys).length">
+          <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #2563EB; padding-bottom: 4px; border-bottom: 1px solid #2563EB; margin-bottom: 8px; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+            Documents
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 24px;">
+            <div v-for="(img, idx) in sectionImages(documentImageKeys)" :key="'doc-'+idx" style="border: 1px solid #F1F5F9; overflow: hidden; page-break-inside: avoid;">
+              <div style="width: 100%; height: 40mm; background-color: #F1F5F9; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                <img :src="img.url" style="width: 100%; height: 100%; object-fit: cover;" loading="eager" crossorigin="anonymous">
+              </div>
+              <div style="background-color: #F1F5F9; padding: 2px 4px; text-align: center; font-size: 6px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #0F172A; border-top: 1px solid #E2E8F0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                {{ img.label }}
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Per-section images -->
+        <template v-for="sec in pdfSections" :key="'gallery-'+sec.title">
+          <template v-if="pdfSectionImages(sec).length">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #2563EB; padding-bottom: 4px; border-bottom: 1px solid #2563EB; margin-bottom: 8px; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+              {{ sec.title }}
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 24px; page-break-inside: avoid;">
+              <div v-for="(img, imgIdx) in pdfSectionImages(sec)" :key="imgIdx" style="border: 1px solid #F1F5F9; overflow: hidden; page-break-inside: avoid;">
+                <div style="width: 100%; height: 40mm; background-color: #F1F5F9; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                  <img :src="img.url" style="width: 100%; height: 100%; object-fit: cover;" loading="eager" crossorigin="anonymous">
+                </div>
+                <div style="background-color: #F1F5F9; padding: 2px 4px; text-align: center; font-size: 6px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #0F172A; border-top: 1px solid #E2E8F0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
                   {{ img.label }}
                 </div>
-                <div class="flex-1 bg-[#f9fafb] flex items-center justify-center p-0.5 overflow-hidden">
-                  <img :src="img.url" class="max-h-full max-w-full object-contain" crossorigin="anonymous">
-                </div>
               </div>
-            </template>
-          </div>
+            </div>
+          </template>
+        </template>
+
+        <!-- Report Footer -->
+        <div style="margin-top: 24px; border-top: 1px solid #F1F5F9; padding-top: 4px; display: flex; justify-content: space-between; align-items: flex-end; font-family: Inter, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;">
+          <span style="font-size: 7px; font-weight: 600; color: #0F172A; opacity: 0.4; letter-spacing: 0.06em; text-transform: uppercase;">Report ID: {{ car?.appointmentId || car?._id || '' }}</span>
+          <span style="font-size: 6px; font-weight: 500; color: #0F172A; opacity: 0.3; letter-spacing: 0.04em;">Generated {{ new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) }} · End of Report</span>
         </div>
       </div>
     </div>
@@ -4484,10 +4790,17 @@ watch(editForm, () => {
   outline-color: transparent !important;
   text-decoration-color: transparent !important;
   box-shadow: none !important;
+  /* Force exact colors in print and html2canvas rasterization */
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+  color-adjust: exact !important;
 }
 #pdf-container {
   color: #111827 !important;
   background-color: #ffffff !important;
+  /* Prevent orphan headers at page bottoms */
+  widows: 2 !important;
+  orphans: 2 !important;
 }
 
 #pdf-container .bg-white { background-color: #ffffff !important; }

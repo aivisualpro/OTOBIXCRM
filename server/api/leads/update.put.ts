@@ -322,6 +322,17 @@ export default defineEventHandler(async (event) => {
         }
       }
 
+      // ── QC Rejection: Sync rejection status to cars document ──
+      if (updates.approvalStatus === 'Rejected' || updates.approvalStatus === 'Quality Rejected') {
+        carsUpdateQuery.$set.approvalStatus = updates.approvalStatus
+        if (updates.rejectionReason) {
+          carsUpdateQuery.$set.rejectionReason = updates.rejectionReason
+        }
+        if (updates.remarks) {
+          carsUpdateQuery.$set.remarks = updates.remarks
+        }
+      }
+
       const updateRes = await db.collection('cars').updateOne(
         { appointmentId: apptId },
         carsUpdateQuery,

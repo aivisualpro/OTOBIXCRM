@@ -1054,6 +1054,49 @@ async function confirmRa(car: any) {
   }
 }
 
+// ─── 1-Click Price Editing ───
+const ocpEditing = ref<Record<string, boolean>>({})
+const ocpValue = ref<Record<string, string>>({})
+const ocpSaving = ref<Record<string, boolean>>({})
+
+function openOcp(car: any) {
+  const key = car._id || car.id
+  ocpValue.value[key] = car.oneClickPrice ? String(car.oneClickPrice) : ''
+  ocpEditing.value[key] = true
+}
+
+function closeOcp(car: any) {
+  const key = car._id || car.id
+  ocpEditing.value[key] = false
+  ocpValue.value[key] = ''
+}
+
+async function confirmOcp(car: any) {
+  const key = car._id || car.id
+  const newVal = Number(ocpValue.value[key])
+  if (isNaN(newVal) || newVal < 0) {
+    toast.error('Invalid price')
+    return
+  }
+  ocpSaving.value[key] = true
+  try {
+    await $fetch('/api/leads/update', {
+      method: 'PUT',
+      body: {
+        telecallingId: car.appointmentId || car._id?.$oid || car.id || car._id,
+        oneClickPrice: newVal,
+      },
+    })
+    car.oneClickPrice = newVal
+    toast.success(`1-Clik Price updated to ${formatCurrency(newVal)}`)
+    closeOcp(car)
+  } catch (err: any) {
+    toast.error(err?.data?.message || 'Failed to update 1-Clik Price')
+  } finally {
+    ocpSaving.value[key] = false
+  }
+}
+
 function getAuctionStatusColor(status: string) {
   if (!status)
     return 'bg-muted text-muted-foreground'
@@ -2059,8 +2102,41 @@ async function exportToGoogleSheets() {
               </template>
             </TableCell>
 
-            <TableCell class="text-xs whitespace-nowrap text-muted-foreground">
-              {{ formatCurrency(car.oneClickPrice) }}
+            <TableCell class="text-xs whitespace-nowrap align-middle px-2">
+              <div class="min-h-[36px] flex flex-col items-center justify-center gap-1 group rounded relative" :class="ocpEditing[car._id || car.id] ? '' : 'hover:bg-muted/30 cursor-pointer'" @click="!ocpEditing[car._id || car.id] && openOcp(car)">
+                <template v-if="!ocpEditing[car._id || car.id]">
+                  <div class="flex items-center gap-1.5 font-medium whitespace-nowrap" :class="car.oneClickPrice ? 'text-blue-600' : 'text-muted-foreground/40'">
+                    <span>{{ car.oneClickPrice ? formatCurrency(car.oneClickPrice) : '—' }}</span>
+                    <Icon name="i-lucide-pencil" class="size-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="flex items-center gap-1" @click.stop>
+                    <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-md flex items-center px-2 py-0.5 shadow-sm">
+                      <span class="text-blue-600 font-bold text-[10px] mr-1">₹</span>
+                      <input
+                        v-model="ocpValue[car._id || car.id]"
+                        type="number"
+                        class="w-20 bg-transparent text-blue-700 dark:text-blue-300 font-bold tabular-nums text-xs border-none outline-none focus:ring-0 p-0 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        placeholder="Price"
+                        autofocus
+                        @keydown.enter.stop="confirmOcp(car)"
+                        @keydown.esc.stop="closeOcp(car)"
+                        @click.stop
+                      >
+                    </div>
+                    <div class="flex flex-col gap-0.5">
+                      <button class="size-[18px] flex items-center justify-center rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 shadow-sm border border-blue-200" :disabled="ocpSaving[car._id || car.id]" @click.stop="confirmOcp(car)">
+                        <Icon v-if="ocpSaving[car._id || car.id]" name="i-lucide-loader-2" class="size-2.5 animate-spin" />
+                        <Icon v-else name="i-lucide-check" class="size-2.5" />
+                      </button>
+                      <button class="size-[18px] flex items-center justify-center rounded-full bg-background hover:bg-muted text-muted-foreground shadow-sm border border-border" @click.stop="closeOcp(car)">
+                        <Icon name="i-lucide-x" class="size-2.5" />
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </div>
             </TableCell>
             <TableCell class="text-xs whitespace-nowrap font-semibold dark:text-emerald-400 text-center">
               <div v-if="getRetailOtobuyOffer(car)" class="flex flex-col gap-0.5 items-center">

@@ -683,8 +683,71 @@ function handleSimilarSearch(car: any) {
   router.push({ path: '/retail', query: { tab: slug } })
 }
 
+const showReportPreview = ref(false)
+const previewAppId = ref('')
+const pdfBlobUrl = ref('')
+
 function openPreview(appid: string) {
-  router.push(`/inspection/${appid}`)
+  previewAppId.value = ''
+  pdfBlobUrl.value = ''
+  nextTick(() => {
+    previewAppId.value = appid
+    showReportPreview.value = true
+  })
+}
+
+function triggerDownload() {
+  if (pdfBlobUrl.value) {
+    const a = document.createElement('a')
+    a.href = pdfBlobUrl.value
+    a.download = `Inspection_Report_${previewAppId.value}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+}
+
+// ─── 1-Click Price Editing ───
+const ocpEditing = ref<Record<string, boolean>>({})
+const ocpValue = ref<Record<string, string>>({})
+const ocpSaving = ref<Record<string, boolean>>({})
+
+function openOcp(car: any) {
+  const key = car._id || car.id
+  ocpValue.value[key] = car.oneClickPrice ? String(car.oneClickPrice) : ''
+  ocpEditing.value[key] = true
+}
+
+function closeOcp(car: any) {
+  const key = car._id || car.id
+  ocpEditing.value[key] = false
+  ocpValue.value[key] = ''
+}
+
+async function confirmOcp(car: any) {
+  const key = car._id || car.id
+  const newVal = Number(ocpValue.value[key])
+  if (isNaN(newVal) || newVal < 0) {
+    toast.error('Invalid price')
+    return
+  }
+  ocpSaving.value[key] = true
+  try {
+    await $fetch('/api/leads/update', {
+      method: 'PUT',
+      body: {
+        telecallingId: car.appointmentId || car._id?.$oid || car.id || car._id,
+        oneClickPrice: newVal,
+      },
+    })
+    car.oneClickPrice = newVal
+    toast.success(`1-Clik Price updated to ${formatCurrency(newVal)}`)
+    closeOcp(car)
+  } catch (err: any) {
+    toast.error(err?.data?.message || 'Failed to update 1-Clik Price')
+  } finally {
+    ocpSaving.value[key] = false
+  }
 }
 
 function computeGap(car: any): number | null {
@@ -1316,6 +1379,9 @@ function getHighestAutoBidObj(car: any): any {
             <TableHead class="whitespace-nowrap text-center">
               Overall Bids
             </TableHead>
+            <TableHead class="whitespace-nowrap text-center">
+              1-Clik Price
+            </TableHead>
             <TableHead class="whitespace-nowrap">
               RA
             </TableHead>
@@ -1745,6 +1811,44 @@ function getHighestAutoBidObj(car: any): any {
               <template v-else>
                 {{ bidStats[String(car.id || car._id)]?.totalBids || 0 }} <span class="mx-0.5 text-muted-foreground/50">/</span> {{ bidStats[String(car.id || car._id)]?.uniqueDealers || 0 }}
               </template>
+            </TableCell>
+
+            <!-- 1-Clik Price -->
+            <TableCell class="text-xs whitespace-nowrap align-middle px-2">
+              <div class="min-h-[36px] flex flex-col items-center justify-center gap-1 group rounded relative" :class="ocpEditing[car._id || car.id] ? '' : 'hover:bg-muted/30 cursor-pointer'" @click="!ocpEditing[car._id || car.id] && openOcp(car)">
+                <template v-if="!ocpEditing[car._id || car.id]">
+                  <div class="flex items-center gap-1.5 font-medium whitespace-nowrap" :class="car.oneClickPrice ? 'text-blue-600' : 'text-muted-foreground/40'">
+                    <span>{{ car.oneClickPrice ? formatCurrency(car.oneClickPrice) : '—' }}</span>
+                    <Icon name="i-lucide-pencil" class="size-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="flex items-center gap-1" @click.stop>
+                    <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-md flex items-center px-2 py-0.5 shadow-sm">
+                      <span class="text-blue-600 font-bold text-[10px] mr-1">₹</span>
+                      <input
+                        v-model="ocpValue[car._id || car.id]"
+                        type="number"
+                        class="w-20 bg-transparent text-blue-700 dark:text-blue-300 font-bold tabular-nums text-xs border-none outline-none focus:ring-0 p-0 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        placeholder="Price"
+                        autofocus
+                        @keydown.enter.stop="confirmOcp(car)"
+                        @keydown.esc.stop="closeOcp(car)"
+                        @click.stop
+                      >
+                    </div>
+                    <div class="flex flex-col gap-0.5">
+                      <button class="size-[18px] flex items-center justify-center rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 shadow-sm border border-blue-200" :disabled="ocpSaving[car._id || car.id]" @click.stop="confirmOcp(car)">
+                        <Icon v-if="ocpSaving[car._id || car.id]" name="i-lucide-loader-2" class="size-2.5 animate-spin" />
+                        <Icon v-else name="i-lucide-check" class="size-2.5" />
+                      </button>
+                      <button class="size-[18px] flex items-center justify-center rounded-full bg-background hover:bg-muted text-muted-foreground shadow-sm border border-border" @click.stop="closeOcp(car)">
+                        <Icon name="i-lucide-x" class="size-2.5" />
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </div>
             </TableCell>
 
             <!-- RA (Retail Associate) -->
@@ -2261,6 +2365,41 @@ function getHighestAutoBidObj(car: any): any {
           Confirm
         </Button>
       </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
+  <!-- PDF Preview Dialog -->
+  <Dialog v-model:open="showReportPreview">
+    <DialogContent class="max-w-[95vw] lg:max-w-6xl xl:max-w-7xl h-[95vh] p-0 flex flex-col overflow-hidden bg-muted/20 border-border">
+      <div class="p-4 pr-12 border-b flex items-center justify-between bg-background shrink-0">
+        <div>
+          <DialogTitle class="text-lg font-bold">
+            Inspection Report Preview
+          </DialogTitle>
+        </div>
+        <div class="flex items-center gap-2">
+          <Button size="sm" :disabled="!pdfBlobUrl" @click="triggerDownload">
+            <Icon name="i-lucide-download" class="mr-2 size-4" />
+            Download PDF
+          </Button>
+        </div>
+      </div>
+      <div class="flex-1 bg-muted relative overflow-hidden flex items-center justify-center">
+        <iframe v-if="pdfBlobUrl" :src="pdfBlobUrl" class="w-full h-full border-0 absolute inset-0 bg-white" />
+        <div v-else class="flex flex-col items-center gap-3 text-muted-foreground p-8 text-center max-w-sm mx-auto">
+          <Icon name="i-lucide-loader-2" class="size-8 animate-spin text-primary" />
+          <p class="text-sm font-medium text-foreground">
+            Generating PDF Document...
+          </p>
+          <p class="text-xs">
+            Preparing the high-resolution inspection report document. This may take a few moments...
+          </p>
+        </div>
+        <!-- Hidden Generator -->
+        <div class="hidden absolute top-[-10000px] left-[-10000px] pointer-events-none opacity-0">
+          <CarInspectionView v-if="previewAppId && !pdfBlobUrl" :appointment-id="previewAppId" headless-pdf @pdf-blob-ready="pdfBlobUrl = $event" />
+        </div>
+      </div>
     </DialogContent>
   </Dialog>
 </template>

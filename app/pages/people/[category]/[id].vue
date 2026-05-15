@@ -24,8 +24,19 @@ const {
 } = usePeopleApi()
 
 // Ensure data is loaded
+const { allKams, fetchKams } = useKamsApi()
+
 onMounted(async () => {
   await fetchAllUsers()
+  fetchKams()
+})
+
+// Resolve assignedKam ID to a KAM name for display
+const resolvedKamName = computed(() => {
+  const kamId = user.value?.assignedKam
+  if (!kamId) return null
+  const kam = allKams.value.find(k => k._id === kamId || k.id === kamId)
+  return kam?.name || null
 })
 
 // Find the user from cache
@@ -467,7 +478,7 @@ const addresses = computed(() => {
                   <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Assigned KAM</span>
                 </div>
                 <p class="text-sm font-medium pl-10">
-                  {{ user.assignedKam }}
+                  {{ resolvedKamName || user.assignedKam }}
                 </p>
               </div>
 
@@ -757,7 +768,18 @@ const addresses = computed(() => {
                 <!-- Assigned KAM -->
                 <div class="space-y-1.5">
                   <Label for="edit-kam">Assigned KAM</Label>
-                  <Input id="edit-kam" v-model="editForm.assignedKam" placeholder="KAM name or ID" />
+                  <Select v-model="editForm.assignedKam">
+                    <SelectTrigger id="edit-kam">
+                      <SelectValue placeholder="Select a KAM" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      <SelectItem v-for="kam in allKams" :key="kam._id || kam.id" :value="kam._id || kam.id">
+                        {{ kam.name }}
+                        <span v-if="kam.region" class="text-muted-foreground"> — {{ kam.region }}</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <!-- Contact People -->

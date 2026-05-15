@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PeopleUser } from '~/composables/usePeopleApi'
+import { toast } from 'vue-sonner'
 
 const props = defineProps<{ user: PeopleUser }>()
 const emit = defineEmits<{
@@ -31,6 +32,7 @@ const hasDeletePermission = computed(() => {
 
 // ─── KAM lookup ───
 const { allKams, fetchKams } = useKamsApi()
+const { updateUser } = usePeopleApi()
 onMounted(() => fetchKams())
 
 const assignedKam = computed(() => {
@@ -39,6 +41,32 @@ const assignedKam = computed(() => {
     return null
   return allKams.value.find(k => k._id === id || k.id === id) || null
 })
+
+// ─── KAM Change ───
+const showKamChangeDialog = ref(false)
+const selectedNewKamId = ref('')
+const kamChangeSaving = ref(false)
+
+function openKamChange() {
+  selectedNewKamId.value = props.user.assignedKam || ''
+  showKamChangeDialog.value = true
+}
+
+async function confirmKamChange() {
+  kamChangeSaving.value = true
+  const uid = props.user._id || props.user.id
+  try {
+    await updateUser(uid, { assignedKam: selectedNewKamId.value || '' })
+    // Optimistic update on the reactive user
+    ;(props.user as any).assignedKam = selectedNewKamId.value
+    toast.success('KAM assignment updated')
+    showKamChangeDialog.value = false
+  } catch (err: any) {
+    toast.error(err?.data?.message || 'Failed to update KAM')
+  } finally {
+    kamChangeSaving.value = false
+  }
+}
 
 // ─── Tabs ───
 type Tab = 'info' | 'kam' | 'auctions' | 'cars'
@@ -474,6 +502,13 @@ const wishlist = computed(() => props.user?.wishlist || [])
               </p>
             </div>
           </div>
+          <!-- Change KAM button -->
+          <div class="px-6 pb-4 flex justify-end">
+            <Button variant="outline" size="sm" class="gap-1.5" @click="openKamChange">
+              <Icon name="i-lucide-repeat" class="size-3.5" />
+              Change KAM
+            </Button>
+          </div>
         </div>
 
         <!-- assignedKam ref exists but not resolved yet (by ID string) -->
@@ -503,6 +538,10 @@ const wishlist = computed(() => props.user?.wishlist || [])
               This dealer doesn't have a Key Account Manager assigned yet.
             </p>
           </div>
+          <Button size="sm" class="mt-2" @click="openKamChange">
+            <Icon name="i-lucide-user-plus" class="mr-1.5 size-3.5" />
+            Assign KAM
+          </Button>
         </div>
       </template>
 
@@ -632,4 +671,44 @@ const wishlist = computed(() => props.user?.wishlist || [])
       </template>
     </div>
   </div>
+
+  <!-- KAM Change Dialog -->
+  <Dialog v-model:open="showKamChangeDialog">
+    <DialogContent class="sm:max-w-[420px]">
+      <DialogHeader>
+        <DialogTitle class="flex items-center gap-2">
+          <Icon name="i-lucide-user-check" class="size-4 text-orange-600" />
+          {{ assignedKam ? 'Change' : 'Assign' }} KAM
+        </DialogTitle>
+        <DialogDescription class="text-xs">
+          Select a Key Account Manager for <strong>{{ user.dealershipName || user.userName }}</strong>.
+        </DialogDescription>
+      </DialogHeader>
+      <div class="py-4 space-y-3">
+        <Label for="dealer-kam-select">Select KAM</Label>
+        <Select v-model="selectedNewKamId">
+          <SelectTrigger id="dealer-kam-select">
+            <SelectValue placeholder="Choose a KAM" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">None (Unassign)</SelectItem>
+            <SelectItem v-for="kam in allKams" :key="kam._id || kam.id" :value="kam._id || kam.id">
+              {{ kam.name }}
+              <span v-if="kam.region" class="text-muted-foreground"> — {{ kam.region }}</span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" size="sm" @click="showKamChangeDialog = false">
+          Cancel
+        </Button>
+        <Button size="sm" :disabled="kamChangeSaving" @click="confirmKamChange">
+          <Icon v-if="kamChangeSaving" name="i-lucide-loader-2" class="mr-1 size-3.5 animate-spin" />
+          <Icon v-else name="i-lucide-check" class="mr-1 size-3.5" />
+          {{ assignedKam ? 'Update' : 'Assign' }}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

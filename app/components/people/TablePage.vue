@@ -44,7 +44,10 @@ const {
   updateUser,
 } = usePeopleApi()
 
-onMounted(() => { fetchAllUsers() })
+onMounted(() => {
+  fetchAllUsers()
+  fetchKams()
+})
 
 // ─── UI State ───
 const search = ref('')
@@ -302,9 +305,27 @@ async function handleCreateUser() {
   }
 }
 
+// ─── KAMs Data ───
+const { allKams, fetchKams } = useKamsApi()
+
+// ─── KAM Assignment Dialog (triggered on status → Approved for Dealers) ───
+const showKamDialog = ref(false)
+const kamDialogUser = ref<any>(null)
+const kamDialogSelectedKam = ref('')
+const kamDialogSaving = ref(false)
+
 async function handleUpdateStatus(user: any, newStatus: string) {
   if (!user || user.approvalStatus === newStatus)
     return
+
+  // If setting a Dealer to Approved, ask for KAM assignment first
+  if (newStatus === 'Approved' && user.userRole === 'Dealer') {
+    kamDialogUser.value = user
+    kamDialogSelectedKam.value = user.assignedKam || ''
+    showKamDialog.value = true
+    return
+  }
+
   const id = user.id || user._id
   try {
     await updateUser(id, { approvalStatus: newStatus })
@@ -312,6 +333,30 @@ async function handleUpdateStatus(user: any, newStatus: string) {
   }
   catch (_err: any) {
     toast.error('Failed to update status')
+  }
+}
+
+async function confirmKamAssignment() {
+  if (!kamDialogUser.value) return
+  if (!kamDialogSelectedKam.value) {
+    toast.error('Please select a KAM')
+    return
+  }
+  kamDialogSaving.value = true
+  const id = kamDialogUser.value.id || kamDialogUser.value._id
+  try {
+    await updateUser(id, {
+      approvalStatus: 'Approved',
+      assignedKam: kamDialogSelectedKam.value,
+    })
+    toast.success('Dealer approved and KAM assigned')
+    showKamDialog.value = false
+    kamDialogUser.value = null
+    kamDialogSelectedKam.value = ''
+  } catch (err: any) {
+    toast.error(err?.data?.message || 'Failed to approve dealer')
+  } finally {
+    kamDialogSaving.value = false
   }
 }
 
@@ -746,10 +791,19 @@ function toggleSelectAllWorkspaces() {
           </Popover>
         </div>
 
-        <!-- Assigned KAM -->
         <div v-if="form.userRole !== 'Telecaller' && form.userRole !== 'Inspection Engineer'" class="space-y-1.5">
           <Label for="add-user-kam">Assigned KAM</Label>
-          <Input id="add-user-kam" v-model="form.assignedKam" placeholder="KAM name or ID" />
+          <Select v-model="form.assignedKam">
+            <SelectTrigger id="add-user-kam">
+              <SelectValue placeholder="Select a KAM" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">None</SelectItem>
+              <SelectItem v-for="kam in allKams" :key="kam._id || kam.id" :value="kam._id || kam.id">
+                {{ kam.name }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <template v-if="form.userRole !== 'Telecaller' && form.userRole !== 'Inspection Engineer'">
@@ -795,4 +849,46 @@ function toggleSelectAllWorkspaces() {
       </SheetFooter>
     </SheetContent>
   </Sheet>
+
+  <!-- KAM Assignment Dialog (on Approve) -->
+  <Dialog v-model:open="showKamDialog">
+    <DialogContent class="sm:max-w-[420px]">
+      <DialogHeader>
+        <DialogTitle class="flex items-center gap-2">
+          <Icon name="i-lucide-user-check" class="size-4 text-emerald-600" />
+          Assign KAM to Approve
+        </DialogTitle>
+        <DialogDescription class="text-xs">
+          Select a Key Account Manager for <strong>{{ kamDialogUser?.userName || kamDialogUser?.dealershipName || '' }}</strong> before approving.
+        </DialogDescription>
+      </DialogHeader>
+      <div class="py-4 space-y-3">
+        <Label for="kam-assign-select">Select KAM <span class="text-destructive">*</span></Label>
+        <Select v-model="kamDialogSelectedKam">
+          <SelectTrigger id="kam-assign-select">
+            <SelectValue placeholder="Choose a KAM" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="kam in allKams" :key="kam._id || kam.id" :value="kam._id || kam.id">
+              {{ kam.name }}
+              <span v-if="kam.region" class="text-muted-foreground"> — {{ kam.region }}</span>
+            </SelectItem>
+            <div v-if="allKams.length === 0" class="px-2 py-4 text-center text-sm text-muted-foreground">
+              No KAMs found. Create one in People → KAMs.
+            </div>
+          </SelectContent>
+        </Select>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" size="sm" @click="showKamDialog = false">
+          Cancel
+        </Button>
+        <Button size="sm" :disabled="kamDialogSaving || !kamDialogSelectedKam" @click="confirmKamAssignment">
+          <Icon v-if="kamDialogSaving" name="i-lucide-loader-2" class="mr-1 size-3.5 animate-spin" />
+          <Icon v-else name="i-lucide-check" class="mr-1 size-3.5" />
+          Approve & Assign
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

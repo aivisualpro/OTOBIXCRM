@@ -92,6 +92,14 @@ export function useNotificationBanner() {
         const id = n._id || n.id
         if (!id || n.isRead || knownIds[id]) continue
 
+        // Suppress outbid notifications in the CRM app
+        const titleLower = (n.title || '').toLowerCase()
+        const bodyLower = (n.body || '').toLowerCase()
+        if (titleLower.includes('outbid') || bodyLower.includes('outbid')) {
+          knownIds[id] = true
+          continue
+        }
+
         knownIds[id] = true
         hasNew = true
 
