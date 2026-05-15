@@ -946,6 +946,30 @@ async function confirmReject() {
   const loadingToast = toast.loading('Rejecting inspection...')
   try {
     await saveQC(true)
+
+    // Fire external reject-a-car API (non-blocking)
+    try {
+      const { apiBaseUrl } = useApiEnvironment()
+      const authToken = useCookie('authToken')
+      const userCookie = useCookie('userData')
+      const currentUser = userCookie.value ? (typeof userCookie.value === 'string' ? JSON.parse(userCookie.value) : userCookie.value) : {} as any
+      const headers: Record<string, string> = {}
+      if (authToken.value) headers.Authorization = `Bearer ${authToken.value}`
+
+      await $fetch(`${apiBaseUrl.value}otobix/reject-a-car`, {
+        method: 'POST',
+        headers,
+        body: {
+          carId: car.value?.carObjectId || car.value?._id || '',
+          userId: currentUser?._id || currentUser?.id || '',
+          reason: rejectReason.value,
+        },
+      })
+    }
+    catch (extErr: any) {
+      console.warn('[QC Reject] External reject-a-car API failed:', extErr?.message)
+    }
+
     showRejectModal.value = false
     toast.dismiss(loadingToast)
     toast.success('Vehicle successfully marked as Rejected!')

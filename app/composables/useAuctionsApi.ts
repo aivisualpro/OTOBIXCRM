@@ -131,8 +131,15 @@ export function useAuctionsApi() {
       params.search = serverSearch.value
 
     if (currentModule === 'retail' || currentModule === 'sales' || currentModule === 'auctions') {
-      params.sort = 'approvalDate'
-      params.sortDir = 'desc'
+      // Activity tabs sort by latest updated records
+      if (_activeTab.value === 'customer-activity' || _activeTab.value === 'dealer-activity') {
+        params.sort = 'updatedAt'
+        params.sortDir = 'desc'
+      }
+      else {
+        params.sort = 'approvalDate'
+        params.sortDir = 'desc'
+      }
     }
     else {
       if (_sortKey.value)

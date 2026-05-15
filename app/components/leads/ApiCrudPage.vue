@@ -337,6 +337,35 @@ async function confirmRejectFromDropdown() {
     qcBy: currentUser?.email || '',
   })
 
+  // Fire external reject-a-car API (non-blocking)
+  if (lead.appointmentId) {
+    try {
+      const { apiBaseUrl } = useApiEnvironment()
+      const authToken = useCookie('authToken')
+      const headers: Record<string, string> = {}
+      if (authToken.value) headers.Authorization = `Bearer ${authToken.value}`
+
+      // Fetch car details to get the carObjectId
+      const carDetails = await $fetch<any>(`/api/leads/${lead.appointmentId}`)
+      const carId = carDetails?.carDetails?.carObjectId || carDetails?.carDetails?._id || ''
+
+      if (carId) {
+        await $fetch(`${apiBaseUrl.value}otobix/reject-a-car`, {
+          method: 'POST',
+          headers,
+          body: {
+            carId,
+            userId: currentUser?._id || currentUser?.id || '',
+            reason: rejectReason.value,
+          },
+        })
+      }
+    }
+    catch (extErr: any) {
+      console.warn('[Leads Reject] External reject-a-car API failed:', extErr?.message)
+    }
+  }
+
   showRejectDialog.value = false
   rejectingLead.value = null
   rejectReason.value = ''
