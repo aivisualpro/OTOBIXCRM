@@ -4,7 +4,7 @@ const router = useRouter()
 const { activeWorkspace } = useWorkspace()
 const { setTab, similarSearchCtx } = useAuctionsApi()
 
-const ALL_SALES_TABS = ['all', 'upcoming', 'live', 'otobuy', 'customer-activity', 'dealer-activity', 'ended', 'sold', 'removed']
+const ALL_SALES_TABS = ['all', 'upcoming', 'live', 'otobuy', 'customer-activity', 'dealer-activity', 'ended', 'sold', 'removed', 'dealers']
 
 const navItems = computed(() => {
   const allowed = activeWorkspace.value?.salesTabs
@@ -30,7 +30,7 @@ if (!tabParam.value || (!tabParam.value.startsWith('similar-search') && !navItem
 }
 
 watch(tabParam, (newTab) => {
-  if (newTab && (newTab.startsWith('similar-search') || navItems.value.includes(newTab))) {
+  if (newTab && newTab !== 'dealers' && (newTab.startsWith('similar-search') || navItems.value.includes(newTab))) {
     setTab(newTab)
   }
 }, { immediate: true })
@@ -46,6 +46,7 @@ const routeMap: Record<string, { title: string, icon: string }> = {
   'sold': { title: 'Sold', icon: 'i-lucide-badge-check' },
   'removed': { title: 'Removed', icon: 'i-lucide-trash-2' },
   'similar-search': { title: 'Similar Search', icon: 'i-lucide-search' },
+  'dealers': { title: 'Dealers', icon: 'i-lucide-store' },
 }
 
 const currentConfig = computed(() => {
@@ -63,13 +64,18 @@ const currentConfig = computed(() => {
   }
   return routeMap[tabParam.value] || routeMap.all
 })
+
+const isDealersTab = computed(() => tabParam.value === 'dealers')
 </script>
 
 <template>
   <SalesTablePage
-    v-if="currentConfig"
+    v-if="currentConfig && !isDealersTab"
     :title="`Sales / ${currentConfig.title}`"
     description=""
     :icon="currentConfig.icon"
+  />
+  <SalesDealersPage
+    v-else-if="isDealersTab"
   />
 </template>

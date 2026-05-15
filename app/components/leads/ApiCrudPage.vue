@@ -657,6 +657,31 @@ function setDatePreset(preset: string) {
   }
 }
 
+// ─── Row click navigation ───
+function handleRowClick(item: Record<string, any>) {
+  if (!(props.clickable || item.inspectionStatus === 'Inspected')) return
+  if (!item.appointmentId) return
+
+  // Self-inspected records navigate to self-inspection detail (QC view if under review)
+  if (item._source === 'selfInspected') {
+    if (item.auctionStatus === 'inspectionUnderReview') {
+      router.push(`/self-inspection/qc/${item.appointmentId}`)
+    }
+    else {
+      router.push(`/self-inspection/${item.appointmentId}`)
+    }
+    return
+  }
+
+  // Regular records
+  if (['Under Review', 'Rejected', 'Quality Rejected'].includes(item.approvalStatus)) {
+    router.push(`/qc/${item.appointmentId}`)
+  }
+  else {
+    router.push(`/inspection/${item.appointmentId}`)
+  }
+}
+
 // ─── Sorted display (we rely on server-side status filtering implicitly) ───
 const { setSort } = useLeadsApi()
 
@@ -1404,7 +1429,7 @@ function getInitials(name: string): string {
             :key="item.id || item._id"
             class="group"
             :class="{ 'cursor-pointer hover:bg-muted/50': props.clickable || item.inspectionStatus === 'Inspected' }"
-            @click="(props.clickable || item.inspectionStatus === 'Inspected') && item.appointmentId ? (['Under Review', 'Rejected', 'Quality Rejected'].includes(item.approvalStatus) ? router.push(`/qc/${item.appointmentId}`) : router.push(`/inspection/${item.appointmentId}`)) : undefined"
+            @click="handleRowClick(item)"
           >
             <TableCell v-for="col in columns" :key="col.key">
               <!-- Avatar -->
@@ -1499,6 +1524,11 @@ function getInitials(name: string): string {
               <!-- User Identifiers -->
               <span v-else-if="['createdBy', 'createdByFullName', 'addedBy', 'allocatedTo', 'qcBy', 'emailAddress'].includes(col.key)" class="text-sm font-medium">
                 {{ getUserLabel(item[col.key]) }}
+              </span>
+              <!-- Appointment ID — highlight self-inspected records with a different color -->
+              <span v-else-if="col.key === 'appointmentId' && item._source === 'selfInspected'" class="text-sm font-semibold text-violet-600 dark:text-violet-400 flex items-center gap-1.5">
+                <Icon name="i-lucide-smartphone" class="size-3.5 shrink-0" />
+                {{ item[col.key] ?? '—' }}
               </span>
               <!-- Default text -->
               <span v-else class="text-sm">{{ item[col.key] ?? '—' }}</span>

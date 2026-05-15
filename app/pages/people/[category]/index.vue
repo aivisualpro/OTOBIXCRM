@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { peopleColumns, peopleRouteFilters } from '~/constants/people'
+import { peopleColumns, dealerColumns, peopleRouteFilters } from '~/constants/people'
 
 const route = useRoute()
 const categoryKey = computed(() => route.params.category as string)
 const filter = computed(() => peopleRouteFilters[categoryKey.value])
 
 const activeColumns = computed(() => {
+  // Use dealer-specific columns for the dealer category
+  if (categoryKey.value === 'dealer')
+    return dealerColumns
+
   return peopleColumns.filter((col) => {
     if (col.key === 'phoneNumber' && categoryKey.value === 'telecaller')
       return false
@@ -15,8 +19,11 @@ const activeColumns = computed(() => {
 </script>
 
 <template>
+  <!-- KAMs has its own dedicated page component -->
+  <PeopleKamsPage v-if="categoryKey === 'kams'" />
+
   <PeopleTablePage
-    v-if="filter"
+    v-else-if="filter"
     :title="filter.label"
     description=""
     icon="i-lucide-users"

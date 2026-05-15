@@ -20,6 +20,7 @@ const ALL_SALES_TABS = [
   { id: 'ended', title: 'Ended', icon: 'i-lucide-timer-off', link: '/sales?tab=ended' },
   { id: 'sold', title: 'Sold', icon: 'i-lucide-badge-check', link: '/sales?tab=sold' },
   { id: 'removed', title: 'Removed', icon: 'i-lucide-trash-2', link: '/sales?tab=removed' },
+  { id: 'dealers', title: 'Dealers', icon: 'i-lucide-store', link: '/sales?tab=dealers' },
 ]
 
 const navItems = computed(() => {
@@ -33,15 +34,29 @@ const navItems = computed(() => {
 // ─── Live counts per tab ───
 const { statusCounts, isFetched, fetchCounts } = useAuctionsApi()
 
+const dealersCount = ref<number | undefined>(undefined)
+
+async function fetchDealersCount() {
+  try {
+    const res = await $fetch<any>('/api/sales/dealer-ids')
+    if (res.success) {
+      dealersCount.value = res.userIds?.length || 0
+    }
+  } catch {}
+}
+
 function getTabCount(filterId: string) {
+  if (filterId === 'dealers') return dealersCount.value
   if (!isFetched.value || !statusCounts.value)
     return undefined
   return statusCounts.value[filterId] || 0
 }
 
 onMounted(() => {
-  if (isBaseRoute.value)
+  if (isBaseRoute.value) {
     fetchCounts()
+    fetchDealersCount()
+  }
 })
 </script>
 

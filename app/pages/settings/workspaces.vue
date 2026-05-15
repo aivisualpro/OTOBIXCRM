@@ -214,6 +214,7 @@ const SALES_TABS = [
   { id: 'ended', title: 'Ended', route: '/sales?tab=ended' },
   { id: 'sold', title: 'Sold', route: '/sales?tab=sold' },
   { id: 'removed', title: 'Removed', route: '/sales?tab=removed' },
+  { id: 'dealers', title: 'Dealers', route: '/sales?tab=dealers' },
 ]
 
 function localToggleSalesTab(tabId: string) {
@@ -268,6 +269,7 @@ const PEOPLE_TABS = [
   { id: 'sales-manager', title: 'Sales Manager', route: '/people/sales-manager' },
   { id: 'telecaller', title: 'Telecaller', route: '/people/telecaller' },
   { id: 'qc', title: 'QC', route: '/people/qc' },
+  { id: 'kams', title: 'KAMs', route: '/people/kams' },
 ]
 
 function localTogglePeopleTab(tabId: string) {

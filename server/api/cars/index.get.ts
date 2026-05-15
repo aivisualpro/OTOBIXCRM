@@ -244,6 +244,9 @@ export default defineEventHandler(async (event) => {
     let totalCount = 0
 
     if (sortField === 'approvalDate') {
+      const currentModule = String(queryParams.module || '')
+      const applyLivePriority = currentModule === 'auctions'
+
       const pipeline = [
         { $match: filter },
         {
@@ -277,13 +280,18 @@ export default defineEventHandler(async (event) => {
                 },
               },
             },
-            // Live cars get priority 0 (top), everything else gets 1
-            _sortPriority: { $cond: { if: { $eq: ['$auctionStatus', 'live'] }, then: 0, else: 1 } },
-            // Parse auctionEndTime for live car secondary sort (soonest ending first)
-            _parsedEndTime: { $convert: { input: '$auctionEndTime', to: 'date', onError: new Date('2099-01-01'), onNull: new Date('2099-01-01') } },
+            // Live cars get priority 0 (top) ONLY in auctions module, everything else gets 1
+            ...(applyLivePriority ? {
+              _sortPriority: { $cond: { if: { $eq: ['$auctionStatus', 'live'] }, then: 0, else: 1 } },
+              _parsedEndTime: { $convert: { input: '$auctionEndTime', to: 'date', onError: new Date('2099-01-01'), onNull: new Date('2099-01-01') } },
+            } : {}),
           },
         },
-        { $sort: { _sortPriority: 1, _parsedEndTime: 1, effectiveSortDate: sortDir, _id: -1 } },
+        // For auctions: live-first, then by date. For retail/sales: pure date sort.
+        { $sort: applyLivePriority
+          ? { _sortPriority: 1, _parsedEndTime: 1, effectiveSortDate: sortDir, _id: -1 }
+          : { effectiveSortDate: sortDir, _id: -1 },
+        },
         { $skip: skip },
         { $limit: limit },
         { $project: { ...projection, frontMainImages: { $cond: { if: { $isArray: '$frontMainImages' }, then: { $slice: ['$frontMainImages', 1] }, else: '$frontMainImages' } } } },

@@ -10,6 +10,22 @@ export const peopleColumns: CrudColumn[] = [
   { key: 'updatedAt', label: 'Updated', type: 'date' },
 ]
 
+// Dealer-specific columns
+export const dealerColumns: CrudColumn[] = [
+  { key: 'userName', label: 'Name', type: 'avatar' },
+  { key: 'dealershipName', label: 'Dealership' },
+  { key: 'assignedKam', label: 'Assigned KAM' },
+  { key: 'entityType', label: 'Entity Type' },
+  { key: 'location', label: 'Location' },
+  { key: 'primaryContactPerson', label: 'Contact Person' },
+  { key: 'primaryContactNumber', label: 'Contact Number' },
+  { key: 'email', label: 'Email' },
+  { key: 'wishlistCount', label: 'Wishlist' },
+  { key: 'myBidsCount', label: 'Total Bids' },
+  { key: 'approvalStatus', label: 'Status', type: 'badge' },
+  { key: 'updatedAt', label: 'Updated', type: 'date' },
+]
+
 // Each sub-route defines how to filter the global users list
 export interface PeopleRouteFilter {
   label: string

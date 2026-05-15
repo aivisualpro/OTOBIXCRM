@@ -78,7 +78,8 @@ async function confirmReview() {
       method: 'PUT',
       body: {
         id,
-        auctionStatus: 'inspectionApproved',
+        auctionStatus: 'inspectionUnderReview',
+        qcBy: user.email,
         reviewedBy: user.email,
       },
     })

@@ -161,7 +161,7 @@ function startEdit() {
     secondaryContactPerson: user.value.secondaryContactPerson || '',
     secondaryContactNumber: user.value.secondaryContactNumber || '',
     approvalStatus: user.value.approvalStatus || '',
-    assignedKam: user.value.assignedKam || '',
+    assignedKam: user.value.assignedKam || '_none_',
     isStaff: user.value.isStaff || false,
     addressList: [...(user.value.addressList || [])],
     workspaces: Array.isArray(user.value.workspaces) ? [...user.value.workspaces] : [],
@@ -192,7 +192,11 @@ async function saveEdit() {
     return
   isSaving.value = true
   try {
-    await updateUser(userId.value, editForm.value)
+    const payload = { ...editForm.value }
+    // Convert sentinel back to empty string for storage
+    if (payload.assignedKam === '_none_')
+      payload.assignedKam = ''
+    await updateUser(userId.value, payload)
     toast.success('Profile updated successfully')
     isEditing.value = false
   }
@@ -298,7 +302,7 @@ const addresses = computed(() => {
 </script>
 
 <template>
-  <div>
+  <div class="h-full flex flex-col overflow-hidden">
     <!-- Loading state (shared) -->
     <div v-if="!user" class="flex items-center justify-center h-64 text-muted-foreground">
       <div class="flex flex-col items-center gap-3">
@@ -313,7 +317,7 @@ const addresses = computed(() => {
     <PeopleDealerDetailPage v-else-if="isDealer && !isEditing" :user="user" @edit="startEdit" @delete="showDeleteDialog = true" />
 
     <!-- Generic profile view -->
-    <div v-else>
+    <div v-else class="flex-1 min-h-0 flex flex-col overflow-hidden">
       <ClientOnly>
         <HeaderActions>
           <Button variant="ghost" size="sm" class="h-8" @click="router.push(`/people/${categoryKey}`)">
@@ -773,7 +777,7 @@ const addresses = computed(() => {
                       <SelectValue placeholder="Select a KAM" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="_none_">None</SelectItem>
                       <SelectItem v-for="kam in allKams" :key="kam._id || kam.id" :value="kam._id || kam.id">
                         {{ kam.name }}
                         <span v-if="kam.region" class="text-muted-foreground"> — {{ kam.region }}</span>

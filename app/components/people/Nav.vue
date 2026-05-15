@@ -10,6 +10,7 @@ const navItems = [
   { id: 'sales-manager', title: 'Sales Manager', icon: 'i-lucide-briefcase', color: 'text-sky-500', link: '/people/sales-manager' },
   { id: 'telecaller', title: 'Telecaller', icon: 'i-lucide-phone-call', color: 'text-pink-500', link: '/people/telecaller' },
   { id: 'qc', title: 'QC', icon: 'i-lucide-badge-check', color: 'text-orange-500', link: '/people/qc' },
+  { id: 'kams', title: 'KAMs', icon: 'i-lucide-briefcase', color: 'text-indigo-500', link: '/people/kams' },
 ]
 
 const currentActiveId = computed(() => {

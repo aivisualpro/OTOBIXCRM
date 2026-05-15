@@ -92,10 +92,14 @@ export function useNotificationBanner() {
         const id = n._id || n.id
         if (!id || n.isRead || knownIds[id]) continue
 
-        // Suppress outbid notifications in the CRM app
+        // Suppress outbid and auction-won notifications in the CRM app
         const titleLower = (n.title || '').toLowerCase()
         const bodyLower = (n.body || '').toLowerCase()
-        if (titleLower.includes('outbid') || bodyLower.includes('outbid')) {
+        if (
+          titleLower.includes('outbid') || bodyLower.includes('outbid')
+          || titleLower.includes('won the auction') || titleLower.includes('you won')
+          || bodyLower.includes('won the auction') || bodyLower.includes('you won')
+        ) {
           knownIds[id] = true
           continue
         }

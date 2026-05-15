@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
       'inspected': { inspectionStatus: 'Inspected', approvalStatus: 'Pending' },
       'under-review': { inspectionStatus: 'Inspected', approvalStatus: 'Under Review' },
       'quality-approved': { inspectionStatus: 'Inspected', approvalStatus: 'Approved' },
-      'quality-rejected': { inspectionStatus: 'Inspected', approvalStatus: 'Quality Rejected|Rejected' },
+      'quality-rejected': { inspectionStatus: '*', approvalStatus: 'Quality Rejected|Rejected' },
       'search-results': { inspectionStatus: '*', approvalStatus: '*' },
     }
 
@@ -240,12 +240,60 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    // ─── Merge self-inspected cars for the under-review tab ───
+    let mergedTotal = totalCount
+    if (tab === 'under-review') {
+      try {
+        const selfFilter: Record<string, any> = { auctionStatus: 'inspectionUnderReview' }
+
+        // Apply same qcBy isolation for non-admin users
+        if (!isAdmin && currentUserEmail) {
+          selfFilter.qcBy = currentUserEmail
+        }
+
+        const selfInspectedCol = db.collection('selfInspectedCars')
+        const [selfData, selfCount] = await Promise.all([
+          selfInspectedCol.find(selfFilter).sort({ _id: -1 }).limit(200).toArray(),
+          selfInspectedCol.countDocuments(selfFilter),
+        ])
+
+        const selfMapped = selfData.map((doc: any) => {
+          const docId = doc._id?.toString()
+          return {
+            _id: docId,
+            id: docId,
+            appointmentId: doc.inspectionId || docId,
+            ownerName: doc.registeredOwner || doc.ownerName || '',
+            customerContactNumber: doc.customerContactNumber || '',
+            make: doc.make || '',
+            model: doc.model || '',
+            variant: doc.variant || '',
+            registrationNumber: doc.registrationNumber || '',
+            inspectionStatus: 'Inspected',
+            approvalStatus: 'Under Review',
+            qcBy: doc.qcBy || doc.reviewedBy || '',
+            city: doc.city || '',
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+            _source: 'selfInspected',
+          }
+        })
+
+        // Prepend self-inspected records to the top of the results
+        finalData.unshift(...selfMapped)
+        mergedTotal = totalCount + selfCount
+      }
+      catch (selfErr: any) {
+        console.warn('[API:leads] Failed to merge self-inspected for under-review:', selfErr.message)
+      }
+    }
+
     return {
       items: finalData,
-      total: totalCount,
+      total: mergedTotal,
       page,
       limit,
-      totalPages: Math.ceil(totalCount / limit),
+      totalPages: Math.ceil(mergedTotal / limit),
     }
   }
   catch (err: any) {

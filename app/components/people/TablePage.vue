@@ -60,12 +60,93 @@ const approvedCount = computed(() => baseFilteredItems.value.filter(u => u.appro
 const pendingCount = computed(() => baseFilteredItems.value.filter(u => u.approvalStatus === 'Pending').length)
 const rejectedCount = computed(() => baseFilteredItems.value.filter(u => u.approvalStatus === 'Rejected').length)
 
+// ─── Dealer Filters ───
+const isDealer = computed(() => props.categoryKey === 'dealer')
+const dealerFilterStatus = ref('Approved')
+const dealerFilterKam = ref('')
+const dealerFilterEntityType = ref('')
+const dealerFilterLocation = ref('')
+const showDealerFilters = ref(false)
+
+// Unique values for dealer filter dropdowns
+const uniqueEntityTypes = computed(() => {
+  const set = new Set<string>()
+  baseFilteredItems.value.forEach(u => { if (u.entityType) set.add(u.entityType) })
+  return Array.from(set).sort()
+})
+const uniqueLocations = computed(() => {
+  const set = new Set<string>()
+  baseFilteredItems.value.forEach(u => {
+    const loc = u.location
+    if (Array.isArray(loc)) loc.forEach((l: string) => { if (l) set.add(l) })
+    else if (loc) set.add(String(loc))
+  })
+  return Array.from(set).sort()
+})
+
+const activeDealerFilterCount = computed(() => {
+  let count = 0
+  if (dealerFilterStatus.value && dealerFilterStatus.value !== '_all_') count++
+  if (dealerFilterKam.value && dealerFilterKam.value !== '_all_') count++
+  if (dealerFilterEntityType.value && dealerFilterEntityType.value !== '_all_') count++
+  if (dealerFilterLocation.value && dealerFilterLocation.value !== '_all_') count++
+  return count
+})
+
+function clearDealerFilters() {
+  dealerFilterStatus.value = ''
+  dealerFilterKam.value = ''
+  dealerFilterEntityType.value = ''
+  dealerFilterLocation.value = ''
+}
+
+// ─── Inline per-row KAM change ───
+async function handleInlineKamChange(user: any, newKamId: string) {
+  const id = user._id || user.id
+  if (!id) return
+  const kamId = newKamId === '_none_' ? '' : newKamId
+  try {
+    await updateUser(id, { assignedKam: kamId })
+    toast.success(`KAM updated for ${user.dealershipName || user.userName}`)
+  }
+  catch (err: any) {
+    toast.error(err?.message || 'Failed to update KAM')
+  }
+}
+
 // ─── Client-side filtering ───
 const filteredItems = computed(() => {
-  // Apply search globally across all users if there is a search term
+  let items = baseFilteredItems.value
+
+  // Apply dealer-specific filters
+  if (isDealer.value) {
+    if (dealerFilterStatus.value && dealerFilterStatus.value !== '_all_') {
+      items = items.filter(u => u.approvalStatus === dealerFilterStatus.value)
+    }
+    if (dealerFilterKam.value && dealerFilterKam.value !== '_all_') {
+      if (dealerFilterKam.value === '_unassigned_') {
+        items = items.filter(u => !u.assignedKam)
+      }
+      else {
+        items = items.filter(u => u.assignedKam === dealerFilterKam.value)
+      }
+    }
+    if (dealerFilterEntityType.value && dealerFilterEntityType.value !== '_all_') {
+      items = items.filter(u => u.entityType === dealerFilterEntityType.value)
+    }
+    if (dealerFilterLocation.value && dealerFilterLocation.value !== '_all_') {
+      items = items.filter(u => {
+        const loc = u.location
+        if (Array.isArray(loc)) return loc.includes(dealerFilterLocation.value)
+        return String(loc || '') === dealerFilterLocation.value
+      })
+    }
+  }
+
+  // Apply search globally
   if (search.value) {
     const q = search.value.toLowerCase()
-    return allUsers.value.filter(item =>
+    items = items.filter(item =>
       String(item.userName ?? '').toLowerCase().includes(q)
       || String(item.email ?? '').toLowerCase().includes(q)
       || String(item.phoneNumber ?? '').toLowerCase().includes(q)
@@ -76,8 +157,7 @@ const filteredItems = computed(() => {
     )
   }
 
-  // If no search, filter by the current tab's category
-  return baseFilteredItems.value
+  return items
 })
 
 // ─── Client-side infinite scroll (load more on scroll) ───
@@ -291,6 +371,7 @@ async function handleCreateUser() {
     const payload = {
       ...form.value,
       addressList: form.value.addressList.filter(a => a.trim()),
+      assignedKam: form.value.assignedKam === '_none_' ? '' : form.value.assignedKam,
     }
     await createUser(payload)
     toast.success(`User "${form.value.userName}" created successfully`)
@@ -307,6 +388,18 @@ async function handleCreateUser() {
 
 // ─── KAMs Data ───
 const { allKams, fetchKams } = useKamsApi()
+
+function resolveKamName(kamId: any): string {
+  if (!kamId) return '—'
+  const kam = allKams.value.find(k => k._id === kamId || k.id === kamId)
+  return kam?.name || '—'
+}
+
+function formatLocation(loc: any): string {
+  if (!loc) return '—'
+  if (Array.isArray(loc)) return loc.filter(Boolean).join(', ') || '—'
+  return String(loc) || '—'
+}
 
 // ─── KAM Assignment Dialog (triggered on status → Approved for Dealers) ───
 const showKamDialog = ref(false)
@@ -474,6 +567,89 @@ function toggleSelectAllWorkspaces() {
         <Icon name="i-lucide-refresh-cw" class="mr-1 size-3.5" :class="{ 'animate-spin': isLoading }" />
         Refresh
       </Button>
+      <!-- Dealer Filter Button -->
+      <Popover v-if="isDealer" v-model:open="showDealerFilters">
+        <PopoverTrigger as-child>
+          <Button variant="outline" size="sm" class="h-8 gap-1.5 relative">
+            <Icon name="i-lucide-filter" class="size-3.5" />
+            Filters
+            <Badge v-if="activeDealerFilterCount > 0" class="h-4 w-4 p-0 text-[9px] flex items-center justify-center absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground">
+              {{ activeDealerFilterCount }}
+            </Badge>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" class="w-80 p-0">
+          <div class="flex items-center justify-between px-4 py-3 border-b">
+            <p class="text-sm font-semibold">Dealer Filters</p>
+            <Button v-if="activeDealerFilterCount > 0" variant="ghost" size="sm" class="h-6 text-[10px] text-muted-foreground" @click="clearDealerFilters">
+              Clear all
+            </Button>
+          </div>
+          <div class="p-4 space-y-4">
+            <!-- Status -->
+            <div class="space-y-1.5">
+              <Label class="text-xs font-medium text-muted-foreground">Status</Label>
+              <Select v-model="dealerFilterStatus">
+                <SelectTrigger class="h-8 text-xs">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all_">All Statuses</SelectItem>
+                  <SelectItem value="Approved">Approved</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <!-- Assigned KAM -->
+            <div class="space-y-1.5">
+              <Label class="text-xs font-medium text-muted-foreground">Assigned KAM</Label>
+              <Select v-model="dealerFilterKam">
+                <SelectTrigger class="h-8 text-xs">
+                  <SelectValue placeholder="All KAMs" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all_">All KAMs</SelectItem>
+                  <SelectItem value="_unassigned_">Unassigned</SelectItem>
+                  <SelectItem v-for="kam in allKams" :key="kam._id || kam.id" :value="kam._id || kam.id">
+                    {{ kam.name }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <!-- Entity Type -->
+            <div class="space-y-1.5">
+              <Label class="text-xs font-medium text-muted-foreground">Entity Type</Label>
+              <Select v-model="dealerFilterEntityType">
+                <SelectTrigger class="h-8 text-xs">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all_">All Types</SelectItem>
+                  <SelectItem v-for="et in uniqueEntityTypes" :key="et" :value="et">
+                    {{ et }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <!-- Location -->
+            <div class="space-y-1.5">
+              <Label class="text-xs font-medium text-muted-foreground">Location</Label>
+              <Select v-model="dealerFilterLocation">
+                <SelectTrigger class="h-8 text-xs">
+                  <SelectValue placeholder="All Locations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all_">All Locations</SelectItem>
+                  <SelectItem v-for="loc in uniqueLocations" :key="loc" :value="loc">
+                    {{ loc }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
       <Button v-if="hasAddPermission" size="sm" class="h-8" @click="showAddDialog = true">
         <Icon name="i-lucide-plus" class="mr-1 size-3.5" />
         Add User
@@ -608,6 +784,34 @@ function toggleSelectAllWorkspaces() {
                 </template>
                 <span v-else class="text-sm text-muted-foreground">—</span>
               </div>
+              <!-- Assigned KAM (inline dropdown for dealers) -->
+              <div v-else-if="col.key === 'assignedKam'" class="min-w-[120px]">
+                <Select
+                  :model-value="item.assignedKam || '_none_'"
+                  @update:model-value="(v: any) => handleInlineKamChange(item, String(v))"
+                >
+                  <SelectTrigger class="h-7 text-xs border-dashed">
+                    <SelectValue placeholder="Select KAM" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none_">— None —</SelectItem>
+                    <SelectItem v-for="kam in allKams" :key="kam._id || kam.id" :value="kam._id || kam.id">
+                      {{ kam.name }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <!-- Wishlist / Bids Counts -->
+              <span v-else-if="col.key === 'wishlistCount'" class="text-sm tabular-nums font-medium">
+                {{ (item.wishlist || []).length }}
+              </span>
+              <span v-else-if="col.key === 'myBidsCount'" class="text-sm tabular-nums font-medium">
+                {{ (item.myBids || []).length }}
+              </span>
+              <!-- Location (array or comma-separated) -->
+              <span v-else-if="col.key === 'location'" class="text-sm">
+                {{ formatLocation(item[col.key]) }}
+              </span>
               <!-- Default text -->
               <span v-else class="text-sm">{{ item[col.key] ?? '—' }}</span>
             </TableCell>
@@ -798,7 +1002,7 @@ function toggleSelectAllWorkspaces() {
               <SelectValue placeholder="Select a KAM" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="_none_">None</SelectItem>
               <SelectItem v-for="kam in allKams" :key="kam._id || kam.id" :value="kam._id || kam.id">
                 {{ kam.name }}
               </SelectItem>

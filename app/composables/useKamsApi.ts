@@ -37,10 +37,8 @@ export function useKamsApi() {
     _fetchError.value = null
 
     try {
-      const response = await $fetch<any>(
-        `${apiBaseUrl.value}admin/kams/get-list`,
-        { method: 'GET', headers: headers() },
-      )
+      // Try local API first (reads from MongoDB directly)
+      const response = await $fetch<any>('/api/kams')
 
       const kamsArray = Array.isArray(response)
         ? response
@@ -53,9 +51,29 @@ export function useKamsApi() {
 
       _isFetched.value = true
     }
-    catch (err: any) {
-      _fetchError.value = err?.data?.message || err?.message || 'Failed to fetch KAMs'
-      _allKams.value = []
+    catch (localErr: any) {
+      // Fallback to external API if local fails
+      try {
+        const response = await $fetch<any>(
+          `${apiBaseUrl.value}admin/kams/get-list`,
+          { method: 'GET', headers: headers() },
+        )
+
+        const kamsArray = Array.isArray(response)
+          ? response
+          : response?.kams || response?.data || []
+
+        _allKams.value = kamsArray.map((item: any) => ({
+          ...item,
+          id: item._id || item.id,
+        }))
+
+        _isFetched.value = true
+      }
+      catch (err: any) {
+        _fetchError.value = err?.data?.message || err?.message || 'Failed to fetch KAMs'
+        _allKams.value = []
+      }
     }
     finally {
       _isFetching.value = false

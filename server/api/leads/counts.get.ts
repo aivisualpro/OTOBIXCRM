@@ -150,6 +150,17 @@ export default defineEventHandler(async (event) => {
       return total
     }
 
+    // Count self-inspected cars under review
+    let selfUnderReviewCount = 0
+    try {
+      const selfFilter: Record<string, any> = { auctionStatus: 'inspectionUnderReview' }
+      if (!isAdmin && currentUserEmail) {
+        selfFilter.qcBy = currentUserEmail
+      }
+      selfUnderReviewCount = await db.collection('selfInspectedCars').countDocuments(selfFilter)
+    }
+    catch { /* ignore */ }
+
     return {
       totalCount,
       counts: {
@@ -160,9 +171,9 @@ export default defineEventHandler(async (event) => {
         'cancelled': countFor('Cancelled', '*'),
         're-inspection': countFor('Re-Inspection', '*'),
         'inspected': countFor('Inspected', 'Pending'),
-        'under-review': countFor('Inspected', 'Under Review'),
+        'under-review': countFor('Inspected', 'Under Review') + selfUnderReviewCount,
         'quality-approved': countFor('Inspected', 'Approved'),
-        'quality-rejected': countFor('Inspected', 'Quality Rejected') + countFor('Inspected', 'Rejected'),
+        'quality-rejected': countFor('*', 'Quality Rejected') + countFor('*', 'Rejected'),
       },
     }
   }
