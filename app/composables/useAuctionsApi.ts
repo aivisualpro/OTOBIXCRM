@@ -130,7 +130,7 @@ export function useAuctionsApi() {
     if (serverSearch.value)
       params.search = serverSearch.value
 
-    if (currentModule === 'retail' || currentModule === 'sales') {
+    if (currentModule === 'retail' || currentModule === 'sales' || currentModule === 'auctions') {
       params.sort = 'approvalDate'
       params.sortDir = 'desc'
     }
